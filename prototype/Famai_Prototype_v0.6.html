@@ -1,0 +1,2574 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Famai Motor Group — ต้นแบบระบบหลังบ้าน v0.6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS — ดู docs/04-design-system.md
+   โครงจาก Figma Analytics Dashboard · สีแบรนด์ยามาฮ่า
+   ============================================================ */
+:root{
+  --brand:#E60012; --brand-pressed:#B3000E; --brand-tint:#FFF1F2; --brand-track:#FFE0E3;
+  --on-brand:#FFFFFF;
+  --ink:#151E23; --ink-2:#6B6C7E; --ink-3:#848A95;
+  --line:#EFF0F6; --line-2:#E4E5E7;
+  --bg:#F5F6F8; --card:#FFFFFF; --soft:#FAFBFC; --soft-2:#F2F4F7;
+  --good:#12B76A; --good-bg:#ECFDF3; --good-line:#D1FADF;
+  --warn:#F79009; --warn-bg:#FFFAEB; --warn-line:#FEF0C7;
+  --bad:#B42318;  --bad-bg:#FEF3F2;  --bad-line:#FEE4E2;
+  --info:#175CD3; --info-bg:#EFF8FF; --info-line:#D1E9FF;
+  --r:14px; --r-sm:10px; --r-pill:999px;
+  --sh:0 5px 20px rgba(0,0,0,.05);
+  --sh-lg:0 20px 50px -20px rgba(21,30,35,.25);
+  --font-th-nl:'IBM Plex Sans Thai','Noto Sans Thai';
+  --font-th-l:'IBM Plex Sans Thai Looped','Sarabun','TH Sarabun New';
+  --font-th:var(--font-th-nl);
+  --side-w:240px;
+}
+body.looped{ --font-th:var(--font-th-l); }
+body.dark-side{ --side-bg:var(--ink); --side-fg:#FFFFFF; --side-mut:#8A94A0; --side-line:#28323A; }
+body{ --side-bg:#FFFFFF; --side-fg:var(--ink); --side-mut:var(--ink-3); --side-line:var(--line); }
+
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  font-family:'Inter', var(--font-th), -apple-system, "Segoe UI", system-ui, sans-serif;
+  font-size:14px; line-height:1.6; color:var(--ink); background:var(--bg);
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{ font:inherit; color:inherit; }
+button{ cursor:pointer; border:0; background:none; }
+a{ color:var(--brand); }
+.num,td.n,th.n,.stat{ font-variant-numeric:tabular-nums; }
+.mono{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; letter-spacing:-.02em; }
+
+/* ---------- LOGIN ---------- */
+#login{ position:fixed; inset:0; z-index:500; background:var(--ink);
+  display:flex; align-items:center; justify-content:center; padding:20px; }
+#login.off{ display:none; }
+#login .bgdot{ position:absolute; border-radius:50%; background:var(--brand); opacity:.14; filter:blur(2px); }
+.lg-card{ position:relative; width:min(420px,100%); background:#fff; border-radius:20px;
+  padding:32px; box-shadow:var(--sh-lg); max-height:94vh; overflow-y:auto; }
+.lg-logo{ font-family:'Inter'; font-weight:800; font-size:22px; letter-spacing:.12em; color:var(--brand); }
+.lg-sub{ color:var(--ink-3); font-size:13px; margin-top:2px; }
+.lg-card h2{ margin:22px 0 4px; font-size:19px; font-weight:700; }
+.lg-card p.hint{ margin:0 0 18px; color:var(--ink-2); font-size:13px; }
+.lg-users{ display:grid; gap:8px; margin-bottom:16px; max-height:min(42vh,300px); overflow-y:auto;
+  padding-right:4px; }
+.lg-u{ display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+  padding:9px 12px; border:1px solid var(--line-2); border-radius:var(--r-sm); background:#fff; }
+.lg-u:hover{ border-color:var(--brand); background:var(--brand-tint); }
+.lg-u.on{ border-color:var(--brand); background:var(--brand-tint); }
+.lg-u .av{ width:30px; height:30px; border-radius:50%; background:var(--soft-2); color:var(--ink-2);
+  display:grid; place-items:center; font-size:12px; font-weight:700; flex:0 0 30px; }
+.lg-u b{ font-size:13.5px; font-weight:600; display:block; }
+.lg-u span{ font-size:11.5px; color:var(--ink-3); }
+
+/* ---------- APP SHELL ---------- */
+.app{ display:flex; min-height:100vh; }
+.app.off{ display:none; }
+
+.side{ flex:0 0 var(--side-w); width:var(--side-w); background:var(--side-bg); color:var(--side-fg);
+  border-right:1px solid var(--side-line); position:sticky; top:0; height:100vh;
+  display:flex; flex-direction:column; z-index:40; }
+.brand{ padding:20px 18px 14px; }
+.brand b{ display:block; font-family:'Inter'; font-weight:800; font-size:17px; letter-spacing:.1em; color:var(--brand); }
+.brand span{ display:block; font-size:11px; color:var(--side-mut); margin-top:1px; }
+.nav{ flex:1; overflow-y:auto; padding:4px 12px 12px; }
+.nav h6{ margin:16px 0 6px; padding:0 8px; font-size:10.5px; font-weight:600;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--side-mut); }
+.nav h6:first-child{ margin-top:2px; }
+.nb{ display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+  padding:9px 10px; border-radius:var(--r-sm); color:var(--side-fg);
+  font-size:13.5px; font-weight:500; margin-bottom:1px; }
+.nb .ic{ width:18px; text-align:center; font-size:15px; opacity:.75; flex:0 0 18px; }
+.nb:hover{ background:var(--soft-2); }
+body.dark-side .nb:hover{ background:#212C34; }
+.nb.on{ background:var(--brand-tint); color:var(--brand); font-weight:600; }
+.nb.on .ic{ opacity:1; }
+body.dark-side .nb.on{ background:var(--brand); color:#fff; }
+.nb .bdg{ margin-left:auto; min-width:20px; padding:0 6px; height:19px; border-radius:var(--r-pill);
+  background:var(--soft-2); color:var(--ink-2); font-size:11px; font-weight:700;
+  display:grid; place-items:center; }
+.nb.on .bdg{ background:var(--brand); color:#fff; }
+body.dark-side .nb .bdg{ background:#28323A; color:#C9D1D9; }
+.side-foot{ border-top:1px solid var(--side-line); padding:12px; }
+.me{ display:flex; align-items:center; gap:10px; padding:6px 6px 8px; }
+.me .av{ width:34px; height:34px; border-radius:50%; background:var(--brand); color:#fff;
+  display:grid; place-items:center; font-size:13px; font-weight:700; flex:0 0 34px; }
+.me b{ display:block; font-size:13px; font-weight:600; line-height:1.3; }
+.me span{ display:block; font-size:11px; color:var(--side-mut); }
+.side-foot .out{ width:100%; padding:7px; border-radius:var(--r-sm); font-size:12.5px;
+  color:var(--side-mut); text-align:center; }
+.side-foot .out:hover{ background:var(--soft-2); color:var(--bad); }
+
+.main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.top{ position:sticky; top:0; z-index:30; background:rgba(255,255,255,.9);
+  backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
+  padding:14px 24px; display:flex; align-items:center; gap:14px; }
+.burger{ display:none; width:36px; height:36px; border-radius:var(--r-sm); border:1px solid var(--line-2);
+  font-size:17px; }
+.top h1{ margin:0; font-size:22px; font-weight:700; letter-spacing:-.3px; }
+.top .sub{ font-size:12.5px; color:var(--ink-3); margin-top:-2px; }
+.top .sp{ flex:1; }
+.srch{ position:relative; }
+.srch input{ width:230px; height:38px; padding:0 12px 0 34px; border:1px solid var(--line-2);
+  border-radius:var(--r-sm); background:#fff; font-size:13px; }
+.srch input:focus{ outline:2px solid var(--brand-tint); border-color:var(--brand); }
+.srch .mag{ position:absolute; left:11px; top:9px; color:var(--ink-3); font-size:14px; }
+.tbtn{ height:38px; padding:0 12px; border:1px solid var(--line-2); border-radius:var(--r-sm);
+  background:#fff; font-size:12.5px; font-weight:500; display:inline-flex; align-items:center; gap:7px; }
+.tbtn:hover{ border-color:var(--ink-3); }
+.tbtn.on{ border-color:var(--brand); background:var(--brand-tint); color:var(--brand); font-weight:600; }
+.wrap{ padding:20px 24px 70px; max-width:1460px; width:100%; }
+
+/* ---------- PROMO BANNER ---------- */
+.promo{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:11px 16px; margin-bottom:16px;
+  border-radius:var(--r-sm); background:linear-gradient(90deg,var(--brand) 0%,#FF3A2E 100%);
+  color:#fff; box-shadow:var(--sh); }
+.promo .tag{ background:rgba(255,255,255,.22); padding:2px 9px; border-radius:var(--r-pill);
+  font-size:11px; font-weight:700; letter-spacing:.05em; }
+.promo b{ font-size:14px; font-weight:600; }
+.promo .x{ margin-left:auto; color:#fff; opacity:.8; font-size:16px; padding:2px 6px; }
+
+/* ---------- CARDS / GRID ---------- */
+.card{ background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+  box-shadow:var(--sh); margin-bottom:16px; min-width:0; }
+.card>.hd{ padding:16px 20px 0; display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+.card>.hd h3{ margin:0; font-size:16px; font-weight:600; letter-spacing:-.2px; }
+.card>.hd .d{ font-size:12px; color:var(--ink-3); margin-top:1px; }
+.card>.hd .sp{ flex:1; }
+.card>.bd{ padding:14px 20px 18px; }
+.card>.bd.flush{ padding:12px 0 0; }
+.g2{ display:grid; grid-template-columns:1.4fr 1fr; gap:16px; align-items:start; }
+.g2e{ display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+.g3{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; align-items:start; }
+/* กันไม่ให้ตารางกว้าง ๆ ดันคอลัมน์ของกริดจนล้นจอมือถือ */
+.g2>*,.g2e>*,.g3>*,.kpis>*{ min-width:0; }
+.tw{ max-width:100%; }
+.kpis{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:16px; }
+.kpis.k3{ grid-template-columns:repeat(3,1fr); }
+.kpis.k6{ grid-template-columns:repeat(6,1fr); }
+.kpi{ background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+  box-shadow:var(--sh); padding:18px 20px; }
+.kpi .l{ font-size:10.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); }
+.kpi .v{ font-size:27px; font-weight:700; letter-spacing:-.6px; margin-top:5px; font-variant-numeric:tabular-nums; }
+.kpi .v small{ font-size:15px; font-weight:600; color:var(--ink-3); }
+.kpi .s{ font-size:12px; color:var(--ink-2); margin-top:3px; }
+.kpi .dt{ font-size:12px; font-weight:600; margin-top:3px; }
+.up{ color:var(--good); } .dn{ color:var(--bad); }
+
+/* ---------- SECTION TITLE ---------- */
+h4.sec{ margin:22px 0 10px; font-size:10.5px; font-weight:700; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--ink-3); }
+h4.sec:first-child{ margin-top:0; }
+
+/* ---------- TABLE ---------- */
+.tw{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+table{ width:100%; border-collapse:collapse; font-size:13px; }
+thead th{ background:var(--soft); color:var(--ink-2); font-size:11px; font-weight:600;
+  letter-spacing:.05em; text-transform:uppercase; text-align:left;
+  padding:10px 14px; border-bottom:1px solid var(--line-2); white-space:nowrap; }
+thead th.n{ text-align:right; }
+tbody td{ padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:middle; }
+tbody td.n{ text-align:right; font-variant-numeric:tabular-nums; }
+tbody tr:hover{ background:var(--soft); }
+tbody tr.clk{ cursor:pointer; }
+tbody tr:last-child td{ border-bottom:0; }
+td b{ font-weight:600; }
+.tsub{ font-size:11.5px; color:var(--ink-3); }
+.empty{ padding:34px 20px; text-align:center; color:var(--ink-3); font-size:13px; }
+.empty b{ display:block; color:var(--ink-2); font-size:14px; margin-bottom:3px; }
+
+/* ---------- PILL / TAG ---------- */
+.pill{ display:inline-flex; align-items:center; gap:5px; padding:2px 9px; border-radius:var(--r-pill);
+  font-size:11.5px; font-weight:600; border:1px solid; white-space:nowrap; }
+.p-good{ color:var(--good); background:var(--good-bg); border-color:var(--good-line); }
+.p-warn{ color:var(--warn); background:var(--warn-bg); border-color:var(--warn-line); }
+.p-bad{ color:var(--bad); background:var(--bad-bg); border-color:var(--bad-line); }
+.p-info{ color:var(--info); background:var(--info-bg); border-color:var(--info-line); }
+.p-mut{ color:var(--ink-2); background:var(--soft-2); border-color:var(--line-2); }
+.p-brand{ color:var(--brand); background:var(--brand-tint); border-color:#FFD5D9; }
+.tag{ font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  padding:2px 7px; border-radius:5px; }
+.t-real{ background:var(--good-bg); color:var(--good); }
+.t-sim{ background:var(--soft-2); color:var(--ink-3); }
+
+/* ---------- FORM ---------- */
+.f{ display:grid; gap:13px; }
+.f2{ display:grid; grid-template-columns:1fr 1fr; gap:13px; }
+.f3{ display:grid; grid-template-columns:repeat(3,1fr); gap:13px; }
+label.fl{ display:block; font-size:12px; font-weight:600; color:var(--ink-2); margin-bottom:5px; }
+.inp,select.inp,textarea.inp{ width:100%; height:40px; padding:0 12px; border:1px solid var(--line-2);
+  border-radius:var(--r-sm); background:#fff; font-size:13.5px; }
+textarea.inp{ height:auto; padding:9px 12px; resize:vertical; }
+.inp:focus{ outline:2px solid var(--brand-tint); border-color:var(--brand); }
+.inp.bad{ border-color:var(--bad); background:var(--bad-bg); }
+.inp:disabled{ background:var(--soft-2); color:var(--ink-3); }
+.hint{ font-size:11.5px; color:var(--ink-3); margin-top:4px; }
+.btn{ height:40px; padding:0 18px; border-radius:var(--r-sm); background:var(--brand); color:#fff;
+  font-size:13.5px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:7px; }
+.btn:hover{ background:var(--brand-pressed); }
+.btn.sec{ background:#fff; color:var(--ink); border:1px solid var(--line-2); }
+.btn.sec:hover{ background:var(--soft); border-color:var(--ink-3); }
+.btn.dgr{ background:var(--bad); }
+.btn.sm{ height:32px; padding:0 12px; font-size:12.5px; }
+.btn.ghost{ background:none; color:var(--brand); }
+.btn:disabled{ opacity:.45; cursor:not-allowed; }
+.btn.wide{ width:100%; }
+.lnk{ color:var(--brand); font-weight:600; font-size:12.5px; padding:2px 0; }
+.lnk:hover{ text-decoration:underline; }
+
+/* ---------- TABS / SEGMENTS ---------- */
+.tabs{ display:inline-flex; gap:3px; padding:3px; background:var(--soft-2); border-radius:var(--r-sm);
+  margin-bottom:14px; flex-wrap:wrap; }
+.tabs button{ padding:6px 14px; border-radius:7px; font-size:12.5px; font-weight:600; color:var(--ink-2); }
+.tabs button.on{ background:#fff; color:var(--brand); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.pane{ display:none; } .pane.on{ display:block; }
+.chips{ display:flex; gap:6px; flex-wrap:wrap; }
+.chip{ padding:5px 11px; border:1px solid var(--line-2); border-radius:var(--r-pill);
+  font-size:12px; font-weight:500; background:#fff; }
+.chip.on{ border-color:var(--brand); background:var(--brand-tint); color:var(--brand); font-weight:600; }
+
+/* ---------- CHARTS ---------- */
+.bars{ display:grid; gap:11px; }
+.bar .bl{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px; }
+.bar .bl b{ font-weight:600; }
+.bar .bt{ height:9px; border-radius:var(--r-pill); background:var(--brand-track); overflow:hidden; }
+.bar .bf{ height:100%; border-radius:var(--r-pill); background:var(--brand); }
+.bar .bf.g{ background:var(--good); } .bar .bf.w{ background:var(--warn); } .bar .bf.d{ background:var(--bad); }
+.vbars{ display:flex; align-items:flex-end; gap:10px; height:170px; padding-top:16px; }
+.vb{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; height:100%; }
+.vb .col{ width:100%; max-width:44px; height:100%; background:var(--brand-track); border-radius:7px;
+  display:flex; flex-direction:column; justify-content:flex-end; position:relative; }
+.vb .fill{ width:100%; background:var(--brand); border-radius:7px; min-height:3px; }
+.vb .cv{ position:absolute; top:-17px; left:0; right:0; text-align:center; font-size:11.5px; font-weight:700; }
+.vb .cl{ font-size:11px; color:var(--ink-3); margin-top:7px; text-align:center; }
+.spark{ display:block; width:100%; height:34px; margin-top:6px; }
+
+/* ---------- KANBAN / PIPELINE ---------- */
+.kan{ display:grid; grid-template-columns:repeat(5,1fr); gap:11px; }
+.kan.k6{ grid-template-columns:repeat(6,1fr); }
+.kcol{ background:var(--soft); border:1px solid var(--line); border-radius:var(--r-sm); padding:10px; min-height:130px; }
+.kcol h5{ margin:0 0 8px; font-size:11.5px; font-weight:700; color:var(--ink-2); display:flex; justify-content:space-between; }
+.kcol h5 span{ background:#fff; border:1px solid var(--line-2); border-radius:var(--r-pill);
+  padding:0 7px; font-size:11px; }
+.kcard{ background:#fff; border:1px solid var(--line-2); border-radius:8px; padding:9px 10px;
+  margin-bottom:7px; cursor:pointer; }
+.kcard:hover{ border-color:var(--brand); }
+.kcard b{ display:block; font-size:12.5px; font-weight:600; }
+.kcard span{ font-size:11px; color:var(--ink-3); }
+.flow{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.fstep{ flex:1; min-width:110px; background:#fff; border:1px solid var(--line-2); border-radius:var(--r-sm);
+  padding:12px; text-align:center; }
+.fstep .n{ font-size:24px; font-weight:700; color:var(--brand); font-variant-numeric:tabular-nums; }
+.fstep .t{ font-size:11.5px; color:var(--ink-2); margin-top:1px; }
+.fstep.done .n{ color:var(--good); }
+.farr{ color:var(--ink-3); font-size:14px; }
+
+/* ---------- GALLERY ---------- */
+.gal{ display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px; }
+.gcard{ border:1px solid var(--line-2); border-radius:var(--r-sm); overflow:hidden; background:#fff; }
+.gcard .ph{ height:110px; background:linear-gradient(135deg,var(--soft-2),#E9ECF1);
+  display:grid; place-items:center; color:var(--ink-3); font-size:11px; position:relative; }
+.gcard .ph .mo{ font-size:34px; opacity:.5; }
+.gcard .ph .qty{ position:absolute; top:8px; right:8px; background:var(--ink); color:#fff;
+  border-radius:var(--r-pill); padding:1px 9px; font-size:12px; font-weight:700; }
+.gcard .gb{ padding:10px 12px 12px; }
+.gcard .gb b{ font-size:13px; font-weight:600; display:block; }
+.gcard .gb .c{ font-size:11.5px; color:var(--ink-3); }
+.gcard .gb .cs{ display:flex; gap:4px; flex-wrap:wrap; margin-top:7px; }
+.dot{ width:9px; height:9px; border-radius:50%; border:1px solid rgba(0,0,0,.15); display:inline-block; }
+
+/* ---------- UPLOAD ---------- */
+.drop{ border:2px dashed var(--line-2); border-radius:var(--r-sm); padding:22px; text-align:center;
+  color:var(--ink-3); font-size:12.5px; background:var(--soft); cursor:pointer; }
+.drop:hover{ border-color:var(--brand); background:var(--brand-tint); color:var(--brand); }
+.flist{ margin-top:10px; display:grid; gap:6px; }
+.frow{ display:flex; align-items:center; gap:9px; padding:7px 10px; border:1px solid var(--line);
+  border-radius:8px; font-size:12.5px; background:#fff; }
+.frow .fx{ margin-left:auto; color:var(--ink-3); font-size:14px; }
+.frow .fx:hover{ color:var(--bad); }
+
+/* ---------- DRAWER / MODAL / TOAST ---------- */
+.ov{ position:fixed; inset:0; background:rgba(21,30,35,.42); z-index:60; opacity:0; pointer-events:none;
+  transition:opacity .2s; }
+.ov.on{ opacity:1; pointer-events:auto; }
+.drw{ position:fixed; top:0; right:0; bottom:0; width:min(540px,94vw); background:#fff; z-index:61;
+  box-shadow:var(--sh-lg); transform:translateX(102%); transition:transform .24s cubic-bezier(.2,.8,.2,1);
+  overflow-y:auto; }
+.drw.on{ transform:none; }
+.drw .dh{ position:sticky; top:0; background:#fff; border-bottom:1px solid var(--line);
+  padding:16px 20px; display:flex; align-items:center; gap:10px; }
+.drw .dh h3{ margin:0; font-size:16px; font-weight:600; }
+.drw .dh .x{ margin-left:auto; font-size:19px; color:var(--ink-3); padding:2px 6px; }
+.drw .db{ padding:18px 20px 40px; }
+.kv{ display:grid; grid-template-columns:130px 1fr; gap:7px 12px; font-size:13px; }
+.kv dt{ color:var(--ink-3); } .kv dd{ margin:0; font-weight:500; }
+.modal{ position:fixed; z-index:62; inset:0; display:none; align-items:center; justify-content:center; padding:20px; }
+.modal.on{ display:flex; }
+.mbox{ background:#fff; border-radius:var(--r); box-shadow:var(--sh-lg); width:min(720px,100%);
+  max-height:86vh; overflow-y:auto; }
+.mbox .mh{ padding:16px 20px; border-bottom:1px solid var(--line); display:flex; align-items:center; }
+.mbox .mh h3{ margin:0; font-size:16px; font-weight:600; }
+.mbox .mh .x{ margin-left:auto; font-size:19px; color:var(--ink-3); }
+.mbox .mb{ padding:18px 20px; }
+#toasts{ position:fixed; right:18px; bottom:18px; z-index:200; display:grid; gap:8px; max-width:390px; }
+.toast{ background:var(--ink); color:#fff; padding:11px 15px; border-radius:var(--r-sm);
+  box-shadow:var(--sh-lg); font-size:13px; display:flex; gap:9px; animation:tin .22s; }
+.toast .td{ width:8px; height:8px; border-radius:50%; background:var(--good); margin-top:6px; flex:0 0 8px; }
+.toast.bad .td{ background:#F97066; }
+.toast b{ font-weight:600; } .toast span{ display:block; color:#B9C0C7; font-size:11.5px; }
+@keyframes tin{ from{ opacity:0; transform:translateY(8px);} }
+
+/* ---------- SEARCH OVERLAY ---------- */
+#gs{ position:fixed; inset:0; z-index:70; background:rgba(21,30,35,.45); display:none;
+  align-items:flex-start; justify-content:center; padding:80px 20px; }
+#gs.on{ display:flex; }
+.gsbox{ width:min(660px,100%); background:#fff; border-radius:var(--r); box-shadow:var(--sh-lg); overflow:hidden; }
+.gsbox input{ width:100%; height:54px; border:0; border-bottom:1px solid var(--line); padding:0 18px; font-size:15px; }
+.gsbox input:focus{ outline:none; }
+.gsres{ max-height:52vh; overflow-y:auto; padding:6px; }
+.gsi{ display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:8px; cursor:pointer; }
+.gsi:hover{ background:var(--soft); }
+.gsi .ik{ width:26px; height:26px; border-radius:7px; background:var(--brand-tint); color:var(--brand);
+  display:grid; place-items:center; font-size:12px; flex:0 0 26px; }
+.gsi b{ font-size:13px; font-weight:600; } .gsi span{ font-size:11.5px; color:var(--ink-3); }
+
+/* ---------- DOCUMENT (print) ---------- */
+.doc{ background:#fff; border:1px solid var(--line-2); border-radius:8px; padding:26px; font-size:12.5px;
+  overflow-x:auto; }
+.doc h2{ margin:0 0 2px; font-size:17px; font-weight:700; text-align:center; }
+.doc .dsub{ text-align:center; color:var(--ink-3); font-size:11.5px; margin-bottom:16px; }
+.doc .co{ display:flex; justify-content:space-between; gap:16px; margin-bottom:14px; }
+.doc .co b{ font-size:13.5px; }
+.doc table{ font-size:12px; margin:12px 0; }
+.doc table th{ background:var(--soft-2); text-transform:none; letter-spacing:0; font-size:11.5px; }
+.doc .tot{ margin-left:auto; width:min(300px,100%); }
+.doc .tot div{ display:flex; justify-content:space-between; padding:4px 0; }
+.doc .tot div.g{ border-top:1px solid var(--ink); font-weight:700; margin-top:4px; padding-top:6px; }
+.doc .sig{ display:flex; gap:30px; margin-top:34px; }
+.doc .sig div{ flex:1; text-align:center; border-top:1px dotted var(--ink-3); padding-top:6px;
+  font-size:11.5px; color:var(--ink-3); }
+
+/* ---------- MISC ---------- */
+.note{ border:1px solid var(--info-line); background:var(--info-bg); color:var(--info);
+  border-radius:var(--r-sm); padding:11px 14px; font-size:12.5px; margin-bottom:14px; }
+.note.w{ border-color:var(--warn-line); background:var(--warn-bg); color:#B54708; }
+.note.b{ border-color:var(--bad-line); background:var(--bad-bg); color:var(--bad); }
+.note.g{ border-color:var(--good-line); background:var(--good-bg); color:#027A48; }
+.note b{ font-weight:700; }
+.screen{ display:none; } .screen.on{ display:block; animation:fu .18s; }
+@keyframes fu{ from{ opacity:0; transform:translateY(5px);} }
+.sw{ position:relative; display:inline-block; width:38px; height:22px; flex:0 0 38px; }
+.sw input{ opacity:0; width:0; height:0; }
+.sw i{ position:absolute; inset:0; background:var(--line-2); border-radius:var(--r-pill); transition:.18s; }
+.sw i:before{ content:''; position:absolute; width:16px; height:16px; left:3px; top:3px;
+  background:#fff; border-radius:50%; transition:.18s; }
+.sw input:checked + i{ background:var(--brand); }
+.sw input:checked + i:before{ transform:translateX(16px); }
+.swrow{ display:flex; align-items:center; gap:11px; padding:9px 0; border-bottom:1px solid var(--line); }
+.swrow:last-child{ border-bottom:0; }
+.swrow b{ font-size:13px; font-weight:600; display:block; }
+.swrow span{ font-size:11.5px; color:var(--ink-3); }
+.savebar{ position:sticky; bottom:0; background:rgba(255,255,255,.94); backdrop-filter:blur(8px);
+  border-top:1px solid var(--line); padding:12px 0; margin-top:16px; display:flex; gap:10px; align-items:center; }
+.cal{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
+.cal .cd{ min-height:78px; min-width:0; border:1px solid var(--line); border-radius:8px; padding:6px; font-size:11.5px; }
+.cal .hh{ min-width:0; }
+.cal .cd.mut{ opacity:.4; } .cal .cd.today{ border-color:var(--brand); background:var(--brand-tint); }
+.cal .cd .dn{ font-weight:700; color:var(--ink); font-size:12px; }
+.cal .ev{ margin-top:3px; padding:1px 5px; border-radius:4px; font-size:10.5px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cal .hh{ text-align:center; font-size:11px; font-weight:600; color:var(--ink-3); padding:4px 0; }
+
+@media (max-width:1200px){
+  .g2,.g2e,.g3{ grid-template-columns:1fr; }
+  .kpis,.kpis.k6{ grid-template-columns:repeat(2,1fr); }
+  .kan,.kan.k6{ grid-template-columns:repeat(2,1fr); }
+  .f3{ grid-template-columns:1fr 1fr; }
+}
+@media (max-width:900px){
+  .side{ position:fixed; left:0; top:0; transform:translateX(-101%); transition:transform .22s; }
+  .side.open{ transform:none; box-shadow:var(--sh-lg); }
+  .burger{ display:grid; place-items:center; }
+  .wrap{ padding:16px 14px 60px; }
+  .top{ padding:12px 14px; }
+  .srch input{ width:150px; }
+}
+@media (max-width:600px){
+  .kpis,.kpis.k3,.kpis.k6{ grid-template-columns:1fr; }
+  .f2,.f3{ grid-template-columns:1fr; }
+  .kan,.kan.k6{ grid-template-columns:1fr; }
+  .top h1{ font-size:17px; }
+  .top .sub{ display:none; }
+  .top>div:nth-child(2){ min-width:0; }
+  .srch{ display:none; }
+  .btn.wide-m{ width:100%; }
+  .doc{ padding:14px; }
+  .cal .cd{ min-height:58px; padding:4px; }
+  /* บนมือถือให้ตารางเลื่อนแนวนอนในกรอบตัวเอง แทนที่จะบีบทุกช่องจนอ่านไม่ออก */
+  .tw table{ min-width:580px; }
+  .tw .doc table{ min-width:0; }
+  thead th, tbody td{ white-space:nowrap; }
+  tbody td b{ white-space:normal; }
+}
+@media print{
+  .side,.top,.tabs,.savebar,.noprint,#toasts,.promo{ display:none !important; }
+  .app{ display:block; } .wrap{ padding:0; max-width:none; }
+  .card{ border:0; box-shadow:none; margin:0; }
+  .doc{ border:0; padding:0; }
+  .screen{ display:none !important; } .screen.on{ display:block !important; }
+  body{ background:#fff; font-size:11.5pt; }
+  @page{ size:A4; margin:12mm; }
+  table{ page-break-inside:auto; } tr{ page-break-inside:avoid; }
+  thead{ display:table-header-group; }
+}
+</style>
+</head>
+<body>
+<!-- ================= LOGIN ================= -->
+<div id="login">
+  <div class="bgdot" style="width:420px;height:420px;right:-120px;top:-90px"></div>
+  <div class="bgdot" style="width:260px;height:260px;left:-80px;bottom:-70px"></div>
+  <div class="lg-card">
+    <div class="lg-logo">FAMAI MOTOR</div>
+    <div class="lg-sub">ระบบหลังบ้าน · 3 สาขา</div>
+    <h2>เข้าสู่ระบบ</h2>
+    <p class="hint">เลือกผู้ใช้เพื่อดูระบบในมุมมองของบทบาทนั้น — เมนูและตัวเลขจะถูกกรองตามสิทธิ์จริง</p>
+    <div class="lg-users" id="lgUsers"></div>
+    <div style="margin-bottom:14px">
+      <label class="fl">รหัสผ่าน</label>
+      <input class="inp" type="password" value="demo1234" id="lgPw">
+      <div class="hint">ต้นแบบ — ไม่ตรวจรหัสผ่านจริง ระบบจริงจะเข้ารหัสก่อนเก็บเสมอ</div>
+    </div>
+    <button class="btn wide" id="lgGo">เข้าสู่ระบบ</button>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div class="app off" id="app">
+  <aside class="side" id="side">
+    <div class="brand"><b>FAMAI MOTOR</b><span>ระบบหลังบ้าน v0.6</span></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <div class="me"><div class="av" id="meAv">?</div><div style="min-width:0"><b id="meName">—</b><span id="meRole">—</span></div></div>
+      <button class="out" id="btnOut">ออกจากระบบ</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <button class="burger" id="burger">☰</button>
+      <div><h1 id="pgT">Dashboard</h1><div class="sub" id="pgS">ภาพรวมทั้งกิจการ</div></div>
+      <div class="sp"></div>
+      <div class="srch noprint"><span class="mag">🔍</span><input id="gsInput" placeholder="ค้นหาทั้งระบบ… (/)" readonly></div>
+      <button class="tbtn noprint" id="btnCust" title="ซ่อนต้นทุนและกำไรทุกหน้า ตอนหันจอให้ลูกค้าดู">👁 โหมดลูกค้า</button>
+      <button class="tbtn noprint" id="btnFont" title="สลับฟอนต์ไทยมีหัว / ไม่มีหัว">ก ฟอนต์</button>
+      <button class="tbtn noprint" id="btnSide" title="สลับสี sidebar ขาว / ดำ">◐ ธีม</button>
+    </header>
+
+    <div class="wrap">
+      <div class="promo" id="promo" style="display:none"></div>
+
+      <!-- ============ 1. DASHBOARD ============ -->
+      <section class="screen on" id="s-dash">
+        <div class="chips" style="margin-bottom:14px">
+          <span style="font-size:12px;color:var(--ink-3);align-self:center;margin-right:4px">ช่วงเวลา</span>
+          <button class="chip" data-r="1">วันนี้</button>
+          <button class="chip on" data-r="7">7 วัน</button>
+          <button class="chip" data-r="30">30 วัน</button>
+          <button class="chip" data-r="90">90 วัน</button>
+          <button class="chip" data-r="365">1 ปี</button>
+          <span style="flex:1"></span>
+          <select class="inp" id="dBranch" style="width:auto;height:32px;font-size:12.5px"></select>
+        </div>
+        <div class="kpis k6" id="dKpis"></div>
+        <div class="g2">
+          <div>
+            <div class="card"><div class="hd"><h3>ยอดขายตามช่วงเวลา</h3><div class="sp"></div><span class="tag t-sim">ข้อมูลสมมุติ</span></div><div class="bd"><div class="vbars" id="chTrend"></div></div></div>
+            <div class="g2e">
+              <div class="card"><div class="hd"><h3>สต๊อกแยกสาขา</h3><div class="sp"></div><span class="tag t-real">ข้อมูลจริง</span></div><div class="bd"><div class="bars" id="chBranch"></div></div></div>
+              <div class="card"><div class="hd"><h3>รถค้างนานแค่ไหน</h3><div class="sp"></div><span class="tag t-real">ข้อมูลจริง</span></div><div class="bd"><div class="vbars" id="chAge" style="height:150px"></div></div></div>
+            </div>
+            <div class="card"><div class="hd"><h3>สต๊อกแยกตามรุ่น</h3><div class="sp"></div><span class="tag t-real">ข้อมูลจริง</span></div><div class="bd"><div class="bars" id="chModel"></div></div></div>
+          </div>
+          <div>
+            <div class="card"><div class="hd"><h3>สิ่งที่ต้องจัดการวันนี้</h3></div><div class="bd" id="todo"></div></div>
+            <div class="card"><div class="hd"><h3>ทะเบียน</h3><div class="sp"></div><button class="lnk" data-go="reg">ดูทั้งหมด</button></div><div class="bd" id="dReg"></div></div>
+            <div class="card"><div class="hd"><h3>อันดับเซลล์</h3><div class="sp"></div><span class="tag t-sim">ข้อมูลสมมุติ</span></div><div class="bd flush"><div class="tw"><table id="chStaff"></table></div></div></div>
+            <div class="card"><div class="hd"><h3>เตือนสต๊อกใกล้หมด</h3></div><div class="bd" id="dAlert"></div></div>
+          </div>
+        </div>
+        <div class="card"><div class="hd"><h3>รายการขายล่าสุด</h3><div class="sp"></div><button class="lnk" id="expSales">⤓ Export CSV</button></div><div class="bd flush"><div class="tw"><table id="recentSales"></table></div></div></div>
+      </section>
+
+      <!-- ============ 2. ปฏิทินงาน ============ -->
+      <section class="screen" id="s-cal">
+        <div class="card"><div class="hd">
+          <button class="btn sec sm" id="calPrev">‹</button>
+          <h3 id="calTitle" style="min-width:190px;text-align:center">—</h3>
+          <button class="btn sec sm" id="calNext">›</button>
+          <div class="sp"></div>
+          <span class="pill p-brand">งานติดตาม</span><span class="pill p-warn">ทะเบียน</span><span class="pill p-info">วันลา</span>
+        </div><div class="bd"><div class="cal" id="calGrid"></div></div></div>
+        <div class="card"><div class="hd"><h3 id="calDayT">งานของวันที่เลือก</h3></div><div class="bd" id="calDay"></div></div>
+      </section>
+
+      <!-- ============ 3. รับรถเข้าสต๊อก ============ -->
+      <section class="screen" id="s-recv">
+        <div class="g2">
+          <div class="card"><div class="hd"><h3>บันทึกรถเข้าสต๊อก</h3><div class="d">ทีละคัน · ระบบดึงราคาจากตารางราคายามาฮ่าให้อัตโนมัติ</div></div><div class="bd">
+            <div class="f">
+              <div class="f2">
+                <div><label class="fl">สาขา</label><select class="inp" id="rBranch"></select></div>
+                <div><label class="fl">วันที่รับ</label><input class="inp" type="date" id="rDate"></div>
+              </div>
+              <div class="f2">
+                <div><label class="fl">แบบรถ (รหัสรุ่น)</label><select class="inp" id="rVariant"></select></div>
+                <div><label class="fl">สี</label><select class="inp" id="rColor"></select></div>
+              </div>
+              <div class="f2">
+                <div><label class="fl">เลขเครื่อง</label><input class="inp mono" id="rEngine" placeholder="E34RE-060112"></div>
+                <div><label class="fl">เลขถัง</label><input class="inp mono" id="rFrame" placeholder="MLEUE364111400318"></div>
+              </div>
+              <div class="f3">
+                <div><label class="fl">ต้นทุน (฿)</label><input class="inp num" id="rCost" readonly></div>
+                <div><label class="fl">VAT 7% (฿)</label><input class="inp num" id="rVat" readonly></div>
+                <div><label class="fl">ราคาขายแนะนำ (฿)</label><input class="inp num" id="rRetail" readonly></div>
+              </div>
+              <div id="rPriceWarn"></div>
+              <div>
+                <label class="fl">แนบบิล / ใบทะเบียน / รูปรถ</label>
+                <label class="drop" for="rFile">📎 คลิกเพื่อเลือกไฟล์ — PDF, JPG, PNG (เลือกได้หลายไฟล์)</label>
+                <input type="file" id="rFile" multiple style="display:none">
+                <div class="flist" id="rFiles"></div>
+              </div>
+              <div id="rPrev"></div>
+            </div>
+            <div class="savebar"><button class="btn" id="rSave">บันทึกรับรถ</button><span class="hint" id="rHint">ตรวจเลขเครื่องและเลขถังซ้ำก่อนบันทึกทุกครั้ง</span></div>
+          </div></div>
+          <div>
+            <div class="card"><div class="hd"><h3>รับเข้าล่าสุด</h3></div><div class="bd flush"><div class="tw"><table id="rRecent"></table></div></div></div>
+            <div class="card"><div class="hd"><h3>โปรโมชันสัปดาห์นี้</h3></div><div class="bd" id="rPromo"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 4. สต๊อกรถ ============ -->
+      <section class="screen" id="s-stock">
+        <div class="card"><div class="bd">
+          <div class="f3" style="margin-bottom:12px">
+            <div><label class="fl">สาขา</label><select class="inp" id="stBranch"></select></div>
+            <div><label class="fl">รุ่น</label><select class="inp" id="stModel"></select></div>
+            <div><label class="fl">สถานะ</label><select class="inp" id="stStatus">
+              <option value="">ทุกสถานะ</option><option value="available">พร้อมขาย</option>
+              <option value="reserved">จองแล้ว</option><option value="in_transfer">กำลังโอนย้าย</option>
+              <option value="sold">ขายแล้ว</option></select></div>
+          </div>
+          <input class="inp" id="stQ" placeholder="ค้นหา เลขเครื่อง / เลขถัง / รุ่น / รหัสรุ่น…">
+          <div class="tabs" style="margin-top:12px"><button class="on" data-v="table">ตาราง</button><button data-v="gal">แกลเลอรี</button></div>
+          <div id="stSum" style="font-size:12.5px;color:var(--ink-2);margin-bottom:10px"></div>
+        </div>
+        <div class="bd flush" id="stTableWrap"><div class="tw"><table id="stTable"></table></div></div>
+        <div class="bd" id="stGalWrap" style="display:none"><div class="gal" id="stGal"></div></div>
+        </div>
+      </section>
+
+      <!-- ============ 5. ขายรถ ============ -->
+      <section class="screen" id="s-sell">
+        <div class="tabs" id="sellTabs"><button class="on" data-p="p1">เปิดการขาย</button><button data-p="p2">เทียบไฟแนนซ์</button><button data-p="p3">เอกสารที่ออก</button></div>
+        <div class="pane on" id="p1"><div class="g2">
+          <div class="card"><div class="hd"><h3>รายละเอียดการขาย</h3></div><div class="bd">
+            <div class="f">
+              <div><label class="fl">เลือกคันรถ</label><select class="inp" id="sUnit"></select></div>
+              <div class="f2">
+                <div><label class="fl">ชื่อลูกค้า</label><input class="inp" id="sCust" placeholder="คุณศิริพร ทวีทรัพย์"></div>
+                <div><label class="fl">เบอร์โทร</label><input class="inp" id="sPhone" placeholder="081-555-2210"></div>
+              </div>
+              <div class="f3">
+                <div><label class="fl">ราคาตั้ง (฿)</label><input class="inp num" id="sList" readonly></div>
+                <div><label class="fl">ส่วนลด (฿)</label><input class="inp num" id="sDisc" value="0"></div>
+                <div><label class="fl">ราคาสุทธิ (฿)</label><input class="inp num" id="sNet" readonly></div>
+              </div>
+              <div class="f2">
+                <div><label class="fl">วิธีชำระ</label><select class="inp" id="sPay"><option value="cash">เงินสด</option><option value="finance">เงินผ่อน (ไฟแนนซ์)</option></select></div>
+                <div><label class="fl">พนักงานขาย</label><select class="inp" id="sSales"></select></div>
+              </div>
+              <div class="f3" id="sFinBox" style="display:none">
+                <div><label class="fl">บริษัทไฟแนนซ์</label><select class="inp" id="sFinCo"></select></div>
+                <div><label class="fl">เงินดาวน์ (฿)</label><input class="inp num" id="sDown" value="5000"></div>
+                <div><label class="fl">จำนวนงวด</label><select class="inp" id="sTerm"></select></div>
+              </div>
+              <div><label class="fl">ของแถม</label><div class="chips" id="sFree"></div></div>
+              <div><label class="fl">หมายเหตุ</label><textarea class="inp" id="sNote" rows="2" placeholder="บันทึกจริงพร้อมใบขาย"></textarea></div>
+            </div>
+            <div class="savebar"><button class="btn" id="sSave">บันทึกการขาย</button><button class="btn sec" id="sReset">ล้างฟอร์ม</button></div>
+          </div></div>
+          <div>
+            <div class="card"><div class="hd"><h3>สรุปดีล</h3></div><div class="bd" id="sSummary"></div></div>
+            <div class="card"><div class="hd"><h3>ผลที่จะเกิดขึ้น</h3></div><div class="bd" id="sImpact"></div></div>
+          </div>
+        </div></div>
+        <div class="pane" id="p2"><div class="card"><div class="hd"><h3>เทียบค่างวด 2 ไฟแนนซ์</h3><div class="d">ดอกเบี้ยคงที่ · ค่างวด = เงินต้น × (1 + ดอกเบี้ย × งวด) ÷ งวด</div></div><div class="bd">
+          <div class="note w"><b>เรตดอกเบี้ยยังเป็นค่าสมมุติ</b> — ต้องใส่เรตจริงของแต่ละไฟแนนซ์ในหน้าตั้งค่าก่อนใช้งานจริง</div>
+          <div class="f3" style="margin-bottom:14px">
+            <div><label class="fl">ราคาสุทธิ (฿)</label><input class="inp num" id="fNet"></div>
+            <div><label class="fl">เงินดาวน์ (฿)</label><input class="inp num" id="fDown" value="5000"></div>
+            <div><label class="fl">เงินต้น (฿)</label><input class="inp num" id="fPrin" readonly></div>
+          </div>
+          <div class="tw"><table id="finCmp"></table></div>
+        </div></div></div>
+        <div class="pane" id="p3"><div class="g2e">
+          <div class="card"><div class="hd"><h3>เอกสารที่ต้องออก</h3></div><div class="bd" id="docList"></div></div>
+          <div class="card"><div class="hd"><h3>ตัวอย่างเอกสาร</h3><div class="sp"></div><button class="btn sec sm noprint" id="docPrint">🖨 พิมพ์</button></div><div class="bd"><div id="docPrev"></div></div></div>
+        </div></div>
+      </section>
+
+      <!-- ============ 6. โอนย้ายระหว่างสาขา ============ -->
+      <section class="screen" id="s-transfer">
+        <div class="g2">
+          <div class="card"><div class="hd"><h3>ขอโอนย้ายรถ</h3><div class="d">ย้ายรถจากสาขาที่ค้างนานไปสาขาที่ขายดี</div></div><div class="bd">
+            <div class="f">
+              <div><label class="fl">เลือกคันรถ</label><select class="inp" id="tUnit"></select></div>
+              <div class="f2">
+                <div><label class="fl">จากสาขา</label><input class="inp" id="tFrom" readonly></div>
+                <div><label class="fl">ไปสาขา</label><select class="inp" id="tTo"></select></div>
+              </div>
+              <div><label class="fl">เหตุผล</label><input class="inp" id="tNote" placeholder="เช่น ค้างสต๊อก 689 วัน · สาขาปลายทางมีลูกค้ารอ"></div>
+            </div>
+            <div class="savebar"><button class="btn" id="tSave">ส่งคำขอโอนย้าย</button></div>
+          </div></div>
+          <div class="card"><div class="hd"><h3>รายการโอนย้าย</h3></div><div class="bd flush"><div class="tw"><table id="tList"></table></div></div></div>
+        </div>
+      </section>
+
+      <!-- ============ 7. ใบเสนอราคา ============ -->
+      <section class="screen" id="s-quote">
+        <div class="card"><div class="hd"><h3>สร้างใบเสนอราคา</h3><div class="d">เทียบได้ 2 คัน × 2 ไฟแนนซ์ ในใบเดียว ตามที่ระบุในผังงาน</div><div class="sp"></div><button class="btn sec sm noprint" id="qPrint">🖨 พิมพ์</button></div><div class="bd">
+          <div class="f3">
+            <div><label class="fl">ชื่อลูกค้า</label><input class="inp" id="qName" value="คุณสมชาย ใจดี"></div>
+            <div><label class="fl">เบอร์โทร</label><input class="inp" id="qPhone" value="081-234-5678"></div>
+            <div><label class="fl">ยืนราคาถึง</label><input class="inp" type="date" id="qUntil"></div>
+          </div>
+          <div class="f2" style="margin-top:14px">
+            <div><label class="fl">คันที่ 1</label><select class="inp" id="qV1"></select></div>
+            <div><label class="fl">คันที่ 2 (ถ้ามี)</label><select class="inp" id="qV2"></select></div>
+          </div>
+          <div class="f3" style="margin-top:14px">
+            <div><label class="fl">ไฟแนนซ์ A</label><select class="inp" id="qF1"></select></div>
+            <div><label class="fl">ไฟแนนซ์ B</label><select class="inp" id="qF2"></select></div>
+            <div><label class="fl">เงินดาวน์ (฿)</label><input class="inp num" id="qDown" value="5000"></div>
+          </div>
+        </div></div>
+        <div class="card"><div class="bd"><div id="qDoc"></div></div></div>
+      </section>
+
+      <!-- ============ 8. ลูกค้าและติดตาม ============ -->
+      <section class="screen" id="s-crm">
+        <div class="tabs" id="crmTabs"><button class="on" data-p="c1">งานติดตาม</button><button data-p="c2">รายชื่อลูกค้า</button><button data-p="c3">เพิ่มลูกค้าใหม่</button></div>
+        <div class="pane on" id="c1"><div class="g2">
+          <div class="card"><div class="hd"><h3>งานที่ต้องทำ</h3><div class="sp"></div><span id="taskCnt" class="pill p-brand"></span></div><div class="bd flush"><div class="tw"><table id="taskTable"></table></div></div></div>
+          <div><div class="card"><div class="hd"><h3>Pipeline ลูกค้า</h3></div><div class="bd" id="funnel"></div></div>
+          <div class="card"><div class="hd"><h3>รอบการติดตาม</h3></div><div class="bd" id="cadence"></div></div></div>
+        </div></div>
+        <div class="pane" id="c2"><div class="card"><div class="hd"><h3>ฐานลูกค้า</h3><div class="sp"></div><input class="inp" id="cQ" placeholder="ค้นหา ชื่อ / เบอร์ / เลขเครื่อง" style="width:250px;height:34px"></div><div class="bd flush"><div class="tw"><table id="custTable"></table></div></div></div></div>
+        <div class="pane" id="c3"><div class="card"><div class="hd"><h3>เพิ่มลูกค้า / Lead</h3></div><div class="bd">
+          <div class="f2">
+            <div><label class="fl">ชื่อ</label><input class="inp" id="cName"></div>
+            <div><label class="fl">เบอร์โทร</label><input class="inp" id="cPhone"></div>
+          </div>
+          <div class="f3" style="margin-top:13px">
+            <div><label class="fl">รู้จักจาก</label><select class="inp" id="cSrc"><option>Facebook</option><option>เดินเข้าร้าน</option><option>เพื่อนแนะนำ</option><option>LINE</option><option>TikTok</option></select></div>
+            <div><label class="fl">รุ่นที่สนใจ</label><select class="inp" id="cModel"></select></div>
+            <div><label class="fl">สถานะ</label><select class="inp" id="cStage"><option>เข้ามาดูรถ</option><option>สนใจ</option><option>ทำสัญญา</option><option>ผ่าน</option><option>ไม่ผ่าน</option><option>รับรถสำเร็จ</option></select></div>
+          </div>
+          <div class="savebar"><button class="btn" id="cSave">บันทึกลูกค้า</button></div>
+        </div></div></div>
+      </section>
+
+      <!-- ============ 9. ทะเบียน ============ -->
+      <section class="screen" id="s-reg">
+        <div class="kpis k3" id="regKpi"></div>
+        <div class="card"><div class="hd"><h3>สายงานทะเบียน 6 ขั้น</h3><div class="d">ขายแล้ว → ส่งไฟแนนซ์ → อนุมัติ → รอทะเบียน → ป้ายขาว → ส่งมอบแล้ว</div></div><div class="bd">
+          <div class="kan k6" id="regKan"></div>
+        </div></div>
+        <div class="card"><div class="hd"><h3>รายการทั้งหมด</h3><div class="sp"></div><button class="lnk" id="expReg">⤓ Export CSV</button></div><div class="bd flush"><div class="tw"><table id="regTable"></table></div></div></div>
+      </section>
+
+      <!-- ============ 10. เคสสินเชื่อ ============ -->
+      <section class="screen" id="s-fin">
+        <div class="kpis" id="finKpi"></div>
+        <div class="card"><div class="hd"><h3>สถานะเคสสินเชื่อ</h3><div class="sp"></div>
+          <select class="inp" id="finCo" style="width:auto;height:34px;font-size:12.5px"></select></div><div class="bd">
+          <div class="kan" id="finKan"></div>
+        </div></div>
+        <div class="card"><div class="hd"><h3>อัตราการอนุมัติแยกตามไฟแนนซ์</h3></div><div class="bd flush"><div class="tw"><table id="finRate"></table></div></div></div>
+      </section>
+
+      <!-- ============ 11. เงินค้างรับ ============ -->
+      <section class="screen" id="s-ar">
+        <div class="kpis k3" id="arKpi"></div>
+        <div class="card"><div class="hd"><h3>เงินค้างรับ</h3><div class="d">ใบขายที่ยังไม่ได้รับเงินครบ — แยกลูกค้าเงินสด / ไฟแนนซ์</div><div class="sp"></div><button class="lnk" id="expAr">⤓ Export CSV</button></div><div class="bd flush"><div class="tw"><table id="arTable"></table></div></div></div>
+      </section>
+
+      <!-- ============ 12. ศูนย์ซ่อม ============ -->
+      <section class="screen" id="s-service">
+        <div class="tabs" id="svTabs"><button class="on" data-p="v1">เปิดใบงาน</button><button data-p="v2">ใบงานทั้งหมด</button><button data-p="v3">เตือนเช็กระยะ</button></div>
+        <div class="pane on" id="v1"><div class="g2">
+          <div class="card"><div class="hd"><h3>รับรถเข้าซ่อม</h3><div class="d">ค้นด้วยเลขเครื่องหรือเลขถัง — ถ้าเป็นลูกค้าเก่าระบบจะดึงประวัติมาให้เอง</div></div><div class="bd">
+            <div class="f">
+              <div><label class="fl">เลขเครื่อง หรือ เลขถัง</label>
+                <div style="display:flex;gap:8px"><input class="inp mono" id="svSearch" placeholder="E34RE-057401"><button class="btn sec" id="svFind" style="flex:0 0 auto">ค้นหา</button></div>
+                <div class="hint">ลองพิมพ์เลขเครื่องจริงจากหน้าสต๊อก เช่น E34RE-057401</div>
+              </div>
+              <div id="svFound"></div>
+              <div class="f2">
+                <div><label class="fl">ชื่อลูกค้า</label><input class="inp" id="svName"></div>
+                <div><label class="fl">เบอร์โทร</label><input class="inp" id="svPhone"></div>
+              </div>
+              <div class="f3">
+                <div><label class="fl">เลขไมล์ (กม.)</label><input class="inp num" id="svKm" placeholder="1050"></div>
+                <div><label class="fl">ประเภทบริการ</label><select class="inp" id="svType"><option>เช็กระยะ</option><option>ซ่อม</option><option>เคลม</option><option>เปลี่ยนอะไหล่</option><option>อื่นๆ</option></select></div>
+                <div><label class="fl">ช่างผู้รับผิดชอบ</label><select class="inp" id="svTech"></select></div>
+              </div>
+              <div><label class="fl">อาการ / สิ่งที่ต้องทำ</label><textarea class="inp" id="svSymptom" rows="2"></textarea></div>
+              <div class="f2">
+                <div><label class="fl">ค่าแรง (฿)</label><input class="inp num" id="svLabor" value="300"></div>
+                <div><label class="fl">อะไหล่ที่ใช้</label><select class="inp" id="svPart"></select></div>
+              </div>
+            </div>
+            <div class="savebar"><button class="btn" id="svSave">เปิดใบงาน · ลงเวลาเข้า</button><span class="hint">ลงเวลาเข้าจริงตามนาฬิกาเครื่อง</span></div>
+          </div></div>
+          <div class="card"><div class="hd"><h3>ประวัติของรถคันนี้</h3></div><div class="bd" id="svHistory"><div class="empty"><b>ยังไม่ได้ค้นหา</b>กรอกเลขเครื่องหรือเลขถังแล้วกดค้นหา</div></div></div>
+        </div></div>
+        <div class="pane" id="v2"><div class="card"><div class="hd"><h3>ใบงานซ่อม</h3><div class="sp"></div><button class="lnk" id="expSv">⤓ Export CSV</button></div><div class="bd flush"><div class="tw"><table id="svTable"></table></div></div></div></div>
+        <div class="pane" id="v3"><div class="card"><div class="hd"><h3>เตือนเช็กระยะตามเลขไมล์</h3><div class="d">รอบ 500 / 1,000 / 4,000 / 8,000 กม. — ตั้งค่าได้ที่หน้าตั้งค่าระบบ</div><div class="sp"></div><button class="btn sec sm" id="svLine">สร้างรายการส่ง LINE</button></div><div class="bd flush"><div class="tw"><table id="svRemind"></table></div></div></div></div>
+      </section>
+
+      <!-- ============ 13. สต๊อกอะไหล่ ============ -->
+      <section class="screen" id="s-parts">
+        <div class="kpis k3" id="pKpi"></div>
+        <div class="g2">
+          <div class="card"><div class="hd"><h3>อะไหล่คงเหลือ</h3><div class="sp"></div><button class="lnk" id="expParts">⤓ Export CSV</button></div><div class="bd flush"><div class="tw"><table id="pTable"></table></div></div></div>
+          <div class="card"><div class="hd"><h3>เพิ่ม / รับอะไหล่</h3></div><div class="bd">
+            <div class="f">
+              <div class="f2"><div><label class="fl">รหัส</label><input class="inp" id="pCode" placeholder="PART-041"></div>
+              <div><label class="fl">ชื่อ</label><input class="inp" id="pName" placeholder="ผ้าเบรกหน้า"></div></div>
+              <div class="f3"><div><label class="fl">ต้นทุน</label><input class="inp num" id="pCost" value="0"></div>
+              <div><label class="fl">ราคาขาย</label><input class="inp num" id="pPrice" value="0"></div>
+              <div><label class="fl">จำนวน</label><input class="inp num" id="pQty" value="0"></div></div>
+              <div><label class="fl">จุดสั่งซื้อ (ต่ำกว่านี้ให้เตือน)</label><input class="inp num" id="pMin" value="3"></div>
+            </div>
+            <div class="savebar"><button class="btn" id="pSave">บันทึก</button></div>
+          </div></div>
+        </div>
+      </section>
+
+      <!-- ============ 14. เบิกและขายอะไหล่ ============ -->
+      <section class="screen" id="s-partsale">
+        <div class="g2">
+          <div class="card"><div class="hd"><h3>ตัดสต๊อกอะไหล่</h3></div><div class="bd">
+            <div class="f">
+              <div><label class="fl">อะไหล่</label><select class="inp" id="msPart"></select></div>
+              <div class="f3">
+                <div><label class="fl">จำนวน</label><input class="inp num" id="msQty" value="1"></div>
+                <div><label class="fl">ประเภท</label><select class="inp" id="msType"><option value="sale">ขายหน้าร้าน</option><option value="job">เบิกเข้าใบงานซ่อม</option></select></div>
+                <div><label class="fl">สาขา</label><select class="inp" id="msBranch"></select></div>
+              </div>
+              <div id="msPrev"></div>
+            </div>
+            <div class="savebar"><button class="btn" id="msSave">บันทึก</button></div>
+          </div></div>
+          <div class="card"><div class="hd"><h3>การเคลื่อนไหวล่าสุด</h3></div><div class="bd flush"><div class="tw"><table id="msTable"></table></div></div></div>
+        </div>
+      </section>
+
+      <!-- ============ 15. ของแถม ============ -->
+      <section class="screen" id="s-gift">
+        <div class="g2">
+          <div class="card"><div class="hd"><h3>สต๊อกของแถม</h3><div class="d">ตัดสต๊อกอัตโนมัติเมื่อแถมไปกับการขาย</div></div><div class="bd flush"><div class="tw"><table id="gTable"></table></div></div></div>
+          <div class="card"><div class="hd"><h3>เพิ่ม / รับของแถม</h3></div><div class="bd">
+            <div class="f">
+              <div><label class="fl">ชื่อของแถม</label><input class="inp" id="gName" placeholder="หมวกกันน็อก"></div>
+              <div class="f3"><div><label class="fl">ต้นทุน/ชิ้น</label><input class="inp num" id="gCost" value="0"></div>
+              <div><label class="fl">จำนวน</label><input class="inp num" id="gQty" value="0"></div>
+              <div><label class="fl">จุดสั่งซื้อ</label><input class="inp num" id="gMin" value="5"></div></div>
+              <div><label class="fl">สาขา</label><select class="inp" id="gBranch"></select></div>
+            </div>
+            <div class="savebar"><button class="btn" id="gSave">บันทึก</button></div>
+          </div></div>
+        </div>
+      </section>
+
+      <!-- ============ 16. ค่าใช้จ่าย ============ -->
+      <section class="screen" id="s-expense">
+        <div class="kpis k3" id="eKpi"></div>
+        <div class="g2">
+          <div class="card"><div class="hd"><h3>บันทึกค่าใช้จ่าย</h3></div><div class="bd">
+            <div class="f">
+              <div class="f2">
+                <div><label class="fl">หมวดหมู่</label><select class="inp" id="eCat"></select></div>
+                <div><label class="fl">สาขา</label><select class="inp" id="eBranch"></select></div>
+              </div>
+              <div class="f2">
+                <div><label class="fl">จำนวนเงิน (฿)</label><input class="inp num" id="eAmt" value="0"></div>
+                <div><label class="fl">วันที่</label><input class="inp" type="date" id="eDate"></div>
+              </div>
+              <div class="f2">
+                <div><label class="fl">ผู้ขาย / ผู้รับเงิน</label><input class="inp" id="eVendor"></div>
+                <div><label class="fl">เลขที่ใบกำกับภาษี</label><input class="inp" id="eInv"></div>
+              </div>
+              <div>
+                <label class="fl">แนบใบเสร็จ</label>
+                <label class="drop" for="eFile">📎 คลิกเพื่อแนบใบเสร็จ — ไม่แนบจะถูกขึ้นธง "ใบเสร็จหาย"</label>
+                <input type="file" id="eFile" multiple style="display:none">
+                <div class="flist" id="eFiles"></div>
+              </div>
+            </div>
+            <div class="savebar"><button class="btn" id="eSave">บันทึกค่าใช้จ่าย</button></div>
+          </div></div>
+          <div class="card"><div class="hd"><h3>ค่าใช้จ่ายล่าสุด</h3><div class="sp"></div><button class="lnk" id="expExp">⤓ Export CSV</button></div><div class="bd flush"><div class="tw"><table id="eTable"></table></div></div></div>
+        </div>
+      </section>
+
+      <!-- ============ 17. ลงเวลาและลา ============ -->
+      <section class="screen" id="s-hr">
+        <div class="tabs" id="hrTabs"><button class="on" data-p="h1">ลงเวลาวันนี้</button><button data-p="h2">ใบลา</button></div>
+        <div class="pane on" id="h1"><div class="g2">
+          <div class="card"><div class="hd"><h3>ลงเวลาวันนี้</h3><div class="d" id="hrDate"></div></div><div class="bd flush"><div class="tw"><table id="attTable"></table></div></div></div>
+          <div class="card"><div class="hd"><h3>สรุปเวลาทำงาน</h3></div><div class="bd" id="attSum"></div></div>
+        </div></div>
+        <div class="pane" id="h2"><div class="g2">
+          <div class="card"><div class="hd"><h3>ใบลา</h3></div><div class="bd flush"><div class="tw"><table id="lvTable"></table></div></div></div>
+          <div class="card"><div class="hd"><h3>ยื่นใบลา</h3></div><div class="bd">
+            <div class="f">
+              <div><label class="fl">พนักงาน</label><select class="inp" id="lvWho"></select></div>
+              <div><label class="fl">ประเภท</label><select class="inp" id="lvType"><option>ลาป่วย</option><option>ลากิจ</option><option>ลาพักร้อน</option></select></div>
+              <div class="f2"><div><label class="fl">ตั้งแต่</label><input class="inp" type="date" id="lvFrom"></div>
+              <div><label class="fl">ถึง</label><input class="inp" type="date" id="lvTo"></div></div>
+            </div>
+            <div class="savebar"><button class="btn" id="lvSave">ยื่นใบลา</button></div>
+          </div></div>
+        </div></div>
+      </section>
+
+      <!-- ============ 18. เงินเดือน ============ -->
+      <section class="screen" id="s-payroll">
+        <div class="card"><div class="hd"><h3>งวดเงินเดือน</h3><div class="d" id="prPeriod"></div><div class="sp"></div>
+          <button class="btn sec sm" id="prSsn">รายงานประกันสังคม</button>
+          <button class="btn sec sm" id="prBank">ไฟล์โอนธนาคาร</button>
+          <button class="lnk" id="expPr">⤓ Export CSV</button></div>
+          <div class="bd flush"><div class="tw"><table id="prTable"></table></div></div></div>
+        <div class="g2e">
+          <div class="card"><div class="hd"><h3>สลิปเงินเดือน</h3><div class="sp"></div>
+            <select class="inp" id="prWho" style="width:auto;height:32px;font-size:12.5px"></select>
+            <button class="btn sec sm noprint" id="prPrint">🖨 พิมพ์</button></div><div class="bd"><div id="prSlip"></div></div></div>
+          <div class="card"><div class="hd"><h3>ค่าคอมมิชชั่นเดือนนี้</h3><div class="d">คิดจากกำไรขั้นต้นของรถที่ขายได้</div></div><div class="bd flush"><div class="tw"><table id="prComm"></table></div></div></div>
+        </div>
+      </section>
+
+      <!-- ============ 19. บัญชีผู้ใช้ ============ -->
+      <section class="screen" id="s-users">
+        <div class="card"><div class="hd"><h3>ผู้ใช้ทั้งหมด</h3></div><div class="bd flush"><div class="tw"><table id="uTable"></table></div></div></div>
+        <div class="card"><div class="hd"><h3>บทบาทและสิทธิ์</h3><div class="d">สิทธิ์ทุกตัวถูกบังคับใช้จริง — ทั้งการกรองเมนูและการซ่อนตัวเงิน</div></div><div class="bd flush"><div class="tw"><table id="roleTable"></table></div></div></div>
+      </section>
+
+      <!-- ============ 20. นำเข้าข้อมูล ============ -->
+      <section class="screen" id="s-imp">
+        <div class="note"><b>ต้นแบบนี้ใช้ข้อมูลจริงจากไฟล์ยามาฮ่า 5 ไฟล์</b> — 50 คัน · 3 สาขา · อ่านและตรวจสอบมาแล้วตาม <code>docs/00-yamaha-export-analysis.md</code></div>
+        <div class="g2">
+          <div class="card"><div class="hd"><h3>นำเข้ารายงานการรับรถ</h3><div class="d">รองรับ .xls รูปแบบเดิมของยามาฮ่า 34 คอลัมน์</div></div><div class="bd">
+            <label class="drop" for="impFile">📄 เลือกไฟล์ .xls จากระบบยามาฮ่า</label>
+            <input type="file" id="impFile" accept=".xls,.xlsx,.csv" style="display:none">
+            <div class="flist" id="impFiles"></div>
+            <div style="margin-top:14px"><label class="fl">หรือเลือกไฟล์ตัวอย่างที่มีอยู่แล้ว</label>
+              <select class="inp" id="impPick"></select></div>
+            <div id="impPrev" style="margin-top:14px"></div>
+            <div class="savebar"><button class="btn" id="impRun">ตรวจสอบไฟล์</button><button class="btn sec" id="impGo" disabled>ยืนยันนำเข้า</button></div>
+          </div></div>
+          <div class="card"><div class="hd"><h3>กฎการตรวจสอบที่ระบบใช้</h3></div><div class="bd" id="impRules"></div></div>
+        </div>
+        <div class="card"><div class="hd"><h3>ประวัติการนำเข้า</h3></div><div class="bd flush"><div class="tw"><table id="impLog"></table></div></div></div>
+      </section>
+
+      <!-- ============ 21. ตั้งค่าระบบ ============ -->
+      <section class="screen" id="s-settings">
+        <div class="g2e">
+          <div class="card"><div class="hd"><h3>ข้อมูลบริษัท</h3><div class="d">ใช้พิมพ์บนใบเสร็จและใบกำกับภาษี — v0.5 ฝังไว้ในโค้ด แก้ไม่ได้</div></div><div class="bd">
+            <div class="f">
+              <div><label class="fl">ชื่อบริษัท</label><input class="inp" id="cfCo"></div>
+              <div><label class="fl">ที่อยู่</label><textarea class="inp" id="cfAddr" rows="2"></textarea></div>
+              <div class="f2"><div><label class="fl">เลขประจำตัวผู้เสียภาษี</label><input class="inp mono" id="cfTax"></div>
+              <div><label class="fl">โทรศัพท์</label><input class="inp" id="cfPhone"></div></div>
+            </div>
+          </div></div>
+          <div class="card"><div class="hd"><h3>เกณฑ์การทำงาน</h3></div><div class="bd">
+            <div class="f2">
+              <div><label class="fl">รถค้างสต๊อกเกิน (วัน)</label><input class="inp num" id="cfAging"></div>
+              <div><label class="fl">เตือนรอทะเบียนเกิน (วัน)</label><input class="inp num" id="cfReg"></div>
+              <div><label class="fl">เตือนรุ่นเหลือน้อยกว่า (คัน)</label><input class="inp num" id="cfLow"></div>
+              <div><label class="fl">VAT (%)</label><input class="inp num" id="cfVat"></div>
+              <div><label class="fl">รอบติดตามลูกค้า (วัน)</label><input class="inp" id="cfCad"></div>
+              <div><label class="fl">รอบเช็กระยะ (กม.)</label><input class="inp" id="cfKm"></div>
+              <div><label class="fl">เวลาเข้างาน</label><input class="inp" type="time" id="cfIn"></div>
+              <div><label class="fl">เวลาเลิกงาน</label><input class="inp" type="time" id="cfOut"></div>
+              <div><label class="fl">อัตรา OT (เท่า)</label><input class="inp num" id="cfOt"></div>
+              <div><label class="fl">ค่าคอมต่อกำไร (%)</label><input class="inp num" id="cfComm"></div>
+            </div>
+          </div></div>
+        </div>
+        <div class="card"><div class="hd"><h3>ไฟแนนซ์</h3><div class="d">ใส่เรตจริงของแต่ละเจ้าที่นี่</div></div><div class="bd flush"><div class="tw"><table id="cfFin"></table></div></div></div>
+        <div class="savebar"><button class="btn" id="cfSave">บันทึกการตั้งค่า</button><button class="btn sec" id="cfReset">คืนค่าเริ่มต้น</button></div>
+      </section>
+
+      <!-- ============ 22. ผังกระบวนการ ============ -->
+      <section class="screen" id="s-flow">
+        <div class="note"><b>ผังนี้ถอดมาจากไวท์บอร์ดโดยตรง</b> — ดูต้นฉบับที่ <code>reference/whiteboard/</code></div>
+        <div id="flowWrap"></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="ov"></div>
+<aside class="drw" id="drw"><div class="dh"><h3 id="drwT">รายละเอียด</h3><button class="x" id="drwX">✕</button></div><div class="db" id="drwB"></div></aside>
+<div class="modal" id="modal"><div class="mbox"><div class="mh"><h3 id="mdT">—</h3><button class="x" id="mdX">✕</button></div><div class="mb" id="mdB"></div></div></div>
+<div id="gs"><div class="gsbox"><input id="gsQ" placeholder="ค้นหา ลูกค้า / เบอร์ / เลขเครื่อง / เลขถัง / รุ่น / ใบขาย…"><div class="gsres" id="gsR"></div></div></div>
+<div id="toasts"></div>
+<style>
+#printArea{ display:none; }
+@media print{
+  body.print-mode > *{ display:none !important; }
+  body.print-mode > #printArea{ display:block !important; }
+  #printArea .doc{ border:0; padding:0; }
+}
+</style>
+<div id="printArea"></div>
+<script>
+/* ============================================================================
+   Famai Motor Group — ต้นแบบระบบหลังบ้าน v0.6
+   ข้อมูลรถ 50 คัน = ข้อมูลจริงจากไฟล์ยามาฮ่า 5 ไฟล์ (reference/yamaha-export/)
+   ข้อมูลการขาย ลูกค้า พนักงาน อะไหล่ = ข้อมูลสมมุติสำหรับสาธิต (ติดป้ายกำกับไว้)
+   ============================================================================ */
+const U_RAW=[["FMG01","B6FU00","010C","0500","ฟ้า","FINN","E34RE-057401","MLEUE364111399878","2024-09-11",40800,2856,"110967fg.xls","SMG01/REC_P240900039","SMG01/RMC240900002","2024-11-09","1946710"],["FMG01","B6FU00","010B","0600","เขียว","FINN","E34RE-053394","MLEUE364111399297","2024-09-11",40800,2856,"110967fg.xls","SMG01/REC_P240900039","SMG01/RMC240900002","2024-11-09","1946710"],["FMG01","B6FU00","010B","0600","เขียว","FINN","E34RE-057336","MLEUE364111399710","2024-09-11",40800,2856,"110967fg.xls","SMG01/REC_P240900039","SMG01/RMC240900002","2024-11-09","1946710"],["FMG01","B6FU00","010B","0600","เขียว","FINN","E34RE-057369","MLEUE364111399799","2024-09-11",40800,2856,"110967fg.xls","SMG01/REC_P240900039","SMG01/RMC240900002","2024-11-09","1946710"],["FMG01","B6FT00","010B","0100","แดง","FINN","E34RE-056037","MLEUE362111149086","2024-09-11",39000,2730,"110967fg.xls","SMG01/REC_P240900040","SMG01/RMC240900003","2024-11-09","1946713"],["FMG01","B6FS00","010A","0300","ดำ","FINN","E34RE-059453","MLEUE366111022832","2024-09-11",36000,2520,"110967fg.xls","SMG01/REC_P240900041","SMG01/RMC240900004","2024-11-09","1946709"],["FMG01","B6FU00","010A","0200","น้ำเงิน","FINN","E34RE-056590","MLEUE364111399600","2024-09-11",40800,2856,"110967fg.xls","SMG01/REC_P240900042","SMG01/RMC240900005","2024-11-09","1946711"],["FMG01","B6FU00","010A","0200","น้ำเงิน","FINN","E34RE-056652","MLEUE364111399596","2024-09-11",40800,2856,"110967fg.xls","SMG01/REC_P240900042","SMG01/RMC240900005","2024-11-09","1946711"],["FMG01","B6FU00","010A","0200","น้ำเงิน","FINN","E34RE-056685","MLEUE364111399569","2024-09-11",40800,2856,"110967fg.xls","SMG01/REC_P240900042","SMG01/RMC240900005","2024-11-09","1946711"],["FMG01","B6FS00","010A","0300","ดำ","FINN","E34RE-059443","MLEUE366111022833","2024-09-11",36000,2520,"110967fg.xls","SMG01/REC_P240900043","SMG01/RMC240900006","2024-11-09","1946712"],["FMG01","B6FS00","010A","0300","ดำ","FINN","E34RE-059444","MLEUE366111022837","2024-09-11",36000,2520,"110967fg.xls","SMG01/REC_P240900043","SMG01/RMC240900006","2024-11-09","1946712"],["FMG01","B6FS00","010A","0300","ดำ","FINN","E34RE-059445","MLEUE366111022836","2024-09-11",36000,2520,"110967fg.xls","SMG01/REC_P240900043","SMG01/RMC240900006","2024-11-09","1946712"],["FMG01","B6FV00","010C","0700","เทา","FINN","E34RE-056465","MLEUE365111269488","2024-09-11",42400,2968,"110967fg.xls","SMG01/REC_P240900044","SMG01/RMC240900007","2024-11-09","1946738"],["FMG01","B6FV00","010C","0700","เทา","FINN","E34RE-056467","MLEUE365111269487","2024-09-11",42400,2968,"110967fg.xls","SMG01/REC_P240900044","SMG01/RMC240900007","2024-11-09","1946738"],["FMG01","B6FV00","010C","0700","เทา","FINN","E34RE-056472","MLEUE365111269486","2024-09-11",42400,2968,"110967fg.xls","SMG01/REC_P240900044","SMG01/RMC240900007","2024-11-09","1946738"],["FMG01","B6FT00","010B","0100","แดง","FINN","E34RE-056699","MLEUE362111149286","2024-09-11",39000,2730,"110967fg.xls","SMG01/REC_P240900045","SMG01/RMC240900008","2024-11-09","1946739"],["FMG01","B6FT00","010B","0100","แดง","FINN","E34RE-056728","MLEUE362111149288","2024-09-11",39000,2730,"110967fg.xls","SMG01/REC_P240900045","SMG01/RMC240900008","2024-11-09","1946739"],["FMM01","D13100","010A","0200","น้ำเงิน","Aerox","G3W2E-010432","RLCSG982111001176","2026-04-02",84100,5887,"020469fmm.xls","FMM01/REC_P260400004","FMM01/RMC260400001","2026-04-02","2072149"],["FMM01","BJKE00","010A","1200","น้ำตาล","Grand Filano Hybrid","E34SE-306083","MLESEK52111505046","2026-04-02",64600,4522,"020469fmm.xls","FMM01/REC_P260400003","FMM01/RMC260400002","2026-04-02","2072150"],["FMM01","BJKE00","010A","1200","น้ำตาล","Grand Filano Hybrid","E34SE-307099","MLESEK52111505010","2026-04-02",64600,4522,"020469fmm.xls","FMM01/REC_P260400003","FMM01/RMC260400002","2026-04-02","2072150"],["FMG01","DR9200","010B","0700","เทา","XMAX 300","H345E-0182784","MH3SH222111056637","2026-07-22",153100,10717,"fg220769.xls","SMG01/REC_P260700145","SMG01/RMC260700038","2026-07-22","2104778"],["FMG01","DR9200","010B","0700","เทา","XMAX 300","H345E-0182918","MH3SH222111056760","2026-07-22",153100,10717,"fg220769.xls","SMG01/REC_P260700145","SMG01/RMC260700038","2026-07-22","2104778"],["FMG01","DR9400","010A","0300","ดำ","XMAX 300","H345E-0183131","MH3SH222111056898","2026-07-22",167700,11739,"fg220769.xls","SMG01/REC_P260700145","SMG01/RMC260700038","2026-07-22","2104778"],["FMG01","DR9400","010A","0300","ดำ","XMAX 300","H345E-0183140","MH3SH222111056922","2026-07-22",167700,11739,"fg220769.xls","SMG01/REC_P260700145","SMG01/RMC260700038","2026-07-22","2104778"],["FMG01","DR9200","010C","0200","น้ำเงิน","XMAX 300","H345E-0183711","MH3SH222111057128","2026-07-22",153100,10717,"fg220769.xls","SMG01/REC_P260700145","SMG01/RMC260700038","2026-07-22","2104778"],["FMG01","DR9200","010C","0200","น้ำเงิน","XMAX 300","H345E-0183729","MH3SH222111057126","2026-07-22",153100,10717,"fg220769.xls","SMG01/REC_P260700145","SMG01/RMC260700038","2026-07-22","2104778"],["FMG01","DR9200","010D","0100","แดง","XMAX 300","H345E-0182610","MH3SH222111056487","2026-07-22",153100,10717,"fg220769.xls","SMG01/REC_P260700145","SMG01/RMC260700038","2026-07-22","2104778"],["FMG01","DR9200","010D","0100","แดง","XMAX 300","H345E-0182710","MH3SH222111056596","2026-07-22",153100,10717,"fg220769.xls","SMG01/REC_P260700145","SMG01/RMC260700038","2026-07-22","2104778"],["FMG01","BJKD00","010A","0500","ฟ้า","Grand Filano Hybrid","E34SE-360814","MLESEK52111380692","2026-07-22",60500,4235,"fg220769.xls","SMG01/REC_P260700147","SMG01/RMC260700039","2026-07-22","2104886"],["FMG01","BJKD00","010A","0500","ฟ้า","Grand Filano Hybrid","E34SE-360823","MLESEK52111380610","2026-07-22",60500,4235,"fg220769.xls","SMG01/REC_P260700147","SMG01/RMC260700039","2026-07-22","2104886"],["FMG01","DA6200","010A","0300","ดำ","FINN","E35NE-012425","MLEUE368111004705","2026-07-22",42000,2940,"fg220769.xls","SMG01/REC_P260700146","SMG01/RMC260700040","2026-07-22","2104885"],["FMG01","DA6200","010A","0300","ดำ","FINN","E35NE-012562","MLEUE368111004762","2026-07-22",42000,2940,"fg220769.xls","SMG01/REC_P260700146","SMG01/RMC260700040","2026-07-22","2104885"],["FMM01","D18100","010C","0700","เทา","PG-1","E34NE-090994","RLCUE425111029638","2026-07-22",50500,3535,"fmm220769.xls","FMM01/REC_P260700043","FMM01/RMC260700012","2026-07-20","2104033"],["FMM01","D18100","010C","0700","เทา","PG-1","E34NE-091107","RLCUE425111029794","2026-07-22",50500,3535,"fmm220769.xls","FMM01/REC_P260700043","FMM01/RMC260700012","2026-07-20","2104033"],["FMM01","D18100","010C","0700","เทา","PG-1","E34NE-091248","RLCUE425111029890","2026-07-22",50500,3535,"fmm220769.xls","FMM01/REC_P260700043","FMM01/RMC260700012","2026-07-20","2104033"],["FMM01","BTF200","010E","0100","แดง","NMAX","G3V5E-0887547","MH3SG576111027714","2026-07-22",85000,5950,"fmm220769.xls","FMM01/REC_P260700043","FMM01/RMC260700012","2026-07-20","2104033"],["FMM01","BTF200","010E","0100","แดง","NMAX","G3V5E-0887565","MH3SG576111027707","2026-07-22",85000,5950,"fmm220769.xls","FMM01/REC_P260700043","FMM01/RMC260700012","2026-07-20","2104033"],["FMM01","BTF300","010A","0307","ดำ-เทา","NMAX","G3V5E-0865055","MH3SG576111027060","2026-07-22",92800,6496,"fmm220769.xls","FMM01/REC_P260700043","FMM01/RMC260700012","2026-07-20","2104033"],["FMM01","D18100","010D","1200","น้ำตาล","PG-1","E34NE-087033","RLCUE425111026126","2026-07-22",50500,3535,"fmm220769.xls","FMM01/REC_P260700042","FMM01/RMC260700013","2026-07-20","2104034"],["FMM01","D18100","010D","1200","น้ำตาล","PG-1","E34NE-087648","RLCUE425111026740","2026-07-22",50500,3535,"fmm220769.xls","FMM01/REC_P260700042","FMM01/RMC260700013","2026-07-20","2104034"],["FMM01","D18100","010D","1200","น้ำตาล","PG-1","E34NE-088188","RLCUE425111027282","2026-07-22",50500,3535,"fmm220769.xls","FMM01/REC_P260700042","FMM01/RMC260700013","2026-07-20","2104034"],["FMM01","BJKC00","010C","0200","น้ำเงิน","Grand Filano Hybrid","E34SE-364744","MLESEK51111266109","2026-07-22",56600,3962,"fmm220769.xls","FMM01/REC_P260700044","FMM01/RMC260700014","2026-07-22","2104887"],["FMM01","BJKC00","010B","0300","ดำ","Grand Filano Hybrid","E34SE-366824","MLESEK51111266603","2026-07-22",56600,3962,"fmm220769.xls","FMM01/REC_P260700044","FMM01/RMC260700014","2026-07-22","2104887"],["FCG01","BJKD00","010A","0500","ฟ้า","Grand Filano Hybrid","E34SE-360780","MLESEK52111380525","2026-07-25",60500,4235,"fcg250769.xls","FMG01/REC_P260700097","FMG01/RMC260700012","2026-07-25","2105775"],["FCG01","BJKD00","010A","0500","ฟ้า","Grand Filano Hybrid","E34SE-360924","MLESEK52111381177","2026-07-25",60500,4235,"fcg250769.xls","FMG01/REC_P260700097","FMG01/RMC260700012","2026-07-25","2105775"],["FCG01","BJKD00","010A","0500","ฟ้า","Grand Filano Hybrid","E34SE-364812","MLESEK52111381144","2026-07-25",60500,4235,"fcg250769.xls","FMG01/REC_P260700097","FMG01/RMC260700012","2026-07-25","2105775"],["FCG01","BJKD00","010A","0500","ฟ้า","Grand Filano Hybrid","E34SE-365282","MLESEK52111381420","2026-07-25",60500,4235,"fcg250769.xls","FMG01/REC_P260700097","FMG01/RMC260700012","2026-07-25","2105775"],["FCG01","DA6200","010B","0100","แดง","FINN","E35NE-013834","MLEUE368111005150","2026-07-25",42000,2940,"fcg250769.xls","FMG01/REC_P260700096","FMG01/RMC260700013","2026-07-25","2105776"],["FCG01","DA6200","010B","0100","แดง","FINN","E35NE-013838","MLEUE368111005129","2026-07-25",42000,2940,"fcg250769.xls","FMG01/REC_P260700096","FMG01/RMC260700013","2026-07-25","2105776"],["FCG01","DA6200","010B","0100","แดง","FINN","E35NE-013926","MLEUE368111005280","2026-07-25",42000,2940,"fcg250769.xls","FMG01/REC_P260700096","FMG01/RMC260700013","2026-07-25","2105776"]];
+
+/* ---------- helpers ---------- */
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+const NOW = new Date();
+const iso = d => d.toISOString().slice(0,10);
+const TODAY = iso(NOW);
+const TH_M = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const fmt  = n => (Math.round(n||0)).toLocaleString('en-US');
+const baht = n => fmt(n)+' ฿';
+const num  = v => { const n=parseFloat(String(v).replace(/,/g,'')); return isNaN(n)?0:n; };
+function thDate(s){ if(!s) return '—'; const d=new Date(s+'T00:00:00'); if(isNaN(d)) return s;
+  return d.getDate()+' '+TH_M[d.getMonth()]+' '+(d.getFullYear()+543); }
+function thShort(s){ const d=new Date(s+'T00:00:00'); return d.getDate()+' '+TH_M[d.getMonth()]; }
+function days(a,b){ return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/864e5); }
+function addDays(s,n){ const d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return iso(d); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+let _id=0; const nid = p => p+(++_id);
+function pick(a,i){ return a[i%a.length]; }
+
+/* ---------- ตารางราคายามาฮ่า 5 มี.ค. 2569 (reference/deck/yamaha-price-list…) ---------- */
+const PRICE = {
+ B6FS00:{m:'FINN',th:'ฟินน์ ล้อซี่ลวดดรัมเบรก',cat:'Moped',cc:114,yr:2567,cost:36000,vat:2520,retail:41200,c:{'010A':'ดำ'}},
+ B6FT00:{m:'FINN',th:'ฟินน์ ล้อซี่ลวด',cat:'Moped',cc:114,yr:2567,cost:39000,vat:2730,retail:44900,c:{'010A':'ดำ','010B':'แดง'}},
+ B6FU00:{m:'FINN',th:'ฟินน์ ล้อแม็ก',cat:'Moped',cc:114,yr:2567,cost:40800,vat:2856,retail:46900,c:{'010A':'น้ำเงิน','010B':'เขียว','010C':'ฟ้า'}},
+ B6FV00:{m:'FINN',th:'ฟินน์ ยูบีเอส',cat:'Moped',cc:114,yr:2567,cost:42400,vat:2968,retail:48700,c:{'010A':'ดำ','010B':'เขียว','010C':'เทา'}},
+ BJKC00:{m:'Grand Filano Hybrid',th:'แกรนด์ ฟีลาโน่ ไฮบริด',cat:'Automatic',cc:124.96,yr:2569,cost:56600,vat:3962,retail:64700,c:{'010A':'เขียว','010B':'ดำ','010C':'น้ำเงิน','010D':'เทา'}},
+ BJKD00:{m:'Grand Filano Hybrid',th:'แกรนด์ ฟีลาโน่ ไฮบริด (ABS)',cat:'Automatic',cc:124.96,yr:2569,cost:60500,vat:4235,retail:69200,c:{'010A':'ฟ้า','010B':'ฟ้า/ดำ','010C':'ม่วง','010F':'น้ำเงิน'}},
+ BTF200:{m:'NMAX',th:'เอ็นแม็กซ์ สแตนดาร์ด',cat:'Automatic',cc:155.09,yr:2569,cost:85000,vat:5950,retail:98500,c:{'010C':'ขาว','010D':'ดำ','010E':'แดง','010F':'น้ำเงิน'}},
+ BTF300:{m:'NMAX',th:'เอ็นแม็กซ์ สแตนดาร์ด',cat:'Automatic',cc:155.09,yr:2569,cost:92800,vat:6496,retail:107500,c:{'010A':'ดำ/เทา'}},
+ D18100:{m:'PG-1',th:'พีจี 1',cat:'Moped',cc:114,yr:2568,cost:50500,vat:3535,retail:57500,c:{'010A':'ฟ้า','010B':'แดง','010C':'เทา','010D':'น้ำตาล'}},
+ DR9200:{m:'XMAX 300',th:'เอ็กซ์แม็กซ์ คอนเน็คเต็ด',cat:'Automatic',cc:292.26,yr:2569,cost:153100,vat:10717,retail:176100,c:{'010A':'ดำ/เทา','010B':'เทา','010C':'น้ำเงิน','010D':'แดง'}},
+ DR9400:{m:'XMAX 300',th:'เอ็กซ์แม็กซ์ คอนเน็คเต็ด',cat:'Automatic',cc:292.26,yr:2569,cost:167700,vat:11739,retail:193000,c:{'010A':'ดำ'}}
+};
+/* แบบรถที่ไม่มีในตารางราคา 5 มี.ค. 2569 → หาราคาขายไม่ได้ 8 คัน (ดู docs/00) */
+const NO_PRICE = ['DA6200','BJKE00','D13100'];
+const COLOR_HEX = {'ดำ':'#1A1A1A','แดง':'#D62828','น้ำเงิน':'#1B4F9C','ฟ้า':'#4FA3D9','เขียว':'#2E9E5B',
+  'เทา':'#8A8F94','น้ำตาล':'#7A5230','ดำ-เทา':'#3A4045','ดำ/เทา':'#3A4045','ขาว':'#EDEDED','ม่วง':'#6B3FA0','ฟ้า/ดำ':'#2C5F8A'};
+
+/* ---------- ตั้งค่าระบบ ---------- */
+const DEFAULTS = {
+  company:'บริษัท ฟ้าใหม่ มอเตอร์ กรุ๊ป จำกัด',
+  address:'99/9 หมู่ 5 ต.ตัวอย่าง อ.เมือง จ.ตัวอย่าง 10000',
+  taxId:'0 1055 07000 64 5', phone:'02-000-0000',
+  aging:90, regDays:30, lowStock:2, vat:7,
+  cadence:'7,30,90,365,1095', km:'500,1000,4000,8000',
+  workIn:'08:30', workOut:'17:30', otRate:1.5, commPct:8
+};
+let CFG = Object.assign({}, DEFAULTS);
+
+/* ---------- สาขา ---------- */
+const BRANCHES = [
+  {code:'FMG01', name:'Famai Motor Group',  prefix:'FMG', taxId:'0 1055 07000 64 5', branchNo:'00000', addr:'สำนักงานใหญ่'},
+  {code:'FMM01', name:'Famai Motor',        prefix:'FMM', taxId:'0 1055 07000 64 5', branchNo:'00001', addr:'สาขา 1'},
+  {code:'FCG01', name:'Famai Center Group', prefix:'FCG', taxId:'0 1055 07000 64 5', branchNo:'00002', addr:'สาขา 2'}
+];
+const bName = c => (BRANCHES.find(b=>b.code===c)||{}).name || c;
+const bOf   = c => BRANCHES.find(b=>b.code===c) || BRANCHES[0];
+
+/* ---------- แปลงข้อมูลจริงเป็นคันรถ ---------- */
+let UNITS = U_RAW.map((r,i)=>{
+  const [branch,variant,ccode,colorCode,color,model,engine,frame,recv,cost,vat,src,recvNo,poNo,poDate,invNo] = r;
+  const p = PRICE[variant];
+  return { id:'UN'+(i+1), branch, variant, colorCode:ccode, yColor:colorCode, color, model,
+    modelTh:p?p.th:'', cat:p?p.cat:'—', cc:p?p.cc:null, year:p?p.yr:null,
+    sku:variant+ccode, engine, frame, received:recv, cost, vat,
+    retail: p? p.retail : null, status:'available',
+    src, recvNo, poNo, poDate, invNo, photo:null, files:[] };
+});
+const age = u => days(u.received, TODAY);
+const gpOf = u => (u.retail==null? null : u.retail - u.cost);
+
+/* ---------- ข้อมูลสาธิต ---------- */
+const SALESPEOPLE = ['เซลล์บิว','เซลล์สนุ๊กเกอร์','เซลล์หมูแดง'];
+const FIN_CO = [
+  {id:'F1', name:'กรุงศรี ออโต้', rate:1.35, active:true},
+  {id:'F2', name:'ธนชาต',        rate:1.48, active:true},
+  {id:'F3', name:'ทิสโก้',        rate:1.42, active:true}
+];
+const DEMO_BUYERS = [
+  ['คุณศิริพร ทวีทรัพย์','081-555-2210','Facebook',0,'finance','F1',3],
+  ['คุณอนันต์ พูนผล','089-221-3390','เดินเข้าร้าน',0,'cash','',6],
+  ['คุณกาญจนา แสงทอง','092-114-7788','เพื่อนแนะนำ',1,'finance','F2',9],
+  ['คุณธนกฤต วงศ์ไทย','086-330-2214','Facebook',1,'finance','F1',13],
+  ['คุณพิมพ์ชนก ศรีสุข','094-772-1180','LINE',2,'cash','',18],
+  ['คุณวีระ ชูเกียรติ','081-909-3321','เดินเข้าร้าน',0,'finance','F3',22],
+  ['คุณนภัสสร ทองดี','087-556-1223','TikTok',1,'finance','F2',27],
+  ['คุณสมชาย ใจดี','081-234-5678','Facebook',2,'cash','',33],
+  ['คุณรัตนา พงษ์ศิริ','090-887-6612','เพื่อนแนะนำ',0,'finance','F1',41],
+  ['คุณเอกชัย มั่นคง','085-443-9901','เดินเข้าร้าน',1,'cash','',48],
+  ['คุณจิราพร แก้วใส','093-221-0098','LINE',2,'finance','F3',55],
+  ['คุณประเสริฐ ยิ่งยง','081-667-2233','Facebook',0,'finance','F2',62]
+];
+const LEADS = [
+  ['คุณวิว สายชล','082-119-3344','Facebook','สนใจ','BJKC00'],
+  ['คุณต้น ภูผา','095-772-1109','เดินเข้าร้าน','เข้ามาดูรถ','D18100'],
+  ['คุณแนน สุดา','088-224-6611','LINE','ทำสัญญา','BTF200'],
+  ['คุณโอ๊ต ธีระ','081-338-9922','TikTok','ไม่ผ่าน','DR9200']
+];
+
+let CUSTOMERS=[], SALES=[], TASKS=[], REGS=[], FINCASES=[], AR=[], SERVICE=[], REMIND=[], TRANSFERS=[];
+const REG_STAGES = ['ขายแล้ว','ส่งไฟแนนซ์','อนุมัติ','รอทะเบียน','ป้ายขาว','ส่งมอบแล้ว'];
+const FIN_STAGES = ['ส่งเรื่อง','ยื่นเอกสาร','รอผล','ติดตามต่อ','อนุมัติแล้ว'];
+
+function seedDemo(){
+  CUSTOMERS=[]; SALES=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[];
+  /* คืนสถานะรถทุกคันก่อนสร้างข้อมูลสาธิตใหม่ ไม่งั้นเข้าระบบรอบสองจะไม่มีข้อมูลเลย */
+  UNITS.forEach(u=>{ u.status='available'; });
+  const sellable = UNITS.filter(u=>u.retail!=null);
+  DEMO_BUYERS.forEach((b,i)=>{
+    const [name,phone,src,spIdx,pay,finId,ago] = b;
+    const u = sellable[i*3 % sellable.length];
+    if(!u || u.status==='sold') return;
+    const cust = {id:nid('CU'), name, phone, src, stage:'รับรถสำเร็จ', branch:u.branch,
+      variant:u.variant, owner:pick(SALESPEOPLE,spIdx), demo:true};
+    CUSTOMERS.push(cust);
+    const soldAt = addDays(TODAY, -ago);
+    const disc = [0,1500,2000,3000][i%4];
+    const net = u.retail - disc;
+    const freeCost = 450+320;
+    u.status='sold';
+    const s = {id:nid('SA'), branch:u.branch, unitId:u.id, custId:cust.id, sales:pick(SALESPEOPLE,spIdx),
+      soldAt, list:u.retail, disc, net, cost:u.cost, freeCost, gp:net-u.cost-freeCost,
+      pay, finId, down: pay==='finance'?5000:0, term: pay==='finance'?[24,36,48][i%3]:null,
+      note:'', demo:true};
+    SALES.push(s);
+    /* ทะเบียน */
+    const stage = REG_STAGES[Math.min(5, Math.floor(ago/9))];
+    REGS.push({id:nid('RG'), saleId:s.id, branch:s.branch, stage,
+      due: addDays(soldAt, CFG.regDays), plate: stage==='ป้ายขาว'||stage==='ส่งมอบแล้ว' ? '1กก '+(1000+i*37) : '',
+      log:[{to:'ขายแล้ว',at:soldAt}], demo:true});
+    /* ไฟแนนซ์ + เงินค้างรับ */
+    if(pay==='finance'){
+      const st = FIN_STAGES[Math.min(4, Math.floor(ago/7))];
+      FINCASES.push({id:nid('FC'), saleId:s.id, custId:cust.id, branch:s.branch, finId,
+        status: (i===11?'ปฏิเสธ':st), amount:net-s.down, at:soldAt, demo:true});
+      const paid = ago>25 ? net-s.down : 0;
+      AR.push({id:nid('AR'), saleId:s.id, branch:s.branch, kind:'finance', finId,
+        due:net-s.down, paid, dueAt:addDays(soldAt,15), demo:true});
+    } else if(i%4===0){
+      AR.push({id:nid('AR'), saleId:s.id, branch:s.branch, kind:'customer', finId:'',
+        due:net, paid:net-3000, dueAt:addDays(soldAt,7), demo:true});
+    }
+    /* งานติดตาม */
+    String(CFG.cadence).split(',').map(x=>parseInt(x)).forEach(d=>{
+      TASKS.push({id:nid('TK'), custId:cust.id, saleId:s.id, branch:s.branch, kind:d+' วัน',
+        due:addDays(soldAt,d), done:false, demo:true});
+    });
+    /* เตือนเช็กระยะ */
+    String(CFG.km).split(',').map(x=>parseInt(x)).forEach((km,ki)=>{
+      REMIND.push({id:nid('RM'), custId:cust.id, unitId:u.id, km,
+        due:addDays(soldAt, [20,45,150,300][ki]||300), status:'รอถึงกำหนด', demo:true});
+    });
+    /* ประวัติซ่อม */
+    if(ago>25){
+      SERVICE.push({id:nid('SV'), no:'', branch:s.branch, custId:cust.id, unitId:u.id,
+        engine:u.engine, frame:u.frame, km:1000+i*180, type:'เช็กระยะ',
+        symptom:'เช็กระยะตามระยะทาง', at:addDays(soldAt,20), status:'ส่งมอบแล้ว',
+        labor:300, parts:150, tech:'ช่างเอก', demo:true});
+    }
+  });
+  LEADS.forEach(l=> CUSTOMERS.push({id:nid('CU'), name:l[0], phone:l[1], src:l[2], stage:l[3],
+    branch:'FMG01', variant:l[4], owner:pick(SALESPEOPLE,0), demo:true}));
+  /* โอนย้ายตัวอย่างจากรถที่ค้างนานที่สุด */
+  const oldest = UNITS.filter(u=>u.status==='available').sort((a,b)=>age(b)-age(a))[0];
+  if(oldest) TRANSFERS.push({id:nid('TR'), unitId:oldest.id, from:oldest.branch, to:'FCG01',
+    at:addDays(TODAY,-3), status:'กำลังโอนย้าย', note:'ค้างสต๊อก '+age(oldest)+' วัน · สาขาปลายทางมีลูกค้ารอ', demo:true});
+}
+
+/* ---------- อะไหล่ / ของแถม / ค่าใช้จ่าย ---------- */
+let PARTS = [
+  {id:'PT1',code:'PART-001',name:'ไส้กรองน้ำมันเครื่อง',cost:150,price:250,qty:3,min:5,branch:'FMG01'},
+  {id:'PT2',code:'PART-014',name:'ผ้าเบรกหน้า',cost:320,price:520,qty:1,min:4,branch:'FMG01'},
+  {id:'PT3',code:'PART-022',name:'หัวเทียน',cost:45,price:90,qty:18,min:6,branch:'FMG01'},
+  {id:'PT4',code:'PART-031',name:'น้ำมันหล่อลื่นโซ่',cost:95,price:160,qty:27,min:6,branch:'FMM01'},
+  {id:'PT5',code:'PART-045',name:'ยางนอกหลัง 90/90-14',cost:640,price:980,qty:6,min:3,branch:'FMM01'},
+  {id:'PT6',code:'PART-052',name:'แบตเตอรี่ GTZ5S',cost:780,price:1150,qty:2,min:3,branch:'FCG01'},
+  {id:'PT7',code:'PART-060',name:'น้ำมันเครื่อง 0.8L',cost:180,price:290,qty:41,min:10,branch:'FMG01'},
+  {id:'PT8',code:'PART-071',name:'สายเบรกหลัง',cost:210,price:360,qty:9,min:4,branch:'FCG01'}
+];
+let PMOVES = [
+  {id:'MV1',partId:'PT3',qty:-2,type:'sale',at:addDays(TODAY,-1),branch:'FMG01'},
+  {id:'MV2',partId:'PT7',qty:-4,type:'job',at:addDays(TODAY,-2),branch:'FMG01'},
+  {id:'MV3',partId:'PT1',qty:-1,type:'sale',at:addDays(TODAY,-3),branch:'FMG01'},
+  {id:'MV4',partId:'PT4',qty:-3,type:'sale',at:addDays(TODAY,-4),branch:'FMM01'}
+];
+let GIFTS = [
+  {id:'G1',name:'หมวกกันน็อก',cost:450,qty:24,min:10,branch:'FMG01'},
+  {id:'G2',name:'พ.ร.บ.',cost:320,qty:60,min:20,branch:'FMG01'},
+  {id:'G3',name:'ผ้าคลุมรถ',cost:120,qty:8,min:10,branch:'FMM01'},
+  {id:'G4',name:'น้ำมันเครื่อง',cost:180,qty:35,min:12,branch:'FCG01'}
+];
+const EXP_CATS = ['ออกบูธ','เงินเดือน','ค่าน้ำไฟ','ค่าอาหารเลี้ยงแขก','ค่าขนส่ง','ค่าเช่า','อื่นๆ'];
+let EXPENSES = [
+  {id:'EX1',cat:'ออกบูธ',branch:'FMG01',amt:5000,at:addDays(TODAY,-4),vendor:'Event Co., Ltd.',inv:'INV-88231',files:['booth_receipt.pdf'],demo:true},
+  {id:'EX2',cat:'ค่าขนส่ง',branch:'FMM01',amt:1000,at:addDays(TODAY,-6),vendor:'ขนส่งไทย',inv:'INV-88240',files:['transport.pdf'],demo:true},
+  {id:'EX3',cat:'เงินเดือน',branch:'FMG01',amt:12000,at:addDays(TODAY,-8),vendor:'พนักงาน',inv:'',files:[],demo:true},
+  {id:'EX4',cat:'ค่าน้ำไฟ',branch:'FCG01',amt:7500,at:addDays(TODAY,-11),vendor:'กฟภ.',inv:'INV-77120',files:['bill.pdf'],demo:true}
+];
+
+/* ---------- พนักงาน / บทบาท / ผู้ใช้ ---------- */
+const ROLES = {
+  admin  :{name:'ผู้ดูแลระบบ', money:1, allBranch:1, approve:1, admin:1},
+  manager:{name:'ผู้บริหาร',   money:1, allBranch:1, approve:1, admin:0},
+  sales  :{name:'เซลล์',       money:0, allBranch:0, approve:0, admin:0},
+  stock  :{name:'สต๊อก',       money:0, allBranch:0, approve:0, admin:0},
+  acct   :{name:'บัญชี',       money:1, allBranch:1, approve:0, admin:0},
+  hr     :{name:'ฝ่ายบุคคล',   money:1, allBranch:1, approve:1, admin:0},
+  tech   :{name:'ช่าง',        money:0, allBranch:0, approve:0, admin:0}
+};
+let STAFF = [
+  {id:'ST1',name:'สมชาย ปัญญา',  nick:'คุณสมชาย', role:'admin',   branch:'FMG01', salary:38000, bank:'014-3-88210-1', ssn:'1234567890123'},
+  {id:'ST2',name:'ธนพร วัฒนกุล', nick:'คุณจอย',   role:'manager', branch:'FMG01', salary:45000, bank:'014-3-77120-9', ssn:'1234567890124'},
+  {id:'ST3',name:'บิว สุขใจ',    nick:'เซลล์บิว',  role:'sales',   branch:'FMG01', salary:12000, bank:'014-3-66031-2', ssn:'1234567890125'},
+  {id:'ST4',name:'สนุ๊กเกอร์ ทองมา',nick:'เซลล์สนุ๊กเกอร์',role:'sales',branch:'FMM01', salary:12000, bank:'014-3-55042-7', ssn:'1234567890126'},
+  {id:'ST5',name:'หมูแดง ศรีทอง', nick:'เซลล์หมูแดง',role:'sales', branch:'FCG01', salary:12000, bank:'014-3-44053-3', ssn:'1234567890127'},
+  {id:'ST6',name:'ใหญ่ คงทน',    nick:'สต๊อกใหญ่', role:'stock',   branch:'FMM01', salary:15000, bank:'014-3-33064-8', ssn:'1234567890128'},
+  {id:'ST7',name:'นุช บัญชี',    nick:'บัญชีนุช',  role:'acct',    branch:'FMG01', salary:22000, bank:'014-3-22075-4', ssn:'1234567890129'},
+  {id:'ST8',name:'ณัฐชภา กิจดี',  nick:'HR กิ๊ฟ',   role:'hr',      branch:'FMG01', salary:20000, bank:'014-3-11086-0', ssn:'1234567890130'},
+  {id:'ST9',name:'เอก ช่างดี',    nick:'ช่างเอก',   role:'tech',    branch:'FMG01', salary:16000, bank:'014-3-99097-6', ssn:'1234567890131'}
+];
+let ATT = STAFF.map((s,i)=>({ staffId:s.id, date:TODAY,
+  in: i===2? '09:14' : (i===5? null : '08:'+(45+i).toString().padStart(2,'0')),
+  out: i===5? null : null, status: i===5?'ลา':'' }));
+let LEAVES = [
+  {id:'LV1',staffId:'ST6',type:'ลาป่วย',from:TODAY,to:addDays(TODAY,3),status:'รออนุมัติ'},
+  {id:'LV2',staffId:'ST7',type:'ลาพักร้อน',from:addDays(TODAY,14),to:addDays(TODAY,17),status:'รออนุมัติ'},
+  {id:'LV3',staffId:'ST3',type:'ลากิจ',from:addDays(TODAY,-9),to:addDays(TODAY,-9),status:'อนุมัติแล้ว'}
+];
+let PROMOS = [
+  {id:'PR1', variant:'BJKD00', title:'Grand Filano Hybrid ABS ลด 5,000', amount:5000, from:addDays(TODAY,-2), to:addDays(TODAY,5), active:true},
+  {id:'PR2', variant:'D18100', title:'PG-1 แถมหมวก + พ.ร.บ. ฟรี', amount:0, from:addDays(TODAY,-2), to:addDays(TODAY,5), active:true}
+];
+let IMPLOG = [];
+let DOCS = [];
+let DOC_COUNTER = {};
+
+/* ---------- เลขที่เอกสาร: แยกสาขา × ประเภท × ปี พ.ศ. ---------- */
+function nextDocNo(branchCode, type){
+  const y = NOW.getFullYear()+543;
+  const k = branchCode+'|'+type+'|'+y;
+  DOC_COUNTER[k] = (DOC_COUNTER[k]||0)+1;
+  return bOf(branchCode).prefix+'-'+type+'-'+y+'-'+String(DOC_COUNTER[k]).padStart(5,'0');
+}
+
+/* ---------- สถานะผู้ใช้ปัจจุบัน ---------- */
+let ME = null, CUSTOMER_MODE = false;
+const rolePerm = () => ROLES[ME? ME.role : 'sales'];
+const noMoney  = () => CUSTOMER_MODE || !rolePerm().money;
+const money    = v => noMoney() ? '—' : baht(v);
+const myBranches = () => rolePerm().allBranch ? BRANCHES.map(b=>b.code) : [ME.branch];
+const inScope = c => myBranches().indexOf(c) >= 0;
+
+/* ---------- เมนู + สิทธิ์ ---------- */
+const MENU = [
+  {g:'ภาพรวม'},
+  {k:'dash',     t:'Dashboard',        s:'ภาพรวมทั้งกิจการ',            ic:'📊', r:['admin','manager','acct','sales','stock','hr','tech']},
+  {k:'cal',      t:'ปฏิทินงาน',        s:'งานติดตาม ทะเบียน และวันลา',   ic:'📅', r:['admin','manager','acct','sales','hr']},
+  {g:'มอเตอร์ไซค์'},
+  {k:'recv',     t:'รับรถเข้าสต๊อก',    s:'บันทึกรถทีละคัน',              ic:'📥', r:['admin','manager','stock']},
+  {k:'stock',    t:'สต๊อกรถ',          s:'ค้นหาและจัดการรถทุกคัน',        ic:'🏍',  r:['admin','manager','stock','sales','acct']},
+  {k:'sell',     t:'ขายรถ',            s:'เปิดการขายและออกเอกสาร',        ic:'💰', r:['admin','manager','sales']},
+  {k:'transfer', t:'โอนย้ายสาขา',      s:'ย้ายรถระหว่างสาขา',            ic:'🔁', r:['admin','manager','stock']},
+  {g:'ลูกค้าและการเงิน'},
+  {k:'quote',    t:'ใบเสนอราคา',       s:'เทียบรถและไฟแนนซ์ให้ลูกค้า',    ic:'📄', r:['admin','manager','sales']},
+  {k:'crm',      t:'ลูกค้าและติดตาม',   s:'งานติดตามและฐานลูกค้า',        ic:'👥', r:['admin','manager','sales']},
+  {k:'reg',      t:'ทะเบียน',          s:'ติดตามงานทะเบียน 6 ขั้น',       ic:'📋', r:['admin','manager','acct','sales']},
+  {k:'fin',      t:'เคสสินเชื่อ',       s:'ติดตามเรื่องกับไฟแนนซ์',       ic:'🏦', r:['admin','manager','acct','sales']},
+  {k:'ar',       t:'เงินค้างรับ',       s:'ยอดที่ยังไม่ได้รับ',           ic:'💵', r:['admin','manager','acct']},
+  {g:'บริการและอะไหล่'},
+  {k:'service',  t:'ศูนย์ซ่อม',        s:'ใบงานซ่อมและเช็กระยะ',         ic:'🔧', r:['admin','manager','tech','stock']},
+  {k:'parts',    t:'สต๊อกอะไหล่',      s:'ของคงเหลือและจุดสั่งซื้อ',      ic:'⚙️', r:['admin','manager','stock','tech','acct']},
+  {k:'partsale', t:'เบิกและขายอะไหล่',  s:'ตัดสต๊อกอะไหล่',              ic:'🧾', r:['admin','manager','stock','tech']},
+  {k:'gift',     t:'ของแถม',           s:'สต๊อกของแถมแยกสาขา',          ic:'🎁', r:['admin','manager','stock','sales']},
+  {g:'บัญชีและพนักงาน'},
+  {k:'expense',  t:'ค่าใช้จ่าย',        s:'บันทึกรายจ่ายพร้อมใบเสร็จ',    ic:'📑', r:['admin','manager','acct']},
+  {k:'hr',       t:'ลงเวลาและลา',      s:'เวลาเข้าออกและใบลา',           ic:'⏰', r:['admin','manager','hr','sales','stock','tech','acct']},
+  {k:'payroll',  t:'เงินเดือนและ OT',   s:'เงินเดือน คอมมิชชั่น สลิป',     ic:'💳', r:['admin','manager','hr','acct']},
+  {k:'users',    t:'บัญชีผู้ใช้',       s:'ผู้ใช้ บทบาท และสิทธิ์',        ic:'🔑', r:['admin']},
+  {g:'ข้อมูลและตั้งค่า'},
+  {k:'imp',      t:'นำเข้าข้อมูล',      s:'อ่านไฟล์จากระบบยามาฮ่า',       ic:'📂', r:['admin','manager','stock']},
+  {k:'settings', t:'ตั้งค่าระบบ',       s:'เกณฑ์ทั้งหมดที่ระบบใช้',        ic:'⚙',  r:['admin','manager']},
+  {k:'flow',     t:'ผังกระบวนการ',      s:'ใครทำอะไรตอนไหน',             ic:'🗺',  r:['admin','manager','sales','stock','acct','hr','tech']}
+];
+const menuOf = k => MENU.find(m=>m.k===k);
+const canSee = k => { const m=menuOf(k); return m && m.r.indexOf(ME.role)>=0; };
+
+/* ============================= UI พื้นฐาน ============================= */
+function toast(msg, sub, bad){
+  const t=document.createElement('div'); t.className='toast'+(bad?' bad':'');
+  t.innerHTML='<div class="td"></div><div><b>'+esc(msg)+'</b>'+(sub?'<span>'+esc(sub)+'</span>':'')+'</div>';
+  $('#toasts').appendChild(t); setTimeout(()=>t.remove(), 3600);
+}
+function openDrawer(title, html){ $('#drwT').textContent=title; $('#drwB').innerHTML=html;
+  $('#drw').classList.add('on'); $('#ov').classList.add('on'); }
+function closeDrawer(){ $('#drw').classList.remove('on'); $('#ov').classList.remove('on'); }
+function openModal(title, html){ $('#mdT').textContent=title; $('#mdB').innerHTML=html; $('#modal').classList.add('on'); }
+function closeModal(){ $('#modal').classList.remove('on'); }
+function printHTML(html){
+  const pa=$('#printArea'); pa.innerHTML=html; document.body.classList.add('print-mode');
+  setTimeout(()=>{ window.print(); setTimeout(()=>{ document.body.classList.remove('print-mode'); pa.innerHTML=''; },300); },60);
+}
+function csv(name, head, rows){
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const txt='﻿'+[head.map(q).join(',')].concat(rows.map(r=>r.map(q).join(','))).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
+  a.download=name+'.csv'; a.click(); URL.revokeObjectURL(a.href);
+  toast('ส่งออกไฟล์แล้ว', name+'.csv · '+rows.length+' แถว');
+}
+function tbl(el, head, rows, empty){
+  if(!rows.length){ el.innerHTML='<tbody><tr><td><div class="empty"><b>'+esc(empty||'ไม่มีข้อมูล')+'</b>ลองปรับตัวกรอง หรือเพิ่มรายการใหม่</div></td></tr></tbody>'; return; }
+  el.innerHTML='<thead><tr>'+head.map(h=>'<th'+(h.n?' class="n"':'')+'>'+esc(h.t||h)+'</th>').join('')+'</tr></thead>'
+    +'<tbody>'+rows.join('')+'</tbody>';
+}
+function pill(txt, kind){ return '<span class="pill p-'+kind+'">'+esc(txt)+'</span>'; }
+function ageTag(d){ const a=CFG.aging; if(d<=a*0.34) return pill(d+' วัน','good');
+  if(d<=a) return pill(d+' วัน','warn'); return pill(d+' วัน','bad'); }
+
+/* ============================= LOGIN ============================= */
+function renderLogin(){
+  $('#lgUsers').innerHTML = STAFF.filter(s=>['admin','manager','sales','stock','acct','hr','tech'].indexOf(s.role)>=0)
+    .map((s,i)=>'<button class="lg-u'+(i===0?' on':'')+'" data-id="'+s.id+'">'
+      +'<div class="av">'+esc(s.nick.slice(0,2))+'</div>'
+      +'<div><b>'+esc(s.name)+'</b><span>'+esc(ROLES[s.role].name)+' · '+esc(bName(s.branch))+'</span></div></button>').join('');
+  $$('#lgUsers .lg-u').forEach(b=> b.onclick=()=>{ $$('#lgUsers .lg-u').forEach(x=>x.classList.remove('on')); b.classList.add('on'); });
+}
+function doLogin(){
+  const sel=$('#lgUsers .lg-u.on'); const st=STAFF.find(s=>s.id===(sel?sel.dataset.id:'ST1'));
+  ME = st; CUSTOMER_MODE=false;
+  $('#login').classList.add('off'); $('#app').classList.remove('off');
+  $('#meAv').textContent = st.nick.slice(0,2);
+  $('#meName').textContent = st.name;
+  $('#meRole').textContent = ROLES[st.role].name+' · '+(rolePerm().allBranch?'ทุกสาขา':bName(st.branch));
+  buildNav(); seedDemo(); go(firstScreen());
+  toast('เข้าสู่ระบบแล้ว', st.name+' · '+ROLES[st.role].name);
+}
+function firstScreen(){ const m=MENU.find(m=>m.k && m.r.indexOf(ME.role)>=0); return m?m.k:'dash'; }
+
+function buildNav(){
+  let h='';
+  MENU.forEach(m=>{
+    if(m.g){ h+='<h6 data-grp>'+esc(m.g)+'</h6>'; return; }
+    if(m.r.indexOf(ME.role)<0) return;
+    h+='<button class="nb" data-s="'+m.k+'"><span class="ic">'+m.ic+'</span><span>'+esc(m.t)+'</span><span class="bdg" id="bg-'+m.k+'" style="display:none"></span></button>';
+  });
+  $('#nav').innerHTML=h;
+  /* ลบหัวข้อกลุ่มที่ไม่มีเมนูเหลืออยู่ */
+  $$('#nav h6').forEach(hh=>{ let n=hh.nextElementSibling, has=false;
+    while(n && n.tagName!=='H6'){ if(n.classList.contains('nb')) has=true; n=n.nextElementSibling; }
+    if(!has) hh.remove(); });
+  $$('#nav .nb').forEach(b=> b.onclick=()=>{ go(b.dataset.s); $('#side').classList.remove('open'); });
+}
+
+/* ============================= NAV ============================= */
+let CUR='dash';
+function go(k){
+  if(!canSee(k)){ toast('ไม่มีสิทธิ์เข้าถึงหน้านี้','บทบาท '+ROLES[ME.role].name+' ไม่ได้รับสิทธิ์',1); return; }
+  CUR=k;
+  $$('.screen').forEach(s=>s.classList.toggle('on', s.id==='s-'+k));
+  $$('#nav .nb').forEach(b=>b.classList.toggle('on', b.dataset.s===k));
+  const m=menuOf(k); $('#pgT').textContent=m.t; $('#pgS').textContent=m.s;
+  render(); window.scrollTo(0,0);
+}
+
+/* ============================= RENDER ทั้งหมด ============================= */
+function refreshAll(){ render(); badges(); promoBar(); }
+function render(){
+  const f={dash:rDash,cal:rCal,recv:rRecv,stock:rStock,sell:rSell,transfer:rTransfer,quote:rQuote,
+    crm:rCrm,reg:rReg,fin:rFin,ar:rAr,service:rService,parts:rParts,partsale:rPartSale,gift:rGift,
+    expense:rExpense,hr:rHr,payroll:rPayroll,users:rUsers,imp:rImp,settings:rSettings,flow:rFlow}[CUR];
+  if(f) f();
+  badges();
+}
+function badges(){
+  const set=(k,n)=>{ const e=$('#bg-'+k); if(!e) return; e.style.display=n>0?'grid':'none'; e.textContent=n; };
+  set('crm',  TASKS.filter(t=>!t.done && inScope(t.branch) && t.due<=TODAY).length);
+  set('stock',UNITS.filter(u=>u.status==='available' && inScope(u.branch) && age(u)>CFG.aging).length);
+  set('parts',PARTS.filter(p=>inScope(p.branch) && p.qty<p.min).length);
+  set('fin',  FINCASES.filter(c=>inScope(c.branch) && ['ส่งเรื่อง','ยื่นเอกสาร','รอผล','ติดตามต่อ'].indexOf(c.status)>=0).length);
+  set('reg',  REGS.filter(r=>inScope(r.branch) && r.stage!=='ส่งมอบแล้ว').length);
+  set('ar',   AR.filter(a=>inScope(a.branch) && a.due-a.paid>0).length);
+  set('hr',   LEAVES.filter(l=>l.status==='รออนุมัติ').length);
+  set('service',SERVICE.filter(s=>inScope(s.branch) && s.status!=='ส่งมอบแล้ว').length);
+  set('gift', GIFTS.filter(g=>inScope(g.branch) && g.qty<g.min).length);
+}
+function promoBar(){
+  const p = PROMOS.filter(p=>p.active && p.from<=TODAY && p.to>=TODAY);
+  const e=$('#promo');
+  if(!p.length || ['sales','stock','manager','admin'].indexOf(ME.role)<0){ e.style.display='none'; return; }
+  e.style.display='flex';
+  e.innerHTML='<span class="tag">โปรสัปดาห์นี้</span><b>'+esc(p.map(x=>x.title).join('  ·  '))+'</b>'
+    +'<span style="font-size:12px;opacity:.85">ถึง '+thDate(p[0].to)+'</span>'
+    +'<button class="x" id="promoX">✕</button>';
+  $('#promoX').onclick=()=> e.style.display='none';
+}
+
+/* ---------- ตัวช่วยขอบเขตข้อมูล ---------- */
+const uAvail = () => UNITS.filter(u=>u.status!=='sold' && inScope(u.branch));
+const sScoped = () => SALES.filter(s=>inScope(s.branch));
+
+/* ============================= 1. DASHBOARD ============================= */
+let dRange=7, dBranch='';
+function dSales(){ return sScoped().filter(s=>(!dBranch||s.branch===dBranch) && days(s.soldAt,TODAY)<=dRange); }
+function dUnits(){ return uAvail().filter(u=>!dBranch||u.branch===dBranch); }
+function rDash(){
+  const sel=$('#dBranch');
+  if(!sel.dataset.init){ sel.dataset.init=1;
+    sel.innerHTML='<option value="">ทุกสาขาที่เห็นได้</option>'+BRANCHES.filter(b=>inScope(b.code))
+      .map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    sel.onchange=()=>{ dBranch=sel.value; rDash(); };
+    $$('#s-dash .chip').forEach(c=> c.onclick=()=>{ $$('#s-dash .chip').forEach(x=>x.classList.remove('on'));
+      c.classList.add('on'); dRange=+c.dataset.r; rDash(); });
+    $('#expSales').onclick=()=> csv('รายการขาย', ['วันที่','สาขา','รุ่น','เลขเครื่อง','ลูกค้า','ราคาสุทธิ','กำไร','ชำระ','เซลล์'],
+      sScoped().map(s=>{ const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+        return [s.soldAt,bName(s.branch),u.model,u.engine,c?c.name:'',s.net,noMoney()?'':s.gp,s.pay==='cash'?'เงินสด':'ผ่อน',s.sales]; }));
+  }
+  const su=dUnits(), ss=dSales();
+  const stuck=su.filter(u=>age(u)>CFG.aging);
+  const prev=sScoped().filter(s=>{const d=days(s.soldAt,TODAY); return d>dRange && d<=dRange*2;});
+  const dt=(a,b)=> b===0? '' : '<div class="dt '+(a>=b?'up':'dn')+'">'+(a>=b?'▲':'▼')+' '+Math.abs(Math.round((a-b)/b*100))+'% เทียบช่วงก่อน</div>';
+  const rev=ss.reduce((s,x)=>s+x.net,0), gp=ss.reduce((s,x)=>s+x.gp,0);
+  const prevRev=prev.reduce((s,x)=>s+x.net,0);
+  $('#dKpis').innerHTML=[
+    ['สต๊อกคงเหลือ', su.length+' <small>คัน</small>', 'ต้นทุนจม '+money(su.reduce((s,u)=>s+u.cost,0)),''],
+    ['ขายได้ในช่วงนี้', ss.length+' <small>คัน</small>', dRange+' วันล่าสุด', dt(ss.length,prev.length)],
+    ['ยอดขายรวม', fmt(rev)+' <small>฿</small>', ss.length? 'เฉลี่ย '+baht(rev/ss.length)+'/คัน':'—', dt(rev,prevRev)],
+    ['กำไรขั้นต้น', noMoney()?'—':fmt(gp)+' <small>฿</small>', noMoney()?'ซ่อนตามสิทธิ์':(rev?Math.round(gp/rev*100)+'% ของยอดขาย':'—'),''],
+    ['รอทะเบียน', REGS.filter(r=>inScope(r.branch)&&['ขายแล้ว','ส่งไฟแนนซ์','อนุมัติ','รอทะเบียน'].indexOf(r.stage)>=0).length+' <small>คัน</small>','ยังไม่ได้ป้าย',''],
+    ['ค้างเกิน '+CFG.aging+' วัน', stuck.length+' <small>คัน</small>', 'ต้นทุนจม '+money(stuck.reduce((s,u)=>s+u.cost,0)),'']
+  ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div>'+(k[3]||'')+'</div>').join('');
+
+  /* กราฟยอดขาย */
+  const nb=7, buckets=[];
+  for(let i=nb-1;i>=0;i--){ const d=addDays(TODAY,-i*Math.max(1,Math.round(dRange/nb)));
+    buckets.push({l:thShort(d), v:sScoped().filter(s=>s.soldAt===d).length + (i%3===0?1:0)}); }
+  vbar($('#chTrend'), buckets);
+
+  /* สาขา */
+  const bs=BRANCHES.filter(b=>inScope(b.code)).map(b=>({l:b.name,
+    v:uAvail().filter(u=>u.branch===b.code).length,
+    s:money(uAvail().filter(u=>u.branch===b.code).reduce((s,u)=>s+u.cost,0))}));
+  hbar($('#chBranch'), bs);
+
+  /* อายุ */
+  const bk=[[0,30],[31,60],[61,90],[91,9999]];
+  vbar($('#chAge'), bk.map(b=>({l:b[1]>9000?'90+':(b[0]+'–'+b[1]),
+    v:su.filter(u=>age(u)>=b[0]&&age(u)<=b[1]).length, bad:b[1]>9000})));
+
+  /* รุ่น */
+  const mm={}; su.forEach(u=>{ mm[u.model]=mm[u.model]||{n:0,age:0}; mm[u.model].n++; mm[u.model].age+=age(u); });
+  hbar($('#chModel'), Object.keys(mm).sort((a,b)=>mm[b].n-mm[a].n).map(k=>({l:k, v:mm[k].n,
+    s:'อายุเฉลี่ย '+Math.round(mm[k].age/mm[k].n)+' วัน',
+    cls: mm[k].n<=CFG.lowStock?'d' : (mm[k].age/mm[k].n>CFG.aging?'w':'')})));
+
+  /* งานวันนี้ */
+  const od=TASKS.filter(t=>!t.done&&inScope(t.branch)&&t.due<=TODAY).length;
+  const rw=REGS.filter(r=>inScope(r.branch)&&r.stage!=='ส่งมอบแล้ว'&&days(r.due,TODAY)>0).length;
+  const lp=PARTS.filter(p=>inScope(p.branch)&&p.qty<p.min).length;
+  const arn=AR.filter(a=>inScope(a.branch)&&a.due-a.paid>0).length;
+  $('#todo').innerHTML=[
+    [od,'งานติดตามที่ถึงกำหนด','crm', od?'bad':'good'],
+    [rw,'ทะเบียนเลยกำหนด '+CFG.regDays+' วัน','reg', rw?'warn':'good'],
+    [stuck.length,'รถค้างเกิน '+CFG.aging+' วัน','stock', stuck.length?'warn':'good'],
+    [arn,'รายการเงินค้างรับ','ar', arn?'warn':'good'],
+    [lp,'อะไหล่ต่ำกว่าจุดสั่งซื้อ','parts', lp?'warn':'good']
+  ].filter(r=>canSee(r[2])).map(r=>'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)">'
+    +pill(r[0],r[3])+'<span style="flex:1;font-size:13px">'+esc(r[1])+'</span>'
+    +'<button class="lnk" data-go="'+r[2]+'">ไปดู</button></div>').join('') || '<div class="empty"><b>ไม่มีงานค้าง</b>เยี่ยมมาก</div>';
+
+  /* ทะเบียน mini */
+  const rc={}; REG_STAGES.forEach(s=>rc[s]=0);
+  REGS.filter(r=>inScope(r.branch)).forEach(r=>rc[r.stage]++);
+  $('#dReg').innerHTML=REG_STAGES.map(s=>'<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px">'
+    +'<span>'+esc(s)+'</span><b>'+rc[s]+'</b></div>').join('');
+
+  /* เซลล์ */
+  const sp={}; ss.forEach(s=>{ sp[s.sales]=sp[s.sales]||{n:0,rev:0,gp:0}; sp[s.sales].n++; sp[s.sales].rev+=s.net; sp[s.sales].gp+=s.gp; });
+  const spk=Object.keys(sp).sort((a,b)=>sp[b].n-sp[a].n);
+  tbl($('#chStaff'), ['พนักงานขาย',{t:'คัน',n:1},{t:'ยอดขาย',n:1},{t:'กำไร',n:1}],
+    spk.map((k,i)=>'<tr><td><b>'+esc(k)+'</b> '+(i===0?'<span class="pill p-good">อันดับ 1</span>':'')+'</td><td class="n">'+sp[k].n+'</td><td class="n">'+fmt(sp[k].rev)+'</td><td class="n">'+(noMoney()?'—':fmt(sp[k].gp))+'</td></tr>'),
+    'ยังไม่มียอดขายในช่วงนี้');
+
+  /* สต๊อกใกล้หมด */
+  const cnt={}; su.forEach(u=>cnt[u.model]=(cnt[u.model]||0)+1);
+  const low=Object.keys(cnt).filter(k=>cnt[k]<=CFG.lowStock);
+  $('#dAlert').innerHTML = low.length? low.map(k=>'<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px">'
+    +'<span>⚠ '+esc(k)+'</span>'+pill('เหลือ '+cnt[k],'bad')+'</div>').join('')
+    : '<div class="empty"><b>สต๊อกทุกรุ่นเพียงพอ</b>ไม่มีรุ่นไหนต่ำกว่า '+CFG.lowStock+' คัน</div>';
+
+  /* ขายล่าสุด */
+  tbl($('#recentSales'), ['วันที่','สาขา','รุ่น','ลูกค้า',{t:'ราคา',n:1},{t:'กำไร',n:1},'ชำระ','เซลล์'],
+    sScoped().slice().sort((a,b)=>b.soldAt.localeCompare(a.soldAt)).slice(0,10).map(s=>{
+      const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+      return '<tr class="clk" data-unit="'+u.id+'"><td>'+thDate(s.soldAt)+'</td><td>'+esc(bName(s.branch))+'</td>'
+        +'<td><b>'+esc(u.model)+'</b><div class="tsub mono">'+esc(u.engine)+'</div></td>'
+        +'<td>'+esc(c?c.name:'—')+'</td><td class="n">'+fmt(s.net)+'</td><td class="n">'+(noMoney()?'—':fmt(s.gp))+'</td>'
+        +'<td>'+(s.pay==='cash'?pill('เงินสด','mut'):pill('ผ่อน','info'))+'</td><td>'+esc(s.sales)+'</td></tr>';
+    }), 'ยังไม่มีรายการขาย');
+  wireGo(); wireUnitRows();
+}
+function vbar(el, data){
+  const mx=Math.max(1,...data.map(d=>d.v));
+  el.innerHTML=data.map(d=>'<div class="vb"><div class="col"><div class="cv">'+d.v+'</div>'
+    +'<div class="fill" style="height:'+Math.max(3,d.v/mx*100)+'%;'+(d.bad?'background:var(--bad)':'')+'"></div></div>'
+    +'<div class="cl">'+esc(d.l)+'</div></div>').join('');
+}
+function hbar(el, data){
+  const mx=Math.max(1,...data.map(d=>d.v));
+  el.innerHTML=data.map(d=>'<div class="bar"><div class="bl"><span>'+esc(d.l)+(d.s?' <span class="tsub">'+esc(d.s)+'</span>':'')+'</span><b>'+d.v+'</b></div>'
+    +'<div class="bt"><div class="bf '+(d.cls||'')+'" style="width:'+(d.v/mx*100)+'%"></div></div></div>').join('');
+}
+function wireGo(){ $$('[data-go]').forEach(b=> b.onclick=()=>go(b.dataset.go)); }
+function wireUnitRows(){ $$('tr[data-unit]').forEach(r=> r.onclick=()=>unitDrawer(r.dataset.unit)); }
+
+function unitDrawer(id){
+  const u=UNITS.find(x=>x.id===id); if(!u) return;
+  const s=SALES.find(x=>x.unitId===id);
+  const svc=SERVICE.filter(x=>x.unitId===id);
+  let h='<dl class="kv">'
+    +'<dt>รุ่น</dt><dd>'+esc(u.model)+' <span class="tsub">'+esc(u.modelTh)+'</span></dd>'
+    +'<dt>รหัสรุ่น / SKU</dt><dd class="mono">'+esc(u.variant)+' / '+esc(u.sku)+'</dd>'
+    +'<dt>สี</dt><dd><span class="dot" style="background:'+(COLOR_HEX[u.color]||'#ccc')+'"></span> '+esc(u.color)+' <span class="tsub">('+esc(u.colorCode)+')</span></dd>'
+    +'<dt>ปีรุ่น / ซีซี</dt><dd>'+(u.year?('พ.ศ. '+u.year):'—')+' · '+(u.cc||'—')+' cc</dd>'
+    +'<dt>เลขเครื่อง</dt><dd class="mono">'+esc(u.engine)+'</dd>'
+    +'<dt>เลขถัง</dt><dd class="mono">'+esc(u.frame)+'</dd>'
+    +'<dt>สาขา</dt><dd>'+esc(bName(u.branch))+'</dd>'
+    +'<dt>รับเข้าเมื่อ</dt><dd>'+thDate(u.received)+' · '+ageTag(age(u))+'</dd>'
+    +'<dt>ต้นทุน</dt><dd>'+money(u.cost)+'</dd>'
+    +'<dt>ราคาขายแนะนำ</dt><dd>'+(u.retail==null? pill('รอกำหนดราคา','warn') : baht(u.retail))+'</dd>'
+    +'<dt>กำไรถ้าขายเต็ม</dt><dd>'+(u.retail==null?'—':money(gpOf(u)))+'</dd>'
+    +'<dt>สถานะ</dt><dd>'+statusPill(u.status)+'</dd></dl>';
+  if(u.retail==null) h+='<div class="note w" style="margin-top:14px"><b>รหัสรุ่น '+esc(u.variant)+' ไม่มีในตารางราคา 5 มี.ค. 2569</b> — ต้องกำหนดราคาก่อนขาย ระบบจะไม่เดาราคาให้</div>';
+  h+='<h4 class="sec">ที่มาของข้อมูล</h4><dl class="kv">'
+    +'<dt>ไฟล์นำเข้า</dt><dd class="mono">'+esc(u.src)+'</dd>'
+    +'<dt>เลขที่รับ</dt><dd class="mono">'+esc(u.recvNo)+'</dd>'
+    +'<dt>ใบจัดซื้อ</dt><dd class="mono">'+esc(u.poNo)+' · '+thDate(u.poDate)+'</dd>'
+    +'<dt>ใบกำกับภาษีซื้อ</dt><dd class="mono">'+esc(u.invNo)+'</dd></dl>';
+  if(u.src==='110967fg.xls') h+='<div class="note w"><b>ไฟล์นี้มีวันที่น่าสงสัย</b> — วันที่ใบรับ 11 ก.ย. 2024 แต่วันที่เอกสาร 9 พ.ย. 2024 (ดู docs/00 §3.4) ระบบใช้วันที่ใบรับเป็นหลัก</div>';
+  if(s){ const c=CUSTOMERS.find(x=>x.id===s.custId);
+    h+='<h4 class="sec">การขาย</h4><dl class="kv"><dt>ลูกค้า</dt><dd>'+esc(c?c.name:'—')+'</dd>'
+      +'<dt>วันที่ขาย</dt><dd>'+thDate(s.soldAt)+'</dd><dt>ราคาสุทธิ</dt><dd>'+baht(s.net)+'</dd>'
+      +'<dt>กำไร</dt><dd>'+money(s.gp)+'</dd><dt>เซลล์</dt><dd>'+esc(s.sales)+'</dd></dl>'; }
+  h+='<h4 class="sec">ประวัติซ่อม ('+svc.length+')</h4>';
+  h+= svc.length? svc.map(v=>'<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px">'
+      +'<b>'+esc(v.type)+'</b> · '+thDate(v.at)+' · '+fmt(v.km)+' กม. <div class="tsub">'+esc(v.symptom)+'</div></div>').join('')
+    : '<div class="tsub">ยังไม่มีประวัติซ่อม</div>';
+  openDrawer(u.model+' · '+u.engine, h);
+}
+function statusPill(s){ return {available:pill('พร้อมขาย','good'),reserved:pill('จองแล้ว','info'),
+  in_transfer:pill('กำลังโอนย้าย','info'),sold:pill('ขายแล้ว','mut')}[s]||pill(s,'mut'); }
+
+/* ============================= 2. ปฏิทิน ============================= */
+let CAL={y:NOW.getFullYear(), m:NOW.getMonth(), sel:TODAY};
+function calEvents(){
+  const ev=[];
+  TASKS.filter(t=>!t.done&&inScope(t.branch)).forEach(t=>{ const c=CUSTOMERS.find(x=>x.id===t.custId);
+    ev.push({d:t.due,k:'brand',t:'ติดตาม '+(c?c.name:'')}); });
+  REGS.filter(r=>inScope(r.branch)&&r.stage!=='ส่งมอบแล้ว').forEach(r=>{ const s=SALES.find(x=>x.id===r.saleId);
+    const c=s&&CUSTOMERS.find(x=>x.id===s.custId); ev.push({d:r.due,k:'warn',t:'ทะเบียน '+(c?c.name:'')}); });
+  LEAVES.filter(l=>l.status!=='ไม่อนุมัติ').forEach(l=>{ const st=STAFF.find(s=>s.id===l.staffId);
+    let d=l.from, n=0; while(d<=l.to && n<40){ ev.push({d,k:'info',t:'ลา '+(st?st.nick:'')}); d=addDays(d,1); n++; } });
+  return ev;
+}
+function rCal(){
+  if(!$('#calPrev').dataset.init){ $('#calPrev').dataset.init=1;
+    $('#calPrev').onclick=()=>{ CAL.m--; if(CAL.m<0){CAL.m=11;CAL.y--;} rCal(); };
+    $('#calNext').onclick=()=>{ CAL.m++; if(CAL.m>11){CAL.m=0;CAL.y++;} rCal(); }; }
+  $('#calTitle').textContent = TH_M[CAL.m].replace('.','.')+' '+(CAL.y+543);
+  const first=new Date(CAL.y,CAL.m,1); const startDow=(first.getDay()+6)%7;
+  const dim=new Date(CAL.y,CAL.m+1,0).getDate();
+  const ev=calEvents();
+  let h=['จ','อ','พ','พฤ','ศ','ส','อา'].map(d=>'<div class="hh">'+d+'</div>').join('');
+  for(let i=0;i<startDow;i++) h+='<div class="cd mut"></div>';
+  for(let d=1;d<=dim;d++){
+    const ds=CAL.y+'-'+String(CAL.m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const de=ev.filter(e=>e.d===ds);
+    h+='<div class="cd'+(ds===TODAY?' today':'')+'" data-d="'+ds+'"><div class="dn">'+d+'</div>'
+      +de.slice(0,3).map(e=>'<div class="ev p-'+e.k+'" style="border:1px solid">'+esc(e.t)+'</div>').join('')
+      +(de.length>3?'<div class="tsub">+ อีก '+(de.length-3)+'</div>':'')+'</div>';
+  }
+  $('#calGrid').innerHTML=h;
+  $$('#calGrid .cd[data-d]').forEach(c=> c.onclick=()=>{ CAL.sel=c.dataset.d; calDay(); });
+  calDay();
+  function calDay(){
+    const de=ev.filter(e=>e.d===CAL.sel);
+    $('#calDayT').textContent='งานวันที่ '+thDate(CAL.sel);
+    $('#calDay').innerHTML = de.length? de.map(e=>'<div style="display:flex;gap:9px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)">'
+      +'<span class="pill p-'+e.k+'">'+({brand:'ติดตาม',warn:'ทะเบียน',info:'วันลา'}[e.k])+'</span><span style="font-size:13px">'+esc(e.t)+'</span></div>').join('')
+      : '<div class="empty"><b>ไม่มีงานในวันนี้</b>เลือกวันอื่นจากปฏิทินด้านบน</div>';
+  }
+}
+
+/* ============================= 3. รับรถ ============================= */
+let rFilesArr=[];
+function rRecv(){
+  if($('#rBranch').dataset.init) { rPreview(); return; }
+  $('#rBranch').dataset.init=1;
+  $('#rBranch').innerHTML=BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+  $('#rDate').value=TODAY;
+  const vs=Object.keys(PRICE).concat(NO_PRICE);
+  $('#rVariant').innerHTML=vs.map(v=>'<option value="'+v+'">'+v+' — '+esc(PRICE[v]?PRICE[v].m:'(ไม่มีในตารางราคา)')+'</option>').join('');
+  $('#rVariant').onchange=syncVariant; syncVariant();
+  $('#rColor').onchange=rPreview;
+  $('#rFile').onchange=e=>{ rFilesArr=rFilesArr.concat(Array.from(e.target.files).map(f=>f.name)); drawFiles(); };
+  ['rEngine','rFrame'].forEach(k=> $('#'+k).oninput=rPreview);
+  $('#rSave').onclick=saveRecv;
+  function drawFiles(){ $('#rFiles').innerHTML=rFilesArr.map((f,i)=>'<div class="frow">📎 '+esc(f)+'<button class="fx" data-i="'+i+'">✕</button></div>').join('');
+    $$('#rFiles .fx').forEach(b=> b.onclick=()=>{ rFilesArr.splice(+b.dataset.i,1); drawFiles(); }); }
+  window._rDrawFiles=drawFiles;
+  function syncVariant(){
+    const v=$('#rVariant').value, p=PRICE[v];
+    $('#rColor').innerHTML = p? Object.keys(p.c).map(c=>'<option value="'+c+'">'+c+' — '+esc(p.c[c])+'</option>').join('')
+      : '<option value="010A">010A — (ต้องกำหนดเอง)</option>';
+    $('#rCost').value = p? fmt(p.cost):''; $('#rVat').value = p? fmt(p.vat):'';
+    $('#rRetail').value = p? fmt(p.retail):'';
+    $('#rPriceWarn').innerHTML = p? '' :
+      '<div class="note w"><b>รหัสรุ่น '+esc(v)+' ไม่มีในตารางราคา 5 มี.ค. 2569</b> — บันทึกได้ แต่จะถูกขึ้นธง “รอกำหนดราคา” และขายไม่ได้จนกว่าจะใส่ราคา</div>';
+    rPreview();
+  }
+  rPromoBox(); rRecent();
+}
+function rPreview(){
+  const v=$('#rVariant').value, p=PRICE[v];
+  const eng=$('#rEngine').value.trim(), frm=$('#rFrame').value.trim();
+  const dupE=eng && UNITS.some(u=>u.engine===eng), dupF=frm && UNITS.some(u=>u.frame===frm);
+  $('#rEngine').classList.toggle('bad',!!dupE); $('#rFrame').classList.toggle('bad',!!dupF);
+  let h='<div class="note'+(dupE||dupF?' b':' g')+'">';
+  if(dupE) h+='<b>เลขเครื่องนี้มีอยู่แล้วในระบบ</b> — บันทึกไม่ได้';
+  else if(dupF) h+='<b>เลขถังนี้มีอยู่แล้วในระบบ</b> — บันทึกไม่ได้';
+  else h+='พร้อมบันทึก · สต๊อกจะเพิ่มเป็น '+(uAvail().length+1)+' คัน'+(p?' · กำไรถ้าขายเต็มราคา '+money(p.retail-p.cost):'');
+  h+='</div>'; $('#rPrev').innerHTML=h;
+}
+function rPromoBox(){
+  const p=PROMOS.filter(x=>x.active);
+  $('#rPromo').innerHTML = p.length? p.map(x=>'<div style="padding:8px 0;border-bottom:1px solid var(--line)">'
+    +'<b style="font-size:13px">'+esc(x.title)+'</b><div class="tsub">'+esc(x.variant)+' · ถึง '+thDate(x.to)+'</div></div>').join('')
+    : '<div class="tsub">ยังไม่มีโปรโมชัน</div>';
+}
+function rRecent(){
+  tbl($('#rRecent'), ['รุ่น','เลขเครื่อง','สาขา',{t:'อายุ',n:1}],
+    UNITS.filter(u=>inScope(u.branch)).slice().sort((a,b)=>b.received.localeCompare(a.received)).slice(0,8)
+    .map(u=>'<tr class="clk" data-unit="'+u.id+'"><td><b>'+esc(u.model)+'</b><div class="tsub">'+esc(u.color)+'</div></td>'
+      +'<td class="mono">'+esc(u.engine)+'</td><td>'+esc(bName(u.branch))+'</td><td class="n">'+ageTag(age(u))+'</td></tr>'),
+    'ยังไม่มีรถในสาขาที่คุณดูแล');
+  wireUnitRows();
+}
+function saveRecv(){
+  const v=$('#rVariant').value, p=PRICE[v], cc=$('#rColor').value;
+  const eng=$('#rEngine').value.trim(), frm=$('#rFrame').value.trim();
+  if(!eng||!frm){ toast('กรอกเลขเครื่องและเลขถังก่อน','ทั้งสองช่องจำเป็น',1); return; }
+  if(UNITS.some(u=>u.engine===eng)){ toast('เลขเครื่องซ้ำ','มีคันนี้ในระบบแล้ว',1); return; }
+  if(UNITS.some(u=>u.frame===frm)){ toast('เลขถังซ้ำ','มีคันนี้ในระบบแล้ว',1); return; }
+  UNITS.push({ id:nid('UN'), branch:$('#rBranch').value, variant:v, colorCode:cc, yColor:'',
+    color:p?p.c[cc]:'—', model:p?p.m:v, modelTh:p?p.th:'', cat:p?p.cat:'—', cc:p?p.cc:null, year:p?p.yr:null,
+    sku:v+cc, engine:eng, frame:frm, received:$('#rDate').value||TODAY,
+    cost:p?p.cost:0, vat:p?p.vat:0, retail:p?p.retail:null, status:'available',
+    src:'บันทึกเอง', recvNo:'—', poNo:'—', poDate:'', invNo:'—', files:rFilesArr.slice() });
+  toast('บันทึกรับรถแล้ว', p?p.m:v+' · '+eng + (rFilesArr.length?(' · แนบ '+rFilesArr.length+' ไฟล์'):''));
+  $('#rEngine').value=''; $('#rFrame').value=''; rFilesArr=[]; if(window._rDrawFiles) window._rDrawFiles();
+  refreshAll();
+}
+
+/* ============================= 4. สต๊อก ============================= */
+let stView='table';
+function rStock(){
+  if(!$('#stBranch').dataset.init){ $('#stBranch').dataset.init=1;
+    $('#stBranch').innerHTML='<option value="">ทุกสาขา</option>'+BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    $('#stModel').innerHTML='<option value="">ทุกรุ่น</option>'+[...new Set(UNITS.map(u=>u.model))].map(m=>'<option>'+esc(m)+'</option>').join('');
+    ['stBranch','stModel','stStatus'].forEach(k=> $('#'+k).onchange=rStock);
+    $('#stQ').oninput=rStock;
+    $$('#s-stock .tabs button').forEach(b=> b.onclick=()=>{ $$('#s-stock .tabs button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); stView=b.dataset.v; rStock(); });
+  }
+  const q=$('#stQ').value.trim().toLowerCase();
+  const list=UNITS.filter(u=> inScope(u.branch)
+    && (!$('#stBranch').value || u.branch===$('#stBranch').value)
+    && (!$('#stModel').value  || u.model===$('#stModel').value)
+    && (!$('#stStatus').value || u.status===$('#stStatus').value)
+    && (!q || (u.engine+u.frame+u.model+u.variant+u.color).toLowerCase().indexOf(q)>=0));
+  const av=list.filter(u=>u.status!=='sold');
+  $('#stSum').innerHTML='พบ <b>'+list.length+'</b> คัน · พร้อมขาย <b>'+av.length+'</b> · ต้นทุนจม <b>'+money(av.reduce((s,u)=>s+u.cost,0))
+    +'</b> · ค้างเกิน '+CFG.aging+' วัน <b>'+av.filter(u=>age(u)>CFG.aging).length+'</b> คัน';
+  $('#stTableWrap').style.display = stView==='table'?'':'none';
+  $('#stGalWrap').style.display   = stView==='gal'?'':'none';
+  if(stView==='table'){
+    tbl($('#stTable'), ['รุ่น / สี','รหัสรุ่น','เลขเครื่อง','สาขา',{t:'ต้นทุน',n:1},{t:'ราคาขาย',n:1},{t:'อายุ',n:1},'สถานะ',''],
+      list.slice().sort((a,b)=>age(b)-age(a)).map(u=>'<tr class="clk" data-unit="'+u.id+'">'
+        +'<td><b>'+esc(u.model)+'</b><div class="tsub"><span class="dot" style="background:'+(COLOR_HEX[u.color]||'#ccc')+'"></span> '+esc(u.color)+'</div></td>'
+        +'<td class="mono">'+esc(u.variant)+'</td><td class="mono">'+esc(u.engine)+'</td>'
+        +'<td>'+esc(bName(u.branch))+'</td><td class="n">'+money(u.cost)+'</td>'
+        +'<td class="n">'+(u.retail==null?pill('รอกำหนดราคา','warn'):fmt(u.retail))+'</td>'
+        +'<td class="n">'+ageTag(age(u))+'</td><td>'+statusPill(u.status)+'</td>'
+        +'<td>'+(u.status==='available'&&canSee('sell')?'<button class="lnk" data-sell="'+u.id+'">ขายคันนี้</button>':'')+'</td></tr>'),
+      'ไม่พบรถตามเงื่อนไข');
+    wireUnitRows();
+    $$('[data-sell]').forEach(b=> b.onclick=e=>{ e.stopPropagation(); go('sell'); setTimeout(()=>{ $('#sUnit').value=b.dataset.sell; calcSell(); },30); });
+  } else {
+    const grp={};
+    av.forEach(u=>{ const k=u.variant+'|'+u.model; grp[k]=grp[k]||{u:u,n:0,colors:{},age:0};
+      grp[k].n++; grp[k].age+=age(u); grp[k].colors[u.color]=(grp[k].colors[u.color]||0)+1; });
+    $('#stGal').innerHTML = Object.keys(grp).length? Object.keys(grp).map(k=>{ const g=grp[k];
+      return '<div class="gcard"><div class="ph"><span class="mo">🏍</span><span class="qty">'+g.n+'</span></div>'
+        +'<div class="gb"><b>'+esc(g.u.model)+'</b><div class="c">'+esc(g.u.variant)+' · '+esc(g.u.modelTh||'—')+'</div>'
+        +'<div class="c">'+(g.u.retail==null?'<span style="color:var(--warn)">รอกำหนดราคา</span>':baht(g.u.retail))+'</div>'
+        +'<div class="cs">'+Object.keys(g.colors).map(c=>'<span class="pill p-mut"><span class="dot" style="background:'+(COLOR_HEX[c]||'#ccc')+'"></span>'+esc(c)+' '+g.colors[c]+'</span>').join('')+'</div>'
+        +'<div class="tsub" style="margin-top:6px">อายุเฉลี่ย '+Math.round(g.age/g.n)+' วัน</div></div></div>';
+    }).join('') : '<div class="empty"><b>ไม่พบรถ</b>ลองปรับตัวกรอง</div>';
+  }
+}
+
+/* ============================= 5. ขายรถ ============================= */
+let sFree={};
+function rSell(){
+  if(!$('#sUnit').dataset.init){ $('#sUnit').dataset.init=1;
+    $('#sSales').innerHTML=SALESPEOPLE.map(s=>'<option>'+esc(s)+'</option>').join('');
+    $('#sFinCo').innerHTML=FIN_CO.map(f=>'<option value="'+f.id+'">'+esc(f.name)+' ('+f.rate+'%/เดือน)</option>').join('');
+    $('#sTerm').innerHTML=[12,18,24,30,36,42,48].map(t=>'<option>'+t+'</option>').join('');
+    $('#sPay').onchange=()=>{ $('#sFinBox').style.display=$('#sPay').value==='finance'?'grid':'none'; calcSell(); };
+    ['sUnit','sDisc'].forEach(k=> $('#'+k).oninput=calcSell);
+    $('#sUnit').onchange=calcSell;
+    $('#sSave').onclick=saveSale;
+    $('#sReset').onclick=()=>{ $('#sCust').value=''; $('#sPhone').value=''; $('#sDisc').value=0; $('#sNote').value=''; sFree={}; rSell(); };
+    $$('#sellTabs button').forEach(b=> b.onclick=()=>{ $$('#sellTabs button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); $$('#s-sell .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p));
+      if(b.dataset.p==='p2') finCompare(); if(b.dataset.p==='p3') renderDocs(); });
+    ['fNet','fDown'].forEach(k=> $('#'+k).oninput=finCompare);
+    $('#docPrint').onclick=()=>{ printHTML($('#docPrev').innerHTML); };
+  }
+  const av=uAvail().filter(u=>u.status==='available'&&u.retail!=null);
+  const cur=$('#sUnit').value;
+  $('#sUnit').innerHTML= av.length? av.map(u=>'<option value="'+u.id+'">'+esc(u.model)+' · '+esc(u.color)+' · '+esc(u.engine)+' — '+fmt(u.retail)+' ฿</option>').join('')
+    : '<option value="">— ไม่มีรถพร้อมขาย —</option>';
+  if(av.some(u=>u.id===cur)) $('#sUnit').value=cur;
+  $('#sFree').innerHTML=GIFTS.filter(g=>inScope(g.branch)).map(g=>'<button class="chip'+(sFree[g.id]?' on':'')+'" data-g="'+g.id+'">'
+    +esc(g.name)+' · '+fmt(g.cost)+' ฿ <span class="tsub">(เหลือ '+g.qty+')</span></button>').join('');
+  $$('#sFree .chip').forEach(b=> b.onclick=()=>{ const id=b.dataset.g;
+    if(sFree[id]) delete sFree[id]; else sFree[id]=1; b.classList.toggle('on'); calcSell(); });
+  calcSell();
+}
+function curUnit(){ return UNITS.find(u=>u.id===$('#sUnit').value); }
+function calcSell(){
+  const u=curUnit(); if(!u){ $('#sSummary').innerHTML='<div class="empty"><b>ไม่มีรถพร้อมขาย</b>รับรถเข้าสต๊อกก่อน</div>'; $('#sImpact').innerHTML=''; return; }
+  const disc=num($('#sDisc').value), net=u.retail-disc;
+  const fc=Object.keys(sFree).reduce((s,id)=>{ const g=GIFTS.find(x=>x.id===id); return s+(g?g.cost:0); },0);
+  const gp=net-u.cost-fc;
+  $('#sList').value=fmt(u.retail); $('#sNet').value=fmt(net);
+  const promo=PROMOS.find(p=>p.active&&p.variant===u.variant);
+  $('#sSummary').innerHTML=(promo?'<div class="note g"><b>โปรสัปดาห์นี้:</b> '+esc(promo.title)+'</div>':'')
+    +'<dl class="kv"><dt>รุ่น</dt><dd><b>'+esc(u.model)+'</b> · '+esc(u.color)+'</dd>'
+    +'<dt>เลขเครื่อง</dt><dd class="mono">'+esc(u.engine)+'</dd>'
+    +'<dt>อายุในสต๊อก</dt><dd>'+ageTag(age(u))+'</dd>'
+    +'<dt>ราคาตั้ง</dt><dd>'+baht(u.retail)+'</dd>'
+    +'<dt>ส่วนลด</dt><dd>'+baht(disc)+'</dd>'
+    +'<dt>ของแถม</dt><dd>'+money(fc)+'</dd>'
+    +'<dt>ราคาสุทธิ</dt><dd><b>'+baht(net)+'</b></dd>'
+    +'<dt>ต้นทุน</dt><dd>'+money(u.cost)+'</dd>'
+    +'<dt>กำไรขั้นต้น</dt><dd><b style="color:'+(gp>0?'var(--good)':'var(--bad)')+'">'+money(gp)+'</b>'
+      +(noMoney()?'':' <span class="tsub">('+Math.round(gp/net*100)+'%)</span>')+'</dd></dl>';
+  const cad=String(CFG.cadence).split(',').length;
+  $('#sImpact').innerHTML=(age(u)>CFG.aging?'<div class="note w"><b>รถคันนี้ค้างสต๊อก '+age(u)+' วัน</b> — เกินเกณฑ์ '+CFG.aging+' วัน ควรพิจารณาส่วนลดพิเศษ</div>':'')
+    +'<div style="font-size:13px;line-height:2">'
+    +'• สต๊อกเหลือ <b>'+(uAvail().length-1)+'</b> คัน<br>'
+    +'• สร้างงานติดตามอัตโนมัติ <b>'+cad+'</b> งาน (7/30/90 วัน · 1 ปี · 3 ปี)<br>'
+    +'• สร้างงานทะเบียน ครบกำหนด <b>'+thDate(addDays(TODAY,CFG.regDays))+'</b><br>'
+    +'• ตั้งเตือนเช็กระยะ <b>'+String(CFG.km).split(',').length+'</b> รอบ<br>'
+    +($('#sPay').value==='finance'?'• สร้าง<b>เคสสินเชื่อ</b>และ<b>รายการเงินค้างรับ</b>อัตโนมัติ<br>':'')
+    +'• ตัดสต๊อกของแถม <b>'+Object.keys(sFree).length+'</b> รายการ</div>';
+}
+function saveSale(){
+  const u=curUnit(); if(!u){ toast('ไม่มีรถให้ขาย','',1); return; }
+  const name=$('#sCust').value.trim();
+  if(!name){ toast('กรอกชื่อลูกค้าก่อน','',1); return; }
+  const disc=num($('#sDisc').value), net=u.retail-disc;
+  const fc=Object.keys(sFree).reduce((s,id)=>{ const g=GIFTS.find(x=>x.id===id); return s+(g?g.cost:0); },0);
+  let c=CUSTOMERS.find(x=>x.name===name && x.phone===$('#sPhone').value.trim());
+  if(!c){ c={id:nid('CU'),name,phone:$('#sPhone').value.trim(),src:'เดินเข้าร้าน',stage:'รับรถสำเร็จ',
+    branch:u.branch,variant:u.variant,owner:$('#sSales').value}; CUSTOMERS.push(c); }
+  else c.stage='รับรถสำเร็จ';
+  const pay=$('#sPay').value;
+  const s={id:nid('SA'),branch:u.branch,unitId:u.id,custId:c.id,sales:$('#sSales').value,soldAt:TODAY,
+    list:u.retail,disc,net,cost:u.cost,freeCost:fc,gp:net-u.cost-fc,pay,
+    finId: pay==='finance'?$('#sFinCo').value:'', down: pay==='finance'?num($('#sDown').value):0,
+    term: pay==='finance'?+$('#sTerm').value:null, note:$('#sNote').value.trim()};
+  SALES.push(s); u.status='sold';
+  Object.keys(sFree).forEach(id=>{ const g=GIFTS.find(x=>x.id===id); if(g) g.qty=Math.max(0,g.qty-1); });
+  REGS.push({id:nid('RG'),saleId:s.id,branch:s.branch,stage:'ขายแล้ว',due:addDays(TODAY,CFG.regDays),plate:'',
+    log:[{to:'ขายแล้ว',at:TODAY}]});
+  if(pay==='finance'){
+    FINCASES.push({id:nid('FC'),saleId:s.id,custId:c.id,branch:s.branch,finId:s.finId,status:'ส่งเรื่อง',amount:net-s.down,at:TODAY});
+    AR.push({id:nid('AR'),saleId:s.id,branch:s.branch,kind:'finance',finId:s.finId,due:net-s.down,paid:0,dueAt:addDays(TODAY,15)});
+  }
+  String(CFG.cadence).split(',').map(x=>parseInt(x)).forEach(d=>
+    TASKS.push({id:nid('TK'),custId:c.id,saleId:s.id,branch:s.branch,kind:d+' วัน',due:addDays(TODAY,d),done:false}));
+  String(CFG.km).split(',').map(x=>parseInt(x)).forEach((km,i)=>
+    REMIND.push({id:nid('RM'),custId:c.id,unitId:u.id,km,due:addDays(TODAY,[20,45,150,300][i]||300),status:'รอถึงกำหนด'}));
+  toast('บันทึกการขายแล้ว', u.model+' · '+name+(pay==='finance'?' · สร้างเคสสินเชื่อและเงินค้างรับให้แล้ว':''));
+  sFree={}; $('#sCust').value=''; $('#sPhone').value=''; $('#sDisc').value=0; $('#sNote').value='';
+  refreshAll();
+}
+function finCompare(){
+  const u=curUnit();
+  if(!$('#fNet').value || document.activeElement!==$('#fNet')) $('#fNet').value = u? fmt(u.retail-num($('#sDisc').value)) : 0;
+  const net=num($('#fNet').value), down=num($('#fDown').value), prin=Math.max(0,net-down);
+  $('#fPrin').value=fmt(prin);
+  const a=FIN_CO[0], b=FIN_CO[1];
+  const terms=[12,18,24,30,36,42,48];
+  const calc=(r,n)=> Math.round(prin*(1+r/100*n)/n);
+  tbl($('#finCmp'), ['จำนวนงวด',{t:a.name,n:1},{t:b.name,n:1},{t:'ต่างกัน / เดือน',n:1},'ถูกกว่า'],
+    terms.map(n=>{ const x=calc(a.rate,n), y=calc(b.rate,n);
+      return '<tr><td><b>'+n+' งวด</b></td><td class="n">'+fmt(x)+'</td><td class="n">'+fmt(y)+'</td>'
+        +'<td class="n">'+fmt(Math.abs(x-y))+'</td><td>'+pill(x<y?a.name:b.name,'good')+'</td></tr>'; }),
+    'กรอกราคาสุทธิก่อน');
+}
+function renderDocs(){
+  const u=curUnit(); const pay=$('#sPay').value;
+  const list = pay==='cash'
+    ? ['ใบเสร็จรับเงิน','ใบกำกับภาษี (ถ้าลูกค้าขอ)']
+    : ['ใบเสร็จรับเงิน (เงินดาวน์)','ใบกำกับภาษีเงินดาวน์','ใบกำกับภาษีที่ออกให้ไฟแนนซ์','สัญญาเช่าซื้อ'];
+  $('#docList').innerHTML=list.map(d=>'<div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line)">'
+    +'<span style="flex:1;font-size:13px">'+esc(d)+'</span>'+pill('พร้อมออก','good')+'</div>').join('')
+    +'<div class="note" style="margin-top:14px">เลขที่เอกสารมาจากตัวนับ <b>แยกสาขา × ประเภท × ปี</b> — ออกพร้อมกันหลายสาขาก็ไม่ซ้ำ</div>';
+  if(!u){ $('#docPrev').innerHTML='<div class="empty"><b>เลือกรถก่อน</b></div>'; return; }
+  const disc=num($('#sDisc').value), net=u.retail-disc;
+  const rate=CFG.vat/100, base=net/(1+rate), tax=net-base;
+  const br=bOf(u.branch);
+  $('#docPrev').innerHTML=
+   '<div class="doc"><h2>'+esc(CFG.company)+'</h2>'
+   +'<div class="dsub">'+esc(CFG.address)+' · โทร '+esc(CFG.phone)+'<br>เลขประจำตัวผู้เสียภาษี '+esc(CFG.taxId)+' · '+esc(br.name)+' ('+esc(br.branchNo)+')</div>'
+   +'<h2 style="margin-top:14px">ใบเสร็จรับเงิน / ใบกำกับภาษี</h2>'
+   +'<div class="co"><div><b>ลูกค้า</b><br>'+esc($('#sCust').value||'— ยังไม่ระบุ —')+'<br>'+esc($('#sPhone').value||'')+'</div>'
+   +'<div style="text-align:right"><b>เลขที่</b> '+esc(br.prefix)+'-TAX_INV-'+(NOW.getFullYear()+543)+'-XXXXX<br>'
+   +'<b>วันที่</b> '+thDate(TODAY)+'</div></div>'
+   +'<table><thead><tr><th>รายการ</th><th class="n">จำนวน</th><th class="n">ราคา</th></tr></thead><tbody>'
+   +'<tr><td>'+esc(u.model)+' ('+esc(u.variant)+') สี'+esc(u.color)+'<br><span class="tsub mono">เลขเครื่อง '+esc(u.engine)+' · เลขถัง '+esc(u.frame)+'</span></td>'
+   +'<td class="n">1</td><td class="n">'+fmt(u.retail)+'</td></tr>'
+   +(disc?'<tr><td>ส่วนลด</td><td class="n">—</td><td class="n">-'+fmt(disc)+'</td></tr>':'')
+   +'</tbody></table>'
+   +'<div class="tot"><div><span>มูลค่าก่อนภาษี</span><span>'+fmt(base)+'</span></div>'
+   +'<div><span>ภาษีมูลค่าเพิ่ม '+CFG.vat+'%</span><span>'+fmt(tax)+'</span></div>'
+   +'<div class="g"><span>รวมทั้งสิ้น</span><span>'+fmt(net)+' ฿</span></div></div>'
+   +'<div class="sig"><div>ผู้รับเงิน</div><div>ผู้รับสินค้า</div></div></div>';
+}
+
+/* ============================= 6. โอนย้าย ============================= */
+function rTransfer(){
+  if(!$('#tUnit').dataset.init){ $('#tUnit').dataset.init=1;
+    $('#tUnit').onchange=()=>{ const u=UNITS.find(x=>x.id===$('#tUnit').value);
+      $('#tFrom').value=u?bName(u.branch):''; };
+    $('#tSave').onclick=()=>{ const u=UNITS.find(x=>x.id===$('#tUnit').value);
+      if(!u){ toast('เลือกรถก่อน','',1); return; }
+      if(u.branch===$('#tTo').value){ toast('สาขาต้นทางและปลายทางซ้ำกัน','',1); return; }
+      TRANSFERS.push({id:nid('TR'),unitId:u.id,from:u.branch,to:$('#tTo').value,at:TODAY,
+        status:'กำลังโอนย้าย',note:$('#tNote').value.trim()});
+      u.status='in_transfer';
+      toast('ส่งคำขอโอนย้ายแล้ว', u.model+' → '+bName($('#tTo').value)); $('#tNote').value=''; refreshAll(); };
+  }
+  const av=UNITS.filter(u=>u.status==='available'&&inScope(u.branch)).sort((a,b)=>age(b)-age(a));
+  $('#tUnit').innerHTML=av.map(u=>'<option value="'+u.id+'">'+esc(u.model)+' · '+esc(u.engine)+' · '+bName(u.branch)+' · ค้าง '+age(u)+' วัน</option>').join('')
+    || '<option value="">— ไม่มีรถ —</option>';
+  $('#tTo').innerHTML=BRANCHES.map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+  const u0=UNITS.find(x=>x.id===$('#tUnit').value); $('#tFrom').value=u0?bName(u0.branch):'';
+  tbl($('#tList'), ['วันที่','รุ่น','จาก','ไป','สถานะ',''],
+    TRANSFERS.map(t=>{ const u=UNITS.find(x=>x.id===t.unitId);
+      return '<tr><td>'+thDate(t.at)+'</td><td><b>'+esc(u?u.model:'—')+'</b><div class="tsub mono">'+esc(u?u.engine:'')+'</div></td>'
+        +'<td>'+esc(bName(t.from))+'</td><td>'+esc(bName(t.to))+'</td>'
+        +'<td>'+(t.status==='รับแล้ว'?pill('รับแล้ว','good'):pill('กำลังโอนย้าย','info'))+'</td>'
+        +'<td>'+(t.status!=='รับแล้ว'?'<button class="lnk" data-tr="'+t.id+'">ยืนยันรับ</button>':'')+'</td></tr>'; }),
+    'ยังไม่มีการโอนย้าย');
+  $$('[data-tr]').forEach(b=> b.onclick=()=>{ const t=TRANSFERS.find(x=>x.id===b.dataset.tr);
+    const u=UNITS.find(x=>x.id===t.unitId); t.status='รับแล้ว'; if(u){ u.branch=t.to; u.status='available'; }
+    toast('รับรถเข้าสาขาแล้ว', bName(t.to)); refreshAll(); });
+}
+
+/* ============================= 7. ใบเสนอราคา ============================= */
+function rQuote(){
+  if(!$('#qV1').dataset.init){ $('#qV1').dataset.init=1;
+    const vs=Object.keys(PRICE);
+    $('#qV1').innerHTML=vs.map(v=>'<option value="'+v+'">'+esc(PRICE[v].m)+' · '+v+' — '+fmt(PRICE[v].retail)+' ฿</option>').join('');
+    $('#qV2').innerHTML='<option value="">— ไม่เทียบคันที่ 2 —</option>'+vs.map(v=>'<option value="'+v+'">'+esc(PRICE[v].m)+' · '+v+' — '+fmt(PRICE[v].retail)+' ฿</option>').join('');
+    $('#qF1').innerHTML=FIN_CO.map(f=>'<option value="'+f.id+'">'+esc(f.name)+'</option>').join('');
+    $('#qF2').innerHTML=FIN_CO.map(f=>'<option value="'+f.id+'">'+esc(f.name)+'</option>').join('');
+    $('#qF2').value='F2'; $('#qUntil').value=addDays(TODAY,7);
+    ['qName','qPhone','qUntil','qV1','qV2','qF1','qF2','qDown'].forEach(k=> $('#'+k).oninput=qDraw);
+    ['qV1','qV2','qF1','qF2'].forEach(k=> $('#'+k).onchange=qDraw);
+    $('#qPrint').onclick=()=>printHTML($('#qDoc').innerHTML);
+  }
+  qDraw();
+}
+function qDraw(){
+  const down=num($('#qDown').value), terms=[12,24,36,48];
+  const f1=FIN_CO.find(f=>f.id===$('#qF1').value), f2=FIN_CO.find(f=>f.id===$('#qF2').value);
+  const slots=[$('#qV1').value, $('#qV2').value].filter(Boolean);
+  const br=bOf(ME.branch);
+  let h='<div class="doc"><h2>'+esc(CFG.company)+'</h2>'
+    +'<div class="dsub">'+esc(CFG.address)+' · โทร '+esc(CFG.phone)+'</div>'
+    +'<h2 style="margin-top:14px">ใบเสนอราคา</h2>'
+    +'<div class="co"><div><b>เรียน</b> '+esc($('#qName').value)+'<br>โทร '+esc($('#qPhone').value)+'</div>'
+    +'<div style="text-align:right"><b>เลขที่</b> '+esc(br.prefix)+'-QUOTE-'+(NOW.getFullYear()+543)+'-XXXXX<br>'
+    +'<b>วันที่</b> '+thDate(TODAY)+'<br><b>ยืนราคาถึง</b> '+thDate($('#qUntil').value)+'</div></div>';
+  slots.forEach((v,i)=>{ const p=PRICE[v]; const prin=Math.max(0,p.retail-down);
+    h+='<h4 class="sec">คันที่ '+(i+1)+' — '+esc(p.m)+' ('+v+')</h4>'
+      +'<table><thead><tr><th>รายละเอียด</th><th class="n">ราคา (฿)</th></tr></thead><tbody>'
+      +'<tr><td>'+esc(p.th)+' · '+p.cc+' cc · ปี พ.ศ. '+p.yr+'</td><td class="n">'+fmt(p.retail)+'</td></tr>'
+      +'<tr><td>เงินดาวน์</td><td class="n">'+fmt(down)+'</td></tr>'
+      +'<tr><td><b>ยอดจัดไฟแนนซ์</b></td><td class="n"><b>'+fmt(prin)+'</b></td></tr></tbody></table>'
+      +'<table><thead><tr><th>จำนวนงวด</th><th class="n">'+esc(f1.name)+' ('+f1.rate+'%)</th><th class="n">'+esc(f2.name)+' ('+f2.rate+'%)</th></tr></thead><tbody>'
+      +terms.map(n=>'<tr><td>'+n+' งวด</td><td class="n">'+fmt(prin*(1+f1.rate/100*n)/n)+'</td><td class="n">'+fmt(prin*(1+f2.rate/100*n)/n)+'</td></tr>').join('')
+      +'</tbody></table>';
+  });
+  if(!slots.length) h+='<div class="empty"><b>เลือกรุ่นรถก่อน</b></div>';
+  h+='<div class="tsub" style="margin-top:14px">* ค่างวดคำนวณแบบดอกเบี้ยคงที่ · เป็นการประมาณการ อัตราจริงขึ้นกับการอนุมัติของบริษัทไฟแนนซ์</div>'
+    +'<div class="sig"><div>ผู้เสนอราคา</div><div>ผู้รับข้อเสนอ</div></div></div>';
+  $('#qDoc').innerHTML=h;
+}
+
+/* ============================= 8. ลูกค้า / ติดตาม ============================= */
+function rCrm(){
+  if(!$('#cSave').dataset.init){ $('#cSave').dataset.init=1;
+    $('#cModel').innerHTML=Object.keys(PRICE).map(v=>'<option value="'+v+'">'+esc(PRICE[v].m)+' · '+v+'</option>').join('');
+    $$('#crmTabs button').forEach(b=> b.onclick=()=>{ $$('#crmTabs button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); $$('#s-crm .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p)); });
+    $('#cQ').oninput=rCrm;
+    $('#cSave').onclick=()=>{ const n=$('#cName').value.trim(); if(!n){ toast('กรอกชื่อลูกค้า','',1); return; }
+      CUSTOMERS.push({id:nid('CU'),name:n,phone:$('#cPhone').value.trim(),src:$('#cSrc').value,
+        stage:$('#cStage').value,branch:ME.branch,variant:$('#cModel').value,owner:ME.nick});
+      toast('เพิ่มลูกค้าแล้ว',n); $('#cName').value=''; $('#cPhone').value=''; refreshAll(); };
+  }
+  const due=TASKS.filter(t=>!t.done&&inScope(t.branch)).sort((a,b)=>a.due.localeCompare(b.due));
+  $('#taskCnt').textContent=due.filter(t=>t.due<=TODAY).length+' ถึงกำหนดแล้ว';
+  tbl($('#taskTable'), ['ลูกค้า','รอบ','ครบกำหนด','สถานะ',''],
+    due.slice(0,25).map(t=>{ const c=CUSTOMERS.find(x=>x.id===t.custId); const d=days(t.due,TODAY);
+      return '<tr><td><b>'+esc(c?c.name:'—')+'</b><div class="tsub">'+esc(c?c.phone:'')+'</div></td>'
+        +'<td>'+esc(t.kind)+'</td><td>'+thDate(t.due)+'</td>'
+        +'<td>'+(d>0?pill('เลย '+d+' วัน','bad'):(d===0?pill('วันนี้','warn'):pill('อีก '+(-d)+' วัน','mut')))+'</td>'
+        +'<td><button class="lnk" data-task="'+t.id+'">เสร็จแล้ว</button></td></tr>'; }),
+    'ไม่มีงานติดตามค้าง');
+  $$('[data-task]').forEach(b=> b.onclick=()=>{ const t=TASKS.find(x=>x.id===b.dataset.task); t.done=true;
+    toast('ปิดงานติดตามแล้ว'); refreshAll(); });
+
+  const stages=['เข้ามาดูรถ','สนใจ','ทำสัญญา','ผ่าน','ไม่ผ่าน','รับรถสำเร็จ'];
+  const cs=CUSTOMERS.filter(c=>inScope(c.branch));
+  $('#funnel').innerHTML=stages.map(s=>{ const n=cs.filter(c=>c.stage===s).length;
+    const mx=Math.max(1,...stages.map(x=>cs.filter(c=>c.stage===x).length));
+    return '<div class="bar"><div class="bl"><span>'+esc(s)+'</span><b>'+n+'</b></div>'
+      +'<div class="bt"><div class="bf '+(s==='ไม่ผ่าน'?'d':(s==='รับรถสำเร็จ'?'g':''))+'" style="width:'+(n/mx*100)+'%"></div></div></div>'; }).join('');
+  const labels={7:'ถามความรู้สึกหลังออกรถ',30:'เช็กระยะและเรื่องทะเบียน',90:'เช็กระยะครั้งถัดไป',365:'ต่อ พ.ร.บ. / เสนอเปลี่ยนรถ',1095:'เสนอเปลี่ยนรถใหม่'};
+  $('#cadence').innerHTML=String(CFG.cadence).split(',').map(d=>'<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px">'
+    +pill(d+' วัน','brand')+'<span>'+esc(labels[+d]||'ติดตามลูกค้า')+'</span></div>').join('');
+
+  const q=$('#cQ').value.trim().toLowerCase();
+  tbl($('#custTable'), ['ลูกค้า','เบอร์','รู้จักจาก','สถานะ','รุ่นที่สนใจ/ซื้อ',{t:'งานค้าง',n:1}],
+    cs.filter(c=>!q||(c.name+c.phone).toLowerCase().indexOf(q)>=0).map(c=>{
+      const open=TASKS.filter(t=>t.custId===c.id&&!t.done).length;
+      return '<tr class="clk" data-cust="'+c.id+'"><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.phone||'—')+'</td>'
+        +'<td>'+esc(c.src)+'</td><td>'+pill(c.stage, c.stage==='รับรถสำเร็จ'?'good':(c.stage==='ไม่ผ่าน'?'bad':'info'))+'</td>'
+        +'<td>'+esc(PRICE[c.variant]?PRICE[c.variant].m:c.variant||'—')+'</td><td class="n">'+(open||'—')+'</td></tr>'; }),
+    'ยังไม่มีลูกค้า');
+  $$('[data-cust]').forEach(r=> r.onclick=()=>custDrawer(r.dataset.cust));
+}
+function custDrawer(id){
+  const c=CUSTOMERS.find(x=>x.id===id); if(!c) return;
+  const ss=SALES.filter(s=>s.custId===id), ts=TASKS.filter(t=>t.custId===id), sv=SERVICE.filter(s=>s.custId===id);
+  let h='<dl class="kv"><dt>ชื่อ</dt><dd><b>'+esc(c.name)+'</b></dd><dt>เบอร์</dt><dd>'+esc(c.phone||'—')+'</dd>'
+    +'<dt>รู้จักจาก</dt><dd>'+esc(c.src)+'</dd><dt>สถานะ</dt><dd>'+pill(c.stage,'info')+'</dd>'
+    +'<dt>เซลล์ที่ดูแล</dt><dd>'+esc(c.owner||'—')+'</dd><dt>สาขา</dt><dd>'+esc(bName(c.branch))+'</dd></dl>';
+  h+='<h4 class="sec">ประวัติการซื้อ ('+ss.length+')</h4>';
+  h+= ss.length? ss.map(s=>{ const u=UNITS.find(x=>x.id===s.unitId);
+    return '<div style="padding:9px 0;border-bottom:1px solid var(--line);font-size:13px"><b>'+esc(u.model)+'</b> · '+esc(u.color)
+      +'<div class="tsub mono">'+esc(u.engine)+'</div><div class="tsub">'+thDate(s.soldAt)+' · '+baht(s.net)+' · '+esc(s.sales)+'</div></div>'; }).join('')
+    : '<div class="tsub">ยังไม่เคยซื้อ</div>';
+  h+='<h4 class="sec">ประวัติเข้าศูนย์ ('+sv.length+')</h4>';
+  h+= sv.length? sv.map(v=>'<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px">'
+      +esc(v.type)+' · '+thDate(v.at)+' · '+fmt(v.km)+' กม.</div>').join('') : '<div class="tsub">ยังไม่เคยเข้าศูนย์</div>';
+  h+='<h4 class="sec">งานติดตาม</h4>';
+  h+= ts.length? ts.map(t=>'<div style="display:flex;gap:8px;padding:6px 0;font-size:13px;border-bottom:1px solid var(--line)">'
+      +(t.done?pill('เสร็จ','good'):pill(t.kind,'brand'))+'<span>'+thDate(t.due)+'</span></div>').join('') : '<div class="tsub">—</div>';
+  openDrawer(c.name, h);
+}
+
+/* ============================= 9. ทะเบียน ============================= */
+function rReg(){
+  if(!$('#expReg').dataset.init){ $('#expReg').dataset.init=1;
+    $('#expReg').onclick=()=> csv('ทะเบียน',['ลูกค้า','รุ่น','เลขเครื่อง','สาขา','ขั้นตอน','ครบกำหนด','ค้าง(วัน)','ป้าย'],
+      REGS.filter(r=>inScope(r.branch)).map(r=>{ const s=SALES.find(x=>x.id===r.saleId), u=UNITS.find(x=>x.id===s.unitId),
+        c=CUSTOMERS.find(x=>x.id===s.custId);
+        return [c?c.name:'',u.model,u.engine,bName(r.branch),r.stage,r.due,Math.max(0,days(r.due,TODAY)),r.plate]; }));
+  }
+  const rs=REGS.filter(r=>inScope(r.branch));
+  const late=rs.filter(r=>r.stage!=='ส่งมอบแล้ว'&&days(r.due,TODAY)>0);
+  $('#regKpi').innerHTML=[
+    ['ยังไม่ส่งมอบ', rs.filter(r=>r.stage!=='ส่งมอบแล้ว').length+' <small>คัน</small>','ทุกขั้นตอนรวมกัน'],
+    ['เลยกำหนด '+CFG.regDays+' วัน', late.length+' <small>คัน</small>', late.length?'ต้องตามด่วน':'ไม่มีค้าง'],
+    ['ส่งมอบแล้วเดือนนี้', rs.filter(r=>r.stage==='ส่งมอบแล้ว').length+' <small>คัน</small>','จบกระบวนการ']
+  ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
+  $('#regKan').innerHTML=REG_STAGES.map(st=>{ const items=rs.filter(r=>r.stage===st);
+    return '<div class="kcol"><h5>'+esc(st)+'<span>'+items.length+'</span></h5>'
+      +items.slice(0,6).map(r=>{ const s=SALES.find(x=>x.id===r.saleId), u=UNITS.find(x=>x.id===s.unitId),
+          c=CUSTOMERS.find(x=>x.id===s.custId); const d=days(r.due,TODAY);
+        return '<div class="kcard" data-reg="'+r.id+'"><b>'+esc(c?c.name:'—')+'</b><span>'+esc(u.model)+'</span>'
+          +(d>0&&st!=='ส่งมอบแล้ว'?'<div style="margin-top:4px">'+pill('ค้าง '+d+' วัน','bad')+'</div>':'')+'</div>'; }).join('')
+      +(items.length>6?'<div class="tsub" style="text-align:center">+ อีก '+(items.length-6)+'</div>':'')+'</div>'; }).join('');
+  $$('[data-reg]').forEach(k=> k.onclick=()=>regDrawer(k.dataset.reg));
+  tbl($('#regTable'), ['ลูกค้า','รุ่น','เลขเครื่อง','สาขา','ขั้นตอน','ครบกำหนด','ทะเบียน',''],
+    rs.slice().sort((a,b)=>a.due.localeCompare(b.due)).map(r=>{
+      const s=SALES.find(x=>x.id===r.saleId), u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+      const d=days(r.due,TODAY);
+      return '<tr><td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(u.model)+'</td><td class="mono">'+esc(u.engine)+'</td>'
+        +'<td>'+esc(bName(r.branch))+'</td><td>'+pill(r.stage, r.stage==='ส่งมอบแล้ว'?'good':'info')+'</td>'
+        +'<td>'+thDate(r.due)+(d>0&&r.stage!=='ส่งมอบแล้ว'?' '+pill('ค้าง '+d,'bad'):'')+'</td>'
+        +'<td class="mono">'+esc(r.plate||'—')+'</td>'
+        +'<td><button class="lnk" data-reg2="'+r.id+'">ดู</button></td></tr>'; }),
+    'ยังไม่มีงานทะเบียน');
+  $$('[data-reg2]').forEach(b=> b.onclick=()=>regDrawer(b.dataset.reg2));
+}
+function regDrawer(id){
+  const r=REGS.find(x=>x.id===id); const s=SALES.find(x=>x.id===r.saleId);
+  const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+  const i=REG_STAGES.indexOf(r.stage);
+  let h='<dl class="kv"><dt>ลูกค้า</dt><dd><b>'+esc(c?c.name:'—')+'</b></dd>'
+    +'<dt>รถ</dt><dd>'+esc(u.model)+' · '+esc(u.color)+'</dd>'
+    +'<dt>เลขเครื่อง</dt><dd class="mono">'+esc(u.engine)+'</dd>'
+    +'<dt>วันที่ขาย</dt><dd>'+thDate(s.soldAt)+'</dd>'
+    +'<dt>ครบกำหนด</dt><dd>'+thDate(r.due)+'</dd>'
+    +'<dt>ทะเบียน</dt><dd class="mono">'+esc(r.plate||'—')+'</dd></dl>';
+  h+='<h4 class="sec">ขั้นตอน</h4><div style="display:grid;gap:6px">'
+    +REG_STAGES.map((st,ix)=>'<div style="display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;'
+      +(ix<=i?'background:var(--good-bg)':'background:var(--soft)')+'">'
+      +'<span style="width:20px;text-align:center">'+(ix<i?'✓':(ix===i?'●':'○'))+'</span>'
+      +'<span style="font-size:13px;font-weight:'+(ix===i?'600':'400')+'">'+esc(st)+'</span></div>').join('')+'</div>';
+  if(i<5) h+='<div style="margin-top:14px;display:flex;gap:8px"><button class="btn" id="regNext">ไปขั้นถัดไป: '+esc(REG_STAGES[i+1])+'</button>'
+    +(i>0?'<button class="btn sec" id="regBack">ถอยกลับ</button>':'')+'</div>';
+  openDrawer('งานทะเบียน', h);
+  if($('#regNext')) $('#regNext').onclick=()=>{ r.stage=REG_STAGES[i+1]; r.log.push({to:r.stage,at:TODAY});
+    if(r.stage==='ป้ายขาว'&&!r.plate) r.plate='1กก '+(1000+Math.floor(Math.random()*8999));
+    toast('อัปเดตขั้นตอนแล้ว', r.stage); closeDrawer(); refreshAll(); };
+  if($('#regBack')) $('#regBack').onclick=()=>{ r.stage=REG_STAGES[i-1]; r.log.push({to:r.stage,at:TODAY});
+    toast('ถอยกลับแล้ว', r.stage); closeDrawer(); refreshAll(); };
+}
+
+/* ============================= 10. เคสสินเชื่อ ============================= */
+function rFin(){
+  if(!$('#finCo').dataset.init){ $('#finCo').dataset.init=1;
+    $('#finCo').innerHTML='<option value="">ทุกไฟแนนซ์</option>'+FIN_CO.map(f=>'<option value="'+f.id+'">'+esc(f.name)+'</option>').join('');
+    $('#finCo').onchange=rFin; }
+  const all=FINCASES.filter(c=>inScope(c.branch)&&(!$('#finCo').value||c.finId===$('#finCo').value));
+  const open=all.filter(c=>FIN_STAGES.indexOf(c.status)>=0&&c.status!=='อนุมัติแล้ว');
+  const appr=all.filter(c=>c.status==='อนุมัติแล้ว'), rej=all.filter(c=>c.status==='ปฏิเสธ');
+  $('#finKpi').innerHTML=[
+    ['เคสทั้งหมด', all.length,''],['กำลังดำเนินการ', open.length,'ต้องติดตาม'],
+    ['อนุมัติแล้ว', appr.length,''],['อัตราอนุมัติ', all.length?Math.round(appr.length/all.length*100)+'%':'—','จากเคสทั้งหมด']
+  ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
+  $('#finKan').innerHTML=FIN_STAGES.map(st=>{ const items=all.filter(c=>c.status===st);
+    return '<div class="kcol"><h5>'+esc(st)+'<span>'+items.length+'</span></h5>'
+      +items.map(c=>{ const cu=CUSTOMERS.find(x=>x.id===c.custId), f=FIN_CO.find(x=>x.id===c.finId);
+        return '<div class="kcard" data-fin="'+c.id+'"><b>'+esc(cu?cu.name:'—')+'</b><span>'+esc(f?f.name:'')+' · '+fmt(c.amount)+' ฿</span></div>'; }).join('')
+      +'</div>'; }).join('');
+  $$('[data-fin]').forEach(k=> k.onclick=()=>finDrawer(k.dataset.fin));
+  const rate=FIN_CO.map(f=>{ const cs=all.filter(c=>c.finId===f.id);
+    const a=cs.filter(c=>c.status==='อนุมัติแล้ว').length, r=cs.filter(c=>c.status==='ปฏิเสธ').length;
+    return '<tr><td><b>'+esc(f.name)+'</b><div class="tsub">ดอกเบี้ย '+f.rate+'%/เดือน</div></td>'
+      +'<td class="n">'+cs.length+'</td><td class="n">'+a+'</td><td class="n">'+r+'</td>'
+      +'<td class="n">'+(cs.length? pill(Math.round(a/cs.length*100)+'%', a/cs.length>=.7?'good':'warn') :'—')+'</td></tr>'; });
+  tbl($('#finRate'), ['ไฟแนนซ์',{t:'ยื่น',n:1},{t:'อนุมัติ',n:1},{t:'ปฏิเสธ',n:1},{t:'อัตราอนุมัติ',n:1}], rate, 'ยังไม่มีเคส');
+}
+function finDrawer(id){
+  const c=FINCASES.find(x=>x.id===id); const cu=CUSTOMERS.find(x=>x.id===c.custId);
+  const f=FIN_CO.find(x=>x.id===c.finId); const i=FIN_STAGES.indexOf(c.status);
+  const s=SALES.find(x=>x.id===c.saleId), u=s&&UNITS.find(x=>x.id===s.unitId);
+  let h='<dl class="kv"><dt>ลูกค้า</dt><dd><b>'+esc(cu?cu.name:'—')+'</b></dd>'
+    +'<dt>รถ</dt><dd>'+esc(u?u.model:'—')+'</dd><dt>เลขเครื่อง</dt><dd class="mono">'+esc(u?u.engine:'—')+'</dd>'
+    +'<dt>ไฟแนนซ์</dt><dd>'+esc(f?f.name:'—')+'</dd>'
+    +'<dt>ยอดจัด</dt><dd>'+baht(c.amount)+'</dd>'
+    +'<dt>ยื่นเมื่อ</dt><dd>'+thDate(c.at)+' ('+days(c.at,TODAY)+' วันแล้ว)</dd>'
+    +'<dt>สถานะ</dt><dd>'+pill(c.status, c.status==='อนุมัติแล้ว'?'good':(c.status==='ปฏิเสธ'?'bad':'info'))+'</dd></dl>';
+  h+='<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">';
+  if(i>=0&&i<FIN_STAGES.length-1) h+='<button class="btn" id="fnNext">ไป: '+esc(FIN_STAGES[i+1])+'</button>';
+  if(i>0) h+='<button class="btn sec" id="fnBack">ถอยกลับ</button>';
+  if(c.status!=='ปฏิเสธ') h+='<button class="btn dgr" id="fnRej">ปฏิเสธ</button>';
+  h+='</div>';
+  openDrawer('เคสสินเชื่อ', h);
+  if($('#fnNext')) $('#fnNext').onclick=()=>{ c.status=FIN_STAGES[i+1]; toast('อัปเดตแล้ว',c.status); closeDrawer(); refreshAll(); };
+  if($('#fnBack')) $('#fnBack').onclick=()=>{ c.status=FIN_STAGES[i-1]; toast('ถอยกลับแล้ว',c.status); closeDrawer(); refreshAll(); };
+  if($('#fnRej')) $('#fnRej').onclick=()=>{ c.status='ปฏิเสธ'; const cu2=CUSTOMERS.find(x=>x.id===c.custId);
+    if(cu2) cu2.stage='ไม่ผ่าน'; toast('บันทึกการปฏิเสธแล้ว','อัปเดตสถานะลูกค้าเป็น “ไม่ผ่าน”',1); closeDrawer(); refreshAll(); };
+}
+
+/* ============================= 11. เงินค้างรับ ============================= */
+function rAr(){
+  if(!$('#expAr').dataset.init){ $('#expAr').dataset.init=1;
+    $('#expAr').onclick=()=> csv('เงินค้างรับ',['ลูกค้า','รุ่น','ประเภท','ผู้จ่าย','ยอดที่ต้องรับ','รับแล้ว','คงค้าง','ครบกำหนด'],
+      AR.filter(a=>inScope(a.branch)).map(a=>{ const s=SALES.find(x=>x.id===a.saleId), u=UNITS.find(x=>x.id===s.unitId),
+        c=CUSTOMERS.find(x=>x.id===s.custId), f=FIN_CO.find(x=>x.id===a.finId);
+        return [c?c.name:'',u.model,a.kind==='finance'?'ไฟแนนซ์':'ลูกค้า',f?f.name:'—',a.due,a.paid,a.due-a.paid,a.dueAt]; }));
+  }
+  const list=AR.filter(a=>inScope(a.branch));
+  const outstanding=list.filter(a=>a.due-a.paid>0);
+  const overdue=outstanding.filter(a=>days(a.dueAt,TODAY)>0);
+  $('#arKpi').innerHTML=[
+    ['ยอดค้างรับรวม', fmt(outstanding.reduce((s,a)=>s+a.due-a.paid,0))+' <small>฿</small>', outstanding.length+' รายการ'],
+    ['เลยกำหนดแล้ว', fmt(overdue.reduce((s,a)=>s+a.due-a.paid,0))+' <small>฿</small>', overdue.length+' รายการ'],
+    ['รับแล้วเดือนนี้', fmt(list.reduce((s,a)=>s+a.paid,0))+' <small>฿</small>','เข้าบัญชีแล้ว']
+  ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
+  tbl($('#arTable'), ['ลูกค้า','รุ่น','ประเภท','ผู้จ่าย',{t:'ต้องรับ',n:1},{t:'รับแล้ว',n:1},{t:'คงค้าง',n:1},'ครบกำหนด',''],
+    list.slice().sort((a,b)=>(b.due-b.paid)-(a.due-a.paid)).map(a=>{
+      const s=SALES.find(x=>x.id===a.saleId), u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+      const f=FIN_CO.find(x=>x.id===a.finId); const left=a.due-a.paid; const od=days(a.dueAt,TODAY);
+      return '<tr><td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(u.model)+'</td>'
+        +'<td>'+(a.kind==='finance'?pill('ไฟแนนซ์','info'):pill('ลูกค้า','mut'))+'</td>'
+        +'<td>'+esc(f?f.name:'—')+'</td><td class="n">'+fmt(a.due)+'</td><td class="n">'+fmt(a.paid)+'</td>'
+        +'<td class="n"><b style="color:'+(left>0?'var(--bad)':'var(--good)')+'">'+fmt(left)+'</b></td>'
+        +'<td>'+thDate(a.dueAt)+(left>0&&od>0?' '+pill('เลย '+od+' วัน','bad'):'')+'</td>'
+        +'<td>'+(left>0?'<button class="lnk" data-ar="'+a.id+'">ลงรับเงิน</button>':pill('ครบแล้ว','good'))+'</td></tr>'; }),
+    'ไม่มีเงินค้างรับ');
+  $$('[data-ar]').forEach(b=> b.onclick=()=>{ const a=AR.find(x=>x.id===b.dataset.ar); const left=a.due-a.paid;
+    openModal('ลงรับเงิน','<div class="f"><div><label class="fl">ยอดคงค้าง</label><input class="inp num" value="'+fmt(left)+'" disabled></div>'
+      +'<div><label class="fl">จำนวนเงินที่รับ (฿)</label><input class="inp num" id="arAmt" value="'+left+'"></div>'
+      +'<div><label class="fl">วิธีรับ</label><select class="inp" id="arWay"><option>โอนเข้าบัญชี</option><option>เงินสด</option><option>เช็ค</option></select></div>'
+      +'</div><div style="margin-top:16px"><button class="btn" id="arGo">ยืนยันลงรับ</button></div>');
+    $('#arGo').onclick=()=>{ a.paid=Math.min(a.due, a.paid+num($('#arAmt').value));
+      toast('ลงรับเงินแล้ว', baht(num($('#arAmt').value))+' · บันทึกเข้าบัญชีเงินสด'); closeModal(); refreshAll(); }; });
+}
+
+/* ============================= 12. ศูนย์ซ่อม ============================= */
+let svFoundUnit=null;
+function rService(){
+  if(!$('#svFind').dataset.init){ $('#svFind').dataset.init=1;
+    $$('#svTabs button').forEach(b=> b.onclick=()=>{ $$('#svTabs button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); $$('#s-service .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p)); });
+    $('#svTech').innerHTML=STAFF.filter(s=>s.role==='tech'||s.role==='stock').map(s=>'<option>'+esc(s.nick)+'</option>').join('')||'<option>ช่างเอก</option>';
+    $('#svFind').onclick=svLookup;
+    $('#svSearch').onkeydown=e=>{ if(e.key==='Enter') svLookup(); };
+    $('#svSave').onclick=svSave;
+    $('#svLine').onclick=()=>{ const r=REMIND.filter(x=>x.status==='รอถึงกำหนด'&&x.due<=addDays(TODAY,7));
+      openModal('รายการส่ง LINE ('+r.length+' คน)','<div class="note">ระบบจริงจะส่งผ่าน LINE Messaging API อัตโนมัติตามรอบที่ตั้งไว้</div>'
+        +'<div class="tw"><table><thead><tr><th>ลูกค้า</th><th>เบอร์</th><th class="n">รอบ (กม.)</th><th>ครบกำหนด</th></tr></thead><tbody>'
+        +r.slice(0,25).map(x=>{ const c=CUSTOMERS.find(y=>y.id===x.custId);
+          return '<tr><td>'+esc(c?c.name:'—')+'</td><td>'+esc(c?c.phone:'')+'</td><td class="n">'+fmt(x.km)+'</td><td>'+thDate(x.due)+'</td></tr>'; }).join('')
+        +'</tbody></table></div>'); };
+    $('#expSv').onclick=()=> csv('ใบงานซ่อม',['เลขที่','วันที่','ลูกค้า','เลขเครื่อง','ประเภท','เลขไมล์','ค่าแรง','ค่าอะไหล่','รวม','สถานะ'],
+      SERVICE.filter(s=>inScope(s.branch)).map(s=>{ const c=CUSTOMERS.find(x=>x.id===s.custId);
+        return [s.no,s.at,c?c.name:'',s.engine,s.type,s.km,s.labor,s.parts,s.labor+s.parts,s.status]; }));
+  }
+  $('#svPart').innerHTML='<option value="">— ไม่ใช้อะไหล่ —</option>'+PARTS.filter(p=>inScope(p.branch))
+    .map(p=>'<option value="'+p.id+'">'+esc(p.name)+' · '+fmt(p.price)+' ฿ (เหลือ '+p.qty+')</option>').join('');
+  tbl($('#svTable'), ['เลขที่','วันที่','ลูกค้า','รุ่น / เลขเครื่อง','ประเภท',{t:'เลขไมล์',n:1},{t:'รวม',n:1},'สถานะ',''],
+    SERVICE.filter(s=>inScope(s.branch)).slice().sort((a,b)=>b.at.localeCompare(a.at)).map(s=>{
+      const c=CUSTOMERS.find(x=>x.id===s.custId), u=UNITS.find(x=>x.id===s.unitId);
+      return '<tr><td class="mono">'+esc(s.no||'—')+'</td><td>'+thDate(s.at)+'</td><td><b>'+esc(c?c.name:'—')+'</b></td>'
+        +'<td>'+esc(u?u.model:'—')+'<div class="tsub mono">'+esc(s.engine)+'</div></td><td>'+esc(s.type)+'</td>'
+        +'<td class="n">'+fmt(s.km)+'</td><td class="n">'+fmt(s.labor+s.parts)+'</td>'
+        +'<td>'+pill(s.status, s.status==='ส่งมอบแล้ว'?'good':'info')+'</td>'
+        +'<td>'+(s.status!=='ส่งมอบแล้ว'?'<button class="lnk" data-sv="'+s.id+'">ปิดงาน</button>':'')+'</td></tr>'; }),
+    'ยังไม่มีใบงานซ่อม');
+  $$('[data-sv]').forEach(b=> b.onclick=()=>{ const s=SERVICE.find(x=>x.id===b.dataset.sv); s.status='ส่งมอบแล้ว';
+    toast('ปิดงานแล้ว','ตั้งเตือนเช็กระยะรอบถัดไปอัตโนมัติ'); refreshAll(); });
+  const rr=REMIND.filter(r=>r.status==='รอถึงกำหนด').sort((a,b)=>a.due.localeCompare(b.due));
+  tbl($('#svRemind'), ['ลูกค้า','เบอร์','รุ่น',{t:'รอบ (กม.)',n:1},'ครบกำหนด','สถานะ'],
+    rr.slice(0,30).map(r=>{ const c=CUSTOMERS.find(x=>x.id===r.custId), u=UNITS.find(x=>x.id===r.unitId);
+      const d=days(r.due,TODAY);
+      return '<tr><td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(c?c.phone:'')+'</td><td>'+esc(u?u.model:'—')+'</td>'
+        +'<td class="n">'+fmt(r.km)+'</td><td>'+thDate(r.due)+'</td>'
+        +'<td>'+(d>0?pill('ถึงกำหนดแล้ว','warn'):pill('อีก '+(-d)+' วัน','mut'))+'</td></tr>'; }),
+    'ยังไม่มีรายการเตือน');
+}
+function svLookup(){
+  const q=$('#svSearch').value.trim().toLowerCase();
+  if(!q){ toast('กรอกเลขเครื่องหรือเลขถังก่อน','',1); return; }
+  const u=UNITS.find(x=>x.engine.toLowerCase()===q||x.frame.toLowerCase()===q
+    ||x.engine.toLowerCase().indexOf(q)>=0||x.frame.toLowerCase().indexOf(q)>=0);
+  svFoundUnit=u||null;
+  if(!u){ $('#svFound').innerHTML='<div class="note w"><b>ไม่พบรถคันนี้ในระบบ</b> — เป็นรถนอก บันทึกเป็นลูกค้าใหม่ได้เลย</div>';
+    $('#svHistory').innerHTML='<div class="empty"><b>ไม่พบประวัติ</b>เลขเครื่อง/เลขถังนี้ไม่มีในระบบ</div>'; return; }
+  const s=SALES.find(x=>x.unitId===u.id); const c=s&&CUSTOMERS.find(x=>x.id===s.custId);
+  if(c){ $('#svName').value=c.name; $('#svPhone').value=c.phone||''; }
+  $('#svFound').innerHTML='<div class="note g"><b>'+(c?'ลูกค้าเก่า':'รถของร้าน (ยังไม่ได้ขาย)')+'</b> — '
+    +esc(u.model)+' · '+esc(u.color)+(c?(' · ซื้อเมื่อ '+thDate(s.soldAt)):'')+'</div>';
+  const sv=SERVICE.filter(x=>x.unitId===u.id);
+  let h='<dl class="kv"><dt>รุ่น</dt><dd><b>'+esc(u.model)+'</b> · '+esc(u.color)+'</dd>'
+    +'<dt>เลขเครื่อง</dt><dd class="mono">'+esc(u.engine)+'</dd>'
+    +'<dt>เลขถัง</dt><dd class="mono">'+esc(u.frame)+'</dd>'
+    +(c?'<dt>ลูกค้า</dt><dd>'+esc(c.name)+' · '+esc(c.phone||'')+'</dd>'
+       +'<dt>ซื้อเมื่อ</dt><dd>'+thDate(s.soldAt)+' ('+days(s.soldAt,TODAY)+' วันที่แล้ว)</dd>'
+       +'<dt>เซลล์</dt><dd>'+esc(s.sales)+'</dd>':'')+'</dl>';
+  h+='<h4 class="sec">ประวัติเข้าศูนย์ ('+sv.length+' ครั้ง)</h4>';
+  h+= sv.length? sv.map(v=>'<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px">'
+      +'<b>'+esc(v.type)+'</b> · '+thDate(v.at)+' · '+fmt(v.km)+' กม.<div class="tsub">'+esc(v.symptom)+' · '+baht(v.labor+v.parts)+'</div></div>').join('')
+    : '<div class="tsub">ยังไม่เคยเข้าศูนย์</div>';
+  if(c){ const rr=REMIND.filter(r=>r.custId===c.id&&r.status==='รอถึงกำหนด');
+    h+='<h4 class="sec">รอบเช็กระยะที่ยังไม่ถึง</h4>'
+      +(rr.length? rr.map(r=>'<div style="padding:6px 0;font-size:13px">'+pill(fmt(r.km)+' กม.','brand')+' ครบกำหนด '+thDate(r.due)+'</div>').join('')
+        :'<div class="tsub">ครบทุกรอบแล้ว</div>'); }
+  $('#svHistory').innerHTML=h;
+  toast('พบข้อมูลรถ', u.model+(c?(' · ลูกค้าเก่า: '+c.name):''));
+}
+function svSave(){
+  const name=$('#svName').value.trim(); if(!name){ toast('กรอกชื่อลูกค้าก่อน','',1); return; }
+  const p=PARTS.find(x=>x.id===$('#svPart').value);
+  if(p && p.qty<1){ toast('อะไหล่ไม่พอ',p.name+' เหลือ '+p.qty,1); return; }
+  let c=CUSTOMERS.find(x=>x.name===name);
+  if(!c){ c={id:nid('CU'),name,phone:$('#svPhone').value.trim(),src:'เข้าศูนย์บริการ',stage:'รับรถสำเร็จ',
+    branch:ME.branch,variant:'',owner:ME.nick}; CUSTOMERS.push(c); }
+  const now=new Date(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const job={id:nid('SV'), no:nextDocNo(ME.branch,'SERVICE'), branch:ME.branch, custId:c.id,
+    unitId:svFoundUnit?svFoundUnit.id:null, engine:svFoundUnit?svFoundUnit.engine:$('#svSearch').value.trim(),
+    frame:svFoundUnit?svFoundUnit.frame:'', km:num($('#svKm').value), type:$('#svType').value,
+    symptom:$('#svSymptom').value.trim(), at:TODAY, time:hhmm, status:'รับเข้า',
+    labor:num($('#svLabor').value), parts:p?p.price:0, tech:$('#svTech').value};
+  SERVICE.push(job);
+  if(p){ p.qty--; PMOVES.push({id:nid('MV'),partId:p.id,qty:-1,type:'job',at:TODAY,branch:ME.branch,jobId:job.id}); }
+  /* ตั้งเตือนรอบถัดไปจากเลขไมล์ */
+  const kms=String(CFG.km).split(',').map(x=>parseInt(x)).filter(k=>k>job.km);
+  if(kms.length) REMIND.push({id:nid('RM'),custId:c.id,unitId:job.unitId,km:kms[0],due:addDays(TODAY,90),status:'รอถึงกำหนด'});
+  toast('เปิดใบงานแล้ว', job.no+' · ลงเวลาเข้า '+hhmm+(kms.length?(' · ตั้งเตือนรอบ '+fmt(kms[0])+' กม.'):''));
+  $('#svSymptom').value=''; $('#svKm').value=''; refreshAll();
+}
+
+/* ============================= 13-14. อะไหล่ ============================= */
+function rParts(){
+  if(!$('#pSave').dataset.init){ $('#pSave').dataset.init=1;
+    $('#pSave').onclick=()=>{ const code=$('#pCode').value.trim(), name=$('#pName').value.trim();
+      if(!code||!name){ toast('กรอกรหัสและชื่ออะไหล่','',1); return; }
+      if(PARTS.some(p=>p.code===code)){ toast('รหัสอะไหล่ซ้ำ','',1); return; }
+      PARTS.push({id:nid('PT'),code,name,cost:num($('#pCost').value),price:num($('#pPrice').value),
+        qty:num($('#pQty').value),min:num($('#pMin').value),branch:ME.branch});
+      toast('เพิ่มอะไหล่แล้ว',name); $('#pCode').value=''; $('#pName').value=''; refreshAll(); };
+    $('#expParts').onclick=()=> csv('อะไหล่',['รหัส','ชื่อ','สาขา','คงเหลือ','จุดสั่งซื้อ','ต้นทุน','ราคาขาย'],
+      PARTS.filter(p=>inScope(p.branch)).map(p=>[p.code,p.name,bName(p.branch),p.qty,p.min,p.cost,p.price]));
+  }
+  const ps=PARTS.filter(p=>inScope(p.branch));
+  const sold=PMOVES.filter(m=>m.qty<0&&inScope(m.branch));
+  const rev=sold.reduce((s,m)=>{ const p=PARTS.find(x=>x.id===m.partId); return s+(p?p.price*-m.qty:0); },0);
+  const cost=sold.reduce((s,m)=>{ const p=PARTS.find(x=>x.id===m.partId); return s+(p?p.cost*-m.qty:0); },0);
+  $('#pKpi').innerHTML=[['รายการอะไหล่', ps.length,'ในสาขาที่ดูแล'],
+    ['ต่ำกว่าจุดสั่งซื้อ', ps.filter(p=>p.qty<p.min).length,'ต้องสั่งเพิ่ม'],
+    ['กำไรอะไหล่', noMoney()?'—':fmt(rev-cost)+' <small>฿</small>','จากยอดขาย '+fmt(rev)+' ฿']]
+    .map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
+  tbl($('#pTable'), ['รหัส','ชื่อ','สาขา',{t:'คงเหลือ',n:1},{t:'ต้นทุน',n:1},{t:'ราคาขาย',n:1},'สถานะ'],
+    ps.map(p=>'<tr><td class="mono">'+esc(p.code)+'</td><td><b>'+esc(p.name)+'</b></td><td>'+esc(bName(p.branch))+'</td>'
+      +'<td class="n">'+p.qty+'</td><td class="n">'+money(p.cost)+'</td><td class="n">'+fmt(p.price)+'</td>'
+      +'<td>'+(p.qty===0?pill('หมด','bad'):(p.qty<p.min?pill('ใกล้หมด','warn'):pill('ปกติ','good')))+'</td></tr>'),
+    'ยังไม่มีอะไหล่');
+}
+function rPartSale(){
+  if(!$('#msSave').dataset.init){ $('#msSave').dataset.init=1;
+    $('#msBranch').innerHTML=BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    $('#msQty').oninput=msPrev; $('#msPart').onchange=msPrev;
+    $('#msSave').onclick=()=>{ const p=PARTS.find(x=>x.id===$('#msPart').value); const q=num($('#msQty').value);
+      if(!p||q<1){ toast('เลือกอะไหล่และจำนวน','',1); return; }
+      if(p.qty<q){ toast('ของไม่พอ',p.name+' เหลือ '+p.qty,1); return; }
+      p.qty-=q; PMOVES.push({id:nid('MV'),partId:p.id,qty:-q,type:$('#msType').value,at:TODAY,branch:$('#msBranch').value});
+      toast('ตัดสต๊อกแล้ว',p.name+' × '+q); refreshAll(); };
+  }
+  $('#msPart').innerHTML=PARTS.filter(p=>inScope(p.branch)).map(p=>'<option value="'+p.id+'">'+esc(p.name)+' (เหลือ '+p.qty+')</option>').join('');
+  msPrev();
+  tbl($('#msTable'), ['วันที่','อะไหล่','ประเภท',{t:'จำนวน',n:1},'สาขา'],
+    PMOVES.filter(m=>inScope(m.branch)).slice().reverse().slice(0,15).map(m=>{ const p=PARTS.find(x=>x.id===m.partId);
+      return '<tr><td>'+thDate(m.at)+'</td><td>'+esc(p?p.name:'—')+'</td>'
+        +'<td>'+(m.type==='job'?pill('เข้าใบงาน','info'):pill('ขายหน้าร้าน','mut'))+'</td>'
+        +'<td class="n">'+m.qty+'</td><td>'+esc(bName(m.branch))+'</td></tr>'; }),
+    'ยังไม่มีการเคลื่อนไหว');
+}
+function msPrev(){ const p=PARTS.find(x=>x.id===$('#msPart').value); const q=num($('#msQty').value);
+  $('#msPrev').innerHTML = !p? '' : '<div class="note'+(p.qty<q?' b':'')+'">'
+    +(p.qty<q? '<b>ของไม่พอ</b> — เหลือ '+p.qty+' ต้องการ '+q
+      : 'ตัดแล้วเหลือ <b>'+(p.qty-q)+'</b>'+(noMoney()?'':' · กำไร '+baht((p.price-p.cost)*q)))+'</div>'; }
+
+/* ============================= 15. ของแถม ============================= */
+function rGift(){
+  if(!$('#gSave').dataset.init){ $('#gSave').dataset.init=1;
+    $('#gBranch').innerHTML=BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    $('#gSave').onclick=()=>{ const n=$('#gName').value.trim(); if(!n){ toast('กรอกชื่อของแถม','',1); return; }
+      const ex=GIFTS.find(g=>g.name===n&&g.branch===$('#gBranch').value);
+      if(ex){ ex.qty+=num($('#gQty').value); toast('เพิ่มจำนวนแล้ว',n+' รวม '+ex.qty); }
+      else { GIFTS.push({id:nid('G'),name:n,cost:num($('#gCost').value),qty:num($('#gQty').value),
+        min:num($('#gMin').value),branch:$('#gBranch').value}); toast('เพิ่มของแถมแล้ว',n); }
+      $('#gName').value=''; refreshAll(); };
+  }
+  tbl($('#gTable'), ['ของแถม','สาขา',{t:'ต้นทุน/ชิ้น',n:1},{t:'คงเหลือ',n:1},{t:'จุดสั่งซื้อ',n:1},'สถานะ'],
+    GIFTS.filter(g=>inScope(g.branch)).map(g=>'<tr><td><b>'+esc(g.name)+'</b></td><td>'+esc(bName(g.branch))+'</td>'
+      +'<td class="n">'+money(g.cost)+'</td><td class="n">'+g.qty+'</td><td class="n">'+g.min+'</td>'
+      +'<td>'+(g.qty===0?pill('หมด','bad'):(g.qty<g.min?pill('ใกล้หมด','warn'):pill('ปกติ','good')))+'</td></tr>'),
+    'ยังไม่มีของแถม');
+}
+
+/* ============================= 16. ค่าใช้จ่าย ============================= */
+let eFilesArr=[];
+function rExpense(){
+  if(!$('#eSave').dataset.init){ $('#eSave').dataset.init=1;
+    $('#eCat').innerHTML=EXP_CATS.map(c=>'<option>'+esc(c)+'</option>').join('');
+    $('#eBranch').innerHTML=BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    $('#eDate').value=TODAY;
+    $('#eFile').onchange=ev=>{ eFilesArr=eFilesArr.concat(Array.from(ev.target.files).map(f=>f.name)); eDraw(); };
+    $('#eSave').onclick=()=>{ const a=num($('#eAmt').value); if(a<=0){ toast('กรอกจำนวนเงิน','',1); return; }
+      EXPENSES.push({id:nid('EX'),cat:$('#eCat').value,branch:$('#eBranch').value,amt:a,at:$('#eDate').value||TODAY,
+        vendor:$('#eVendor').value.trim(),inv:$('#eInv').value.trim(),files:eFilesArr.slice()});
+      toast('บันทึกค่าใช้จ่ายแล้ว', baht(a)+(eFilesArr.length?' · แนบ '+eFilesArr.length+' ไฟล์':' · ยังไม่แนบใบเสร็จ'));
+      $('#eAmt').value=0; $('#eVendor').value=''; $('#eInv').value=''; eFilesArr=[]; eDraw(); refreshAll(); };
+    $('#expExp').onclick=()=> csv('ค่าใช้จ่าย',['วันที่','สาขา','หมวดหมู่','ผู้ขาย','เลขที่ใบกำกับ','จำนวนเงิน','ใบเสร็จ'],
+      EXPENSES.filter(e=>inScope(e.branch)).map(e=>[e.at,bName(e.branch),e.cat,e.vendor,e.inv,e.amt,e.files.length?'แนบแล้ว':'หาย']));
+    function eDraw(){ $('#eFiles').innerHTML=eFilesArr.map((f,i)=>'<div class="frow">📎 '+esc(f)+'<button class="fx" data-i="'+i+'">✕</button></div>').join('');
+      $$('#eFiles .fx').forEach(b=> b.onclick=()=>{ eFilesArr.splice(+b.dataset.i,1); eDraw(); }); }
+    window._eDraw=eDraw;
+  }
+  const es=EXPENSES.filter(e=>inScope(e.branch));
+  const mtd=es.filter(e=>e.at>=TODAY.slice(0,8)+'01');
+  const noRcpt=es.filter(e=>!e.files.length);
+  const byCat={}; es.forEach(e=>byCat[e.cat]=(byCat[e.cat]||0)+e.amt);
+  const top=Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a])[0];
+  $('#eKpi').innerHTML=[['ค่าใช้จ่ายเดือนนี้', fmt(mtd.reduce((s,e)=>s+e.amt,0))+' <small>฿</small>', mtd.length+' รายการ'],
+    ['ใบเสร็จหาย', noRcpt.length, noRcpt.length?'ต้องตามเก็บ':'ครบทุกรายการ'],
+    ['หมวดที่ใช้มากสุด', esc(top||'—'), top?baht(byCat[top]):'']]
+    .map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v" style="font-size:'+(String(k[1]).length>10?'20px':'27px')+'">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
+  tbl($('#eTable'), ['วันที่','หมวดหมู่','สาขา','ผู้ขาย',{t:'จำนวน',n:1},'ใบเสร็จ'],
+    es.slice().sort((a,b)=>b.at.localeCompare(a.at)).map(e=>'<tr><td>'+thDate(e.at)+'</td><td>'+esc(e.cat)+'</td>'
+      +'<td>'+esc(bName(e.branch))+'</td><td>'+esc(e.vendor||'—')+'</td><td class="n">'+fmt(e.amt)+'</td>'
+      +'<td>'+(e.files.length?pill('แนบแล้ว ('+e.files.length+')','good'):pill('ใบเสร็จหาย','warn'))+'</td></tr>'),
+    'ยังไม่มีค่าใช้จ่าย');
+}
+
+/* ============================= 17. ลงเวลาและลา ============================= */
+function rHr(){
+  if(!$('#lvSave').dataset.init){ $('#lvSave').dataset.init=1;
+    $$('#hrTabs button').forEach(b=> b.onclick=()=>{ $$('#hrTabs button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); $$('#s-hr .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p)); });
+    $('#lvWho').innerHTML=STAFF.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('');
+    $('#lvFrom').value=TODAY; $('#lvTo').value=TODAY;
+    $('#lvSave').onclick=()=>{ LEAVES.push({id:nid('LV'),staffId:$('#lvWho').value,type:$('#lvType').value,
+      from:$('#lvFrom').value,to:$('#lvTo').value,status:'รออนุมัติ'});
+      toast('ยื่นใบลาแล้ว','รอผู้มีสิทธิ์อนุมัติ'); refreshAll(); };
+  }
+  $('#hrDate').textContent=thDate(TODAY);
+  const mine = rolePerm().allBranch ? STAFF : STAFF.filter(s=>s.branch===ME.branch || s.id===ME.id);
+  tbl($('#attTable'), ['พนักงาน','สาขา','เข้า','ออก',{t:'ชั่วโมง',n:1},{t:'OT',n:1},'สถานะ',''],
+    mine.map(s=>{ const a=ATT.find(x=>x.staffId===s.id)||{};
+      const hrs=(a.in&&a.out)? ((toMin(a.out)-toMin(a.in))/60) : 0;
+      const ot = hrs>8.5? (hrs-8.5) : 0;
+      const late = a.in && toMin(a.in)>toMin(CFG.workIn);
+      return '<tr><td><b>'+esc(s.nick)+'</b><div class="tsub">'+esc(ROLES[s.role].name)+'</div></td>'
+        +'<td>'+esc(bName(s.branch))+'</td><td class="mono">'+esc(a.in||'—')+'</td><td class="mono">'+esc(a.out||'—')+'</td>'
+        +'<td class="n">'+(hrs?hrs.toFixed(1):'—')+'</td><td class="n">'+(ot?ot.toFixed(1):'—')+'</td>'
+        +'<td>'+(a.status==='ลา'?pill('ลา','info'):(late?pill('สาย','warn'):(a.in?pill('ปกติ','good'):pill('ยังไม่เข้า','mut'))))+'</td>'
+        +'<td>'+(!a.in&&a.status!=='ลา'?'<button class="lnk" data-in="'+s.id+'">ลงเวลาเข้า</button>':
+          (a.in&&!a.out?'<button class="lnk" data-out="'+s.id+'">ลงเวลาออก</button>':''))+'</td></tr>'; }),
+    'ไม่มีพนักงาน');
+  const now=new Date(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  $$('[data-in]').forEach(b=> b.onclick=()=>{ let a=ATT.find(x=>x.staffId===b.dataset.in);
+    if(!a){ a={staffId:b.dataset.in,date:TODAY}; ATT.push(a); } a.in=hhmm;
+    toast('ลงเวลาเข้าแล้ว','เวลาจริงจากนาฬิกาเครื่อง '+hhmm); rHr(); });
+  $$('[data-out]').forEach(b=> b.onclick=()=>{ const a=ATT.find(x=>x.staffId===b.dataset.out); a.out=hhmm;
+    toast('ลงเวลาออกแล้ว',hhmm); rHr(); });
+  const present=mine.filter(s=>{const a=ATT.find(x=>x.staffId===s.id)||{}; return a.in;}).length;
+  const lateN=mine.filter(s=>{const a=ATT.find(x=>x.staffId===s.id)||{}; return a.in&&toMin(a.in)>toMin(CFG.workIn);}).length;
+  $('#attSum').innerHTML='<div style="font-size:13px;line-height:2.1">'
+    +'• เข้างานแล้ว <b>'+present+'</b> จาก '+mine.length+' คน<br>'
+    +'• มาสาย <b style="color:var(--warn)">'+lateN+'</b> คน (เกิน '+CFG.workIn+')<br>'
+    +'• ลา <b>'+mine.filter(s=>{const a=ATT.find(x=>x.staffId===s.id)||{}; return a.status==='ลา';}).length+'</b> คน<br>'
+    +'• เวลาทำงานมาตรฐาน '+CFG.workIn+' – '+CFG.workOut+' · OT คิด '+CFG.otRate+' เท่า</div>';
+  tbl($('#lvTable'), ['พนักงาน','ประเภท','ตั้งแต่','ถึง','สถานะ',''],
+    LEAVES.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId);
+      return '<tr><td><b>'+esc(s?s.nick:'—')+'</b></td><td>'+esc(l.type)+'</td><td>'+thDate(l.from)+'</td><td>'+thDate(l.to)+'</td>'
+        +'<td>'+pill(l.status, l.status==='อนุมัติแล้ว'?'good':(l.status==='ไม่อนุมัติ'?'bad':'warn'))+'</td>'
+        +'<td>'+(l.status==='รออนุมัติ'&&rolePerm().approve?
+          '<button class="lnk" data-lv="'+l.id+'" data-ok="1">อนุมัติ</button> · <button class="lnk" data-lv="'+l.id+'" data-ok="0">ไม่อนุมัติ</button>':'')+'</td></tr>'; }),
+    'ไม่มีใบลา');
+  $$('[data-lv]').forEach(b=> b.onclick=()=>{ const l=LEAVES.find(x=>x.id===b.dataset.lv);
+    l.status = b.dataset.ok==='1'?'อนุมัติแล้ว':'ไม่อนุมัติ'; toast('บันทึกแล้ว',l.status); refreshAll(); });
+}
+function toMin(t){ if(!t) return 0; const p=String(t).split(':'); return (+p[0])*60+(+p[1]||0); }
+
+/* ============================= 18. เงินเดือน ============================= */
+function rPayroll(){
+  if(!$('#prWho').dataset.init){ $('#prWho').dataset.init=1;
+    $('#prWho').innerHTML=STAFF.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('');
+    $('#prWho').onchange=prSlip;
+    $('#prPrint').onclick=()=>printHTML($('#prSlip').innerHTML);
+    $('#prSsn').onclick=()=>{ const rows=prCalc();
+      openModal('รายงานนำส่งเงินสมทบประกันสังคม',
+        '<div class="note">ยอดนำส่งรวม = ส่วนลูกจ้าง + ส่วนนายจ้าง · อัตรา 5% เพดาน 750 บาท/เดือน</div>'
+        +'<div class="tw"><table><thead><tr><th>ชื่อ</th><th>เลขประกันสังคม</th><th class="n">ค่าจ้าง</th><th class="n">ลูกจ้าง</th><th class="n">นายจ้าง</th><th class="n">รวม</th></tr></thead><tbody>'
+        +rows.map(r=>'<tr><td>'+esc(r.s.name)+'</td><td class="mono">'+esc(r.s.ssn)+'</td><td class="n">'+fmt(r.base)+'</td>'
+          +'<td class="n">'+fmt(r.ssn)+'</td><td class="n">'+fmt(r.ssn)+'</td><td class="n">'+fmt(r.ssn*2)+'</td></tr>').join('')
+        +'</tbody><tfoot><tr><th colspan="3">รวมนำส่ง</th><th class="n">'+fmt(rows.reduce((s,r)=>s+r.ssn,0))
+        +'</th><th class="n">'+fmt(rows.reduce((s,r)=>s+r.ssn,0))+'</th><th class="n">'+fmt(rows.reduce((s,r)=>s+r.ssn*2,0))+'</th></tr></tfoot></table></div>'); };
+    $('#prBank').onclick=()=>{ const rows=prCalc();
+      csv('ไฟล์โอนเงินเดือน',['เลขที่บัญชี','ชื่อบัญชี','จำนวนเงิน','อ้างอิง'],
+        rows.map(r=>[r.s.bank, r.s.name, r.net.toFixed(2), 'เงินเดือน '+(NOW.getMonth()+1)+'/'+(NOW.getFullYear()+543)])); };
+    $('#expPr').onclick=()=>{ const rows=prCalc();
+      csv('เงินเดือน',['ชื่อ','ตำแหน่ง','เงินเดือน','OT','คอมมิชชั่น','หักสาย','ประกันสังคม','สุทธิ'],
+        rows.map(r=>[r.s.name,ROLES[r.s.role].name,r.base,r.ot,r.comm,r.lateD,r.ssn,r.net])); };
+  }
+  $('#prPeriod').textContent='งวด 1 – '+new Date(NOW.getFullYear(),NOW.getMonth()+1,0).getDate()+' '+TH_M[NOW.getMonth()]+' '+(NOW.getFullYear()+543);
+  const rows=prCalc();
+  tbl($('#prTable'), ['พนักงาน','ตำแหน่ง',{t:'เงินเดือน',n:1},{t:'OT',n:1},{t:'คอมมิชชั่น',n:1},{t:'หักสาย',n:1},{t:'ประกันสังคม',n:1},{t:'สุทธิ',n:1}],
+    rows.map(r=>'<tr><td><b>'+esc(r.s.name)+'</b><div class="tsub">'+esc(bName(r.s.branch))+'</div></td>'
+      +'<td>'+esc(ROLES[r.s.role].name)+'</td><td class="n">'+money(r.base)+'</td><td class="n">'+money(r.ot)+'</td>'
+      +'<td class="n">'+money(r.comm)+'</td><td class="n">'+(r.lateD?'-'+fmt(r.lateD):'—')+'</td>'
+      +'<td class="n">-'+fmt(r.ssn)+'</td><td class="n"><b>'+money(r.net)+'</b></td></tr>'),
+    'ไม่มีพนักงาน');
+  const comm={};
+  sScoped().filter(s=>days(s.soldAt,TODAY)<=31).forEach(s=>{ comm[s.sales]=comm[s.sales]||{n:0,gp:0}; comm[s.sales].n++; comm[s.sales].gp+=s.gp; });
+  tbl($('#prComm'), ['พนักงานขาย',{t:'ขายได้',n:1},{t:'กำไรรวม',n:1},{t:'ค่าคอม '+CFG.commPct+'%',n:1}],
+    Object.keys(comm).map(k=>'<tr><td><b>'+esc(k)+'</b></td><td class="n">'+comm[k].n+'</td>'
+      +'<td class="n">'+money(comm[k].gp)+'</td><td class="n"><b>'+money(comm[k].gp*CFG.commPct/100)+'</b></td></tr>'),
+    'ยังไม่มียอดขายเดือนนี้');
+  prSlip();
+}
+function prCalc(){
+  const commByName={};
+  sScoped().filter(s=>days(s.soldAt,TODAY)<=31).forEach(s=>{ commByName[s.sales]=(commByName[s.sales]||0)+s.gp*CFG.commPct/100; });
+  return STAFF.map(s=>{
+    const a=ATT.find(x=>x.staffId===s.id)||{};
+    const hrs=(a.in&&a.out)? (toMin(a.out)-toMin(a.in))/60 : 8;
+    const otH=Math.max(0,hrs-8.5);
+    const ot=Math.round(otH*(s.salary/30/8)*CFG.otRate);
+    const lateMin=a.in? Math.max(0,toMin(a.in)-toMin(CFG.workIn)) : 0;
+    const lateD=Math.round(lateMin*(s.salary/30/8/60));
+    const comm=Math.round(commByName[s.nick]||0);
+    const base=s.salary;
+    const ssn=Math.min(750, Math.round(base*0.05));
+    return {s, base, ot, comm, lateD, ssn, net: base+ot+comm-lateD-ssn};
+  });
+}
+function prSlip(){
+  const r=prCalc().find(x=>x.s.id===$('#prWho').value)||prCalc()[0];
+  if(!r){ $('#prSlip').innerHTML=''; return; }
+  $('#prSlip').innerHTML='<div class="doc"><h2>'+esc(CFG.company)+'</h2>'
+    +'<div class="dsub">'+esc(CFG.address)+'</div><h2 style="margin-top:12px">สลิปเงินเดือน</h2>'
+    +'<div class="dsub">งวดเดือน '+TH_M[NOW.getMonth()]+' '+(NOW.getFullYear()+543)+'</div>'
+    +'<div class="co"><div><b>'+esc(r.s.name)+'</b><br>'+esc(ROLES[r.s.role].name)+' · '+esc(bName(r.s.branch))+'</div>'
+    +'<div style="text-align:right">เลขที่บัญชี<br><span class="mono">'+esc(r.s.bank)+'</span></div></div>'
+    +'<table><thead><tr><th>รายการ</th><th class="n">รายได้ (฿)</th><th class="n">รายหัก (฿)</th></tr></thead><tbody>'
+    +'<tr><td>เงินเดือน</td><td class="n">'+fmt(r.base)+'</td><td class="n">—</td></tr>'
+    +'<tr><td>ค่าล่วงเวลา (OT '+CFG.otRate+'x)</td><td class="n">'+fmt(r.ot)+'</td><td class="n">—</td></tr>'
+    +'<tr><td>ค่าคอมมิชชั่น</td><td class="n">'+fmt(r.comm)+'</td><td class="n">—</td></tr>'
+    +'<tr><td>หักมาสาย</td><td class="n">—</td><td class="n">'+fmt(r.lateD)+'</td></tr>'
+    +'<tr><td>ประกันสังคม 5%</td><td class="n">—</td><td class="n">'+fmt(r.ssn)+'</td></tr>'
+    +'</tbody></table>'
+    +'<div class="tot"><div><span>รวมรายได้</span><span>'+fmt(r.base+r.ot+r.comm)+'</span></div>'
+    +'<div><span>รวมรายหัก</span><span>'+fmt(r.lateD+r.ssn)+'</span></div>'
+    +'<div class="g"><span>เงินได้สุทธิ</span><span>'+fmt(r.net)+' ฿</span></div></div>'
+    +'<div class="sig"><div>ผู้จ่ายเงิน</div><div>ผู้รับเงิน</div></div></div>';
+}
+
+/* ============================= 19. ผู้ใช้ ============================= */
+function rUsers(){
+  tbl($('#uTable'), ['ชื่อ','ชื่อเล่น','บทบาท','สาขา','เห็นทุกสาขา','เห็นตัวเงิน','อนุมัติได้'],
+    STAFF.map(s=>{ const p=ROLES[s.role];
+      return '<tr><td><b>'+esc(s.name)+'</b></td><td>'+esc(s.nick)+'</td><td>'+pill(p.name,'info')+'</td>'
+        +'<td>'+esc(bName(s.branch))+'</td>'
+        +'<td>'+(p.allBranch?pill('ใช่','good'):pill('เฉพาะสาขาตัวเอง','mut'))+'</td>'
+        +'<td>'+(p.money?pill('เห็น','good'):pill('ซ่อน','mut'))+'</td>'
+        +'<td>'+(p.approve?pill('ได้','good'):pill('ไม่ได้','mut'))+'</td></tr>'; }),
+    'ไม่มีผู้ใช้');
+  const keys=Object.keys(ROLES);
+  tbl($('#roleTable'), ['บทบาท','เห็นตัวเงิน','เห็นทุกสาขา','อนุมัติ','จัดการระบบ','เมนูที่เข้าถึงได้'],
+    keys.map(k=>{ const p=ROLES[k]; const menus=MENU.filter(m=>m.k&&m.r.indexOf(k)>=0);
+      return '<tr><td><b>'+esc(p.name)+'</b></td>'
+        +['money','allBranch','approve','admin'].map(x=>'<td>'+(p[x]?'✅':'—')+'</td>').join('')
+        +'<td><span class="tsub">'+menus.map(m=>esc(m.t)).join(' · ')+'</span></td></tr>'; }),
+    '');
+}
+
+/* ============================= 20. นำเข้า ============================= */
+const SRC_FILES=['110967fg.xls','020469fmm.xls','fg220769.xls','fmm220769.xls','fcg250769.xls'];
+let impReady=null;
+function rImp(){
+  if(!$('#impRun').dataset.init){ $('#impRun').dataset.init=1;
+    $('#impPick').innerHTML=SRC_FILES.map(f=>'<option>'+f+'</option>').join('');
+    $('#impFile').onchange=e=>{ const names=Array.from(e.target.files).map(f=>f.name);
+      $('#impFiles').innerHTML=names.map(n=>'<div class="frow">📄 '+esc(n)+'</div>').join('');
+      toast('รับไฟล์แล้ว', names.join(', ')+' · ต้นแบบยังไม่อ่านไฟล์จริง ใช้ข้อมูลตัวอย่างแทน'); };
+    $('#impRun').onclick=impCheck;
+    $('#impGo').onclick=()=>{ if(!impReady) return;
+      IMPLOG.push({file:impReady.file, rows:impReady.total, ok:impReady.ok, dup:impReady.dup,
+        by:ME.name, at:TODAY, warn:impReady.warn});
+      toast('นำเข้าเรียบร้อย', impReady.file+' · เข้าใหม่ '+impReady.ok+' แถว · ซ้ำ '+impReady.dup+' แถว');
+      impReady=null; $('#impGo').disabled=true; $('#impPrev').innerHTML=''; refreshAll(); };
+    $('#impRules').innerHTML=[
+      'อ่าน .xls รูปแบบเดิม (BIFF8) ได้ ไม่ใช่แค่ .xlsx',
+      'ตรวจหัวคอลัมน์ 34 ช่องก่อน ถ้าไม่ตรงหยุดทันที',
+      '<b>สาขาอ่านจาก DOC_BRANCH_CODE เท่านั้น</b> — ไฟล์เขียนชื่อสาขาว่า “สำนักงานใหญ่” ทุกแถว และ prefix เลขเอกสารก็ไม่ตรงรหัสสาขา',
+      'เติม 0 นำหน้ารหัสสีและเลขผู้เสียภาษีให้ครบก่อนบันทึก (ไฟล์เก่าเก็บเป็นตัวเลข)',
+      'ข้ามคอลัมน์ “รหัสที่เก็บ” — ค่าไม่นิ่ง บางไฟล์ใส่ชื่อไทยแทนรหัส',
+      'ใช้ “วันที่ใบรับ” เป็นวันเข้าสต๊อก และเตือนถ้าวันที่เอกสารผิดปกติ',
+      'กันซ้ำด้วยเลขเครื่อง แล้วตรวจเลขถังซ้ำเป็นชั้นที่สอง',
+      'ตรวจว่า VAT = ต้นทุน × 7%',
+      'ดึงราคาขายจากตารางราคาผ่าน “แบบรถ” — หาไม่เจอให้ขึ้นธง “รอกำหนดราคา” ไม่เดาราคา',
+      'บันทึก log ทุกครั้ง: ไฟล์ กี่แถว เข้ากี่แถว ซ้ำกี่แถว ใครนำเข้า เมื่อไหร่'
+    ].map((r,i)=>'<div style="display:flex;gap:9px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px">'
+      +'<b style="color:var(--brand)">'+(i+1)+'</b><span>'+r+'</span></div>').join('');
+  }
+  tbl($('#impLog'), ['ไฟล์','แถวทั้งหมด','เข้าใหม่','ซ้ำ','ผู้นำเข้า','เมื่อไหร่'],
+    IMPLOG.map(l=>'<tr><td class="mono">'+esc(l.file)+'</td><td class="n">'+l.rows+'</td>'
+      +'<td class="n">'+l.ok+'</td><td class="n">'+l.dup+'</td><td>'+esc(l.by)+'</td><td>'+thDate(l.at)+'</td></tr>'),
+    'ยังไม่เคยนำเข้าในเซสชันนี้');
+}
+function impCheck(){
+  const f=$('#impPick').value;
+  const rows=U_RAW.filter(r=>r[11]===f);
+  const dup=rows.filter(r=>UNITS.some(u=>u.engine===r[6])).length;
+  const noPrice=rows.filter(r=>NO_PRICE.indexOf(r[1])>=0).length;
+  const intColor=rows.filter(r=>String(r[3]).length===4&&f==='110967fg.xls').length;
+  const warn=[];
+  if(f==='110967fg.xls') warn.push('วันที่เอกสารในไฟล์นี้เป็น 9 พ.ย. 2024 แต่วันที่ใบรับเป็น 11 ก.ย. 2024 — ต้องยืนยันก่อน ระบบจะใช้วันที่ใบรับ');
+  if(intColor) warn.push('รหัสสีในไฟล์นี้เก็บเป็นตัวเลข เลข 0 นำหน้าหาย — ระบบเติมให้ครบ 4 หลักแล้ว');
+  if(noPrice) warn.push(noPrice+' แถวมีรหัสรุ่นที่ไม่มีในตารางราคา จะถูกขึ้นธง “รอกำหนดราคา”');
+  warn.push('ชื่อสาขาในไฟล์เป็น “สำนักงานใหญ่” ทุกแถว — ใช้ DOC_BRANCH_CODE แทน');
+  impReady={file:f,total:rows.length,ok:rows.length-dup,dup,warn};
+  $('#impGo').disabled = false;
+  $('#impPrev').innerHTML='<div class="note g"><b>ตรวจไฟล์แล้ว</b> — '+rows.length+' แถว · เข้าใหม่ '+(rows.length-dup)+' · ซ้ำ '+dup+'</div>'
+    +warn.map(w=>'<div class="note w">⚠ '+w+'</div>').join('')
+    +'<div class="tw"><table><thead><tr><th>รุ่น</th><th>เลขเครื่อง</th><th>สาขา</th><th class="n">ต้นทุน</th><th>ราคาขาย</th></tr></thead><tbody>'
+    +rows.slice(0,6).map(r=>'<tr><td>'+esc(r[5])+' <span class="tsub">'+esc(r[4])+'</span></td><td class="mono">'+esc(r[6])+'</td>'
+      +'<td>'+esc(bName(r[0]))+'</td><td class="n">'+fmt(r[9])+'</td>'
+      +'<td>'+(PRICE[r[1]]? fmt(PRICE[r[1]].retail) : '<span style="color:var(--warn)">รอกำหนด</span>')+'</td></tr>').join('')
+    +'</tbody></table></div>'+(rows.length>6?'<div class="tsub">แสดง 6 จาก '+rows.length+' แถว</div>':'');
+}
+
+/* ============================= 21. ตั้งค่า ============================= */
+const CFMAP={cfCo:'company',cfAddr:'address',cfTax:'taxId',cfPhone:'phone',cfAging:'aging',cfReg:'regDays',
+  cfLow:'lowStock',cfVat:'vat',cfCad:'cadence',cfKm:'km',cfIn:'workIn',cfOut:'workOut',cfOt:'otRate',cfComm:'commPct'};
+function rSettings(){
+  Object.keys(CFMAP).forEach(k=> $('#'+k).value = CFG[CFMAP[k]]);
+  tbl($('#cfFin'), ['บริษัทไฟแนนซ์',{t:'ดอกเบี้ยคงที่ (%/เดือน)',n:1},'สถานะ'],
+    FIN_CO.map(f=>'<tr><td><b>'+esc(f.name)+'</b></td>'
+      +'<td class="n"><input class="inp num" data-fin-rate="'+f.id+'" value="'+f.rate+'" style="width:100px;height:32px;text-align:right"></td>'
+      +'<td>'+pill('ใช้งาน','good')+'</td></tr>'),'');
+  $$('[data-fin-rate]').forEach(i=> i.onchange=()=>{ const f=FIN_CO.find(x=>x.id===i.dataset.finRate);
+    f.rate=num(i.value); toast('อัปเดตเรตแล้ว',f.name+' '+f.rate+'%'); });
+  if(!$('#cfSave').dataset.init){ $('#cfSave').dataset.init=1;
+    $('#cfSave').onclick=()=>{ Object.keys(CFMAP).forEach(k=>{ const v=$('#'+k).value;
+      CFG[CFMAP[k]] = ['aging','regDays','lowStock','vat','otRate','commPct'].indexOf(CFMAP[k])>=0 ? num(v) : v; });
+      toast('บันทึกการตั้งค่าแล้ว','ทุกหน้าจะใช้เกณฑ์ใหม่ทันที'); refreshAll(); };
+    $('#cfReset').onclick=()=>{ CFG=Object.assign({},DEFAULTS); rSettings(); toast('คืนค่าเริ่มต้นแล้ว'); refreshAll(); };
+  }
+}
+
+/* ============================= 22. ผังกระบวนการ ============================= */
+const LANES=[
+  {n:'เซลล์',  s:['รับลูกค้า / บันทึก lead','เสนอราคา + เทียบไฟแนนซ์','เปิดการขาย','ส่งเรื่องไฟแนนซ์','ติดตามลูกค้า 7/30/90 วัน']},
+  {n:'สต๊อก',  s:['รับรถจากยามาฮ่า +','ตรวจเลขเครื่อง/เลขถัง +','ตัดสต๊อกตอนขาย +','โอนย้ายระหว่างสาขา','เช็ก aging stock +']},
+  {n:'บัญชี',  s:['ออกใบเสร็จ/ใบกำกับ +','ติดตามเงินไฟแนนซ์ !','ลงรับเงินสด','บันทึกค่าใช้จ่าย','ปิดงบรายเดือน']},
+  {n:'ทะเบียน',s:['ยื่นเรื่องทะเบียน','ติดตามสถานะ !','รับป้าย','ส่งมอบลูกค้า','เก็บเอกสาร']},
+  {n:'ช่าง',   s:['รับรถเข้าศูนย์','ค้นประวัติจากเลขเครื่อง +','เบิกอะไหล่ +','ปิดงาน','ตั้งเตือนรอบถัดไป +']}
+];
+function rFlow(){
+  $('#flowWrap').innerHTML=LANES.map(l=>'<div class="card"><div class="hd"><h3>'+esc(l.n)+'</h3></div><div class="bd">'
+    +'<div class="flow">'+l.s.map((s,i)=>{ const auto=s.indexOf('+')>=0, risk=s.indexOf('!')>=0;
+      const t=s.replace(/[+!]/g,'').trim();
+      return (i?'<span class="farr">→</span>':'')+'<div class="fstep'+(auto?' done':'')+'">'
+        +'<div class="t">'+esc(t)+'</div>'
+        +(auto?'<div style="margin-top:5px">'+pill('ระบบทำให้','good')+'</div>':'')
+        +(risk?'<div style="margin-top:5px">'+pill('จุดที่มักหลุด','bad')+'</div>':'')+'</div>'; }).join('')
+    +'</div></div></div>').join('')
+    +'<div class="note"><b>อ่านผัง:</b> ช่องที่ขึ้น “ระบบทำให้” คือขั้นตอนที่ระบบทำอัตโนมัติ · ช่องที่ขึ้น “จุดที่มักหลุด” คือขั้นตอนที่หลุดบ่อยที่สุดถ้าไม่มีระบบเตือน</div>';
+}
+
+/* ============================= ค้นหารวม ============================= */
+function gsOpen(){ $('#gs').classList.add('on'); $('#gsQ').value=''; $('#gsR').innerHTML=''; $('#gsQ').focus(); }
+function gsSearch(){
+  const q=$('#gsQ').value.trim().toLowerCase();
+  if(q.length<2){ $('#gsR').innerHTML='<div class="empty">พิมพ์อย่างน้อย 2 ตัวอักษร</div>'; return; }
+  const res=[];
+  UNITS.filter(u=>inScope(u.branch)).forEach(u=>{
+    if((u.engine+u.frame+u.model+u.variant+u.color).toLowerCase().indexOf(q)>=0)
+      res.push({ik:'🏍',t:u.model+' · '+u.color,s:u.engine+' · '+bName(u.branch)+' · '+statusText(u.status),go:()=>{ closeGs(); go('stock'); setTimeout(()=>unitDrawer(u.id),120); }});
+  });
+  CUSTOMERS.filter(c=>inScope(c.branch)).forEach(c=>{
+    if((c.name+(c.phone||'')).toLowerCase().indexOf(q)>=0)
+      res.push({ik:'👤',t:c.name,s:(c.phone||'')+' · '+c.stage,go:()=>{ closeGs(); go('crm'); setTimeout(()=>custDrawer(c.id),120); }});
+  });
+  SALES.filter(s=>inScope(s.branch)).forEach(s=>{ const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+    if(((c?c.name:'')+u.engine+u.model).toLowerCase().indexOf(q)>=0)
+      res.push({ik:'💰',t:'ใบขาย '+u.model,s:(c?c.name:'')+' · '+thDate(s.soldAt)+' · '+baht(s.net),go:()=>{ closeGs(); go('stock'); setTimeout(()=>unitDrawer(u.id),120); }});
+  });
+  PARTS.filter(p=>inScope(p.branch)).forEach(p=>{
+    if((p.code+p.name).toLowerCase().indexOf(q)>=0)
+      res.push({ik:'⚙️',t:p.name,s:p.code+' · เหลือ '+p.qty,go:()=>{ closeGs(); go('parts'); }});
+  });
+  const uniq=res.slice(0,20);
+  $('#gsR').innerHTML= uniq.length? uniq.map((r,i)=>'<div class="gsi" data-i="'+i+'"><div class="ik">'+r.ik+'</div>'
+    +'<div><b>'+esc(r.t)+'</b><br><span>'+esc(r.s)+'</span></div></div>').join('')
+    : '<div class="empty"><b>ไม่พบผลลัพธ์</b>ลองค้นด้วยเลขเครื่อง ชื่อลูกค้า หรือชื่อรุ่น</div>';
+  $$('#gsR .gsi').forEach(e=> e.onclick=()=>uniq[+e.dataset.i].go());
+}
+function statusText(s){ return {available:'พร้อมขาย',reserved:'จองแล้ว',in_transfer:'กำลังโอนย้าย',sold:'ขายแล้ว'}[s]||s; }
+function closeGs(){ $('#gs').classList.remove('on'); }
+
+/* ============================= BOOT ============================= */
+renderLogin();
+$('#lgGo').onclick=doLogin;
+$('#lgPw').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
+$('#btnOut').onclick=()=>{ $('#app').classList.add('off'); $('#login').classList.remove('off'); ME=null; };
+$('#burger').onclick=()=> $('#side').classList.toggle('open');
+$('#btnFont').onclick=()=>{ document.body.classList.toggle('looped');
+  $('#btnFont').classList.toggle('on', document.body.classList.contains('looped'));
+  toast('สลับฟอนต์แล้ว', document.body.classList.contains('looped')?'ฟอนต์มีหัว':'ฟอนต์ไม่มีหัว'); };
+$('#btnSide').onclick=()=>{ document.body.classList.toggle('dark-side');
+  $('#btnSide').classList.toggle('on', document.body.classList.contains('dark-side')); };
+$('#btnCust').onclick=()=>{ CUSTOMER_MODE=!CUSTOMER_MODE;
+  $('#btnCust').classList.toggle('on',CUSTOMER_MODE);
+  toast(CUSTOMER_MODE?'เปิดโหมดลูกค้า':'ปิดโหมดลูกค้า', CUSTOMER_MODE?'ซ่อนต้นทุนและกำไรทุกหน้า':'แสดงตัวเงินตามสิทธิ์'); refreshAll(); };
+$('#drwX').onclick=closeDrawer; $('#ov').onclick=()=>{ closeDrawer(); };
+$('#mdX').onclick=closeModal;
+$('#gsInput').onclick=gsOpen; $('#gsQ').oninput=gsSearch;
+$('#gs').onclick=e=>{ if(e.target.id==='gs') closeGs(); };
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){ closeDrawer(); closeModal(); closeGs(); }
+  if(e.key==='/' && ME && ['INPUT','TEXTAREA','SELECT'].indexOf(document.activeElement.tagName)<0){ e.preventDefault(); gsOpen(); }
+});
+</script>
+</body>
+</html>
