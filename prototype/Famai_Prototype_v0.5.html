@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Famai Motor Group — ต้นแบบระบบหลังบ้าน v0.5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#D92D20;--red-dark:#B42318;--red-50:#FEF3F2;--red-100:#FEE4E2;
+  --on-accent:#FFFFFF;
+  --ink:#101828;--ink-2:#475467;--ink-3:#98A2B3;
+  --bg:#F7F8FA;--card:#FFFFFF;--soft:#FAFBFC;--soft-2:#F2F4F7;
+  --line:#E7E9EE;--line-2:#D5D9E0;
+  --good:#175CD3;--good-bg:#EFF4FF;--good-line:#D1E0FF;
+  --warn:#475467;--warn-bg:#F2F4F7;--warn-line:#D5D9E0;
+  --bad:#B42318;--bad-bg:#FEF3F2;--bad-line:#FEE4E2;
+  --info:#175CD3;--info-bg:#EFF4FF;--info-line:#D1E0FF;
+  --r:10px;--r-sm:8px;
+  --sh:0 1px 2px rgba(16,24,40,.05);
+  --sh-lg:0 10px 30px -14px rgba(16,24,40,.28);
+  --font-loop:'IBM Plex Sans Thai Looped','Sarabun','TH Sarabun New','Leelawadee UI','Thonburi';
+  --font-noloop:'IBM Plex Sans Thai','Noto Sans Thai','Kanit','Prompt';
+  --font-th:var(--font-noloop);
+}
+body.looped{--font-th:var(--font-loop)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Inter',var(--font-th),-apple-system,"Segoe UI",system-ui,sans-serif;
+  background:var(--bg);color:var(--ink);font-size:14px;line-height:1.58;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{display:flex;min-height:100vh}
+
+/* ---------- sidebar ---------- */
+.side{width:230px;flex:0 0 230px;background:var(--ink);color:#FFFFFF;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{padding:20px 20px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #1D2939}
+.brand .dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex:0 0 8px}
+.brand b{font-size:15px;letter-spacing:.13em;font-weight:800}
+.brand span{display:block;font-size:10.5px;color:#98A2B3;margin-top:2px;font-weight:400;letter-spacing:.02em}
+.nav{padding:10px;flex:1;overflow:auto}
+.nav-label{font-size:9.5px;letter-spacing:.13em;color:#8895AA;padding:14px 10px 6px;font-weight:800;text-transform:uppercase}
+.nav button{width:100%;display:flex;align-items:center;gap:10px;background:none;border:0;color:#EFF4FF;font-size:13.5px;
+  padding:9px 11px;border-radius:var(--r-sm);cursor:pointer;text-align:left;transition:background .13s,color .13s}
+.nav button:hover{background:#1D2939;color:#FFFFFF}
+.nav button.on{background:var(--red);color:#FFFFFF;font-weight:700}
+.nav button .badge{margin-left:auto;background:#1D2939;color:#EFF4FF;font-size:10.5px;font-weight:800;border-radius:20px;padding:1px 7px;min-width:20px;text-align:center}
+.nav button.on .badge{background:rgba(255,255,255,.24);color:#FFFFFF}
+.side-foot{padding:12px 20px 16px;border-top:1px solid #1D2939;color:#8895AA;font-size:11.5px;line-height:1.5}
+
+/* ---------- topbar ---------- */
+.main{flex:1;min-width:0}
+.top{display:flex;align-items:center;gap:14px;padding:16px 26px;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
+.top h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+.top .sub{font-size:12px;color:var(--ink-3);margin-top:1px}
+.top .sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:7px;background:#FFFFFF;border:1px solid var(--line);border-radius:20px;
+  padding:6px 13px;font-size:12.5px;color:var(--ink-2);font-weight:600}
+.pill b{color:var(--ink)}
+.wrap{padding:22px 26px 70px;max-width:1420px}
+.screen{display:none}.screen.on{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ---------- helper ---------- */
+.hint{display:flex;gap:9px;align-items:flex-start;background:#FFFFFF;border:1px solid var(--line);border-left:3px solid var(--red);
+  border-radius:var(--r-sm);padding:11px 14px;margin-bottom:18px;font-size:12.5px;color:var(--ink-2);box-shadow:var(--sh)}
+.hint b{color:var(--ink)}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.t-good{background:var(--good-bg);color:var(--good)}
+.t-warn{background:#FFFFFF;color:var(--ink);border:1px solid var(--line-2);box-shadow:inset 2px 0 0 var(--red)}
+.t-bad{background:var(--bad-bg);color:var(--bad)}
+.t-info{background:#FFFFFF;color:var(--info);border:1px solid var(--good-line)}
+.t-mute{background:transparent;color:var(--ink-3);border:1px solid var(--line)}
+
+/* ---------- layout ---------- */
+.grid{display:grid;gap:16px;align-items:start}
+.g2{grid-template-columns:1.35fr 1fr}.g2e{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.card>.hd{padding:15px 18px 0}
+.card>.hd h3{font-size:13.5px;font-weight:800;letter-spacing:-.005em}
+.card>.hd .cap{font-size:11.5px;color:var(--ink-3);margin-top:3px;line-height:1.45}
+.card>.bd{padding:14px 18px 17px}
+.card>.bd.flush{padding:0}
+.hd-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.kpi{background:#FFFFFF;border:1px solid var(--line);border-radius:var(--r);padding:15px 17px;box-shadow:var(--sh)}
+.kpi .l{font-size:10.5px;letter-spacing:.09em;color:var(--ink-3);font-weight:800;text-transform:uppercase}
+.kpi .v{font-size:25px;font-weight:800;letter-spacing:-.025em;margin-top:6px;font-variant-numeric:tabular-nums;line-height:1.15}
+.kpi .s{font-size:11.5px;color:var(--ink-2);margin-top:4px}
+.kpi .v.hi{color:var(--red)}.kpi .v.g{color:var(--good)}
+
+/* table */
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--soft);color:var(--ink-3);font-weight:800;text-align:left;padding:9px 14px;white-space:nowrap;
+  font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid var(--line)}
+tbody td{padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;color:var(--ink-2)}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--soft)}
+tbody td b{color:var(--ink);font-weight:700}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;letter-spacing:-.02em}
+.scroll-y{max-height:430px;overflow:auto}
+.scroll-y thead th{position:sticky;top:0;z-index:2}
+.empty{text-align:center;padding:34px 20px;color:var(--ink-3);font-size:13px}
+
+/* forms */
+.field{margin-bottom:13px}
+.field label{display:block;font-size:12px;font-weight:800;margin-bottom:5px;color:var(--ink-2)}
+.field label .req{color:var(--red)}
+.field .help{font-size:11px;color:var(--ink-3);margin-top:4px;line-height:1.4}
+.field input,.field select,.field textarea{width:100%;background:#FFFFFF;border:1px solid var(--line-2);border-radius:var(--r-sm);
+  padding:9px 11px;font-size:13.5px;transition:border-color .13s,box-shadow .13s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 3px var(--soft-2)}
+.field input[readonly]{background:var(--soft);color:var(--ink-2)}
+.field.err input,.field.err select{border-color:var(--bad);box-shadow:0 0 0 3px var(--bad-bg)}
+.field .errmsg{display:none;font-size:11.5px;color:var(--bad);margin-top:4px;font-weight:700}
+.field.err .errmsg{display:block}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.btn{background:var(--red);color:#FFFFFF;border:0;border-radius:var(--r-sm);padding:10px 17px;font-weight:800;font-size:13.5px;
+  cursor:pointer;transition:background .13s,transform .1s,box-shadow .13s;box-shadow:0 3px 10px -5px rgba(217,45,32,.7)}
+.btn:hover{background:var(--red-dark)}
+.btn:active{transform:translateY(1px)}
+.btn.full{width:100%}
+.btn.dark{background:var(--ink);color:#FFFFFF;box-shadow:0 3px 10px -5px rgba(16,24,40,.7)}
+.btn.dark:hover{background:#1D2939}
+.btn.ghost{background:#FFFFFF;color:var(--ink-2);border:1px solid var(--line-2);box-shadow:none}
+.btn.ghost:hover{background:var(--soft);color:var(--ink)}
+.btn.sm{padding:6px 12px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:15px}
+.filters .field{margin:0;min-width:132px}
+.filters .field.w{min-width:210px}
+.switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;font-weight:700;color:var(--ink-2)}
+.switch input{display:none}
+.switch .track{width:38px;height:22px;border-radius:20px;background:var(--line-2);position:relative;transition:background .16s}
+.switch .track::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#FFFFFF;
+  box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .16s}
+.switch input:checked + .track{background:var(--good)}
+.switch input:checked + .track::after{transform:translateX(16px)}
+
+/* chips picker */
+.pick{display:flex;flex-wrap:wrap;gap:7px}
+.pick button{background:#FFFFFF;border:1px solid var(--line-2);border-radius:20px;padding:6px 13px;font-size:12.5px;font-weight:700;
+  color:var(--ink-2);cursor:pointer;transition:all .13s}
+.pick button:hover{border-color:var(--ink-3);color:var(--ink)}
+.pick button.on{background:var(--ink);border-color:var(--ink);color:#FFFFFF}
+
+/* tabs */
+.tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--soft-2);padding:4px;border-radius:11px;width:fit-content}
+.tabs button{background:none;border:0;padding:7px 15px;font-size:13px;font-weight:800;color:var(--ink-2);cursor:pointer;border-radius:8px;transition:all .13s}
+.tabs button:hover{color:var(--ink)}
+.tabs button.on{background:#FFFFFF;color:var(--ink);box-shadow:var(--sh)}
+.pane{display:none}.pane.on{display:block}
+
+/* result box */
+.result{border:1px solid var(--good-line);background:var(--good-bg);border-radius:var(--r-sm);padding:13px 15px;margin-top:14px}
+.result .rt{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--good);margin-bottom:8px}
+.result .rl{display:flex;justify-content:space-between;gap:14px;padding:4px 0;font-size:13px;color:var(--ink-2)}
+.result .rl b{color:var(--ink);font-variant-numeric:tabular-nums}
+.result.warn{border-color:var(--warn-line);background:var(--warn-bg)}
+.result.warn .rt{color:var(--warn)}
+
+/* stat rows */
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:center;gap:13px;padding:10px 0;border-bottom:1px solid var(--line)}
+.li:last-child{border-bottom:0}
+.li .g{flex:1;min-width:0}
+.li .t{font-weight:700;font-size:13px;color:var(--ink)}
+.li .s{font-size:11.5px;color:var(--ink-3);margin-top:1px}
+.li .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:800;font-size:13px;white-space:nowrap}
+
+/* bars */
+.bar{display:grid;grid-template-columns:130px 1fr 62px;align-items:center;gap:12px;padding:6px 0}
+.bar .n{font-size:12.5px;color:var(--ink-2);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .tr{height:20px;background:var(--soft-2);border-radius:6px;overflow:hidden}
+.bar .fi{height:100%;border-radius:0 6px 6px 0;background:var(--red);transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.bar .v{font-size:13px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+.vb{display:flex;gap:10px}
+.vb .c{flex:1;text-align:center}
+.vb .c .n{font-size:15px;font-weight:800;margin-bottom:6px;font-variant-numeric:tabular-nums}
+.vb .c .p{height:96px;display:flex;align-items:flex-end}
+.vb .c .p i{display:block;width:100%;border-radius:5px 5px 0 0;min-height:3px;transition:height .45s cubic-bezier(.2,.8,.2,1)}
+.vb .c .l{font-size:11px;color:var(--ink-3);margin-top:7px}
+
+/* pipeline */
+.pipe{display:grid;gap:8px}
+.pipe .st{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:12px 10px;text-align:center}
+.pipe .st .n{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.pipe .st .c{font-size:11px;color:var(--ink-3);margin-top:2px;line-height:1.35}
+
+/* settings */
+.setgrp{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:14px;background:#FFFFFF;box-shadow:var(--sh)}
+.setgrp .sh{display:flex;align-items:center;gap:10px;padding:12px 17px;background:var(--soft);border-bottom:1px solid var(--line)}
+.setgrp .sh .dot{width:8px;height:8px;border-radius:50%;background:var(--red)}
+.setgrp .sh h3{font-size:13px;font-weight:800}
+.setgrp .sh .meta{margin-left:auto;font-size:11.5px;color:var(--ink-3);font-weight:700}
+.setgrp .sb{padding:16px 17px}
+.setrow{display:grid;grid-template-columns:1fr 210px;gap:18px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.setrow:last-child{border-bottom:0}
+.setrow .lab{font-size:13px;font-weight:700;color:var(--ink)}
+.setrow .dsc{font-size:11.5px;color:var(--ink-3);margin-top:2px;line-height:1.45}
+.setrow input,.setrow select{width:100%;border:1px solid var(--line-2);border-radius:var(--r-sm);padding:8px 11px;font-size:13.5px}
+.setrow input:focus,.setrow select:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 3px var(--soft-2)}
+.savebar{position:sticky;bottom:0;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border:1px solid var(--line);
+  border-radius:var(--r);padding:12px 17px;display:flex;align-items:center;gap:14px;box-shadow:var(--sh-lg);margin-top:6px}
+.savebar .msg{font-size:12.5px;color:var(--ink-2)}
+
+/* doc preview */
+.doc{background:#FFFFFF;border:1px solid var(--line);border-radius:var(--r-sm);padding:20px;font-size:12.5px;color:var(--ink-2)}
+.doc h4{font-size:14px;color:var(--ink);margin-bottom:2px}
+.doc .dh{display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.doc table{font-size:12.5px}
+.doc tbody td{padding:7px 0;border-bottom:1px dashed var(--line);white-space:normal}
+.doc .tot{display:flex;justify-content:space-between;padding-top:10px;margin-top:8px;border-top:2px solid var(--ink);font-weight:800;color:var(--ink);font-size:14px}
+
+/* toast */
+.toasts{position:fixed;right:20px;bottom:20px;z-index:200;display:flex;flex-direction:column;gap:9px}
+.toast{background:var(--ink);color:#FFFFFF;border-radius:10px;padding:12px 16px;font-size:13px;font-weight:700;box-shadow:var(--sh-lg);
+  display:flex;align-items:center;gap:10px;animation:slide .2s ease;max-width:380px}
+.toast .ic{width:8px;height:8px;border-radius:50%;background:#B2CCFF;flex:0 0 8px}
+.toast.bad .ic{background:#F04438}
+.toast small{display:block;font-weight:400;color:#EAECF0;font-size:11.5px;margin-top:1px}
+@keyframes slide{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+
+.foot{margin-top:14px;font-size:11.5px;color:var(--ink-3);line-height:1.5}
+h4.sec{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:800;margin:24px 0 11px}
+@media(max-width:1200px){.g2,.g2e,.g3{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+
+ul.sp{list-style:none;margin:0;padding:0}
+ul.sp li{position:relative;padding-left:15px;margin:4px 0}
+ul.sp li:first-child{margin-top:0}
+ul.sp li:last-child{margin-bottom:0}
+ul.sp li::before{content:"";position:absolute;left:3px;top:.62em;width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.4}
+
+/* ---- dashboard controls ---- */
+.dbar{background:#FFFFFF;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:13px 16px;margin-bottom:16px}
+.dbrow{display:flex;flex-wrap:wrap;align-items:center;gap:9px 18px}
+.dbgrp{display:flex;align-items:center;gap:9px;min-width:0}
+.dblab{font-size:10.5px;letter-spacing:.09em;font-weight:800;color:var(--ink-3);text-transform:uppercase;white-space:nowrap}
+.dbgrp select{border:1px solid var(--line-2);border-radius:var(--r-sm);padding:6px 10px;font:inherit;font-size:12.5px;
+  font-weight:700;color:var(--ink);background:#FFFFFF;cursor:pointer;max-width:190px}
+.dbsum{margin-top:11px;padding-top:11px;border-top:1px dashed var(--line);
+  display:flex;flex-wrap:wrap;align-items:stretch;gap:0}
+.dbsum .it{display:flex;flex-direction:column;gap:2px;padding:2px 16px;border-left:1px solid var(--line);min-width:0}
+.dbsum .it:first-child{padding-left:0;border-left:0}
+.dbsum .it .k{font-size:9.5px;letter-spacing:.09em;font-weight:800;color:var(--ink-3);text-transform:uppercase;white-space:nowrap}
+.dbsum .it .v{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap}
+.dbsum .gap{flex:1;min-width:10px}
+.dbsum .res{display:flex;align-items:stretch;gap:0;background:var(--red-50);border:1px solid var(--red-100);
+  border-radius:var(--r-sm);padding:5px 4px}
+.dbsum .res .it{border-left-color:var(--red-100);padding:0 14px}
+.dbsum .res .it:first-child{padding-left:14px;border-left:0}
+.dbsum .res .it .v{color:var(--ink)}
+@media(max-width:900px){.dbsum{gap:8px}.dbsum .gap{display:none}
+  .dbsum .it{border-left:0;padding:2px 0 2px 0;flex:1 1 40%}
+  .dbsum .res{flex:1 1 100%;margin-top:2px}}
+.dcards{margin-top:11px;padding-top:11px;border-top:1px dashed var(--line);display:flex;flex-wrap:wrap;gap:7px}
+.dcards label{display:inline-flex;align-items:center;gap:7px;background:var(--soft);border:1px solid var(--line);
+  border-radius:20px;padding:5px 12px 5px 9px;font-size:12px;font-weight:700;color:var(--ink-2);cursor:pointer;user-select:none}
+.dcards label:hover{border-color:var(--ink-3)}
+.dcards input{accent-color:var(--red);width:14px;height:14px;cursor:pointer}
+.dcards label.on{background:var(--red-50);border-color:var(--red-100);color:var(--ink)}
+.kpis.k6{grid-template-columns:repeat(3,1fr)}
+.kpi .d{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;border-radius:20px;padding:2px 8px;margin-top:6px}
+.kpi .d.up{background:var(--good-bg);color:var(--good)}
+.kpi .d.dn{background:var(--bad-bg);color:var(--bad)}
+.kpi .d.flat{background:var(--soft-2);color:var(--ink-3)}
+.chartbox{width:100%}
+.chartbox svg{width:100%;height:auto;max-height:330px;display:block;margin:0 auto}
+.segs{display:inline-flex;background:var(--soft-2);border-radius:9px;padding:3px;gap:2px}
+.segs button{border:0;background:none;font:inherit;font-size:12px;font-weight:700;color:var(--ink-2);
+  padding:5px 12px;border-radius:7px;cursor:pointer;transition:background .13s,color .13s;white-space:nowrap}
+.segs button.on{background:#FFFFFF;color:var(--ink);box-shadow:var(--sh)}
+.hd-row2{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.hd-row2 .sp{flex:1}
+@media(max-width:1150px){.kpis.k6{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.kpis.k6{grid-template-columns:1fr}.dbgrp select{max-width:140px}}
+
+.segs.sm button{padding:3px 9px;font-size:11.5px}
+.drw-ov{position:fixed;inset:0;background:rgba(16,24,40,.42);opacity:0;pointer-events:none;transition:opacity .2s;z-index:60}
+.drw-ov.on{opacity:1;pointer-events:auto}
+.drw{position:fixed;top:0;right:0;height:100vh;width:min(520px,94vw);background:#FFFFFF;z-index:61;
+  box-shadow:-16px 0 44px -20px rgba(16,24,40,.4);transform:translateX(102%);transition:transform .24s cubic-bezier(.2,.8,.2,1);
+  display:flex;flex-direction:column}
+.drw.on{transform:none}
+.drw-hd{padding:18px 22px 15px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:12px}
+.drw-hd .k{font-size:10.5px;letter-spacing:.09em;font-weight:800;color:var(--red);text-transform:uppercase}
+.drw-hd h3{font-size:18px;font-weight:800;letter-spacing:-.02em;margin-top:3px}
+.drw-hd .s{font-size:12.5px;color:var(--ink-2);margin-top:3px}
+.drw-x{margin-left:auto;border:1px solid var(--line);background:#FFFFFF;border-radius:8px;width:30px;height:30px;
+  cursor:pointer;font-size:16px;color:var(--ink-2);flex:0 0 30px;line-height:1}
+.drw-x:hover{border-color:var(--ink-3);color:var(--ink)}
+.drw-bd{padding:18px 22px 26px;overflow:auto;flex:1}
+.drw-sec{margin-bottom:20px}
+.drw-sec>h4{font-size:11px;letter-spacing:.08em;font-weight:800;color:var(--ink-3);text-transform:uppercase;margin-bottom:9px}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:7px 16px;font-size:13px}
+.dl dt{color:var(--ink-2);white-space:nowrap}
+.dl dd{text-align:right;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.tl{position:relative;padding-left:20px}
+.tl .st{position:relative;padding:0 0 14px 0;font-size:12.5px}
+.tl .st::before{content:"";position:absolute;left:-20px;top:3px;width:11px;height:11px;border-radius:50%;
+  background:#FFFFFF;border:2px solid var(--line-2)}
+.tl .st.done::before{background:var(--red);border-color:var(--red)}
+.tl .st.now::before{background:#FFFFFF;border-color:var(--red);box-shadow:0 0 0 3px var(--red-50)}
+.tl::after{content:"";position:absolute;left:-15px;top:6px;bottom:16px;width:2px;background:var(--line)}
+.tl .st b{display:block;font-size:13px}
+.tl .st span{color:var(--ink-3);font-size:11.5px}
+tr.clik{cursor:pointer}
+tr.clik:hover td{background:var(--soft)}
+.lnk{color:var(--red);cursor:pointer;font-weight:700;text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1px}
+.lnk:hover{color:var(--red-dark)}
+.tag.t-sim{background:#FFFFFF;color:var(--ink-3);border:1px dashed var(--line-2);font-weight:700}
+.tag.t-real{background:var(--good-bg);color:var(--good);border:1px solid var(--good-line)}
+.card>.hd h3 .tag,.drw-hd h3 .tag{vertical-align:2px;margin-left:7px;font-size:10px;padding:2px 7px}
+.srcbar{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12px;color:var(--ink-2);align-items:center}
+.chip{display:inline-flex;align-items:center;font-size:12px;font-weight:700;background:var(--soft-2);
+  color:var(--ink-2);border:1px solid var(--line);border-radius:20px;padding:5px 12px}
+.chip:hover{border-color:var(--ink-3)}
+/* ---- font specimen ---- */
+.fontcmp{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fontcmp .fc{border:1px solid var(--line);border-radius:var(--r);padding:15px 17px;background:#FFFFFF}
+.fontcmp .fc h4{font-size:12px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:9px;font-weight:800}
+.fontcmp .fc .big{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.fontcmp .fc .body{font-size:13.5px;line-height:1.7;color:var(--ink-2);margin-top:8px}
+.fontcmp .fc .nums{font-size:15px;font-weight:700;margin-top:8px;font-variant-numeric:tabular-nums}
+.fc.loop{font-family:var(--font-loop),'Sarabun','TH Sarabun New','Leelawadee UI','Thonburi',sans-serif}
+.fc.noloop{font-family:var(--font-noloop),'Noto Sans Thai','Kanit','Prompt',sans-serif}
+@media(max-width:820px){.fontcmp{grid-template-columns:1fr}}
+/* ---- calendar ---- */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.cal .dh{background:var(--soft-2);padding:7px 0;text-align:center;font-size:11px;font-weight:800;color:var(--ink-3);letter-spacing:.05em}
+.cal .d{background:#FFFFFF;min-height:88px;padding:6px 7px;display:flex;flex-direction:column;gap:3px}
+.cal .d.dim{background:var(--soft)}
+.cal .d .n{font-size:11.5px;font-weight:800;color:var(--ink-2)}
+.cal .d.today .n{background:var(--red);color:#FFFFFF;border-radius:20px;width:21px;height:21px;display:flex;align-items:center;justify-content:center;font-size:11px}
+.cal .ev{font-size:10.5px;font-weight:700;border-radius:4px;padding:2px 5px;line-height:1.35;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal .ev.t{background:var(--info-bg);color:var(--info)}
+.cal .ev.r{background:var(--bad-bg);color:var(--bad)}
+.cal .ev.l{background:var(--soft-2);color:var(--ink-2)}
+.callegend{display:flex;gap:14px;flex-wrap:wrap;margin-top:11px;font-size:11.5px;color:var(--ink-2)}
+.callegend i{width:9px;height:9px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
+/* ---- kanban ---- */
+.kan{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.kan .col{background:var(--soft);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.kan .ch{padding:9px 12px;font-size:11.5px;font-weight:800;display:flex;align-items:center;gap:7px;background:#FFFFFF;border-bottom:1px solid var(--line)}
+.kan .ch .c{margin-left:auto;font-size:11px;color:var(--ink-3)}
+.kan .cb{padding:9px;display:flex;flex-direction:column;gap:8px;min-height:80px}
+.kan .k{background:#FFFFFF;border:1px solid var(--line);border-radius:8px;padding:9px 10px;box-shadow:var(--sh);cursor:pointer;transition:border-color .12s,transform .1s}
+.kan .k:hover{border-color:var(--ink-3);transform:translateY(-1px)}
+.kan .k b{font-size:12.5px;display:block}
+.kan .k .m{font-size:11px;color:var(--ink-3);margin-top:2px}
+@media(max-width:1200px){.kan{grid-template-columns:repeat(2,1fr)}}
+/* ---- user cards ---- */
+.ugrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.ucard{border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;background:#FFFFFF;box-shadow:var(--sh)}
+.ucard .top{display:flex;align-items:center;gap:10px}
+.av{width:34px;height:34px;border-radius:50%;background:var(--soft-2);color:var(--ink-2);display:flex;align-items:center;
+  justify-content:center;font-weight:800;font-size:13px;flex:0 0 34px}
+.perm{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.perm span{font-size:10.5px;font-weight:700;background:var(--soft-2);color:var(--ink-2);border-radius:5px;padding:2px 7px}
+.perm span.y{background:var(--good-bg);color:var(--good)}
+/* ---- attendance ---- */
+.att{display:grid;grid-template-columns:1fr repeat(3,86px) 92px;gap:0}
+.att>div{padding:9px 12px;border-bottom:1px solid var(--line);font-size:12.5px;display:flex;align-items:center}
+.att .h{background:var(--soft-2);font-size:10.5px;font-weight:800;color:var(--ink-3);letter-spacing:.05em;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="dot"></span><div><b>FAMAI</b><span>ระบบหลังบ้าน · ต้นแบบ v0.5</span></div></div>
+    <nav class="nav" id="nav">
+      <div class="nav-label">ภาพรวม</div>
+      <button data-s="dash" class="on">Dashboard</button>
+      <button data-s="cal">ปฏิทินงาน<span class="badge" id="bCal">0</span></button>
+      <div class="nav-label">มอเตอร์ไซค์</div>
+      <button data-s="recv">รับรถเข้าสต๊อก</button>
+      <button data-s="stock">สต๊อกรถ<span class="badge" id="bStock">0</span></button>
+      <button data-s="sell">ขายรถ</button>
+      <div class="nav-label">อะไหล่</div>
+      <button data-s="parts">สต๊อกอะไหล่<span class="badge" id="bParts">0</span></button>
+      <button data-s="partsale">เบิกและขายอะไหล่</button>
+      <div class="nav-label">ไฟแนนซ์</div>
+      <button data-s="fin">เคสสินเชื่อ<span class="badge" id="bFin">0</span></button>
+      <div class="nav-label">ลูกค้า</div>
+      <button data-s="crm">ลูกค้าและติดตาม<span class="badge" id="bTask">0</span></button>
+      <div class="nav-label">พนักงาน</div>
+      <button data-s="hr">ลงเวลาและลา<span class="badge" id="bHr">0</span></button>
+      <button data-s="users">บัญชีผู้ใช้</button>
+      <div class="nav-label">ข้อมูลและตั้งค่า</div>
+      <button data-s="imp">นำเข้าข้อมูล</button>
+      <button data-s="settings">ตั้งค่าระบบ</button>
+      <button data-s="flow">ผังกระบวนการ</button>
+    </nav>
+    <div class="side-foot">ต้นแบบ · ข้อมูลอยู่ในหน้าเว็บ ปิดแล้วหาย</div>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <div><h1 id="pgT">Dashboard</h1><div class="sub" id="pgS">ภาพรวมสต๊อกและการขาย</div></div>
+      <div class="sp"></div>
+      <span class="pill">วันที่อ้างอิง <b>29 ก.ค. 2569</b></span>
+      <span class="pill">ฟอนต์
+        <span class="segs sm" id="fontSw" style="margin-left:6px">
+          <button data-f="noloop" class="on">ไม่มีหัว</button><button data-f="loop">มีหัว</button>
+        </span></span>
+      <span class="pill">บทบาท <select id="roleSel" style="border:0;background:none;font-weight:800;color:var(--ink);cursor:pointer;padding:0 2px"></select></span>
+    </header>
+    <div class="wrap">
+
+<!-- ============ DASHBOARD ============ -->
+<section class="screen on" id="s-dash">
+  <div class="hint"><span class="tag t-good">ข้อมูลตัวอย่าง</span>
+    <div>เลือกช่วงเวลา สาขา หรือพนักงานขาย แล้วทุกตัวเลขคำนวณใหม่ทันที</div>
+  </div>
+
+  <div class="dbar">
+    <div class="dbrow">
+      <div class="dbgrp"><span class="dblab">ช่วงเวลา</span>
+        <div class="pick" id="dRange">
+          <button data-d="1">1 วัน</button>
+          <button data-d="7">7 วัน</button>
+          <button data-d="30" class="on">30 วัน</button>
+          <button data-d="90">90 วัน</button>
+          <button data-d="365">12 เดือน</button>
+          <button data-d="0">ทั้งหมด</button>
+        </div>
+      </div>
+      <div class="dbgrp"><span class="dblab">สาขา</span><select id="dBranch"></select></div>
+      <div class="dbgrp"><span class="dblab">พนักงานขาย</span><select id="dSales"></select></div>
+      <div class="sp" style="flex:1"></div>
+      <button class="btn ghost sm" id="dCardsBtn">เลือกการ์ดที่แสดง</button>
+    </div>
+    <div class="dcards" id="dCards" style="display:none"></div>
+    <div class="dbsum" id="dSum">–</div>
+  </div>
+
+  <div class="kpis k6" id="dKpis"></div>
+
+  <div class="grid" style="margin-bottom:16px" data-c="trend">
+    <div class="card"><div class="hd"><div class="hd-row2">
+        <div><h3>ยอดขายตามช่วงเวลา <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap" id="capTrend">–</div></div>
+        <div class="sp"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div class="segs" id="tMetric">
+            <button data-m="count" class="on">จำนวนคัน</button>
+            <button data-m="revenue">ยอดขาย</button>
+            <button data-m="gp">กำไร</button>
+          </div>
+          <div class="segs" id="tType">
+            <button data-t="bar" class="on">แท่ง</button>
+            <button data-t="line">เส้น</button>
+          </div>
+        </div>
+      </div></div>
+      <div class="bd"><div class="chartbox" id="chTrend"></div>
+        <div class="foot" id="legTrend">–</div></div></div>
+  </div>
+
+  <div class="grid g2" style="margin-bottom:16px">
+    <div data-c="branch"><div class="card"><div class="hd"><h3>สต๊อกคงเหลือแยกตามสาขา <span class="tag t-real">ข้อมูลจริง</span></h3>
+      <div class="cap">ตัวเลขล่างคือเงินต้นทุนที่จมอยู่</div></div>
+      <div class="bd"><div id="chBranch"></div></div></div></div>
+    <div data-c="aging"><div class="card"><div class="hd"><h3>รถค้างในสต๊อกนานแค่ไหน <span class="tag t-real">ข้อมูลจริง</span></h3><div class="cap" id="capAge">–</div></div>
+      <div class="bd"><div class="vb" id="chAge"></div><div class="foot" id="legAge">–</div></div></div></div>
+  </div>
+
+  <div class="grid g2" style="margin-bottom:16px">
+    <div data-c="model"><div class="card"><div class="hd"><h3>สต๊อกแยกตามรุ่น <span class="tag t-real">ข้อมูลจริง</span></h3>
+      <div class="cap">สีแดงคือใกล้หมด · สีเข้มคือค้างนานเกินเกณฑ์</div></div>
+      <div class="bd"><div id="chModel"></div></div></div></div>
+    <div data-c="todo"><div class="card"><div class="hd"><h3>สิ่งที่ต้องจัดการวันนี้ <span class="tag t-sim">ข้อมูลสมมุติ</span></h3>
+      <div class="cap">งานค้างจากทุกหน้า รวมไว้ที่เดียว</div></div>
+      <div class="bd"><div class="list" id="todo"></div></div></div></div>
+  </div>
+
+  <div class="grid g2" style="margin-bottom:16px">
+    <div data-c="staff"><div class="card"><div class="hd"><h3>ผลงานพนักงานขาย <span class="tag t-sim">ข้อมูลสมมุติ</span></h3>
+      <div class="cap">ตามช่วงเวลาที่เลือกไว้ข้างบน</div></div>
+      <div class="bd flush"><div id="chStaff"></div></div></div></div>
+    <div data-c="top"><div class="card"><div class="hd"><h3>รุ่นที่ขายดีในช่วงนี้ <span class="tag t-sim">ข้อมูลสมมุติ</span></h3>
+      <div class="cap">ตัวเลขขวาคือกำไรรวมของรุ่นนั้น</div></div>
+      <div class="bd flush"><div id="chTop"></div></div></div></div>
+  </div>
+
+  <div class="grid" data-c="recent">
+    <div class="card"><div class="hd"><h3>รายการขายล่าสุด <span class="tag t-sim">ข้อมูลสมมุติ</span></h3>
+      <div class="cap">อัปเดตทันทีเมื่อมีการบันทึกขาย</div></div>
+      <div class="bd flush"><div id="recentSales"></div></div></div>
+  </div>
+</section>
+
+<!-- ============ RECEIVE ============ -->
+<section class="screen" id="s-recv">
+  <div class="hint"><span class="tag t-good">กรอกได้จริง</span>
+    <div>บันทึกแล้วรถเข้าสต๊อกทันที · เลขเครื่องซ้ำจะบันทึกไม่ได้</div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="hd"><h3>บันทึกรับรถเข้าสต๊อก</h3><div class="cap">เลือกรุ่นแล้วระบบเติมราคาให้ แก้ทับได้</div></div><div class="bd">
+      <div class="row2">
+        <div class="field"><label>สาขา <span class="req">*</span></label><select id="rBranch"></select></div>
+        <div class="field"><label>วันที่รับรถ <span class="req">*</span></label><input type="date" id="rDate" value="2026-07-29"></div>
+      </div>
+      <div class="field"><label>รุ่นรถ <span class="req">*</span></label><select id="rModel"></select></div>
+      <div class="row2">
+        <div class="field"><label>สี</label><input id="rColor"></div>
+        <div class="field"><label>ปีรถ (พ.ศ.)</label><input id="rYear" value="2569" inputmode="numeric"><div class="help">ไฟล์ยามาฮ่าไม่มีช่องนี้ ต้องกรอกเอง</div></div>
+      </div>
+      <div class="field err-host" id="fEngine"><label>หมายเลขเครื่อง <span class="req">*</span></label><input id="rEngine" class="mono" placeholder="เช่น E34SE-360814"><div class="errmsg">เลขเครื่องนี้มีอยู่ในระบบแล้ว</div></div>
+      <div class="field err-host" id="fFrame"><label>หมายเลขตัวถัง <span class="req">*</span></label><input id="rFrame" class="mono" placeholder="เช่น MLESEK52111380692"><div class="errmsg">เลขตัวถังนี้มีอยู่ในระบบแล้ว</div></div>
+      <div class="row2">
+        <div class="field"><label>ต้นทุนต่อคัน (บาท) <span class="req">*</span></label><input id="rCost" class="num" inputmode="numeric"></div>
+        <div class="field"><label>ราคาขายแนะนำ (บาท)</label><input id="rRetail" class="num" inputmode="numeric"></div>
+      </div>
+      <div id="rPreview"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn" id="rSave">บันทึกรับรถ</button>
+        <button class="btn ghost" id="rClear">ล้างฟอร์ม</button>
+      </div>
+    </div></div>
+
+    <div class="card"><div class="hd"><h3>รับเข้าล่าสุด <span class="tag t-real">ข้อมูลจริง</span></h3><div class="cap">10 รายการหลังสุด</div></div><div class="bd flush"><div id="recvRecent"></div></div></div>
+  </div>
+</section>
+
+<!-- ============ STOCK ============ -->
+<section class="screen" id="s-stock">
+  <div class="hint"><span class="tag t-good">ใช้งานได้จริง</span>
+    <div>รถ 50 คันมาจากไฟล์จริงของร้าน · ปีรถกับสถานะขายแล้วเป็นข้อมูลสมมุติ · กดที่แถวเพื่อดูรายละเอียด</div>
+  </div>
+  <div class="filters">
+    <div class="field"><label>สาขา</label><select id="fBranch"><option value="">ทุกสาขา</option></select></div>
+    <div class="field"><label>รุ่น</label><select id="fModel"><option value="">ทุกรุ่น</option></select></div>
+    <div class="field"><label>สี</label><select id="fColor"><option value="">ทุกสี</option></select></div>
+    <div class="field"><label>ปีรถ</label><select id="fYear"><option value="">ทุกปี</option></select></div>
+    <div class="field"><label>สถานะ</label><select id="fStatus"><option value="available">พร้อมขาย</option><option value="reserved">จองแล้ว</option><option value="sold">ขายแล้ว</option><option value="moving">กำลังโอนย้าย</option><option value="">ทั้งหมด</option></select></div>
+    <div class="field w"><label>ค้นหา</label><input id="fQ" placeholder="เลขเครื่อง เลขตัวถัง หรือชื่อรุ่น"></div>
+    <button class="btn ghost sm" id="fClear">ล้างตัวกรอง</button>
+    <div style="flex:1"></div>
+    <div style="font-size:12.5px;color:var(--ink-2);padding-bottom:3px" id="stockSum"></div>
+  </div>
+  <div class="foot" style="margin:-6px 0 12px">ทั้งคอลัมน์ปีเป็นข้อมูลสมมุติ เพราะไฟล์ยามาฮ่าไม่มีช่องนี้ ต้องกรอกเองทีละคัน · กำไรคิดจากราคาแนะนำลบต้นทุน · กดที่แถวเพื่อดูรายละเอียดคันนั้น</div>
+  <div class="card"><div class="bd flush"><div class="scroll-y"><table id="tStock">
+    <thead><tr><th>สาขา</th><th>รุ่น</th><th>สี</th><th style="white-space:nowrap">ปี <span class="tag t-sim">ข้อมูลสมมุติ</span></th><th>เลขเครื่อง</th><th class="num">ต้นทุน</th><th class="num">ราคาแนะนำ</th><th class="num">กำไรถ้าขาย</th><th>ค้างมา</th><th></th></tr></thead>
+    <tbody></tbody></table></div></div></div>
+</section>
+
+<!-- ============ SELL ============ -->
+<section class="screen" id="s-sell">
+  <div class="hint"><span class="tag t-good">คำนวณสดทุกช่อง</span>
+    <div>แก้ราคา ส่วนลด หรือของแถม แล้วกำไรทางขวาเปลี่ยนทันที</div>
+  </div>
+  <div class="tabs" id="sellTabs">
+    <button class="on" data-t="p1">เปิดการขาย</button>
+    <button data-t="p2">เทียบไฟแนนซ์</button>
+    <button data-t="p3">เอกสารที่ออก</button>
+  </div>
+
+  <div class="pane on" id="p1">
+    <div class="grid g2">
+      <div class="card"><div class="hd"><h3>เปิดการขาย</h3><div class="cap">เลือกคัน กรอกราคา กดบันทึก ระบบตัดสต๊อกให้</div></div><div class="bd">
+        <div class="field"><label>เลือกคันรถจากสต๊อก <span class="req">*</span></label><select id="sUnit"></select></div>
+        <div class="row3">
+          <div class="field"><label>ต้นทุน</label><input id="sCost" class="num" readonly></div>
+          <div class="field"><label>ราคาขาย (บาท) <span class="req">*</span></label><input id="sPrice" class="num" inputmode="numeric"><div class="help" id="sPriceHelp"></div></div>
+          <div class="field"><label>ส่วนลด (บาท)</label><input id="sDisc" class="num" inputmode="numeric" value="0"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>ชื่อลูกค้า <span class="req">*</span></label><input id="sCust" placeholder="เช่น คุณสมชาย"></div>
+          <div class="field"><label>เบอร์โทร</label><input id="sPhone" placeholder="08x-xxx-xxxx"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>วิธีชำระเงิน</label><select id="sPay"><option value="cash">เงินสด</option><option value="finance">ผ่อนผ่านไฟแนนซ์</option></select></div>
+          <div class="field"><label>พนักงานขาย</label><select id="sSales"></select></div>
+        </div>
+        <div id="sFinBlock" style="display:none">
+          <div class="row2">
+            <div class="field"><label>บริษัทไฟแนนซ์</label><select id="sFinCo"></select></div>
+            <div class="field"><label>เงินดาวน์ (บาท)</label><input id="sDown" class="num" inputmode="numeric" value="5000"></div>
+          </div>
+        </div>
+        <h4 class="sec">ของแถมที่ให้ในดีลนี้</h4>
+        <div class="pick" id="sFree"></div>
+        <div class="field" style="margin-top:12px"><label>หมายเหตุ</label><input id="sNote" placeholder="ไม่มี"></div>
+        <div id="sAlert"></div>
+        <div style="display:flex;gap:10px;margin-top:6px">
+          <button class="btn" id="sSave">บันทึกการขายและตัดสต๊อก</button>
+          <button class="btn ghost" id="sReset">ล้างฟอร์ม</button>
+        </div>
+      </div></div>
+
+      <div>
+        <div class="card" style="margin-bottom:16px"><div class="hd"><h3>สรุปกำไรคันนี้ <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap">คิดใหม่ทุกครั้งที่แก้ตัวเลข</div></div><div class="bd">
+          <div class="list" id="sSummary"></div>
+        </div></div>
+        <div class="card"><div class="hd"><h3>ผลกระทบต่อสต๊อก</h3><div class="cap">ถ้ากดบันทึกตอนนี้ จะเกิดอะไรขึ้น</div></div><div class="bd">
+          <div class="list" id="sImpact"></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pane" id="p2">
+    <div class="card" style="margin-bottom:16px"><div class="hd"><h3>ตารางค่างวดของทั้งสองเจ้า <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap" id="finCap">–</div></div><div class="bd flush">
+      <table id="tFin"><thead><tr><th>จำนวนงวด</th><th class="num">ค่างวด — <span id="finN1">A</span></th><th class="num">รวมจ่าย — <span id="finN2">A</span></th><th class="num">ค่างวด — <span id="finN3">B</span></th><th class="num">รวมจ่าย — <span id="finN4">B</span></th><th>ถูกกว่า</th></tr></thead><tbody></tbody></table>
+    </div></div>
+    <div class="card"><div class="hd"><div class="hd-row"><div><h3>โหมดลูกค้า</h3><div class="cap">ซ่อนต้นทุนและกำไรทุกหน้า ตอนหันจอให้ลูกค้าดู</div></div>
+      <label class="switch"><input type="checkbox" id="custMode"><span class="track"></span><span id="custModeLab">ปิดอยู่</span></label></div></div><div class="bd">
+      <div id="finNote" class="foot">คิดแบบดอกเบี้ยคงที่ (flat rate) จากอัตราที่ตั้งไว้ในหน้าตั้งค่าระบบ<br>ยังไม่ใช่อัตราจริงของบริษัทไฟแนนซ์</div>
+    </div></div>
+  </div>
+
+  <div class="pane" id="p3">
+    <div class="grid g2e">
+      <div class="card"><div class="hd"><h3>ชุดเอกสารที่ต้องออก</h3><div class="cap">เปลี่ยนไปตามวิธีชำระเงินที่เลือก</div></div><div class="bd"><div class="list" id="docList"></div></div></div>
+      <div class="card"><div class="hd"><h3>ตัวอย่างเอกสารที่พิมพ์ออกมา <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap">สร้างจากตัวเลขที่กรอกจริงในหน้าเปิดการขาย<br>เปลี่ยนตัวเลขแล้วเอกสารเปลี่ยนตาม</div></div><div class="bd"><div id="docPreview"></div><div id="docPreview2" style="margin-top:16px"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CRM ============ -->
+<section class="screen" id="s-crm">
+  <div class="hint"><span class="tag t-good">ใช้งานได้จริง</span>
+    <div>กดที่ชื่อลูกค้าเพื่อดูประวัติทั้งหมดของคนนั้น</div>
+  </div>
+  <div class="tabs" id="crmTabs">
+    <button class="on" data-t="c1">งานติดตามที่ต้องทำ</button>
+    <button data-t="c2">รายชื่อลูกค้า</button>
+    <button data-t="c3">เพิ่มลูกค้าใหม่</button>
+  </div>
+
+  <div class="pane on" id="c1">
+    <div class="grid g2">
+      <div class="card"><div class="hd"><div class="hd-row2"><div><h3>งานติดตามที่ต้องทำ <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap">กดเสร็จแล้วเพื่อปิดงาน</div></div><div class="sp"></div><button class="btn sm" id="quickAddCust">+ เพิ่มลูกค้า</button></div></div><div class="bd flush"><div id="taskList"></div></div></div>
+      <div class="card"><div class="hd"><h3>รอบติดตามที่ตั้งไว้ตอนนี้</h3><div class="cap">นับจากวันที่ส่งมอบรถ</div></div><div class="bd"><div class="pipe" id="cadence"></div></div></div>
+    </div>
+  </div>
+
+  <div class="pane" id="c2">
+    <div class="card"><div class="bd flush"><div class="scroll-y"><table id="tCust">
+      <thead><tr><th>ลูกค้า</th><th>เบอร์โทร</th><th>รู้จักร้านจาก</th><th>รถที่ซื้อ</th><th>วันที่ซื้อ</th><th class="num">งานติดตามค้าง</th></tr></thead><tbody></tbody></table></div></div></div>
+  </div>
+
+  <div class="pane" id="c3">
+    <div class="grid g2">
+      <div class="card"><div class="hd"><h3>เพิ่มลูกค้าที่เข้ามาดูรถ</h3><div class="cap">บันทึกได้ตั้งแต่ลูกค้าเดินเข้าร้าน</div></div><div class="bd">
+        <div class="row2">
+          <div class="field"><label>ชื่อลูกค้า <span class="req">*</span></label><input id="cName"></div>
+          <div class="field"><label>เบอร์โทร</label><input id="cPhone" placeholder="08x-xxx-xxxx"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label>รุ่นที่สนใจ</label><select id="cModel"></select></div>
+          <div class="field"><label>รู้จักร้านจาก</label><select id="cSrc"></select></div>
+        </div>
+        <div class="field"><label>ขั้นตอนตอนนี้</label><select id="cStage"><option>เข้ามาดูรถ</option><option>สนใจ</option><option>ทำสัญญา</option></select></div>
+        <button class="btn full" id="cSave">บันทึกลูกค้า</button>
+        <div id="cResult"></div>
+      </div></div>
+      <div class="card"><div class="hd"><h3>ลูกค้าเดินมาถึงขั้นไหนแล้ว <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap">นับจากลูกค้าทั้งหมดในระบบตอนนี้</div></div><div class="bd"><div class="pipe" id="funnel" style="grid-template-columns:repeat(4,1fr)"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SETTINGS ============ -->
+<section class="screen" id="s-settings">
+  <div class="hint"><span class="tag t-info">ตั้งค่าได้ทุกอย่าง</span>
+    <div>ทุกเกณฑ์ที่ระบบใช้อยู่ในหน้านี้ · แก้แล้วกดบันทึก ทุกหน้าเปลี่ยนตาม</div>
+  </div>
+
+  <div class="setgrp">
+    <div class="sh"><span class="dot"></span><h3>เกณฑ์เตือนเรื่องสต๊อก</h3><span class="meta">3 ค่า</span></div>
+    <div class="sb">
+      <div class="setrow"><div><div class="lab">รถค้างกี่วันถือว่านานเกินไป</div><div class="dsc">ใช้กับ KPI หน้าแรก แถบสีในตารางสต๊อก และการเตือนตอนเปิดการขาย</div></div><div><input id="cfgAging" type="number" min="1"></div></div>
+      <div class="setrow"><div><div class="lab">ช่วงอายุสต๊อกที่ใช้ในกราฟ</div><div class="dsc">ใส่เป็นจำนวนวันคั่นด้วยจุลภาค เช่น 30,60,90 จะได้ 4 ช่วง</div></div><div><input id="cfgBuckets"></div></div>
+      <div class="setrow"><div><div class="lab">รุ่นหนึ่งเหลือกี่คันถึงเตือนว่าใกล้หมด</div><div class="dsc">รุ่นที่เหลือน้อยกว่าหรือเท่ากับค่านี้จะขึ้นสีแดงในกราฟแยกตามรุ่น</div></div><div><input id="cfgLowStock" type="number" min="0"></div></div>
+    </div>
+  </div>
+
+  <div class="setgrp">
+    <div class="sh"><span class="dot"></span><h3>เกณฑ์การเงินและเอกสาร</h3><span class="meta">3 ค่า</span></div>
+    <div class="sb">
+      <div class="setrow"><div><div class="lab">อัตราภาษีมูลค่าเพิ่ม</div><div class="dsc">ใช้คำนวณ VAT ในใบกำกับภาษีและตัวอย่างใบเสร็จ</div></div><div><input id="cfgVat" type="number" step="0.1" min="0"></div></div>
+      <div class="setrow"><div><div class="lab">ของแถมนับเป็นต้นทุนของดีลหรือไม่</div><div class="dsc">เปิด = หักจากกำไรคันนั้น · ปิด = ลงเป็นค่าการตลาด</div></div><div><label class="switch"><input type="checkbox" id="cfgFreeCost"><span class="track"></span><span id="cfgFreeCostLab">–</span></label></div></div>
+      <div class="setrow"><div><div class="lab">เตือนเมื่อรอทะเบียนเกินกี่วัน</div><div class="dsc">นับจากวันที่ขาย</div></div><div><input id="cfgReg" type="number" min="1"></div></div>
+    </div>
+  </div>
+
+  <div class="setgrp">
+    <div class="sh"><span class="dot"></span><h3>อัตราไฟแนนซ์</h3><span class="meta">แก้ชื่อและอัตราได้</span></div>
+    <div class="sb">
+      <div class="setrow"><div><div class="lab">ไฟแนนซ์เจ้าที่ 1</div><div class="dsc">ชื่อที่จะแสดง และอัตราดอกเบี้ยคงที่ต่อเดือน (%)</div></div>
+        <div class="row2"><input id="cfgFinN1"><input id="cfgFinR1" type="number" step="0.01"></div></div>
+      <div class="setrow"><div><div class="lab">ไฟแนนซ์เจ้าที่ 2</div><div class="dsc">ระบบจะบอกให้เองว่างวดไหนเจ้าไหนถูกกว่า</div></div>
+        <div class="row2"><input id="cfgFinN2"><input id="cfgFinR2" type="number" step="0.01"></div></div>
+      <div class="setrow"><div><div class="lab">จำนวนงวดที่ให้เลือก</div><div class="dsc">คั่นด้วยจุลภาค เช่น 12,18,24,30,36,42,48</div></div><div><input id="cfgTerms"></div></div>
+    </div>
+  </div>
+
+  <div class="setgrp">
+    <div class="sh"><span class="dot"></span><h3>รอบติดตามลูกค้า</h3><span class="meta">ปรับรอบได้อิสระ</span></div>
+    <div class="sb">
+      <div class="setrow"><div><div class="lab">รอบติดตามหลังส่งมอบรถ</div><div class="dsc">เช่น 7,30,90,365,1095 · สร้างงานให้เซลล์อัตโนมัติ</div></div><div><input id="cfgCadence"></div></div>
+      <div class="setrow"><div><div class="lab">เตือนเช็กระยะตามเลขไมล์</div><div class="dsc">คั่นด้วยจุลภาค หน่วยเป็นกิโลเมตร เช่น 500,1000,4000,8000</div></div><div><input id="cfgKm"></div></div>
+      <div class="setrow"><div><div class="lab">ช่องทางที่ลูกค้ารู้จักร้าน</div><div class="dsc">คั่นด้วยจุลภาค จะไปแสดงเป็นตัวเลือกในหน้าเพิ่มลูกค้า</div></div><div><input id="cfgSrc"></div></div>
+    </div>
+  </div>
+
+  <div class="setgrp">
+    <div class="sh"><span class="dot"></span><h3>ของแถมและพนักงาน</h3><span class="meta">แก้รายการได้</span></div>
+    <div class="sb">
+      <div class="setrow"><div><div class="lab">รายการของแถม</div><div class="dsc">รูปแบบ ชื่อ:ต้นทุน คั่นด้วยจุลภาค เช่น หมวกกันน็อก:450, พ.ร.บ.:320</div></div><div><input id="cfgFree"></div></div>
+      <div class="setrow"><div><div class="lab">รายชื่อพนักงานขาย</div><div class="dsc">คั่นด้วยจุลภาค จะไปแสดงเป็นตัวเลือกในหน้าขายรถ</div></div><div><input id="cfgSales"></div></div>
+      <div class="setrow"><div><div class="lab">บทบาทและสิทธิ์</div><div class="dsc">จัดการที่หน้าบัญชีผู้ใช้</div></div><div><button class="btn ghost" onclick="go('users')">ไปหน้าบัญชีผู้ใช้</button></div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px"><div class="hd"><h3>เทียบฟอนต์ไทย มีหัว กับ ไม่มีหัว</h3>
+    <div class="cap">ข้อความเหมือนกันทั้งสองฝั่ง ดูพร้อมกันได้เลยว่าอันไหนอ่านง่ายกว่า</div></div><div class="bd">
+    <div class="fontcmp">
+      <div class="fc noloop"><h4>ไม่มีหัว (loopless)</h4>
+        <div class="big">สต๊อกคงเหลือ 38 คัน</div>
+        <div class="body">รถที่ค้างในสต๊อกเกิน 90 วัน มีอยู่ 14 คัน คิดเป็นเงินต้นทุนที่ยังจมอยู่ 647,300 บาท ควรเร่งระบายออกก่อนสิ้นเดือน</div>
+        <div class="nums">฿2,586,000 · 12 ดีล · 11.2%</div></div>
+      <div class="fc loop"><h4>มีหัว (looped)</h4>
+        <div class="big">สต๊อกคงเหลือ 38 คัน</div>
+        <div class="body">รถที่ค้างในสต๊อกเกิน 90 วัน มีอยู่ 14 คัน คิดเป็นเงินต้นทุนที่ยังจมอยู่ 647,300 บาท ควรเร่งระบายออกก่อนสิ้นเดือน</div>
+        <div class="nums">฿2,586,000 · 12 ดีล · 11.2%</div></div>
+    </div>
+    <div class="foot">ปุ่มสลับทั้งเว็บอยู่ที่มุมขวาบน · ถ้าเปิดไฟล์ตอนไม่มีอินเทอร์เน็ต ทั้งสองฝั่งอาจขึ้นเป็นฟอนต์เดียวกัน เพราะโหลดฟอนต์ไม่ได้</div>
+  </div></div>
+
+  <div class="savebar">
+    <button class="btn" id="cfgSave">บันทึกการตั้งค่า</button>
+    <button class="btn ghost" id="cfgReset">คืนค่าเริ่มต้น</button>
+    <div class="msg" id="cfgMsg">แก้ค่าแล้วกดบันทึก ทุกหน้าจะคำนวณใหม่ทันที</div>
+  </div>
+</section>
+
+
+<!-- ============ IMPORT ============ -->
+<section class="screen" id="s-imp">
+  <div class="hint"><span class="tag t-good">ลองได้จริง</span><div>อ่านไฟล์ให้ดูก่อน แล้วค่อยกดยืนยันนำเข้า</div></div>
+  <div class="grid g2">
+    <div class="card"><div class="hd"><h3>นำเข้าจากไฟล์ยามาฮ่า <span class="tag t-real">ข้อมูลจริง</span></h3><div class="cap">รองรับไฟล์ .xls ที่ดึงจากระบบยามาฮ่า</div></div><div class="bd">
+      <div class="field"><label>เลือกไฟล์</label><select id="impFile"></select></div>
+      <button class="btn dark full" id="impRun">อ่านไฟล์และตรวจก่อนนำเข้า</button>
+      <div id="impResult"></div>
+    </div></div>
+    <div class="card"><div class="hd"><h3>ประวัติการนำเข้า <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap">ใครนำเข้าไฟล์ไหน เมื่อไหร่ เข้าไปกี่แถว</div></div>
+      <div class="bd flush"><div id="impLog"></div></div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><div class="hd"><h3>ที่มาของข้อมูลในต้นแบบนี้</h3>
+    <div class="cap">ป้ายกำกับนี้จะอยู่บนหัวการ์ดทุกใบทั้งเว็บ</div></div>
+    <div class="bd">
+      <div class="srcbar" style="margin-bottom:12px">
+        <span><span class="tag t-real">ข้อมูลจริง</span> มาจากไฟล์ที่ทีมงานส่งมา ใช้ได้เลย</span>
+        <span><span class="tag t-sim">ข้อมูลสมมุติ</span> สร้างขึ้นเพื่อให้เห็นหน้าตาผลลัพธ์ ต้องแทนที่ด้วยของจริง</span>
+      </div>
+      <table><thead><tr><th>ส่วนของระบบ</th><th>ที่มา</th><th style="width:110px">สถานะ</th></tr></thead><tbody>
+        <tr><td><b>รถ 50 คัน</b> สาขา รุ่น สี เลขเครื่อง เลขตัวถัง ต้นทุน ราคาแนะนำ วันที่รับเข้า</td>
+          <td>ไฟล์ .xls 5 ไฟล์ที่ทีมงานส่งมา</td><td><span class="tag t-real">ข้อมูลจริง</span></td></tr>
+        <tr><td><b>ชื่อไฟล์นำเข้า</b> 110967fg / 110967fm / 110967fc</td><td>ชื่อไฟล์จริง</td><td><span class="tag t-real">ข้อมูลจริง</span></td></tr>
+        <tr><td><b>ปีรถ</b></td><td>ไฟล์ยามาฮ่าไม่มีช่องนี้ ระบบใส่ให้ชั่วคราวจากปีที่รับรถ</td><td><span class="tag t-sim">ข้อมูลสมมุติ</span></td></tr>
+        <tr><td><b>การขาย 13 ดีล</b> ลูกค้า ราคาขาย ส่วนลด ของแถม กำไร</td><td>ผมสร้างขึ้น</td><td><span class="tag t-sim">ข้อมูลสมมุติ</span></td></tr>
+        <tr><td><b>ลูกค้า 17 ราย และงานติดตาม 65 งาน</b></td><td>ผมสร้างขึ้น</td><td><span class="tag t-sim">ข้อมูลสมมุติ</span></td></tr>
+        <tr><td><b>อะไหล่ 10 รายการ</b> และประวัติการเบิก</td><td>ผมสร้างขึ้น รหัสอะไหล่เป็นรูปแบบสมมุติ</td><td><span class="tag t-sim">ข้อมูลสมมุติ</span></td></tr>
+        <tr><td><b>เคสสินเชื่อ 9 เคส</b> และชื่อไฟแนนซ์ A / B</td><td>ผมสร้างขึ้น ยังไม่ใช่บริษัทจริง</td><td><span class="tag t-sim">ข้อมูลสมมุติ</span></td></tr>
+        <tr><td><b>พนักงาน 8 คน</b> เวลาเข้าออก ใบลา บัญชีผู้ใช้</td><td>ผมสร้างขึ้น</td><td><span class="tag t-sim">ข้อมูลสมมุติ</span></td></tr>
+        <tr><td><b>อัตราดอกเบี้ยไฟแนนซ์</b> 1.35% และ 1.48% ต่อเดือน</td><td>ตัวเลขตัวอย่าง ยังไม่ได้ขอจากบริษัทไฟแนนซ์จริง</td><td><span class="tag t-sim">ข้อมูลสมมุติ</span></td></tr>
+        <tr><td><b>ชื่อบริษัท ที่อยู่ และเลขผู้เสียภาษี</b> บนใบกำกับภาษี</td><td>ข้อมูลสมมุติ ต้องแทนที่ก่อนใช้จริง</td><td><span class="tag t-sim">ข้อมูลสมมุติ</span></td></tr>
+        <tr><td><b>ของแถมและราคา</b> · <b>ชื่อพนักงานขาย</b></td><td>ผมสร้างขึ้น แก้ได้ที่หน้าตั้งค่าระบบ</td><td><span class="tag t-sim">ข้อมูลสมมุติ</span></td></tr>
+      </tbody></table>
+    </div></div>
+</section>
+
+<!-- ============ CALENDAR ============ -->
+<section class="screen" id="s-cal">
+  <div class="hint"><span class="tag t-good">รวมทุกงาน</span><div>งานติดตามลูกค้า กำหนดรับทะเบียน และวันลาของพนักงาน อยู่ในปฏิทินเดียวกัน</div></div>
+  <div class="card"><div class="hd"><div class="hd-row2">
+      <div><h3 id="calTitle">ปฏิทินงาน</h3><div class="cap">กดวันที่เพื่อดูงานของวันนั้น</div></div>
+      <div class="sp"></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn ghost sm" id="calPrev">‹ เดือนก่อน</button>
+        <button class="btn ghost sm" id="calNext">เดือนถัดไป ›</button>
+      </div>
+    </div></div>
+    <div class="bd">
+      <div class="cal" id="calGrid"></div>
+      <div class="callegend">
+        <span><i style="background:var(--info)"></i>งานติดตามลูกค้า</span>
+        <span><i style="background:var(--red)"></i>กำหนดรับทะเบียน</span>
+        <span><i style="background:var(--ink-3)"></i>วันลาพนักงาน</span>
+      </div>
+    </div></div>
+  <div class="card" style="margin-top:16px"><div class="hd"><h3 id="calDayT">งานของวันนี้</h3><div class="cap">กดวันในปฏิทินเพื่อเปลี่ยน</div></div>
+    <div class="bd"><div class="list" id="calDay"></div></div></div>
+</section>
+
+<!-- ============ PARTS ============ -->
+<section class="screen" id="s-parts">
+  <div class="hint"><span class="tag t-good">กรอกได้จริง</span><div>กดที่แถวเพื่อดูประวัติการเบิกของอะไหล่ตัวนั้น</div></div>
+  <div class="kpis" id="partKpis"></div>
+  <div class="grid g2e">
+    <div class="card"><div class="hd"><div class="hd-row2"><div><h3>สต๊อกอะไหล่ <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap">แถวสีแดงคือของที่เหลือต่ำกว่าจุดสั่งซื้อ</div></div>
+      <div class="sp"></div><input id="pQ" placeholder="ค้นรหัสหรือชื่ออะไหล่" style="max-width:220px"></div></div>
+      <div class="bd flush"><div id="tParts"></div></div></div>
+    <div class="card"><div class="hd"><h3>เพิ่มอะไหล่</h3><div class="cap">บันทึกแล้วเข้าตารางทันที</div></div><div class="bd">
+      <div class="field"><label>รหัสอะไหล่ <span class="req">*</span></label><input id="pCode" class="mono" placeholder="เช่น 2PH-F5311"></div>
+      <div class="field"><label>ชื่ออะไหล่ <span class="req">*</span></label><input id="pName" placeholder="เช่น ผ้าเบรกหน้า"></div>
+      <div class="row2">
+        <div class="field"><label>ต้นทุน</label><input id="pCost" class="num" inputmode="numeric" value="0"></div>
+        <div class="field"><label>ราคาขาย</label><input id="pPrice" class="num" inputmode="numeric" value="0"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>จำนวนคงเหลือ</label><input id="pQty" class="num" inputmode="numeric" value="0"></div>
+        <div class="field"><label>จุดสั่งซื้อ</label><input id="pMin" class="num" inputmode="numeric" value="5"></div>
+      </div>
+      <div id="pPreview"></div>
+      <button class="btn full" style="margin-top:12px" id="pSave">บันทึกอะไหล่</button>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============ PART SALE ============ -->
+<section class="screen" id="s-partsale">
+  <div class="hint"><span class="tag t-good">ตัดสต๊อกจริง</span><div>เบิกอะไหล่ไปใช้ในงานซ่อม หรือขายหน้าร้าน จำนวนคงเหลือจะลดทันที</div></div>
+  <div class="grid g2e">
+    <div class="card"><div class="hd"><h3>เบิกหรือขายอะไหล่</h3><div class="cap">เลือกอะไหล่แล้วกรอกจำนวน</div></div><div class="bd">
+      <div class="field"><label>อะไหล่ <span class="req">*</span></label><select id="psItem"></select></div>
+      <div class="row2">
+        <div class="field"><label>จำนวน</label><input id="psQty" class="num" inputmode="numeric" value="1"></div>
+        <div class="field"><label>ประเภท</label><select id="psType"><option value="sale">ขายหน้าร้าน</option><option value="job">เบิกใช้ในงานซ่อม</option></select></div>
+      </div>
+      <div class="field"><label>ผูกกับเลขเครื่อง (ถ้ามี)</label><select id="psUnit"></select></div>
+      <div id="psPreview"></div>
+      <button class="btn full" style="margin-top:12px" id="psSave">บันทึกและตัดสต๊อก</button>
+    </div></div>
+    <div class="card"><div class="hd"><h3>รายการล่าสุด <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap">10 รายการหลังสุด</div></div>
+      <div class="bd flush"><div id="tPartSale"></div></div></div>
+  </div>
+</section>
+
+<!-- ============ FINANCE ============ -->
+<section class="screen" id="s-fin">
+  <div class="hint"><span class="tag t-good">กดดูรายละเอียดได้</span><div>กดที่การ์ดเพื่อดูรายละเอียดและเลื่อนขั้น</div></div>
+  <div class="kpis" id="finKpis"></div>
+  <div class="card"><div class="hd"><div class="hd-row2"><div><h3>เคสสินเชื่อ <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap">5 สถานะ ตั้งแต่ส่งเรื่องจนจบ</div></div>
+    <div class="sp"></div>
+    <select id="finCo" style="max-width:190px"></select></div></div>
+    <div class="bd"><div class="kan" id="finKan"></div></div></div>
+</section>
+
+<!-- ============ HR ============ -->
+<section class="screen" id="s-hr">
+  <div class="hint"><span class="tag t-good">กดลงเวลาได้</span><div>ลงเวลาเข้าออก และอนุมัติใบลา อยู่หน้าเดียวกัน</div></div>
+  <div class="kpis" id="hrKpis"></div>
+  <div class="tabs" id="hrTabs"><button data-t="h1" class="on">ลงเวลาวันนี้</button><button data-t="h3">ประวัติ 7 วัน</button><button data-t="h2">ใบลา</button></div>
+  <div class="pane on" id="h1">
+    <div class="card"><div class="hd"><h3>ลงเวลาวันนี้ <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap" id="hrDate">–</div></div>
+      <div class="bd flush"><div class="att" id="attGrid"></div></div></div>
+  </div>
+  <div class="pane" id="h3">
+    <div class="card"><div class="hd"><h3>ประวัติลงเวลา 7 วันล่าสุด <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap">ตัวเลขคือจำนวนวัน</div></div>
+      <div class="bd flush"><div id="attHist"></div></div></div>
+  </div>
+  <div class="pane" id="h2">
+    <div class="grid g2e">
+      <div class="card"><div class="hd"><h3>ใบลาที่รออนุมัติ <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap">กดอนุมัติหรือไม่อนุมัติได้เลย</div></div>
+        <div class="bd flush"><div id="leaveList"></div></div></div>
+      <div class="card"><div class="hd"><h3>ยื่นใบลา</h3><div class="cap">บันทึกแล้วเข้าคิวรออนุมัติ</div></div><div class="bd">
+        <div class="field"><label>พนักงาน</label><select id="lvWho"></select></div>
+        <div class="field"><label>ประเภท</label><select id="lvType"><option>ลาป่วย</option><option>ลากิจ</option><option>ลาพักร้อน</option></select></div>
+        <div class="row2">
+          <div class="field"><label>ตั้งแต่</label><input type="date" id="lvFrom" value="2026-08-03"></div>
+          <div class="field"><label>ถึง</label><input type="date" id="lvTo" value="2026-08-03"></div>
+        </div>
+        <button class="btn full" style="margin-top:12px" id="lvSave">ยื่นใบลา</button>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ USERS ============ -->
+<section class="screen" id="s-users">
+  <div class="hint"><span class="tag t-good">เพิ่มได้เอง</span><div>สร้างบทบาทใหม่และตั้งสิทธิ์เองได้ ไม่ต้องรอทีมพัฒนา</div></div>
+  <div class="tabs" id="uTabs"><button data-t="u1" class="on">ผู้ใช้ทั้งหมด</button><button data-t="u2">บทบาทและสิทธิ์</button><button data-t="u3">โปรไฟล์ของฉัน</button></div>
+  <div class="pane on" id="u1">
+    <div class="grid g2e">
+      <div class="card"><div class="hd"><h3>ผู้ใช้ในระบบ <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap">กดปิดใช้งานเพื่อระงับบัญชีชั่วคราว</div></div>
+        <div class="bd flush"><div id="tUsers"></div></div></div>
+      <div class="card"><div class="hd"><h3>เพิ่มผู้ใช้</h3><div class="cap">ตั้งชื่อ บทบาท และสาขา</div></div><div class="bd">
+        <div class="field"><label>ชื่อ <span class="req">*</span></label><input id="uName" placeholder="เช่น คุณมานพ"></div>
+        <div class="row2">
+          <div class="field"><label>บทบาท</label><select id="uRole"></select></div>
+          <div class="field"><label>สาขา</label><select id="uBranch"></select></div>
+        </div>
+        <button class="btn full" style="margin-top:12px" id="uSave">เพิ่มผู้ใช้</button>
+      </div></div>
+    </div>
+  </div>
+  <div class="pane" id="u3">
+    <div class="card" style="margin-bottom:16px"><div class="hd"><div class="hd-row2">
+      <div><h3>โปรไฟล์ของฉัน <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap">หน้านี้คือสิ่งที่พนักงานแต่ละคนเห็นเมื่อเข้าระบบ</div></div>
+      <div class="sp"></div>
+      <span class="pill">ดูในฐานะ <select id="meSel" style="border:0;background:none;font-weight:800;color:var(--ink);cursor:pointer"></select></span>
+    </div></div><div class="bd"><div id="meCard"></div></div></div>
+    <div class="grid g2e">
+      <div class="card"><div class="hd"><h3>เวลาเข้าออกของฉัน <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap">7 วันล่าสุด</div></div>
+        <div class="bd flush"><div id="meAtt"></div></div></div>
+      <div><div class="card" style="margin-bottom:16px"><div class="hd"><h3>ใบลาของฉัน <span class="tag t-sim">ข้อมูลสมมุติ</span></h3><div class="cap">ยื่นแล้วเข้าคิวรออนุมัติ</div></div><div class="bd">
+          <div class="row2">
+            <div class="field"><label>ประเภท</label><select id="meType"><option>ลาป่วย</option><option>ลากิจ</option><option>ลาพักร้อน</option></select></div>
+            <div class="field"><label>วันที่</label><input type="date" id="meDate" value="2026-08-05"></div>
+          </div>
+          <button class="btn full" style="margin-top:10px" id="meLeave">ยื่นใบลา</button>
+          <div class="list" id="meLeaveList" style="margin-top:12px"></div>
+        </div></div>
+        <div class="card"><div class="hd"><h3>ความปลอดภัย</h3><div class="cap">เปลี่ยนรหัสผ่านของตัวเอง</div></div><div class="bd">
+          <div class="field"><label>รหัสผ่านใหม่</label><input type="password" id="mePw" value="••••••••"></div>
+          <button class="btn ghost full" id="mePwSave">บันทึกรหัสผ่านใหม่</button>
+        </div></div></div>
+    </div>
+  </div>
+  <div class="pane" id="u2">
+    <div class="card" style="margin-bottom:16px"><div class="hd"><h3>สร้างบทบาทใหม่</h3><div class="cap">ตั้งชื่อแล้วติ๊กสิทธิ์ที่ต้องการ</div></div><div class="bd">
+      <div class="row2">
+        <div class="field"><label>ชื่อบทบาท <span class="req">*</span></label><input id="rlName" placeholder="เช่น หัวหน้าช่าง"></div>
+        <div class="field"><label>&nbsp;</label><button class="btn full" id="rlSave">เพิ่มบทบาท</button></div>
+      </div>
+      <div class="perm" id="rlPerms"></div>
+    </div></div>
+    <div class="ugrid" id="roleCards"></div>
+  </div>
+</section>
+
+<!-- ============ FLOW ============ -->
+<section class="screen" id="s-flow">
+  <div class="hint"><span class="tag t-mute">เอกสารประกอบ</span>
+    <div>ใครทำอะไรตอนไหน และตรงไหนให้ระบบทำแทนคนได้</div>
+  </div>
+  <div class="card"><div class="bd flush"><div style="overflow-x:auto;padding:18px">
+    <div id="flowGrid"></div>
+    <div class="foot" style="margin-top:14px">
+      <span style="margin-right:16px"><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--line-2);margin-right:6px"></i>คนทำเอง</span>
+      <span style="margin-right:16px"><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--good);margin-right:6px"></i>ระบบทำให้อัตโนมัติ</span>
+      <span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--warn);margin-right:6px"></i>จุดที่มักหลุด ต้องมีการเตือน</span>
+    </div>
+  </div></div></div>
+</section>
+
+    </div>
+  </main>
+</div>
+<div class="drw-ov" id="drwOv" onclick="closeDetail()"></div>
+<aside class="drw" id="drw">
+  <div class="drw-hd"><div style="flex:1;min-width:0"><div class="k" id="drwK">–</div><h3 id="drwT">–</h3><div class="s" id="drwS">–</div></div>
+    <button class="drw-x" onclick="closeDetail()">✕</button></div>
+  <div class="drw-bd" id="drwB"></div>
+</aside>
+<div class="toasts" id="toasts"></div>
+
+<script>
+const SEED = {"generatedFrom": "รายงานการรับรถจักรยานยนต์ 5 ไฟล์ (.xls)", "today": "2026-07-29", "units": [{"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900039", "docNo": "SMG01/RMC240900002", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FU00", "sku": "B6FU00010C", "colorCode": "500.0", "color": "ฟ้า", "engine": "E34RE-057401", "frame": "MLEUE364111399878", "cost": 40800.0, "vat": 2856.0, "retail": 46900, "gp": 6100.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946710.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900039", "docNo": "SMG01/RMC240900002", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FU00", "sku": "B6FU00010B", "colorCode": "600.0", "color": "เขียว", "engine": "E34RE-053394", "frame": "MLEUE364111399297", "cost": 40800.0, "vat": 2856.0, "retail": 46900, "gp": 6100.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946710.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900039", "docNo": "SMG01/RMC240900002", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FU00", "sku": "B6FU00010B", "colorCode": "600.0", "color": "เขียว", "engine": "E34RE-057336", "frame": "MLEUE364111399710", "cost": 40800.0, "vat": 2856.0, "retail": 46900, "gp": 6100.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946710.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900039", "docNo": "SMG01/RMC240900002", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FU00", "sku": "B6FU00010B", "colorCode": "600.0", "color": "เขียว", "engine": "E34RE-057369", "frame": "MLEUE364111399799", "cost": 40800.0, "vat": 2856.0, "retail": 46900, "gp": 6100.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946710.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900040", "docNo": "SMG01/RMC240900003", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FT00", "sku": "B6FT00010B", "colorCode": "100.0", "color": "แดง", "engine": "E34RE-056037", "frame": "MLEUE362111149086", "cost": 39000.0, "vat": 2730.0, "retail": 44900, "gp": 5900.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946713.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900041", "docNo": "SMG01/RMC240900004", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FS00", "sku": "B6FS00010A", "colorCode": "300.0", "color": "ดำ", "engine": "E34RE-059453", "frame": "MLEUE366111022832", "cost": 36000.0, "vat": 2520.0, "retail": 41200, "gp": 5200.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946709.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900042", "docNo": "SMG01/RMC240900005", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FU00", "sku": "B6FU00010A", "colorCode": "200.0", "color": "น้ำเงิน", "engine": "E34RE-056590", "frame": "MLEUE364111399600", "cost": 40800.0, "vat": 2856.0, "retail": 46900, "gp": 6100.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946711.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900042", "docNo": "SMG01/RMC240900005", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FU00", "sku": "B6FU00010A", "colorCode": "200.0", "color": "น้ำเงิน", "engine": "E34RE-056652", "frame": "MLEUE364111399596", "cost": 40800.0, "vat": 2856.0, "retail": 46900, "gp": 6100.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946711.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900042", "docNo": "SMG01/RMC240900005", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FU00", "sku": "B6FU00010A", "colorCode": "200.0", "color": "น้ำเงิน", "engine": "E34RE-056685", "frame": "MLEUE364111399569", "cost": 40800.0, "vat": 2856.0, "retail": 46900, "gp": 6100.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946711.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900043", "docNo": "SMG01/RMC240900006", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FS00", "sku": "B6FS00010A", "colorCode": "300.0", "color": "ดำ", "engine": "E34RE-059443", "frame": "MLEUE366111022833", "cost": 36000.0, "vat": 2520.0, "retail": 41200, "gp": 5200.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946712.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900043", "docNo": "SMG01/RMC240900006", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FS00", "sku": "B6FS00010A", "colorCode": "300.0", "color": "ดำ", "engine": "E34RE-059444", "frame": "MLEUE366111022837", "cost": 36000.0, "vat": 2520.0, "retail": 41200, "gp": 5200.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946712.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900043", "docNo": "SMG01/RMC240900006", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FS00", "sku": "B6FS00010A", "colorCode": "300.0", "color": "ดำ", "engine": "E34RE-059445", "frame": "MLEUE366111022836", "cost": 36000.0, "vat": 2520.0, "retail": 41200, "gp": 5200.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946712.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900044", "docNo": "SMG01/RMC240900007", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FV00", "sku": "B6FV00010C", "colorCode": "700.0", "color": "เทา", "engine": "E34RE-056465", "frame": "MLEUE365111269488", "cost": 42400.0, "vat": 2968.0, "retail": 48700, "gp": 6300.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946738.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900044", "docNo": "SMG01/RMC240900007", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FV00", "sku": "B6FV00010C", "colorCode": "700.0", "color": "เทา", "engine": "E34RE-056467", "frame": "MLEUE365111269487", "cost": 42400.0, "vat": 2968.0, "retail": 48700, "gp": 6300.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946738.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900044", "docNo": "SMG01/RMC240900007", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FV00", "sku": "B6FV00010C", "colorCode": "700.0", "color": "เทา", "engine": "E34RE-056472", "frame": "MLEUE365111269486", "cost": 42400.0, "vat": 2968.0, "retail": 48700, "gp": 6300.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946738.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900045", "docNo": "SMG01/RMC240900008", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FT00", "sku": "B6FT00010B", "colorCode": "100.0", "color": "แดง", "engine": "E34RE-056699", "frame": "MLEUE362111149286", "cost": 39000.0, "vat": 2730.0, "retail": 44900, "gp": 5900.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946739.0", "srcFile": "110967fg.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P240900045", "docNo": "SMG01/RMC240900008", "recvDate": "2024-09-11", "age": 686, "model": "FINN", "code": "B6FT00", "sku": "B6FT00010B", "colorCode": "100.0", "color": "แดง", "engine": "E34RE-056728", "frame": "MLEUE362111149288", "cost": 39000.0, "vat": 2730.0, "retail": 44900, "gp": 5900.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "1946739.0", "srcFile": "110967fg.xls"}, {"branch": "FMM01", "branchName": "Famai Motor", "recvNo": "FMM01/REC_P260400004", "docNo": "FMM01/RMC260400001", "recvDate": "2026-04-02", "age": 118, "model": "Aerox", "code": "D13100", "sku": "D13100010A", "colorCode": "0200", "color": "น้ำเงิน", "engine": "G3W2E-010432", "frame": "RLCSG982111001176", "cost": 84100.0, "vat": 5887.0, "retail": null, "gp": null, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2072149", "srcFile": "020469fmm.xls"}, {"branch": "FMM01", "branchName": "Famai Motor", "recvNo": "FMM01/REC_P260400003", "docNo": "FMM01/RMC260400002", "recvDate": "2026-04-02", "age": 118, "model": "Grand Filano Hybrid", "code": "BJKE00", "sku": "BJKE00010A", "colorCode": "1200", "color": "น้ำตาล", "engine": "E34SE-306083", "frame": "MLESEK52111505046", "cost": 64600.0, "vat": 4522.0, "retail": null, "gp": null, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2072150", "srcFile": "020469fmm.xls"}, {"branch": "FMM01", "branchName": "Famai Motor", "recvNo": "FMM01/REC_P260400003", "docNo": "FMM01/RMC260400002", "recvDate": "2026-04-02", "age": 118, "model": "Grand Filano Hybrid", "code": "BJKE00", "sku": "BJKE00010A", "colorCode": "1200", "color": "น้ำตาล", "engine": "E34SE-307099", "frame": "MLESEK52111505010", "cost": 64600.0, "vat": 4522.0, "retail": null, "gp": null, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2072150", "srcFile": "020469fmm.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P260700146", "docNo": "SMG01/RMC260700040", "recvDate": "2026-07-22", "age": 7, "model": "FINN", "code": "DA6200", "sku": "DA6200010A", "colorCode": "0300", "color": "ดำ", "engine": "E35NE-012425", "frame": "MLEUE368111004705", "cost": 42000.0, "vat": 2940.0, "retail": null, "gp": null, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104885", "srcFile": "fg220769.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P260700146", "docNo": "SMG01/RMC260700040", "recvDate": "2026-07-22", "age": 7, "model": "FINN", "code": "DA6200", "sku": "DA6200010A", "colorCode": "0300", "color": "ดำ", "engine": "E35NE-012562", "frame": "MLEUE368111004762", "cost": 42000.0, "vat": 2940.0, "retail": null, "gp": null, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104885", "srcFile": "fg220769.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P260700147", "docNo": "SMG01/RMC260700039", "recvDate": "2026-07-22", "age": 7, "model": "Grand Filano Hybrid", "code": "BJKD00", "sku": "BJKD00010A", "colorCode": "0500", "color": "ฟ้า", "engine": "E34SE-360814", "frame": "MLESEK52111380692", "cost": 60500.0, "vat": 4235.0, "retail": 69200, "gp": 8700.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104886", "srcFile": "fg220769.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P260700147", "docNo": "SMG01/RMC260700039", "recvDate": "2026-07-22", "age": 7, "model": "Grand Filano Hybrid", "code": "BJKD00", "sku": "BJKD00010A", "colorCode": "0500", "color": "ฟ้า", "engine": "E34SE-360823", "frame": "MLESEK52111380610", "cost": 60500.0, "vat": 4235.0, "retail": 69200, "gp": 8700.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104886", "srcFile": "fg220769.xls"}, {"branch": "FMM01", "branchName": "Famai Motor", "recvNo": "FMM01/REC_P260700044", "docNo": "FMM01/RMC260700014", "recvDate": "2026-07-22", "age": 7, "model": "Grand Filano Hybrid", "code": "BJKC00", "sku": "BJKC00010C", "colorCode": "0200", "color": "น้ำเงิน", "engine": "E34SE-364744", "frame": "MLESEK51111266109", "cost": 56600.0, "vat": 3962.0, "retail": 64700, "gp": 8100.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104887", "srcFile": "fmm220769.xls"}, {"branch": "FMM01", "branchName": "Famai Motor", "recvNo": "FMM01/REC_P260700044", "docNo": "FMM01/RMC260700014", "recvDate": "2026-07-22", "age": 7, "model": "Grand Filano Hybrid", "code": "BJKC00", "sku": "BJKC00010B", "colorCode": "0300", "color": "ดำ", "engine": "E34SE-366824", "frame": "MLESEK51111266603", "cost": 56600.0, "vat": 3962.0, "retail": 64700, "gp": 8100.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104887", "srcFile": "fmm220769.xls"}, {"branch": "FMM01", "branchName": "Famai Motor", "recvNo": "FMM01/REC_P260700043", "docNo": "FMM01/RMC260700012", "recvDate": "2026-07-22", "age": 7, "model": "NMAX", "code": "BTF200", "sku": "BTF200010E", "colorCode": "0100", "color": "แดง", "engine": "G3V5E-0887547", "frame": "MH3SG576111027714", "cost": 85000.0, "vat": 5950.0, "retail": 98500, "gp": 13500.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104033", "srcFile": "fmm220769.xls"}, {"branch": "FMM01", "branchName": "Famai Motor", "recvNo": "FMM01/REC_P260700043", "docNo": "FMM01/RMC260700012", "recvDate": "2026-07-22", "age": 7, "model": "NMAX", "code": "BTF200", "sku": "BTF200010E", "colorCode": "0100", "color": "แดง", "engine": "G3V5E-0887565", "frame": "MH3SG576111027707", "cost": 85000.0, "vat": 5950.0, "retail": 98500, "gp": 13500.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104033", "srcFile": "fmm220769.xls"}, {"branch": "FMM01", "branchName": "Famai Motor", "recvNo": "FMM01/REC_P260700043", "docNo": "FMM01/RMC260700012", "recvDate": "2026-07-22", "age": 7, "model": "NMAX", "code": "BTF300", "sku": "BTF300010A", "colorCode": "0307", "color": "ดำ-เทา", "engine": "G3V5E-0865055", "frame": "MH3SG576111027060", "cost": 92800.0, "vat": 6496.0, "retail": 107500, "gp": 14700.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104033", "srcFile": "fmm220769.xls"}, {"branch": "FMM01", "branchName": "Famai Motor", "recvNo": "FMM01/REC_P260700043", "docNo": "FMM01/RMC260700012", "recvDate": "2026-07-22", "age": 7, "model": "PG-1", "code": "D18100", "sku": "D18100010C", "colorCode": "0700", "color": "เทา", "engine": "E34NE-090994", "frame": "RLCUE425111029638", "cost": 50500.0, "vat": 3535.0, "retail": 57500, "gp": 7000.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104033", "srcFile": "fmm220769.xls"}, {"branch": "FMM01", "branchName": "Famai Motor", "recvNo": "FMM01/REC_P260700043", "docNo": "FMM01/RMC260700012", "recvDate": "2026-07-22", "age": 7, "model": "PG-1", "code": "D18100", "sku": "D18100010C", "colorCode": "0700", "color": "เทา", "engine": "E34NE-091107", "frame": "RLCUE425111029794", "cost": 50500.0, "vat": 3535.0, "retail": 57500, "gp": 7000.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104033", "srcFile": "fmm220769.xls"}, {"branch": "FMM01", "branchName": "Famai Motor", "recvNo": "FMM01/REC_P260700043", "docNo": "FMM01/RMC260700012", "recvDate": "2026-07-22", "age": 7, "model": "PG-1", "code": "D18100", "sku": "D18100010C", "colorCode": "0700", "color": "เทา", "engine": "E34NE-091248", "frame": "RLCUE425111029890", "cost": 50500.0, "vat": 3535.0, "retail": 57500, "gp": 7000.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104033", "srcFile": "fmm220769.xls"}, {"branch": "FMM01", "branchName": "Famai Motor", "recvNo": "FMM01/REC_P260700042", "docNo": "FMM01/RMC260700013", "recvDate": "2026-07-22", "age": 7, "model": "PG-1", "code": "D18100", "sku": "D18100010D", "colorCode": "1200", "color": "น้ำตาล", "engine": "E34NE-087033", "frame": "RLCUE425111026126", "cost": 50500.0, "vat": 3535.0, "retail": 57500, "gp": 7000.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104034", "srcFile": "fmm220769.xls"}, {"branch": "FMM01", "branchName": "Famai Motor", "recvNo": "FMM01/REC_P260700042", "docNo": "FMM01/RMC260700013", "recvDate": "2026-07-22", "age": 7, "model": "PG-1", "code": "D18100", "sku": "D18100010D", "colorCode": "1200", "color": "น้ำตาล", "engine": "E34NE-087648", "frame": "RLCUE425111026740", "cost": 50500.0, "vat": 3535.0, "retail": 57500, "gp": 7000.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104034", "srcFile": "fmm220769.xls"}, {"branch": "FMM01", "branchName": "Famai Motor", "recvNo": "FMM01/REC_P260700042", "docNo": "FMM01/RMC260700013", "recvDate": "2026-07-22", "age": 7, "model": "PG-1", "code": "D18100", "sku": "D18100010D", "colorCode": "1200", "color": "น้ำตาล", "engine": "E34NE-088188", "frame": "RLCUE425111027282", "cost": 50500.0, "vat": 3535.0, "retail": 57500, "gp": 7000.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104034", "srcFile": "fmm220769.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P260700145", "docNo": "SMG01/RMC260700038", "recvDate": "2026-07-22", "age": 7, "model": "XMAX 300", "code": "DR9200", "sku": "DR9200010B", "colorCode": "0700", "color": "เทา", "engine": "H345E-0182784", "frame": "MH3SH222111056637", "cost": 153100.0, "vat": 10717.0, "retail": 176100, "gp": 23000.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104778", "srcFile": "fg220769.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P260700145", "docNo": "SMG01/RMC260700038", "recvDate": "2026-07-22", "age": 7, "model": "XMAX 300", "code": "DR9200", "sku": "DR9200010B", "colorCode": "0700", "color": "เทา", "engine": "H345E-0182918", "frame": "MH3SH222111056760", "cost": 153100.0, "vat": 10717.0, "retail": 176100, "gp": 23000.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104778", "srcFile": "fg220769.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P260700145", "docNo": "SMG01/RMC260700038", "recvDate": "2026-07-22", "age": 7, "model": "XMAX 300", "code": "DR9400", "sku": "DR9400010A", "colorCode": "0300", "color": "ดำ", "engine": "H345E-0183131", "frame": "MH3SH222111056898", "cost": 167700.0, "vat": 11739.0, "retail": 193000, "gp": 25300.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104778", "srcFile": "fg220769.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P260700145", "docNo": "SMG01/RMC260700038", "recvDate": "2026-07-22", "age": 7, "model": "XMAX 300", "code": "DR9400", "sku": "DR9400010A", "colorCode": "0300", "color": "ดำ", "engine": "H345E-0183140", "frame": "MH3SH222111056922", "cost": 167700.0, "vat": 11739.0, "retail": 193000, "gp": 25300.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104778", "srcFile": "fg220769.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P260700145", "docNo": "SMG01/RMC260700038", "recvDate": "2026-07-22", "age": 7, "model": "XMAX 300", "code": "DR9200", "sku": "DR9200010C", "colorCode": "0200", "color": "น้ำเงิน", "engine": "H345E-0183711", "frame": "MH3SH222111057128", "cost": 153100.0, "vat": 10717.0, "retail": 176100, "gp": 23000.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104778", "srcFile": "fg220769.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P260700145", "docNo": "SMG01/RMC260700038", "recvDate": "2026-07-22", "age": 7, "model": "XMAX 300", "code": "DR9200", "sku": "DR9200010C", "colorCode": "0200", "color": "น้ำเงิน", "engine": "H345E-0183729", "frame": "MH3SH222111057126", "cost": 153100.0, "vat": 10717.0, "retail": 176100, "gp": 23000.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104778", "srcFile": "fg220769.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P260700145", "docNo": "SMG01/RMC260700038", "recvDate": "2026-07-22", "age": 7, "model": "XMAX 300", "code": "DR9200", "sku": "DR9200010D", "colorCode": "0100", "color": "แดง", "engine": "H345E-0182610", "frame": "MH3SH222111056487", "cost": 153100.0, "vat": 10717.0, "retail": 176100, "gp": 23000.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104778", "srcFile": "fg220769.xls"}, {"branch": "FMG01", "branchName": "Famai Motor Group", "recvNo": "SMG01/REC_P260700145", "docNo": "SMG01/RMC260700038", "recvDate": "2026-07-22", "age": 7, "model": "XMAX 300", "code": "DR9200", "sku": "DR9200010D", "colorCode": "0100", "color": "แดง", "engine": "H345E-0182710", "frame": "MH3SH222111056596", "cost": 153100.0, "vat": 10717.0, "retail": 176100, "gp": 23000.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2104778", "srcFile": "fg220769.xls"}, {"branch": "FCG01", "branchName": "Famai Center Group", "recvNo": "FMG01/REC_P260700096", "docNo": "FMG01/RMC260700013", "recvDate": "2026-07-25", "age": 4, "model": "FINN", "code": "DA6200", "sku": "DA6200010B", "colorCode": "0100", "color": "แดง", "engine": "E35NE-013834", "frame": "MLEUE368111005150", "cost": 42000.0, "vat": 2940.0, "retail": null, "gp": null, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2105776", "srcFile": "fcg250769.xls"}, {"branch": "FCG01", "branchName": "Famai Center Group", "recvNo": "FMG01/REC_P260700096", "docNo": "FMG01/RMC260700013", "recvDate": "2026-07-25", "age": 4, "model": "FINN", "code": "DA6200", "sku": "DA6200010B", "colorCode": "0100", "color": "แดง", "engine": "E35NE-013838", "frame": "MLEUE368111005129", "cost": 42000.0, "vat": 2940.0, "retail": null, "gp": null, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2105776", "srcFile": "fcg250769.xls"}, {"branch": "FCG01", "branchName": "Famai Center Group", "recvNo": "FMG01/REC_P260700096", "docNo": "FMG01/RMC260700013", "recvDate": "2026-07-25", "age": 4, "model": "FINN", "code": "DA6200", "sku": "DA6200010B", "colorCode": "0100", "color": "แดง", "engine": "E35NE-013926", "frame": "MLEUE368111005280", "cost": 42000.0, "vat": 2940.0, "retail": null, "gp": null, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2105776", "srcFile": "fcg250769.xls"}, {"branch": "FCG01", "branchName": "Famai Center Group", "recvNo": "FMG01/REC_P260700097", "docNo": "FMG01/RMC260700012", "recvDate": "2026-07-25", "age": 4, "model": "Grand Filano Hybrid", "code": "BJKD00", "sku": "BJKD00010A", "colorCode": "0500", "color": "ฟ้า", "engine": "E34SE-360780", "frame": "MLESEK52111380525", "cost": 60500.0, "vat": 4235.0, "retail": 69200, "gp": 8700.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2105775", "srcFile": "fcg250769.xls"}, {"branch": "FCG01", "branchName": "Famai Center Group", "recvNo": "FMG01/REC_P260700097", "docNo": "FMG01/RMC260700012", "recvDate": "2026-07-25", "age": 4, "model": "Grand Filano Hybrid", "code": "BJKD00", "sku": "BJKD00010A", "colorCode": "0500", "color": "ฟ้า", "engine": "E34SE-360924", "frame": "MLESEK52111381177", "cost": 60500.0, "vat": 4235.0, "retail": 69200, "gp": 8700.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2105775", "srcFile": "fcg250769.xls"}, {"branch": "FCG01", "branchName": "Famai Center Group", "recvNo": "FMG01/REC_P260700097", "docNo": "FMG01/RMC260700012", "recvDate": "2026-07-25", "age": 4, "model": "Grand Filano Hybrid", "code": "BJKD00", "sku": "BJKD00010A", "colorCode": "0500", "color": "ฟ้า", "engine": "E34SE-364812", "frame": "MLESEK52111381144", "cost": 60500.0, "vat": 4235.0, "retail": 69200, "gp": 8700.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2105775", "srcFile": "fcg250769.xls"}, {"branch": "FCG01", "branchName": "Famai Center Group", "recvNo": "FMG01/REC_P260700097", "docNo": "FMG01/RMC260700012", "recvDate": "2026-07-25", "age": 4, "model": "Grand Filano Hybrid", "code": "BJKD00", "sku": "BJKD00010A", "colorCode": "0500", "color": "ฟ้า", "engine": "E34SE-365282", "frame": "MLESEK52111381420", "cost": 60500.0, "vat": 4235.0, "retail": 69200, "gp": 8700.0, "supplier": "บริษัท ไทยยามาฮ่ามอเตอร์ จำกัด", "invoice": "2105775", "srcFile": "fcg250769.xls"}]};
+const TODAY = new Date('2026-07-29T00:00:00');
+const $ = s => document.querySelector(s);
+const $$ = s => [].slice.call(document.querySelectorAll(s));
+const fmt = n => (n==null||isNaN(n)) ? '—' : Math.round(n).toLocaleString('en-US');
+const baht = n => (n==null||isNaN(n)) ? '—' : fmt(n)+' บาท';
+const numOf = el => { const v = String(el.value||'').replace(/[^0-9.-]/g,''); return v===''?0:parseFloat(v); };
+const parseNums = s => String(s||'').split(',').map(x=>parseInt(String(x).trim(),10)).filter(x=>!isNaN(x));
+const daysBetween = iso => Math.round((TODAY - new Date(iso+'T00:00:00'))/86400000);
+const addDays = (iso,d) => { const x=new Date(iso+'T00:00:00'); x.setDate(x.getDate()+d); return x.toISOString().slice(0,10); };
+const thDate = iso => { const d=new Date(iso+'T00:00:00'); const m=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return d.getDate()+' '+m[d.getMonth()]+' '+String(d.getFullYear()+543).slice(2); };
+
+/* ---------------- state ---------------- */
+const DEFAULTS = {
+  agingDays:90, buckets:'30,60,90', lowStock:2, vat:7, freebieIsCost:true, regDays:30,
+  finName1:'ไฟแนนซ์ A', finRate1:1.35, finName2:'ไฟแนนซ์ B', finRate2:1.48, terms:'12,18,24,30,36,42,48',
+  cadence:'7,30,90,365,1095', km:'500,1000,4000,8000', sources:'เดินเข้าร้าน,Facebook,LINE,คนรู้จักแนะนำ',
+  freebies:'หมวกกันน็อก:450, พ.ร.บ.:320, ผ้าคลุมรถ:120, น้ำมันเครื่อง:180',
+  salespeople:'เซลล์บิว,เซลล์สนุ้กเกอร์,เซลล์หมูแดง', roles:'ผู้ดูแลระบบ,ผู้บริหาร,เซลล์,สต๊อก,บัญชี,ช่าง,หัวหน้าช่าง,ธุรการ,พนักงาน'
+};
+let CFG = Object.assign({}, DEFAULTS);
+let UNITS = [], SALES = [], CUSTOMERS = [], TASKS = [], IMPORTED = {};
+let uid = 0;
+const newId = p => p + (++uid);
+
+function seedData(){
+  uid = 0;
+  UNITS = SEED.units.map(u=>Object.assign({},u,{id:newId('U'), status:'available', year:''}));
+  UNITS.forEach(u=>{ u.year = u.recvDate < '2025-01-01' ? '2567' : '2569'; u.yearGuess = true; });
+  SALES=[]; CUSTOMERS=[]; TASKS=[]; IMPORTED={};
+}
+
+/* ---- ข้อมูลตัวอย่าง: ทำให้ทุกหน้ามีผลลัพธ์ให้ดู ไม่ใช่หน้าจอว่าง ---- */
+const EX_BUYERS = [
+  ['คุณสมชาย พัฒนกิจ','081-234-5678','เดินเข้าร้าน','เซลล์บิว','cash',      58,  2000],
+  ['คุณวราภรณ์ ศรีสุข','089-441-2290','Facebook','เซลล์สนุ้กเกอร์','finance', 52,  1500],
+  ['คุณอนุชา ทองดี','062-118-7734','คนรู้จักแนะนำ','เซลล์หมูแดง','cash',     47,  3000],
+  ['ร้านค้าเจริญยนต์','092-556-0031','คนรู้จักแนะนำ','เซลล์บิว','finance',    41,  5000],
+  ['คุณปิยะนุช แก้วมณี','086-770-1188','LINE','เซลล์สนุ้กเกอร์','finance',    36,  1000],
+  ['คุณธนกฤต อินทร์จันทร์','098-223-4471','Facebook','เซลล์บิว','cash',      30,     0],
+  ['คุณกาญจนา บุญมาก','081-909-3312','เดินเข้าร้าน','เซลล์หมูแดง','finance', 24,  2500],
+  ['คุณเอกพงษ์ วิริยะ','085-330-7712','LINE','เซลล์บิว','finance',           18,  1200],
+  ['คุณนภัสสร พูนทรัพย์','063-887-2210','Facebook','เซลล์สนุ้กเกอร์','cash',  12,     0],
+  ['คุณสุรชัย มั่นคง','091-224-6650','เดินเข้าร้าน','เซลล์หมูแดง','finance',   7,  2000],
+  ['คุณจิราพร แสงทอง','087-441-9982','LINE','เซลล์บิว','cash',                3,   800],
+  ['คุณวิชัย ตั้งใจ','094-772-1130','คนรู้จักแนะนำ','เซลล์สนุ้กเกอร์','finance', 1, 1500],
+  ['คุณศศิธร วงศ์ไทย','081-663-2214','เดินเข้าร้าน','เซลล์บิว','cash',            0,  1000]
+];
+const EX_LEADS = [
+  ['คุณพรทิพย์ ใจดี','082-114-5567','Facebook','เข้ามาดูรถ'],
+  ['คุณณัฐวุฒิ สุขสันต์','090-338-2214','LINE','สนใจ'],
+  ['คุณมานิตย์ เรืองศรี','081-556-7790','เดินเข้าร้าน','สนใจ'],
+  ['คุณอรอุมา ชัยชนะ','064-229-8813','คนรู้จักแนะนำ','ทำสัญญา']
+];
+const EX_DONE = { 'S':1 };
+function seedExamples(){
+  const iso = d => d.toISOString().slice(0,10);
+  const shift = n => { const d=new Date(TODAY); d.setDate(d.getDate()-n); return iso(d); };
+  const frees = freebieList();
+  const pool = UNITS.filter(u=>u.status==='available' && u.retail);
+  EX_BUYERS.forEach((b,i)=>{
+    const [name,phone,src,sp,pay,ago,disc] = b;
+    const u = pool[i*3 % pool.length];
+    if(!u || u.status==='sold') return;
+    const date = shift(ago);
+    const fset = frees.slice(0, (i%3)+1);
+    const fc = fset.reduce((s,f)=>s+f.cost,0);
+    const net = u.retail - disc;
+    const gp  = net - u.cost - (CFG.freebieIsCost ? fc : 0);
+    u.status='sold';
+    SALES.push({id:newId('S'), unitId:u.id, model:u.model, color:u.color, engine:u.engine,
+      customer:name, phone:phone, price:net, gp:gp, pay:pay, sales:sp, date:date,
+      freebies:fset.map(f=>f.name).join(', '), example:true});
+    const cust={id:newId('C'), name:name, phone:phone, src:src, model:u.model,
+      stage:'รับรถสำเร็จ', bought:date, example:true};
+    CUSTOMERS.push(cust);
+    parseNums(CFG.cadence).forEach(d=>{
+      const due = (()=>{ const x=new Date(date+'T00:00:00'); x.setDate(x.getDate()+d); return iso(x); })();
+      const past = due < iso(TODAY);
+      TASKS.push({id:newId('T'), cust:name, model:u.model, due:due,
+        label: d>=365 ? (d/365)+' ปี' : d+' วัน',
+        done: past && (i % 4 !== 0), example:true});
+    });
+  });
+  EX_LEADS.forEach(([n,ph,src,st],i)=>{
+    const u = pool[(i*7+5) % pool.length];
+    CUSTOMERS.push({id:newId('C'), name:n, phone:ph, src:src,
+      model:u?u.model:'', stage:st, bought:null, example:true});
+  });
+}
+seedData();
+
+const freebieList = () => String(CFG.freebies).split(',').map(s=>{
+  const p=s.split(':'); return {name:(p[0]||'').trim(), cost:parseFloat(p[1]||0)||0};
+}).filter(f=>f.name);
+const bucketDefs = () => {
+  const b = parseNums(CFG.buckets); const out=[]; let prev=0;
+  b.forEach(v=>{ out.push({label:'ไม่เกิน '+v+' วัน', lo:prev, hi:v}); prev=v; });
+  out.push({label:'เกิน '+prev+' วัน', lo:prev, hi:1e9});
+  return out.map((x,i)=>({...x, label: i===0 ? 'ไม่เกิน '+x.hi+' วัน' : (x.hi>1e8 ? 'เกิน '+x.lo+' วัน' : (x.lo+1)+'–'+x.hi+' วัน')}));
+};
+
+seedExamples();
+
+const noMoney = () => document.body.classList.contains('no-money');
+const money = v => noMoney() ? '—' : v;
+
+/* ---------------- toast ---------------- */
+function toast(msg, sub, bad){
+  const el=document.createElement('div'); el.className='toast'+(bad?' bad':'');
+  el.innerHTML='<span class="ic"></span><div>'+msg+(sub?'<small>'+sub+'</small>':'')+'</div>';
+  $('#toasts').appendChild(el); setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),320)},3200);
+}
+
+/* ---------------- nav ---------------- */
+const TITLES={
+  dash:['Dashboard','ภาพรวมสต๊อกและการขาย'],
+  cal:['ปฏิทินงาน','งานติดตาม ทะเบียน และวันลา'],
+  recv:['รับรถเข้าสต๊อก','บันทึกรถทีละคัน'],
+  stock:['สต๊อกรถ','ค้นหาและจัดการรถทุกคัน'],
+  sell:['ขายรถ','เปิดการขายและออกเอกสาร'],
+  parts:['สต๊อกอะไหล่','ของคงเหลือและจุดสั่งซื้อ'],
+  partsale:['เบิกและขายอะไหล่','ตัดสต๊อกอะไหล่'],
+  fin:['เคสสินเชื่อ','ติดตามเรื่องกับไฟแนนซ์'],
+  crm:['ลูกค้าและติดตาม','งานติดตามและฐานลูกค้า'],
+  hr:['ลงเวลาและลา','เวลาเข้าออกและใบลา'],
+  users:['บัญชีผู้ใช้','ผู้ใช้ บทบาท และสิทธิ์'],
+  imp:['นำเข้าข้อมูล','อ่านไฟล์จากระบบยามาฮ่า'],
+  settings:['ตั้งค่าระบบ','เกณฑ์ทั้งหมดที่ระบบใช้'],
+  flow:['ผังกระบวนการ','ใครทำอะไรตอนไหน']};
+function go(s){
+  $$('#nav button').forEach(b=>b.classList.toggle('on', b.dataset.s===s));
+  $$('.screen').forEach(x=>x.classList.toggle('on', x.id==='s-'+s));
+  $('#pgT').textContent=TITLES[s][0]; $('#pgS').textContent=TITLES[s][1]; window.scrollTo({top:0});
+}
+$$('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.s));
+function bindTabs(w){ $$(w+' button').forEach(b=>b.onclick=()=>{
+  $$(w+' button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  const p=$(w).parentElement; p.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
+  p.querySelector('#'+b.dataset.t).classList.add('on'); }); }
+bindTabs('#sellTabs'); bindTabs('#crmTabs'); bindTabs('#hrTabs'); bindTabs('#uTabs');
+$('#meSel').onchange=renderMe;
+$('#meLeave').onclick=meSubmitLeave;
+$('#mePwSave').onclick=()=>toast('บันทึกรหัสผ่านใหม่แล้ว','ในระบบจริงจะถูกเข้ารหัสก่อนเก็บ');
+/* ---- ฟอนต์มีหัว / ไม่มีหัว ---- */
+$$('#fontSw button').forEach(b=>b.onclick=()=>{
+  $$('#fontSw button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  document.body.classList.toggle('looped', b.dataset.f==='loop');
+  toast('เปลี่ยนฟอนต์แล้ว', b.dataset.f==='loop'?'แบบมีหัว อ่านสบายตาในข้อความยาว':'แบบไม่มีหัว ดูสมัยใหม่และประหยัดพื้นที่');
+});
+/* ---- อะไหล่ ---- */
+$('#pSave').onclick=savePart;
+['#pCost','#pPrice','#pQty'].forEach(x=>$(x).oninput=previewPart);
+$('#pQ').oninput=renderParts;
+$('#psSave').onclick=savePartSale;
+['#psItem','#psType'].forEach(x=>$(x).onchange=previewPartSale);
+$('#psQty').oninput=previewPartSale;
+/* ---- ไฟแนนซ์ ---- */
+$('#finCo').onchange=renderFinance;
+/* ---- พนักงาน ---- */
+$('#lvSave').onclick=saveLeave;
+/* ---- ผู้ใช้ ---- */
+$('#uSave').onclick=addUser;
+$('#rlSave').onclick=addRole;
+/* ---- ปฏิทิน ---- */
+$('#calPrev').onclick=()=>calMove(-1);
+$('#calNext').onclick=()=>calMove(1);
+/* ---- ทางลัดเพิ่มลูกค้า ---- */
+$('#quickAddCust').onclick=()=>{
+  $$('#crmTabs button').forEach(x=>x.classList.remove('on'));
+  const b=$('#crmTabs button[data-t=\"c3\"]'); if(b) b.classList.add('on');
+  $$('#s-crm .pane').forEach(x=>x.classList.remove('on'));
+  const pane=$('#c3'); if(pane) pane.classList.add('on');
+  setTimeout(()=>{ const el=$('#cName'); if(el) el.focus(); },60);
+};
+
+/* ---------------- derived ---------------- */
+const avail = () => UNITS.filter(u=>u.status==='available');
+const modelCount = m => avail().filter(u=>u.model===m).length;
+const unitAge = u => daysBetween(u.recvDate);
+const unitGp = u => u.retail ? (u.retail - u.cost) : null;
+
+/* ---------------- dashboard ---------------- */
+/* ---------------- dashboard ---------------- */
+const DASH = { days:30, branch:'', sales:'', metric:'count', type:'bar',
+  cards:{trend:1,branch:1,aging:1,model:1,todo:1,staff:1,top:1,recent:1} };
+const CARD_NAMES = {trend:'ยอดขายตามช่วงเวลา',branch:'สต๊อกแยกตามสาขา',aging:'รถค้างในสต๊อก',
+  model:'สต๊อกแยกตามรุ่น',todo:'สิ่งที่ต้องจัดการวันนี้',staff:'ผลงานพนักงานขาย',
+  top:'รุ่นที่ขายดี',recent:'รายการขายล่าสุด'};
+const ISO_TODAY = () => TODAY.toISOString().slice(0,10);
+
+function rangeStart(days, back){
+  if(!days) return '0000-01-01';
+  const d=new Date(TODAY); d.setDate(d.getDate() - days*(back?2:1) + 1);
+  return d.toISOString().slice(0,10);
+}
+function unitBranchOk(u){ return !DASH.branch || u.branchName===DASH.branch; }
+function saleUnit(x){ return UNITS.find(u=>u.id===x.unitId); }
+function salesIn(from, to){
+  return SALES.filter(x=>{
+    if(x.date<from || x.date>to) return false;
+    if(DASH.sales && x.sales!==DASH.sales) return false;
+    if(DASH.branch){ const u=saleUnit(x); if(!u || u.branchName!==DASH.branch) return false; }
+    return true;
+  });
+}
+function dashAvail(){ return avail().filter(unitBranchOk); }
+
+/* --- buckets for the trend chart --- */
+function trendBuckets(){
+  const to=ISO_TODAY();
+  let days=DASH.days;
+  if(!days){
+    const first=SALES.map(x=>x.date).sort()[0];
+    days = first ? Math.max(30, daysBetween(first)+1) : 90;
+  }
+  const from=rangeStart(days,false);
+  const out=[];
+  if(days<=2){
+    out.push({from:to,to:to,label:thDate(to).replace(/ \d{2}$/,'')});
+  } else if(days<=14){
+    for(let i=days-1;i>=0;i--){ const d=addDays(to,-i); out.push({from:d,to:d,label:thDate(d).replace(/ \d{2}$/,'')}); }
+  } else if(days<=120){
+    const n=Math.ceil(days/7);
+    for(let i=n-1;i>=0;i--){ const b=addDays(to,-(i*7+6)), e=addDays(to,-i*7);
+      out.push({from:b,to:e,label:thDate(b).replace(/ \d{2}$/,'')}); }
+  } else {
+    const months=Math.min(24,Math.ceil(days/30));
+    for(let i=months-1;i>=0;i--){
+      const d=new Date(TODAY); d.setDate(1); d.setMonth(d.getMonth()-i);
+      const b=d.toISOString().slice(0,10);
+      const e2=new Date(d); e2.setMonth(e2.getMonth()+1); e2.setDate(0);
+      out.push({from:b,to:e2.toISOString().slice(0,10),label:thDate(b).slice(2)});
+    }
+  }
+  return {buckets:out, from, to, days};
+}
+const METRIC = {
+  count:{name:'จำนวนคัน', unit:'คัน', val:a=>a.length, fmt:v=>fmt(v)+' คัน'},
+  revenue:{name:'ยอดขาย', unit:'บาท', val:a=>a.reduce((s,x)=>s+x.price,0), fmt:v=>fmt(v)},
+  gp:{name:'กำไร', unit:'บาท', val:a=>a.reduce((s,x)=>s+x.gp,0), fmt:v=>fmt(v)}
+};
+
+/* --- tiny svg chart --- */
+function drawChart(pts, opt){
+  const W=760,H=250,L=64,R=14,T=22,B=46;
+  const iw=W-L-R, ih=H-T-B;
+  const max=Math.max(1,...pts.map(p=>p.v));
+  const nice=(function(m){ const p=Math.pow(10,Math.floor(Math.log10(m))); const s=[1,2,4,5,10];
+    for(const x of s){ if(p*x>=m) return p*x; } return p*10; })(max);
+  const nt = nice<4 ? nice : (String(nice)[0]==='5' ? 5 : 4);   // กันไม่ให้ป้ายแกน Y ซ้ำกันตอนตัวเลขน้อย
+  const y=v=>T+ih-(v/nice)*ih;
+  const n=pts.length||1;
+  const step=iw/n;
+  let g='';
+  for(let i=0;i<=nt;i++){
+    const v=nice*i/nt, yy=y(v);
+    g+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#E7E9EE" stroke-width="1"/>`;
+    g+=`<text x="${L-9}" y="${yy+4}" text-anchor="end" font-size="11" fill="#98A2B3">${opt.short(v)}</text>`;
+  }
+  let body='';
+  if(opt.type==='bar'){
+    const bw=Math.max(6,Math.min(46,step*0.58));
+    pts.forEach((p,i)=>{
+      const cx=L+step*(i+.5), h=Math.max(p.v>0?2:0,(p.v/nice)*ih);
+      body+=`<rect x="${cx-bw/2}" y="${T+ih-h}" width="${bw}" height="${h}" rx="4" fill="${p.v?'#D92D20':'#E7E9EE'}"><title>${p.label} · ${opt.full(p.v)}</title></rect>`;
+      if(p.v) body+=`<text x="${cx}" y="${T+ih-h-6}" text-anchor="middle" font-size="11" font-weight="700" fill="#101828">${opt.short(p.v)}</text>`;
+    });
+  } else {
+    const xy=pts.map((p,i)=>[L+step*(i+.5), y(p.v)]);
+    const line=xy.map(c=>c[0].toFixed(1)+','+c[1].toFixed(1)).join(' ');
+    body+=`<polygon points="${L+step*.5},${T+ih} ${line} ${L+step*(n-.5)},${T+ih}" fill="#D92D20" opacity=".13"/>`;
+    body+=`<polyline points="${line}" fill="none" stroke="#D92D20" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+    xy.forEach((c,i)=>{
+      body+=`<circle cx="${c[0]}" cy="${c[1]}" r="4" fill="#FFFFFF" stroke="#D92D20" stroke-width="2.5"><title>${pts[i].label} · ${opt.full(pts[i].v)}</title></circle>`;
+      if(pts[i].v) body+=`<text x="${c[0]}" y="${c[1]-11}" text-anchor="middle" font-size="11" font-weight="700" fill="#101828">${opt.short(pts[i].v)}</text>`;
+    });
+  }
+  const every=Math.ceil(n/9);
+  const lab=pts.map((p,i)=> (i%every===0||i===n-1)
+    ? `<text x="${L+step*(i+.5)}" y="${H-B+22}" text-anchor="middle" font-size="11" fill="#475467">${p.label}</text>` : '').join('');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img">${g}${body}
+    <line x1="${L}" y1="${T+ih}" x2="${W-R}" y2="${T+ih}" stroke="#D5D9E0" stroke-width="1"/>${lab}</svg>`;
+}
+const shortNum = v => v>=1000000 ? (v/1000000).toFixed(v%1000000?1:0)+' ล.' : v>=10000 ? Math.round(v/1000)+'k' : fmt(v);
+
+function renderDash(){
+  const to=ISO_TODAY();
+  const from=rangeStart(DASH.days,false);
+  const prevFrom=rangeStart(DASH.days,true);
+  const cur=salesIn(from,to);
+  const prev=DASH.days? salesIn(prevFrom, addDays(from,-1)) : [];
+  const av=dashAvail();
+  const cost=av.reduce((s,u)=>s+u.cost,0);
+  const old=av.filter(u=>unitAge(u)>CFG.agingDays);
+  const rev=cur.reduce((s,x)=>s+x.price,0), gp=cur.reduce((s,x)=>s+x.gp,0);
+  const pRev=prev.reduce((s,x)=>s+x.price,0), pGp=prev.reduce((s,x)=>s+x.gp,0);
+
+  /* ---- filter summary ---- */
+  const rname = DASH.days? ({1:'วันนี้',7:'7 วันล่าสุด',30:'30 วันล่าสุด',90:'90 วันล่าสุด',365:'12 เดือนล่าสุด'}[DASH.days]) : 'ทั้งหมดที่มีในระบบ';
+  const cell=(k,v)=>`<div class="it"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  $('#dSum').innerHTML =
+      cell('ช่วงเวลา', rname)
+    + cell('สาขา', DASH.branch || 'ทุกสาขา')
+    + cell('พนักงานขาย', DASH.sales || 'ทุกคน')
+    + '<div class="gap"></div>'
+    + '<div class="res">'
+      + cell('ขายได้ในช่วงนี้', cur.length+' คัน')
+      + (DASH.days ? cell('เทียบกับ '+({1:'เมื่อวาน',7:'7 วันก่อนหน้า',30:'30 วันก่อนหน้า',90:'90 วันก่อนหน้า',365:'12 เดือนก่อนหน้า'}[DASH.days]), prev.length+' คัน') : '')
+    + '</div>';
+
+  /* ---- kpi ---- */
+  const delta=(a,b)=>{ if(!b) return a? {t:'ช่วงก่อนไม่มีข้อมูล',c:'flat'} : {t:'ยังไม่มีข้อมูล',c:'flat'};
+    const d=Math.round((a-b)/b*100); return {t:(d>0?'▲ ':d<0?'▼ ':'')+Math.abs(d)+'% เทียบช่วงก่อน', c:d>0?'up':d<0?'dn':'flat'}; };
+  const hideMoney=document.body.classList.contains('no-money');
+  const K=[
+    ['สต๊อกคงเหลือ', fmt(av.length)+' คัน', noMoney()?'นับเฉพาะคันที่พร้อมขาย':'เงินต้นทุนที่จมอยู่ '+baht(cost), null, ''],
+    ['ขายได้ในช่วงนี้', fmt(cur.length)+' คัน', cur.length? (DASH.days===1 ? 'นับเฉพาะวันนี้' : DASH.days&&DASH.days<=30 ? 'เฉลี่ย '+(cur.length/Math.max(1,DASH.days/7)).toFixed(1)+' คันต่อสัปดาห์' : 'เฉลี่ย '+(cur.length/Math.max(1,(DASH.days||365)/30)).toFixed(1)+' คันต่อเดือน') : 'ยังไม่มีดีลปิดในช่วงนี้', DASH.days?delta(cur.length,prev.length):null,'g'],
+    ['ยอดขายรวม', baht(rev), cur.length? 'เฉลี่ย '+baht(rev/cur.length)+' ต่อคัน' : '—', DASH.days?delta(rev,pRev):null,'g'],
+    ['กำไรที่เกิดขึ้นจริง', baht(gp), cur.length? 'คิดเป็น '+(rev? (gp/rev*100).toFixed(1):0)+'% ของยอดขาย' : '—', DASH.days?delta(gp,pGp):null,'g','money'],
+    ['กำไรเฉลี่ยต่อคัน', cur.length? baht(gp/cur.length) : '—', cur.length? 'จาก '+cur.length+' ดีลในช่วงนี้' : 'ยังไม่มีดีลให้คิดเฉลี่ย', null,'g','money'],
+    ['ค้างเกิน '+CFG.agingDays+' วัน', fmt(old.length)+' คัน', noMoney()?'ควรเร่งระบายออก':'จมเงินอยู่ '+baht(old.reduce((s,u)=>s+u.cost,0)), null,'hi']
+  ];
+  const KSIM={'สต๊อกคงเหลือ':0, ['ค้างเกิน '+CFG.agingDays+' วัน']:0};
+  $('#dKpis').innerHTML=K.filter(k=>!(k[5]==='money'&&hideMoney)).map(([l,v,sub,d,cls])=>
+    `<div class="kpi"><div class="l">${l} ${KSIM[l]===0?'<span class="tag t-real" style="font-size:9px;padding:1px 6px;margin-left:4px;vertical-align:1px">ข้อมูลจริง</span>':'<span class="tag t-sim" style="font-size:9px;padding:1px 6px;margin-left:4px;vertical-align:1px">ข้อมูลสมมุติ</span>'}</div>
+      <div class="v ${cls||''}">${v}</div>
+      <div class="s">${sub}</div>${d?`<div class="d ${d.c}">${d.t}</div>`:''}</div>`).join('');
+  $('#bStock').textContent=avail().length;
+
+  /* ---- trend ---- */
+  const tb=trendBuckets();
+  const M=METRIC[DASH.metric];
+  const pts=tb.buckets.map(b=>({label:b.label, v:M.val(salesIn(b.from,b.to))}));
+  $('#chTrend').innerHTML = SALES.length
+    ? drawChart(pts,{type:DASH.type, short:shortNum, full:M.fmt})
+    : '<div class="empty">ยังไม่มีการขายให้วาดกราฟ — ลองไปบันทึกการขายที่หน้าขายรถดูสักคัน</div>';
+  const unitTxt = tb.days<=14 ? 'รายวัน' : tb.days<=120 ? 'รายสัปดาห์' : 'รายเดือน';
+  $('#capTrend').textContent = 'ดู'+M.name+'แบบ'+unitTxt+' ในช่วง '+rname;
+  const best=pts.reduce((a,b)=>b.v>a.v?b:a,{v:-1,label:'—'});
+  $('#legTrend').textContent = pts.some(x=>x.v)
+    ? ('ช่วงที่ทำได้ดีที่สุดคือ '+best.label+' ที่ '+M.fmt(best.v)+' · เอาเมาส์ชี้ที่แท่งหรือจุดเพื่อดูตัวเลขเต็ม')
+    : 'ยังไม่มีดีลในช่วงเวลานี้ ลองเลือกช่วงที่ยาวขึ้นดู';
+
+  /* ---- branch ---- */
+  const byB={}; avail().forEach(u=>{ (byB[u.branchName]=byB[u.branchName]||[]).push(u); });
+  const bs=Object.entries(byB).sort((a,b)=>b[1].length-a[1].length);
+  const mx=Math.max(1,...bs.map(x=>x[1].length));
+  $('#chBranch').innerHTML=bs.map(([n,us])=>`<div class="bar"><div class="n">${n}</div>
+    <div class="tr"><div class="fi" style="width:${us.length/mx*100}%;background:${DASH.branch&&DASH.branch!==n?'#D5D9E0':'var(--red)'}"></div></div>
+    <div class="v">${us.length}</div></div>
+    <div style="text-align:right;font-size:11px;color:var(--ink-3);margin:-4px 0 6px">${noMoney()?'':baht(us.reduce((s,u)=>s+u.cost,0))}</div>`).join('')
+    || '<div class="empty">ยังไม่มีรถในสต๊อก</div>';
+
+  /* ---- aging ---- */
+  const defs=bucketDefs();
+  const counts=defs.map(d=>av.filter(u=>{const a=unitAge(u);return a>d.lo&&a<=d.hi}).length);
+  const ma=Math.max(1,...counts);
+  const shades=['#EAECF0','#B2CCFF','#1D2939','#D92D20'];
+  $('#capAge').innerHTML='ค้างเกิน '+CFG.agingDays+' วันถือว่านานเกินไป';
+  $('#chAge').innerHTML=defs.map((d,i)=>`<div class="c"><div class="n">${counts[i]}</div>
+    <div class="p"><i style="height:${counts[i]/ma*100}%;background:${shades[Math.min(i,3)]}"></i></div>
+    <div class="l">${d.label}</div></div>`).join('');
+  $('#legAge').textContent='แบ่งช่วงไว้ที่ '+CFG.buckets+' วัน แก้ได้ที่หน้าตั้งค่าระบบ';
+
+  /* ---- model ---- */
+  const byM={}; av.forEach(u=>{(byM[u.model]=byM[u.model]||[]).push(u)});
+  const ms=Object.entries(byM).sort((a,b)=>b[1].length-a[1].length);
+  const mm=Math.max(1,...ms.map(x=>x[1].length));
+  $('#chModel').innerHTML=ms.map(([n,us])=>{
+    const low=us.length<=CFG.lowStock, oldAvg=us.reduce((s,u)=>s+unitAge(u),0)/us.length>CFG.agingDays;
+    const c= low?'var(--red)': oldAvg?'#1D2939':'#EAECF0';
+    return `<div class="bar"><div class="n">${low?'<span class="tag t-bad" style="margin-right:5px">ใกล้หมด</span>':''}${n}</div><div class="tr"><div class="fi" style="width:${us.length/mm*100}%;background:${c}"></div></div>
+      <div class="v">${us.length}</div></div>`;
+  }).join('') || '<div class="empty">ยังไม่มีรถในสต๊อก</div>';
+
+  /* ---- staff ---- */
+  const byS={}; cur.forEach(x=>{ (byS[x.sales]=byS[x.sales]||[]).push(x); });
+  const ss=Object.entries(byS).sort((a,b)=>b[1].length-a[1].length);
+  $('#chStaff').innerHTML = ss.length
+    ? '<table><thead><tr><th>พนักงานขาย</th><th class="num">ขายได้</th><th class="num">ยอดขาย</th>'
+      +(hideMoney?'':'<th class="num">กำไร</th>')+'</tr></thead><tbody>'
+      + ss.map(([n,xs])=>`<tr class="clik" onclick="openDetail('staff','${n}')"><td><b>${n}</b></td><td class="num">${xs.length} คัน</td>
+        <td class="num">${fmt(xs.reduce((s,x)=>s+x.price,0))}</td>
+        ${hideMoney?'':`<td class="num" style="color:var(--good);font-weight:800">${fmt(xs.reduce((s,x)=>s+x.gp,0))}</td>`}</tr>`).join('')
+      + '</tbody></table>'
+    : '<div class="empty">ยังไม่มีดีลปิดในช่วงเวลาที่เลือก</div>';
+
+  /* ---- top models sold ---- */
+  const byTM={}; cur.forEach(x=>{ (byTM[x.model]=byTM[x.model]||[]).push(x); });
+  const tm=Object.entries(byTM).sort((a,b)=>b[1].length-a[1].length).slice(0,6);
+  const tmax=Math.max(1,...tm.map(x=>x[1].length));
+  $('#chTop').innerHTML = tm.length
+    ? '<div style="padding:14px 18px 17px">'+tm.map(([n,xs])=>`<div class="bar"><div class="n">${n}</div>
+        <div class="tr"><div class="fi" style="width:${xs.length/tmax*100}%"></div></div>
+        <div class="v">${xs.length}</div></div>
+        ${hideMoney?'':`<div style="text-align:right;font-size:11px;color:var(--ink-3);margin:-4px 0 6px">กำไร ${baht(xs.reduce((s,x)=>s+x.gp,0))}</div>`}`).join('')+'</div>'
+    : '<div class="empty">ยังไม่มีดีลปิดในช่วงเวลาที่เลือก</div>';
+
+  /* ---- todo ---- */
+  const dueTasks=TASKS.filter(t=>!t.done && t.due<=to);
+  const items=[
+    ['รถที่ค้างในสต๊อกเกิน '+CFG.agingDays+' วัน', old.length+' คัน', old.length?'bad':'good','stock'],
+    ['งานติดตามลูกค้าที่ถึงกำหนดแล้ว', dueTasks.length+' งาน', dueTasks.length?'warn':'good','crm'],
+    ['รุ่นที่เหลือน้อยกว่า '+CFG.lowStock+' คัน', ms.filter(x=>x[1].length<=CFG.lowStock).length+' รุ่น', 'warn','stock'],
+    ['ลูกค้าที่ยังไม่ปิดการขาย', CUSTOMERS.filter(c=>c.stage!=='รับรถสำเร็จ').length+' ราย','mute','crm']
+  ];
+  $('#todo').innerHTML=items.map(([t,v,tone,tgt])=>`<div class="li"><div class="g"><div class="t">${t}</div></div>
+    <div class="r"><span class="tag t-${tone}">${v}</span></div>
+    <button class="btn ghost sm" onclick="go('${tgt}')">ไปดู</button></div>`).join('');
+  $('#bTask').textContent=TASKS.filter(t=>!t.done && t.due<=to).length;
+
+  /* ---- recent sales ---- */
+  const rs=cur.slice().sort((a,b)=>a.date<b.date?1:-1).slice(0,8);
+  $('#recentSales').innerHTML = rs.length
+    ? `<table><thead><tr><th>วันที่</th><th>ลูกค้า</th><th>รถ</th><th>พนักงานขาย</th><th>วิธีชำระ</th><th class="num">ราคาขาย</th>${hideMoney?'':'<th class="num">กำไร</th>'}</tr></thead><tbody>`
+      + rs.map(x=>`<tr><td>${thDate(x.date)}</td>
+        <td><span class="lnk" onclick="openDetail('cust','${x.customer}')">${x.customer}</span></td>
+        <td><span class="lnk" onclick="openDetail('unit','${x.unitId}')">${x.model} ${x.color}</span></td>
+        <td><span class="lnk" onclick="openDetail('staff','${x.sales}')">${x.sales}</span></td><td>${x.pay==='finance'?'ผ่อนไฟแนนซ์':'เงินสด'}</td>
+        <td class="num">${fmt(x.price)}</td>${hideMoney?'':`<td class="num" style="color:var(--good);font-weight:800">${fmt(x.gp)}</td>`}</tr>`).join('')
+      + '</tbody></table>'
+    : '<div class="empty">ยังไม่มีดีลปิดในช่วงเวลาที่เลือก — ลองขยายช่วงเวลา หรือไปบันทึกการขายที่หน้าขายรถ</div>';
+
+  applyCards();
+}
+
+function applyCards(){
+  Object.entries(DASH.cards).forEach(([k,on])=>{
+    const el=document.querySelector('[data-c="'+k+'"]'); if(el) el.style.display= on?'':'none';
+  });
+  // collapse the 2-column rows that ended up with a single visible card
+  $$('#s-dash .grid.g2').forEach(g=>{
+    const vis=[...g.children].filter(c=>c.style.display!=='none');
+    g.style.gridTemplateColumns = vis.length===1 ? '1fr' : '';
+    g.style.display = vis.length? 'grid' : 'none';
+  });
+}
+function initDashControls(){
+  const branches=[...new Set(SEED.units.map(u=>u.branchName))];
+  $('#dBranch').innerHTML='<option value="">ทุกสาขา</option>'+branches.map(b=>`<option${b===DASH.branch?' selected':''}>${b}</option>`).join('');
+  const staff=String(CFG.salespeople).split(',').map(x=>x.trim()).filter(Boolean);
+  $('#dSales').innerHTML='<option value="">ทุกคน</option>'+staff.map(b=>`<option${b===DASH.sales?' selected':''}>${b}</option>`).join('');
+  $('#dCards').innerHTML=Object.entries(CARD_NAMES).map(([k,n])=>
+    `<label class="${DASH.cards[k]?'on':''}"><input type="checkbox" data-card="${k}"${DASH.cards[k]?' checked':''}>${n}</label>`).join('');
+  $$('#dCards input').forEach(i=>i.onchange=()=>{
+    DASH.cards[i.dataset.card]=i.checked?1:0;
+    i.closest('label').classList.toggle('on', i.checked);
+    applyCards();
+    const off=Object.values(DASH.cards).filter(x=>!x).length;
+    toast(i.checked?'เปิดการ์ดแล้ว':'ซ่อนการ์ดแล้ว', CARD_NAMES[i.dataset.card]+(off?' · ซ่อนอยู่ '+off+' การ์ด':''));
+  });
+}
+$$('#dRange button').forEach(b=>b.onclick=()=>{
+  $$('#dRange button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  DASH.days=+b.dataset.d; renderDash();
+});
+$$('#tMetric button').forEach(b=>b.onclick=()=>{
+  $$('#tMetric button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  DASH.metric=b.dataset.m; renderDash();
+});
+$$('#tType button').forEach(b=>b.onclick=()=>{
+  $$('#tType button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  DASH.type=b.dataset.t; renderDash();
+});
+$('#dBranch').onchange=e=>{ DASH.branch=e.target.value; renderDash(); };
+$('#dSales').onchange=e=>{ DASH.sales=e.target.value; renderDash(); };
+$('#dCardsBtn').onclick=()=>{
+  const el=$('#dCards'); const open=el.style.display==='none';
+  el.style.display=open?'flex':'none';
+  $('#dCardsBtn').textContent=open?'ปิดตัวเลือกการ์ด':'เลือกการ์ดที่แสดง';
+};
+
+/* ---------------- receive ---------------- */
+function fillSelect(el, arr, val){ el.innerHTML=arr.map(a=>`<option value="${a.v!==undefined?a.v:a}">${a.t!==undefined?a.t:a}</option>`).join(''); if(val!==undefined) el.value=val; }
+function initRecv(){
+  const branches=[...new Set(SEED.units.map(u=>u.branchName))];
+  fillSelect($('#rBranch'), branches);
+  const models=[...new Map(SEED.units.map(u=>[u.code,u])).values()];
+  $('#rModel').innerHTML=models.map(m=>`<option value="${m.code}">${m.model} (${m.code}) — ${m.color}</option>`).join('');
+  const files=[...new Set(SEED.units.map(u=>u.srcFile))];
+  $('#impFile').innerHTML=files.map(f=>`<option value="${f}">${f} — ${SEED.units.filter(u=>u.srcFile===f).length} คัน</option>`).join('');
+  syncModel(); renderRecvRecent();
+}
+function syncModel(){
+  const m=SEED.units.find(u=>u.code===$('#rModel').value);
+  $('#rColor').value=m.color; $('#rCost').value=fmt(m.cost); $('#rRetail').value=m.retail?fmt(m.retail):'';
+  previewRecv();
+}
+function previewRecv(){
+  const cost=numOf($('#rCost')), retail=numOf($('#rRetail'));
+  const gp=retail? retail-cost : null;
+  $('#rPreview').innerHTML=`<div class="result"><div class="rt">ผลลัพธ์ที่จะได้เมื่อบันทึก</div>
+    <div class="rl"><span>ต้นทุน</span><b>${money(baht(cost))}</b></div>
+    <div class="rl"><span>ราคาขายแนะนำ</span><b>${money(retail?baht(retail):'ยังไม่ระบุ')}</b></div>
+    <div class="rl"><span>กำไรถ้าขายได้ตามราคาแนะนำ</span><b style="color:var(--good)">${money(gp!=null?baht(gp):'คำนวณไม่ได้')}</b></div>
+    <div class="rl"><span>สต๊อกคงเหลือหลังบันทึก</span><b>${avail().length+1} คัน</b></div></div>`;
+}
+function renderRecvRecent(){
+  const rows=UNITS.slice(-10).reverse();
+  $('#recvRecent').innerHTML=`<table><thead><tr><th>รุ่น</th><th>เลขเครื่อง</th>${noMoney()?'':'<th class="num">ต้นทุน</th>'}<th>สถานะ</th></tr></thead><tbody>`
+    + rows.map(u=>`<tr class="clik" onclick="openDetail('unit','${u.id}')"><td><b>${u.model}</b> ${u.color}</td><td class="mono">${u.engine}</td>${noMoney()?'':`<td class="num">${fmt(u.cost)}</td>`}
+      <td>${u.status==='sold'?'<span class="tag t-mute">ขายแล้ว</span>':'<span class="tag t-good">พร้อมขาย</span>'}</td></tr>`).join('')+'</tbody></table>';
+}
+function saveRecv(){
+  const eng=$('#rEngine').value.trim(), frm=$('#rFrame').value.trim();
+  let bad=false;
+  $('#fEngine').classList.toggle('err', !eng || UNITS.some(u=>u.engine===eng)); if($('#fEngine').classList.contains('err')) bad=true;
+  $('#fFrame').classList.toggle('err', !frm || UNITS.some(u=>u.frame===frm)); if($('#fFrame').classList.contains('err')) bad=true;
+  if(bad){ toast('บันทึกไม่ได้','เลขเครื่องหรือเลขตัวถังซ้ำ หรือยังไม่ได้กรอก',true); return; }
+  const m=SEED.units.find(u=>u.code===$('#rModel').value);
+  UNITS.push({id:newId('U'), branchName:$('#rBranch').value, model:m.model, code:m.code, sku:m.sku,
+    color:$('#rColor').value, year:$('#rYear').value, engine:eng, frame:frm,
+    cost:numOf($('#rCost')), retail:numOf($('#rRetail'))||null, recvDate:$('#rDate').value, status:'available', srcFile:'กรอกเอง', yearGuess:false});
+  toast('บันทึกรับรถแล้ว', m.model+' '+$('#rColor').value+' · '+eng);
+  $('#rEngine').value=''; $('#rFrame').value='';
+  refreshAll();
+}
+function runImport(){
+  const f=$('#impFile').value;
+  const rows=SEED.units.filter(u=>u.srcFile===f);
+  const dup=rows.filter(r=>UNITS.some(u=>u.engine===r.engine)).length;
+  const bad=rows.filter(r=>!r.engine||!r.frame||!r.cost).length;
+  const ok=rows.length-dup-bad;
+  $('#impResult').innerHTML=`<div class="result ${dup?'warn':''}" style="margin-top:14px">
+    <div class="rt">ผลตรวจก่อนนำเข้า</div>
+    <div class="rl"><span>แถวทั้งหมดในไฟล์</span><b>${rows.length} แถว</b></div>
+    <div class="rl"><span>นำเข้าได้</span><b style="color:var(--good)">${ok} แถว</b></div>
+    <div class="rl"><span>ข้ามเพราะเลขเครื่องซ้ำ</span><b style="color:${dup?'var(--warn)':'inherit'}">${dup} แถว</b></div>
+    <div class="rl"><span>ข้ามเพราะข้อมูลไม่ครบหรือรูปแบบผิด</span><b style="color:${bad?'var(--bad)':'inherit'}">${bad} แถว</b></div>
+    <div class="rl"><span>มูลค่าต้นทุนที่จะเพิ่ม</span><b>${noMoney()?'—':baht(rows.filter(r=>!UNITS.some(u=>u.engine===r.engine)).reduce((s,r)=>s+r.cost,0))}</b></div>
+    ${ok?`<button class="btn full" style="margin-top:11px" onclick="confirmImport('${f}')">ยืนยันนำเข้า ${ok} แถว</button>`
+        :'<div style="margin-top:9px;font-size:12.5px;color:var(--warn)">ทุกแถวในไฟล์นี้อยู่ในระบบแล้ว ไม่มีอะไรต้องนำเข้า</div>'}
+  </div>`;
+}
+function confirmImport(f){
+  const rows=SEED.units.filter(u=>u.srcFile===f && !UNITS.some(x=>x.engine===u.engine));
+  rows.forEach(r=>UNITS.push(Object.assign({},r,{id:newId('U'),status:'available',year:r.recvDate<'2025-01-01'?'2567':'2569',yearGuess:true})));
+  toast('นำเข้าสำเร็จ', f+' · เพิ่ม '+rows.length+' คัน');
+  $('#impResult').innerHTML=''; refreshAll();
+}
+
+/* ---------------- stock ---------------- */
+function initStockFilters(){
+  const u=k=>[...new Set(UNITS.map(x=>x[k]))].filter(Boolean).sort();
+  $('#fBranch').innerHTML='<option value="">ทุกสาขา</option>'+u('branchName').map(v=>`<option>${v}</option>`).join('');
+  $('#fModel').innerHTML='<option value="">ทุกรุ่น</option>'+u('model').map(v=>`<option>${v}</option>`).join('');
+  $('#fColor').innerHTML='<option value="">ทุกสี</option>'+u('color').map(v=>`<option>${v}</option>`).join('');
+  $('#fYear').innerHTML='<option value="">ทุกปี</option>'+u('year').map(v=>`<option>${v}</option>`).join('');
+}
+function ageTag(a){
+  const t=CFG.agingDays;
+  if(a<=t*0.33) return `<span class="tag t-good">${a} วัน</span>`;
+  if(a<=t) return `<span class="tag t-warn">${a} วัน</span>`;
+  return `<span class="tag t-bad">${a} วัน</span>`;
+}
+function renderStock(){
+  const b=$('#fBranch').value,m=$('#fModel').value,c=$('#fColor').value,y=$('#fYear').value,st=$('#fStatus').value,q=$('#fQ').value.trim().toLowerCase();
+  const rows=UNITS.filter(u=>(!b||u.branchName===b)&&(!m||u.model===m)&&(!c||u.color===c)&&(!y||u.year===y)
+    &&(!st||u.status===st)&&(!q||(u.engine+u.frame+u.model+u.code).toLowerCase().includes(q)));
+  const hm=noMoney();
+  $('#tStock tbody').innerHTML = rows.length ? rows.map(u=>`<tr class="clik" onclick="openDetail('unit','${u.id}')">
+    <td>${u.branchName}</td><td><b>${u.model}</b> <span class="mono" style="color:var(--ink-3)">${u.code}</span></td>
+    <td>${u.color}</td><td title="${u.yearGuess?'ไฟล์ยามาฮ่าไม่มีปีรถ ค่านี้ระบบสมมุติจากปีที่รับรถ':''}">${u.year}</td><td class="mono">${u.engine}</td>
+    <td class="num">${hm?'—':fmt(u.cost)}</td><td class="num">${hm?'—':(u.retail?fmt(u.retail):'—')}</td>
+    <td class="num" style="color:${unitGp(u)?'var(--good)':'var(--ink-3)'};font-weight:800">${hm?'—':(unitGp(u)!=null?fmt(unitGp(u)):'—')}</td>
+    <td>${ageTag(unitAge(u))}</td>
+    <td>${u.status==='available'?`<button class="btn ghost sm" onclick="event.stopPropagation();sellThis('${u.id}')">ขายคันนี้</button>`:'<span class="tag t-mute">ขายแล้ว</span>'}</td></tr>`).join('')
+    : '<tr><td colspan="10"><div class="empty">ไม่พบรถที่ตรงกับเงื่อนไข ลองล้างตัวกรองดู</div></td></tr>';
+  if(typeof applyRole==='function') setTimeout(applyRole,0);
+  const hideM = document.body.classList.contains('no-money');
+  $('#stockSum').innerHTML=`แสดง <b style="color:var(--ink)">${rows.length}</b> จาก ${UNITS.length} คัน`
+    + (hideM?'':` · ต้นทุนรวม <b style="color:var(--ink)">${baht(rows.reduce((s,u)=>s+u.cost,0))}</b>`);
+}
+function sellThis(id){ go('sell'); $('#sUnit').value=id; syncSell(); toast('เลือกคันรถให้แล้ว','กรอกราคาขายและชื่อลูกค้าเพื่อบันทึก'); }
+
+/* ---------------- sell ---------------- */
+let picked = {};
+function initSell(){
+  fillSelect($('#sSales'), String(CFG.salespeople).split(',').map(s=>s.trim()).filter(Boolean));
+  fillSelect($('#sFinCo'), [CFG.finName1, CFG.finName2]);
+  $('#sFree').innerHTML=freebieList().map((f,i)=>`<button data-i="${i}" class="${picked[f.name]?'on':''}">${f.name} · ${fmt(f.cost)}</button>`).join('');
+  $$('#sFree button').forEach(b=>b.onclick=()=>{ const f=freebieList()[+b.dataset.i];
+    if(picked[f.name]) delete picked[f.name]; else picked[f.name]=f.cost;
+    b.classList.toggle('on'); calcSell(); });
+  renderUnitOptions();
+}
+function renderUnitOptions(){
+  const av=avail();
+  $('#sUnit').innerHTML= av.length? av.map(u=>`<option value="${u.id}">${u.model} ${u.color} · ${u.engine}${noMoney()?'':' · ต้นทุน '+fmt(u.cost)}</option>`).join('')
+    : '<option value="">ไม่มีรถพร้อมขายในสต๊อก</option>';
+  syncSell();
+}
+function currentUnit(){ return UNITS.find(u=>u.id===$('#sUnit').value); }
+function syncSell(){
+  const u=currentUnit(); if(!u){ $('#sSummary').innerHTML='<div class="empty">ไม่มีรถพร้อมขาย</div>'; return; }
+  $('#sCost').value=fmt(u.cost); $('#sPrice').value=u.retail?fmt(u.retail):fmt(Math.round(u.cost*1.15));
+  $('#sPriceHelp').textContent = u.retail? 'เติมจากราคาขายแนะนำของรุ่นนี้' : 'รุ่นนี้ยังไม่มีราคาแนะนำในระบบ ระบบเติมให้ชั่วคราวที่ต้นทุน +15% ต้องแก้เอง';
+  const a=unitAge(u);
+  $('#sAlert').innerHTML = a>CFG.agingDays
+    ? `<div class="result warn"><div class="rt">ระบบเตือน</div><div style="font-size:12.5px">คันนี้อยู่ในสต๊อกมาแล้ว <b>${a} วัน</b> ซึ่งเกินเกณฑ์ ${CFG.agingDays} วันที่ตั้งไว้ — พิจารณาให้ส่วนลดพิเศษเพื่อระบายออก</div></div>` : '';
+  calcSell();
+}
+function freebieCost(){ return Object.values(picked).reduce((s,v)=>s+v,0); }
+function calcSell(){
+  const u=currentUnit(); if(!u) return;
+  const price=numOf($('#sPrice')), disc=numOf($('#sDisc'));
+  const net=price-disc, fc=freebieCost();
+  const gp=net-u.cost-(CFG.freebieIsCost?fc:0);
+  const pct=net? (gp/net*100):0;
+  const cm=noMoney();
+  $('#sSummary').innerHTML=[
+    ['ราคาขายตั้งต้น', baht(price)],
+    ['ส่วนลด', disc? '− '+baht(disc):'ไม่มี'],
+    ['ราคาสุทธิ', baht(net), true],
+    ['ต้นทุนรถ', cm?'ซ่อนอยู่':'− '+baht(u.cost)],
+    ['ต้นทุนของแถม '+(CFG.freebieIsCost?'':'(ไม่นับเป็นต้นทุนดีล)'), cm?'ซ่อนอยู่':(fc? '− '+baht(fc):'ไม่มี')],
+    ['กำไรของคันนี้', cm?'ซ่อนอยู่':baht(gp)+'  ('+pct.toFixed(1)+'%)', true]
+  ].map(([k,v,strong])=>`<div class="li"><div class="g"><div class="t" style="${strong?'':'font-weight:400'}">${k}</div></div>
+    <div class="r" style="${strong&&!cm?'color:var(--good)':''}">${v}</div></div>`).join('');
+  $('#sImpact').innerHTML=[
+    ['สต๊อกคงเหลือ', avail().length+' → '+(avail().length-1)+' คัน'],
+    ['สถานะคันนี้', 'พร้อมขาย → ขายแล้ว'],
+    ['งานติดตามที่จะถูกสร้าง', parseNums(CFG.cadence).length+' งาน'],
+    ['กำหนดรับทะเบียน', 'ภายใน '+CFG.regDays+' วัน คือ '+thDate(addDays(TODAY.toISOString().slice(0,10),CFG.regDays))]
+  ].map(([k,v])=>`<div class="li"><div class="g"><div class="t" style="font-weight:400">${k}</div></div><div class="r">${v}</div></div>`).join('');
+  renderFin(); renderDocs();
+}
+function renderFin(){
+  const u=currentUnit(); if(!u) return;
+  const price=numOf($('#sPrice'))-numOf($('#sDisc'));
+  const down=numOf($('#sDown'))||0, principal=Math.max(0,price-down);
+  const terms=parseNums(CFG.terms);
+  const r1=parseFloat(CFG.finRate1)/100, r2=parseFloat(CFG.finRate2)/100;
+  $('#finN1').textContent=$('#finN3').textContent=CFG.finName1;
+  $('#finN2').textContent=CFG.finName1; $('#finN3').textContent=CFG.finName2; $('#finN4').textContent=CFG.finName2;
+  $('#finCap').textContent='ยอดจัด '+baht(principal)+' (ราคาสุทธิหักเงินดาวน์ '+baht(down)+') · ดอกเบี้ยคงที่ '+CFG.finRate1+'% และ '+CFG.finRate2+'% ต่อเดือน';
+  $('#tFin tbody').innerHTML=terms.map(n=>{
+    const a=Math.round(principal*(1+r1*n)/n), b=Math.round(principal*(1+r2*n)/n);
+    const win = a<b? CFG.finName1 : (b<a? CFG.finName2 : 'เท่ากัน');
+    const diff=Math.abs(a-b);
+    return `<tr><td><b>${n} งวด</b></td><td class="num">${fmt(a)}</td><td class="num">${fmt(a*n+down)}</td>
+      <td class="num">${fmt(b)}</td><td class="num">${fmt(b*n+down)}</td>
+      <td><span class="tag ${a<b?'t-good':'t-info'}">${win} ถูกกว่า ${fmt(diff)}/เดือน</span></td></tr>`;
+  }).join('');
+}
+function renderDocs(){
+  const inst=$('#sPay').value==='finance';
+  const docs = inst? ['ใบเสร็จรับเงิน (เงินดาวน์)','ใบกำกับภาษีเงินดาวน์','ใบกำกับภาษีที่ออกให้ไฟแนนซ์','สัญญาเช่าซื้อ']
+                   : ['ใบเสร็จรับเงิน','ใบกำกับภาษี (ถ้าลูกค้าขอ)'];
+  $('#docList').innerHTML=docs.map(d=>`<div class="li"><div class="g"><div class="t">${d}</div></div>
+    <button class="btn ghost sm" onclick="toast('สั่งพิมพ์แล้ว','${d}')">พิมพ์</button></div>`).join('');
+  const u=currentUnit(); if(!u){ $('#docPreview').innerHTML='<div class="empty">เลือกคันรถก่อน</div>'; return; }
+  const price=numOf($('#sPrice')), disc=numOf($('#sDisc')), net=price-disc;
+  const vat=net*(parseFloat(CFG.vat)/100)/(1+parseFloat(CFG.vat)/100);
+  $('#docPreview').innerHTML=`<div class="doc">
+    <div class="dh"><div><h4>บริษัท ฟ้าใหม่ มอเตอร์ กรุ๊ป จำกัด</h4><div>${u.branchName}</div></div>
+      <div style="text-align:right"><b style="color:var(--ink)">ใบเสร็จรับเงิน</b><div>เลขที่ RC-${String(SALES.length+1).padStart(4,'0')}</div><div>${thDate('2026-07-29')}</div></div></div>
+    <table><tbody>
+      <tr><td>ลูกค้า</td><td style="text-align:right;color:var(--ink);font-weight:700">${$('#sCust').value||'—'}</td></tr>
+      <tr><td>รถ</td><td style="text-align:right">${u.model} ${u.color} · ปี ${u.year}</td></tr>
+      <tr><td>เลขเครื่อง / เลขตัวถัง</td><td style="text-align:right" class="mono">${u.engine} / ${u.frame}</td></tr>
+      <tr><td>ราคาขาย</td><td style="text-align:right">${fmt(price)}</td></tr>
+      <tr><td>ส่วนลด</td><td style="text-align:right">${disc?'− '+fmt(disc):'—'}</td></tr>
+      <tr><td>ของแถม</td><td style="text-align:right">${Object.keys(picked).join(', ')||'ไม่มี'}</td></tr>
+      <tr><td>ภาษีมูลค่าเพิ่ม ${CFG.vat}% (รวมในราคาแล้ว)</td><td style="text-align:right">${fmt(vat)}</td></tr>
+    </tbody></table>
+    <div class="tot"><span>ยอดที่ต้องชำระ</span><span>${baht(net)}</span></div></div>`;
+
+  const rate=parseFloat(CFG.vat)/100;
+  const base=net/(1+rate), tax=net-base;
+  $('#docPreview2').innerHTML=`<div class="doc">
+    <div class="dh"><div><h4>ใบกำกับภาษี <span style="font-weight:600;color:var(--ink-3)">(แบบเต็มรูป)</span></h4>
+      <div>บริษัท ฟ้าใหม่ มอเตอร์ กรุ๊ป จำกัด · ${u.branchName}</div>
+      <div>เลขที่ 99/9 ถนนตัวอย่าง แขวงตัวอย่าง เขตตัวอย่าง กรุงเทพฯ 10000</div>
+      <div>เลขประจำตัวผู้เสียภาษีอากร <span class="mono">0 0000 00000 00 0</span> · สำนักงานใหญ่</div></div>
+      <div style="text-align:right"><div>เล่มที่ ${u.branchName.split(' ').map(w=>w[0]).join('')}-01</div>
+        <div style="white-space:nowrap">เลขที่ TX-${String(SALES.length+1).padStart(4,'0')}</div>
+        <div>${thDate('2026-07-29')}</div></div></div>
+    <table><tbody>
+      <tr><td>ชื่อผู้ซื้อ</td><td style="text-align:right;color:var(--ink);font-weight:700">${$('#sCust').value||'—'}</td></tr>
+      <tr><td>ที่อยู่ผู้ซื้อ</td><td style="text-align:right">— กรอกตอนออกเอกสารจริง —</td></tr>
+      <tr><td>รายการ</td><td style="text-align:right">รถจักรยานยนต์ ${u.model} สี${u.color} · 1 คัน</td></tr>
+      <tr><td>เลขเครื่อง / เลขตัวถัง</td><td style="text-align:right" class="mono">${u.engine} / ${u.frame}</td></tr>
+      <tr><td>มูลค่าสินค้า (ก่อนภาษี)</td><td style="text-align:right">${fmt(Math.round(base))}</td></tr>
+      <tr><td>ภาษีมูลค่าเพิ่ม ${CFG.vat}%</td><td style="text-align:right;color:var(--ink);font-weight:700">${fmt(Math.round(tax))}</td></tr>
+    </tbody></table>
+    <div class="tot"><span>รวมเป็นเงินทั้งสิ้น</span><span>${baht(net)}</span></div>
+    <div class="foot" style="margin-top:10px;padding:0">ครบ 8 รายการตามมาตรา 86/4 · ข้อมูลร้านในตัวอย่างเป็นข้อมูลสมมติ</div></div>`;
+}
+function saveSale(){
+  const u=currentUnit();
+  if(!u){ toast('บันทึกไม่ได้','ไม่มีรถพร้อมขายในสต๊อก',true); return; }
+  if(!$('#sCust').value.trim()){ toast('บันทึกไม่ได้','ยังไม่ได้กรอกชื่อลูกค้า',true); $('#sCust').focus(); return; }
+  const price=numOf($('#sPrice')), disc=numOf($('#sDisc')), net=price-disc, fc=freebieCost();
+  const gp=net-u.cost-(CFG.freebieIsCost?fc:0);
+  const today=TODAY.toISOString().slice(0,10);
+  u.status='sold';
+  const sale={id:newId('S'), unitId:u.id, model:u.model, color:u.color, engine:u.engine,
+    customer:$('#sCust').value.trim(), phone:$('#sPhone').value.trim(), price:net, gp:gp,
+    pay:$('#sPay').value, sales:$('#sSales').value, date:today, freebies:Object.keys(picked).join(', ')};
+  SALES.push(sale);
+  let cust=CUSTOMERS.find(c=>c.name===sale.customer);
+  if(!cust){ cust={id:newId('C'), name:sale.customer, phone:sale.phone, src:'ปิดการขายแล้ว', model:u.model, stage:'รับรถสำเร็จ', bought:today}; CUSTOMERS.push(cust); }
+  else { cust.stage='รับรถสำเร็จ'; cust.bought=today; cust.model=u.model; }
+  parseNums(CFG.cadence).forEach(d=>TASKS.push({id:newId('T'), cust:cust.name, model:u.model,
+    due:addDays(today,d), label:d>=365? (d/365)+' ปี' : d+' วัน', done:false}));
+  toast('บันทึกการขายแล้ว', u.model+' · กำไร '+baht(gp)+' · สร้างงานติดตาม '+parseNums(CFG.cadence).length+' งาน');
+  picked={}; $('#sCust').value=''; $('#sPhone').value=''; $('#sDisc').value='0';
+  refreshAll(); go('dash');
+}
+
+/* ---------------- crm ---------------- */
+function initCrm(){
+  fillSelect($('#cSrc'), String(CFG.sources).split(',').map(s=>s.trim()).filter(Boolean));
+  const models=[...new Set(SEED.units.map(u=>u.model))];
+  fillSelect($('#cModel'), models);
+}
+function renderCrm(){
+  const today=TODAY.toISOString().slice(0,10);
+  const due=TASKS.filter(t=>!t.done).sort((a,b)=>a.due<b.due?-1:1);
+  $('#taskList').innerHTML = due.length ? `<table><thead><tr><th>ลูกค้า</th><th>รถ</th><th>รอบ</th><th>กำหนด</th><th></th></tr></thead><tbody>`
+    + due.slice(0,12).map(t=>{
+      const late=t.due<today, near=t.due===today;
+      return `<tr><td><span class="lnk" onclick="openDetail('cust','${t.cust}')">${t.cust}</span></td><td>${t.model}</td><td>${t.label}</td>
+        <td>${thDate(t.due)} ${late?'<span class="tag t-bad">เลยกำหนด</span>':near?'<span class="tag t-warn">วันนี้</span>':'<span class="tag t-mute">ยังไม่ถึง</span>'}</td>
+        <td><button class="btn ghost sm" onclick="doneTask('${t.id}')">เสร็จแล้ว</button></td></tr>`;
+    }).join('')+'</tbody></table>'
+    : '<div class="empty">ยังไม่มีงานติดตาม — งานจะถูกสร้างอัตโนมัติเมื่อบันทึกการขาย</div>';
+  $('#cadence').style.gridTemplateColumns='repeat('+Math.max(1,parseNums(CFG.cadence).length)+',1fr)';
+  $('#cadence').innerHTML=parseNums(CFG.cadence).map(d=>`<div class="st"><div class="n">${d>=365?(d/365)+' ปี':d}</div>
+    <div class="c">${d>=365?'ต่อ พ.ร.บ. / เสนอเปลี่ยนรถ':(d<=7?'ถามความรู้สึกหลังออกรถ':d<=30?'เช็กระยะและเรื่องทะเบียน':'เช็กระยะครั้งถัดไป')}</div></div>`).join('');
+  $('#tCust tbody').innerHTML = CUSTOMERS.length ? CUSTOMERS.map(c=>`<tr class="clik" onclick="openDetail('cust','${c.id}')"><td><b>${c.name}</b></td><td class="mono">${c.phone||'—'}</td>
+    <td>${c.src}</td><td>${c.model||'—'}</td><td>${c.bought?thDate(c.bought):'—'}</td>
+    <td class="num">${TASKS.filter(t=>t.cust===c.name&&!t.done).length}</td></tr>`).join('')
+    : '<tr><td colspan="6"><div class="empty">ยังไม่มีลูกค้าในระบบ</div></td></tr>';
+  const stages=['เข้ามาดูรถ','สนใจ','ทำสัญญา','รับรถสำเร็จ'];
+  $('#funnel').innerHTML=stages.map(s=>`<div class="st"><div class="n">${CUSTOMERS.filter(c=>c.stage===s).length}</div><div class="c">${s}</div></div>`).join('');
+}
+function doneTask(id){ const t=TASKS.find(x=>x.id===id); if(t){t.done=true; toast('ปิดงานติดตามแล้ว', t.cust+' · รอบ '+t.label);} refreshAll(); }
+function saveCust(){
+  const n=$('#cName').value.trim();
+  if(!n){ toast('บันทึกไม่ได้','ยังไม่ได้กรอกชื่อลูกค้า',true); return; }
+  CUSTOMERS.push({id:newId('C'), name:n, phone:$('#cPhone').value.trim(), src:$('#cSrc').value,
+    model:$('#cModel').value, stage:$('#cStage').value, bought:null});
+  $('#cResult').innerHTML=`<div class="result"><div class="rt">บันทึกแล้ว</div>
+    <div class="rl"><span>ลูกค้าในระบบตอนนี้</span><b>${CUSTOMERS.length} ราย</b></div>
+    <div class="rl"><span>ขั้นตอน</span><b>${$('#cStage').value}</b></div>
+    <div class="rl"><span>งานติดตาม</span><b>จะถูกสร้างเมื่อปิดการขาย</b></div></div>`;
+  toast('เพิ่มลูกค้าแล้ว', n+' · '+$('#cStage').value);
+  $('#cName').value=''; $('#cPhone').value='';
+  refreshAll();
+}
+
+
+/* ================= อะไหล่ · ไฟแนนซ์ · พนักงาน · ผู้ใช้ · ปฏิทิน ================= */
+let PARTS=[], PMOVES=[], FINCASES=[], STAFF=[], ATT=[], LEAVES=[], USERS=[], ROLES=[], IMPLOG=[];
+const PERMS=[['money','เห็นต้นทุนและกำไร'],['allBranch','เห็นได้ทุกสาขา'],['editBack','แก้ข้อมูลย้อนหลัง'],
+             ['approve','อนุมัติใบลาและใบสั่งของ'],['admin','จัดการผู้ใช้และตั้งค่าระบบ']];
+const FIN_STEPS=[['pending','ส่งเรื่อง'],['doc','ยื่นเอกสาร'],['result','รอผล'],['following','ติดตามต่อ'],['done','อนุมัติแล้ว']];
+
+function seedModules(){
+  const shift=n=>{const d=new Date(TODAY);d.setDate(d.getDate()-n);return d.toISOString().slice(0,10)};
+  PARTS=[
+    ['B74-F5311','ผ้าเบรกหน้า',210,390,24,10],['2PH-E5311','ผ้าคลัตช์',180,340,6,8],
+    ['1PA-E3440','กรองอากาศ',95,180,31,10],['5TL-E5817','น้ำมันเครื่อง 0.8L',110,180,48,20],
+    ['B65-H4510','หลอดไฟหน้า LED',260,480,9,6],['2DP-F1720','ยางนอก 90/90-14',540,890,4,6],
+    ['B74-H2510','แบตเตอรี่ 5Ah',720,1150,7,5],['1FC-E4510','หัวเทียน',75,140,52,20],
+    ['B6H-F1611','โซ่ขับ',430,720,3,5],['2CM-E1560','ซีลวาล์ว',60,120,18,10]
+  ].map((r,i)=>({id:newId('P'),code:r[0],name:r[1],cost:r[2],price:r[3],qty:r[4],min:r[5]}));
+  PMOVES=[[0,2,'sale',3],[3,4,'job',5],[7,6,'sale',8],[2,1,'job',11],[4,1,'sale',14],[5,2,'sale',20]]
+    .map(m=>({id:newId('M'),partId:PARTS[m[0]].id,qty:m[1],type:m[2],date:shift(m[3]),unit:''}));
+
+  const co=[CFG.finName1,CFG.finName2];
+  FINCASES=[
+    ['คุณวราภรณ์ ศรีสุข','FINN',0,'done',52],['ร้านค้าเจริญยนต์','XMAX 300',1,'done',41],
+    ['คุณปิยะนุช แก้วมณี','FINN',0,'following',36],['คุณกาญจนา บุญมาก','Grand Filano Hybrid',1,'result',24],
+    ['คุณเอกพงษ์ วิริยะ','NMAX',0,'result',18],['คุณสุรชัย มั่นคง','PG-1',1,'doc',7],
+    ['คุณวิชัย ตั้งใจ','XMAX 300',0,'doc',1],['คุณพรทิพย์ ใจดี','FINN',1,'pending',1],
+    ['คุณณัฐวุฒิ สุขสันต์','PG-1',0,'pending',0]
+  ].map((c,i)=>({id:newId('F'),cust:c[0],model:c[1],co:co[c[2]],status:c[3],date:shift(c[4]),
+                 amount:[44000,180000,44000,63000,92000,52000,180000,44000,52000][i]}));
+
+  const branches=[...new Set(SEED.units.map(u=>u.branchName))];
+  STAFF=[['คุณอนันต์ ศรีวัฒน์','ผู้บริหาร',0],['เซลล์บิว','เซลล์',0],['เซลล์สนุ้กเกอร์','เซลล์',1],
+         ['เซลล์หมูแดง','เซลล์',2],['คุณจารุวรรณ นิลกุล','บัญชี',0],['คุณสมพงษ์ ทองใบ','สต๊อก',1],
+         ['ช่างเอก','ช่าง',0],['ช่างต่อ','ช่าง',2]]
+    .map(x=>({name:x[0],role:x[1],branch:branches[x[2]]||branches[0]}));
+  ATT=STAFF.map((st,i)=>({who:st.name, in:['08:12','08:03','08:41','—','07:58','08:25','08:05','—'][i],
+    out:['—','—','—','—','—','—','—','—'][i], note:['','','มาสาย 11 นาที','ลาป่วย','','','','ลากิจ'][i]}));
+  LEAVES=[{id:newId('L'),who:'ช่างต่อ',type:'ลากิจ',from:shift(0),to:shift(0),status:'รออนุมัติ'},
+          {id:newId('L'),who:'เซลล์หมูแดง',type:'ลาพักร้อน',from:'2026-08-10',to:'2026-08-12',status:'รออนุมัติ'},
+          {id:newId('L'),who:'คุณสมพงษ์ ทองใบ',type:'ลาป่วย',from:shift(3),to:shift(3),status:'อนุมัติแล้ว'}];
+
+  ROLES=[
+    {name:'ผู้ดูแลระบบ',perms:{money:1,allBranch:1,editBack:1,approve:1,admin:1},lock:1},
+    {name:'ผู้บริหาร',  perms:{money:1,allBranch:1,editBack:0,approve:1,admin:0},lock:1},
+    {name:'เซลล์',      perms:{money:0,allBranch:0,editBack:0,approve:0,admin:0},lock:1},
+    {name:'สต๊อก',      perms:{money:0,allBranch:0,editBack:0,approve:0,admin:0},lock:1},
+    {name:'บัญชี',      perms:{money:1,allBranch:1,editBack:0,approve:0,admin:0},lock:1},
+    {name:'ช่าง',        perms:{money:0,allBranch:0,editBack:0,approve:0,admin:0},lock:0},
+    {name:'หัวหน้าช่าง',  perms:{money:0,allBranch:0,editBack:0,approve:1,admin:0},lock:0},
+    {name:'ธุรการ',      perms:{money:0,allBranch:1,editBack:0,approve:0,admin:0},lock:0},
+    {name:'พนักงาน',     perms:{money:0,allBranch:0,editBack:0,approve:0,admin:0},lock:0}
+  ];
+  USERS=STAFF.map(st=>({id:newId('U'),name:st.name,role:st.role,branch:st.branch,active:1}));
+  IMPLOG=[{file:'110967fg.xls',rows:17,by:'คุณสมพงษ์ ทองใบ',at:shift(21)},
+          {file:'110967fm.xls',rows:14,by:'คุณสมพงษ์ ทองใบ',at:shift(21)},
+          {file:'110967fc.xls',rows:7, by:'คุณจารุวรรณ นิลกุล',at:shift(9)}];
+  CFG.roles = ROLES.map(r=>r.name).join(',');
+}
+
+/* ---------------- อะไหล่ ---------------- */
+function renderParts(){
+  const q=($('#pQ')&&$('#pQ').value.trim().toLowerCase())||'';
+  const low=PARTS.filter(x=>x.qty<=x.min);
+  const val=PARTS.reduce((s,x)=>s+x.qty*x.cost,0);
+  const hideMoney=document.body.classList.contains('no-money');
+  $('#partKpis').innerHTML=[
+    ['รายการอะไหล่', PARTS.length+' รายการ',''],
+    ['ชิ้นคงเหลือรวม', fmt(PARTS.reduce((s,x)=>s+x.qty,0))+' ชิ้น',''],
+    ['ต้องสั่งเพิ่ม', low.length+' รายการ', low.length?'hi':''],
+    ['มูลค่าสต๊อกอะไหล่', hideMoney?'—':baht(val),'']
+  ].map(([l,v,c])=>`<div class="kpi"><div class="l">${l}</div><div class="v ${c}">${v}</div></div>`).join('');
+  const rows=PARTS.filter(x=>!q||x.code.toLowerCase().includes(q)||x.name.toLowerCase().includes(q));
+  $('#tParts').innerHTML = rows.length? `<table><thead><tr><th>รหัส</th><th>ชื่อ</th>
+    <th class="num">คงเหลือ</th><th class="num">จุดสั่ง</th>${hideMoney?'':'<th class="num">ต้นทุน</th>'}<th class="num">ราคาขาย</th><th></th></tr></thead><tbody>`
+    + rows.map(x=>`<tr class="clik" onclick="openDetail('part','${x.id}')"${x.qty<=x.min?' style="background:var(--bad-bg)"':''}>
+      <td class="mono">${x.code}</td><td><b>${x.name}</b></td>
+      <td class="num"><b>${x.qty}</b></td><td class="num">${x.min}</td>
+      ${hideMoney?'':`<td class="num">${fmt(x.cost)}</td>`}<td class="num">${fmt(x.price)}</td>
+      <td class="num">${x.qty<=x.min?'<span class="tag t-bad">ต้องสั่ง</span>':''}</td></tr>`).join('')
+    + '</tbody></table>' : '<div class="empty">ไม่พบอะไหล่ที่ค้นหา</div>';
+  $('#bParts').textContent=low.length;
+  previewPart();
+}
+function previewPart(){
+  const c=numOf($('#pCost')), pr=numOf($('#pPrice')), q=numOf($('#pQty'));
+  $('#pPreview').innerHTML=`<div class="result"><div class="rt">ผลลัพธ์ที่จะได้</div>
+    <div class="rl"><span>กำไรต่อชิ้น</span><b>${money(baht(pr-c))}</b></div>
+    <div class="rl"><span>มูลค่าที่จะเพิ่มเข้าสต๊อก</span><b>${money(baht(c*q))}</b></div></div>`;
+}
+function savePart(){
+  const code=$('#pCode').value.trim(), name=$('#pName').value.trim();
+  if(!code||!name){ toast('บันทึกไม่ได้','ต้องมีทั้งรหัสและชื่ออะไหล่',true); return; }
+  if(PARTS.some(x=>x.code===code)){ toast('บันทึกไม่ได้','รหัสนี้มีอยู่แล้ว',true); return; }
+  PARTS.unshift({id:newId('P'),code,name,cost:numOf($('#pCost')),price:numOf($('#pPrice')),
+    qty:numOf($('#pQty')),min:numOf($('#pMin'))});
+  toast('เพิ่มอะไหล่แล้ว', name+' · คงเหลือ '+numOf($('#pQty'))+' ชิ้น');
+  $('#pCode').value=''; $('#pName').value='';
+  refreshAll();
+}
+function renderPartSale(){
+  $('#psItem').innerHTML=PARTS.map(x=>`<option value="${x.id}">${x.name} (${x.code}) · เหลือ ${x.qty}</option>`).join('');
+  const sold=UNITS.filter(u=>u.status==='sold').slice(0,20);
+  $('#psUnit').innerHTML='<option value="">ไม่ผูกกับคันไหน</option>'+sold.map(u=>`<option>${u.model} · ${u.engine}</option>`).join('');
+  previewPartSale();
+  const rows=PMOVES.slice().reverse().slice(0,10);
+  $('#tPartSale').innerHTML = rows.length? `<table><thead><tr><th>วันที่</th><th>อะไหล่</th><th>ประเภท</th><th class="num">จำนวน</th><th class="num">มูลค่า</th></tr></thead><tbody>`
+    + rows.map(m=>{const it=PARTS.find(x=>x.id===m.partId)||{name:'—',price:0};
+      return `<tr class="clik" onclick="openDetail('part','${m.partId}')"><td>${thDate(m.date)}</td><td><b>${it.name}</b>${m.unit?`<div style="font-size:11px;color:var(--ink-3)">${m.unit}</div>`:''}</td>
+      <td>${m.type==='sale'?'ขายหน้าร้าน':'เบิกใช้ในงานซ่อม'}</td><td class="num">${m.qty}</td>
+      <td class="num">${fmt(it.price*m.qty)}</td></tr>`}).join('')
+    + '</tbody></table>' : '<div class="empty">ยังไม่มีรายการ</div>';
+}
+function previewPartSale(){
+  const it=PARTS.find(x=>x.id===$('#psItem').value); if(!it){ $('#psPreview').innerHTML=''; return; }
+  const q=numOf($('#psQty'))||0, t=$('#psType').value;
+  const enough=it.qty>=q;
+  $('#psPreview').innerHTML=`<div class="result ${enough?'':'warn'}"><div class="rt">${enough?'ผลลัพธ์ที่จะได้':'ของไม่พอ'}</div>
+    <div class="rl"><span>คงเหลือหลังตัดสต๊อก</span><b>${enough? (it.qty-q)+' ชิ้น' : 'มีแค่ '+it.qty+' ชิ้น'}</b></div>
+    <div class="rl"><span>${t==='sale'?'ยอดขาย':'ต้นทุนที่ลงในงานซ่อม'}</span><b>${(t==='job'&&noMoney())?'—':baht((t==='sale'?it.price:it.cost)*q)}</b></div></div>`;
+}
+function savePartSale(){
+  const it=PARTS.find(x=>x.id===$('#psItem').value); const q=numOf($('#psQty'))||0;
+  if(!it||q<1){ toast('บันทึกไม่ได้','ใส่จำนวนอย่างน้อย 1 ชิ้น',true); return; }
+  if(it.qty<q){ toast('บันทึกไม่ได้','ของในสต๊อกไม่พอ',true); return; }
+  it.qty-=q;
+  PMOVES.push({id:newId('M'),partId:it.id,qty:q,type:$('#psType').value,date:TODAY.toISOString().slice(0,10),unit:$('#psUnit').value});
+  toast('ตัดสต๊อกแล้ว', it.name+' × '+q+' ชิ้น · เหลือ '+it.qty);
+  refreshAll();
+}
+
+/* ---------------- ไฟแนนซ์ ---------------- */
+function renderFinance(){
+  const co=$('#finCo').value||'';
+  $('#finCo').innerHTML='<option value="">ไฟแนนซ์ทุกเจ้า</option>'+[CFG.finName1,CFG.finName2].map(c=>`<option${c===co?' selected':''}>${c}</option>`).join('');
+  const list=FINCASES.filter(c=>!co||c.co===co);
+  const open=list.filter(c=>c.status!=='done');
+  const hideMoney=document.body.classList.contains('no-money');
+  $('#finKpis').innerHTML=[
+    ['เคสทั้งหมด', list.length+' เคส',''],
+    ['ยังไม่จบ', open.length+' เคส', open.length?'hi':''],
+    ['อนุมัติแล้ว', list.filter(c=>c.status==='done').length+' เคส','g'],
+    ['ยอดจัดรวมที่รออนุมัติ', hideMoney?'—':baht(open.reduce((s,c)=>s+c.amount,0)),'']
+  ].map(([l,v,c])=>`<div class="kpi"><div class="l">${l}</div><div class="v ${c}">${v}</div></div>`).join('');
+  $('#finKan').innerHTML=FIN_STEPS.map(([k,label],i)=>{
+    const cs=list.filter(c=>c.status===k);
+    return `<div class="col"><div class="ch"><span class="dotc" style="width:7px;height:7px;border-radius:50%;background:${i===4?'var(--good)':'var(--red)'};display:inline-block"></span>${label}<span class="c">${cs.length}</span></div>
+      <div class="cb">${cs.map(c=>`<div class="k" onclick="openDetail('fin','${c.id}')">
+        <b>${c.cust}</b><div class="m">${c.model} · ${c.co}</div>
+        <div class="m">${hideMoney?'':baht(c.amount)+' · '}${thDate(c.date)}</div></div>`).join('')
+        || '<div class="empty" style="padding:10px 0;font-size:11.5px">ไม่มีเคส</div>'}</div></div>`;
+  }).join('');
+  $('#bFin').textContent=FINCASES.filter(c=>c.status!=='done').length;
+}
+function advanceFin(id){
+  const c=FINCASES.find(x=>x.id===id); if(!c) return;
+  const i=FIN_STEPS.findIndex(x=>x[0]===c.status);
+  if(i>=FIN_STEPS.length-1){ toast('เคสนี้จบแล้ว', c.cust+' อนุมัติเรียบร้อย'); return; }
+  c.status=FIN_STEPS[i+1][0];
+  toast('เลื่อนสถานะแล้ว', c.cust+' → '+FIN_STEPS[i+1][1]);
+  renderFinance(); renderCal();
+}
+
+/* ---------------- พนักงาน ---------------- */
+function renderHr(){
+  const today=TODAY.toISOString().slice(0,10);
+  const onLeave=LEAVES.filter(l=>l.status==='อนุมัติแล้ว'&&l.from<=today&&l.to>=today).map(l=>l.who);
+  const inCount=ATT.filter(a=>a.in!=='—').length;
+  $('#hrKpis').innerHTML=[
+    ['พนักงานทั้งหมด', STAFF.length+' คน',''],
+    ['ลงเวลาเข้าแล้ว', inCount+' คน','g'],
+    ['ยังไม่ลงเวลา', (STAFF.length-inCount)+' คน',(STAFF.length-inCount)?'hi':''],
+    ['ใบลารออนุมัติ', LEAVES.filter(l=>l.status==='รออนุมัติ').length+' ใบ','']
+  ].map(([l,v,c])=>`<div class="kpi"><div class="l">${l}</div><div class="v ${c}">${v}</div></div>`).join('');
+  $('#hrDate').textContent=thDate(today);
+  $('#attGrid').innerHTML='<div class="h">พนักงาน</div><div class="h">เข้า</div><div class="h">ออก</div><div class="h">สถานะ</div><div class="h"></div>'
+    + ATT.map((a,i)=>{
+      const st=STAFF[i]||{role:''};
+      const leave=onLeave.includes(a.who);
+      const tag= leave?'<span class="tag t-mute">ลา</span>' : a.in==='—'?'<span class="tag t-bad">ยังไม่เข้า</span>'
+        : a.note?'<span class="tag t-warn">'+a.note+'</span>':'<span class="tag t-good">ปกติ</span>';
+      return `<div><span class="lnk" onclick="openDetail('staff','${a.who}')">${a.who}</span><span style="color:var(--ink-3);font-size:11.5px;margin-left:7px">${st.role}</span></div>
+        <div class="mono">${a.in}</div><div class="mono">${a.out}</div><div>${tag}</div>
+        <div>${a.in==='—'&&!leave?`<button class="btn ghost sm" onclick="clockIn(${i})">ลงเวลาเข้า</button>`
+          : a.out==='—'&&!leave?`<button class="btn ghost sm" onclick="clockOut(${i})">ลงเวลาออก</button>`:''}</div>`;
+    }).join('');
+  $('#leaveList').innerHTML = LEAVES.length? LEAVES.slice().reverse().map(l=>`<div class="li">
+      <div class="g"><div class="t"><span class="lnk" onclick="openDetail('staff','${l.who}')">${l.who}</span> · ${l.type}</div>
+        <div class="s">${thDate(l.from)}${l.from!==l.to?' ถึง '+thDate(l.to):''}</div></div>
+      <div class="r"><span class="tag t-${l.status==='รออนุมัติ'?'warn':l.status==='อนุมัติแล้ว'?'good':'bad'}">${l.status}</span></div>
+      ${l.status==='รออนุมัติ'?`<button class="btn ghost sm" onclick="setLeave('${l.id}','อนุมัติแล้ว')">อนุมัติ</button>
+        <button class="btn ghost sm" onclick="setLeave('${l.id}','ไม่อนุมัติ')">ไม่อนุมัติ</button>`:''}</div>`).join('')
+    : '<div class="empty">ยังไม่มีใบลา</div>';
+  $('#lvWho').innerHTML=STAFF.map(x=>`<option>${x.name}</option>`).join('');
+  $('#bHr').textContent=LEAVES.filter(l=>l.status==='รออนุมัติ').length;
+}
+function nowHm(){ return '09:'+String(10+Math.min(49,ATT.filter(a=>a.in!=='—').length*3)).padStart(2,'0'); }
+function clockIn(i){ ATT[i].in=nowHm(); toast('ลงเวลาเข้าแล้ว', ATT[i].who+' · '+ATT[i].in); renderHr(); }
+function clockOut(i){ ATT[i].out='17:'+String(5+i).padStart(2,'0'); toast('ลงเวลาออกแล้ว', ATT[i].who+' · '+ATT[i].out); renderHr(); }
+function setLeave(id,st){ const l=LEAVES.find(x=>x.id===id); if(l){ l.status=st; toast('บันทึกแล้ว', l.who+' · '+st); } renderHr(); renderCal(); }
+function saveLeave(){
+  LEAVES.push({id:newId('L'),who:$('#lvWho').value,type:$('#lvType').value,
+    from:$('#lvFrom').value,to:$('#lvTo').value,status:'รออนุมัติ'});
+  toast('ยื่นใบลาแล้ว', $('#lvWho').value+' · '+$('#lvType').value);
+  renderHr(); renderCal();
+}
+
+/* ---------------- ผู้ใช้และบทบาท ---------------- */
+function renderUsers(){
+  const branches=[...new Set(SEED.units.map(u=>u.branchName))];
+  $('#uRole').innerHTML=ROLES.map(r=>`<option>${r.name}</option>`).join('');
+  $('#uBranch').innerHTML=branches.map(b=>`<option>${b}</option>`).join('');
+  $('#tUsers').innerHTML=`<table><thead><tr><th>ชื่อ</th><th>บทบาท</th><th>สาขา</th><th>สถานะ</th><th></th></tr></thead><tbody>`
+    + USERS.map(u=>`<tr class="clik" onclick="openDetail('staff','${u.name}')"><td><b>${u.name}</b></td><td>${u.role}</td><td>${u.branch}</td>
+      <td><span class="tag t-${u.active?'good':'mute'}">${u.active?'ใช้งานอยู่':'ปิดใช้งาน'}</span></td>
+      <td class="num"><button class="btn ghost sm" onclick="event.stopPropagation();toggleUser('${u.id}')">${u.active?'ปิดใช้งาน':'เปิดใช้งาน'}</button></td></tr>`).join('')
+    + '</tbody></table>';
+  if(!$('#rlPerms').dataset.built){
+    $('#rlPerms').innerHTML=PERMS.map(([k,l])=>`<label class="chip" style="cursor:pointer"><input type="checkbox" data-p="${k}" style="margin-right:6px;accent-color:var(--red)">${l}</label>`).join('');
+    $('#rlPerms').dataset.built='1';
+  }
+  $('#roleCards').innerHTML=ROLES.map((r,i)=>`<div class="ucard">
+    <div class="top"><span class="av">${r.name.slice(0,1)}</span>
+      <div style="flex:1"><b style="font-size:13.5px">${r.name}</b>
+        <div style="font-size:11.5px;color:var(--ink-3)">${USERS.filter(u=>u.role===r.name).length} คนใช้บทบาทนี้</div></div>
+      ${r.lock?'<span class="tag t-mute">มาตรฐาน</span>':`<button class="btn ghost sm" onclick="delRole(${i})">ลบ</button>`}</div>
+    <div class="perm">${PERMS.map(([k,l])=>`<span class="${r.perms[k]?'y':''}" onclick="togglePerm(${i},'${k}')" style="cursor:pointer">${r.perms[k]?'✓ ':'✕ '}${l}</span>`).join('')}</div>
+  </div>`).join('');
+}
+function toggleUser(id){ const u=USERS.find(x=>x.id===id); if(u){ u.active=u.active?0:1; toast('อัปเดตบัญชีแล้ว', u.name+' · '+(u.active?'ใช้งานอยู่':'ปิดใช้งาน')); } renderUsers(); }
+function togglePerm(i,k){ ROLES[i].perms[k]=ROLES[i].perms[k]?0:1;
+  toast('แก้สิทธิ์แล้ว', ROLES[i].name+' · '+PERMS.find(p=>p[0]===k)[1]+(ROLES[i].perms[k]?' เปิด':' ปิด'));
+  renderUsers(); applyRole(); }
+function delRole(i){ const n=ROLES[i].name;
+  if(USERS.some(u=>u.role===n)){ toast('ลบไม่ได้','ยังมีผู้ใช้ที่ใช้บทบาทนี้อยู่',true); return; }
+  ROLES.splice(i,1); CFG.roles=ROLES.map(r=>r.name).join(','); toast('ลบบทบาทแล้ว',n); refreshAll(); }
+function addRole(){
+  const n=$('#rlName').value.trim();
+  if(!n){ toast('เพิ่มไม่ได้','ยังไม่ได้ตั้งชื่อบทบาท',true); return; }
+  if(ROLES.some(r=>r.name===n)){ toast('เพิ่มไม่ได้','ชื่อนี้มีอยู่แล้ว',true); return; }
+  const perms={}; PERMS.forEach(([k])=>perms[k]=0);
+  $$('#rlPerms input').forEach(i=>{ if(i.checked) perms[i.dataset.p]=1; i.checked=false; });
+  ROLES.push({name:n,perms,lock:0});
+  CFG.roles=ROLES.map(r=>r.name).join(',');
+  $('#rlName').value='';
+  toast('เพิ่มบทบาทแล้ว', n+' · เลือกได้จากมุมขวาบนแล้ว');
+  refreshAll();
+}
+function addUser(){
+  const n=$('#uName').value.trim();
+  if(!n){ toast('เพิ่มไม่ได้','ยังไม่ได้กรอกชื่อ',true); return; }
+  USERS.push({id:newId('U'),name:n,role:$('#uRole').value,branch:$('#uBranch').value,active:1});
+  STAFF.push({name:n,role:$('#uRole').value,branch:$('#uBranch').value});
+  ATT.push({who:n,in:'—',out:'—',note:''});
+  $('#uName').value='';
+  toast('เพิ่มผู้ใช้แล้ว', n+' · '+$('#uRole').value);
+  refreshAll();
+}
+
+/* ---------------- ปฏิทิน ---------------- */
+let CAL={y:TODAY.getFullYear(), m:TODAY.getMonth(), sel:TODAY.toISOString().slice(0,10)};
+function calEvents(){
+  const ev={};
+  const add=(d,type,text)=>{ (ev[d]=ev[d]||[]).push({type,text}); };
+  TASKS.filter(t=>!t.done).forEach(t=>add(t.due,'t','ติดตาม '+t.cust));
+  SALES.forEach(x=>add(addDays(x.date,CFG.regDays),'r','รับทะเบียน '+x.customer));
+  LEAVES.filter(l=>l.status!=='ไม่อนุมัติ').forEach(l=>{
+    let d=l.from; let guard=0;
+    while(d<=l.to && guard++<40){ add(d,'l',l.who+' '+l.type); d=addDays(d,1); }
+  });
+  return ev;
+}
+function renderCal(){
+  const ev=calEvents();
+  const first=new Date(Date.UTC(CAL.y,CAL.m,1));
+  const start=(first.getUTCDay()+6)%7;                 // จันทร์เป็นวันแรก
+  const days=new Date(Date.UTC(CAL.y,CAL.m+1,0)).getUTCDate();
+  const months=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  $('#calTitle').textContent=months[CAL.m]+' '+(CAL.y+543);
+  let html=['จ','อ','พ','พฤ','ศ','ส','อา'].map(d=>`<div class="dh">${d}</div>`).join('');
+  for(let i=0;i<start;i++) html+='<div class="d dim"></div>';
+  const today=TODAY.toISOString().slice(0,10);
+  for(let d=1;d<=days;d++){
+    const iso=`${CAL.y}-${String(CAL.m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const list=ev[iso]||[];
+    html+=`<div class="d${iso===today?' today':''}" onclick="calPick('${iso}')" style="cursor:pointer${iso===CAL.sel?';box-shadow:inset 0 0 0 2px var(--red)':''}">
+      <div class="n">${d}</div>
+      ${list.slice(0,3).map(e=>`<div class="ev ${e.type}">${e.text}</div>`).join('')}
+      ${list.length>3?`<div class="ev l">+ อีก ${list.length-3} งาน</div>`:''}</div>`;
+  }
+  $('#calGrid').innerHTML=html;
+  const sel=ev[CAL.sel]||[];
+  $('#calDayT').textContent='งานของวันที่ '+thDate(CAL.sel);
+  $('#calDay').innerHTML= sel.length? sel.map(e=>`<div class="li"><div class="g"><div class="t">${e.text}</div>
+      <div class="s">${e.type==='t'?'งานติดตามลูกค้า':e.type==='r'?'กำหนดรับทะเบียน':'วันลาพนักงาน'}</div></div>
+      <button class="btn ghost sm" onclick="go('${e.type==='l'?'hr':'crm'}')">ไปดู</button></div>`).join('')
+    : '<div class="empty">วันนี้ไม่มีงานค้าง</div>';
+  $('#bCal').textContent=(ev[today]||[]).length;
+}
+function calPick(iso){ CAL.sel=iso; renderCal(); }
+function calMove(n){ const d=new Date(Date.UTC(CAL.y,CAL.m+n,1)); CAL.y=d.getUTCFullYear(); CAL.m=d.getUTCMonth(); renderCal(); }
+
+/* ---------------- import log ---------------- */
+function renderImpLog(){
+  $('#impLog').innerHTML=`<table><thead><tr><th>ไฟล์</th><th class="num">แถวที่เข้า</th><th>ผู้นำเข้า</th><th>วันที่</th></tr></thead><tbody>`
+    + IMPLOG.slice().reverse().map(l=>`<tr><td class="mono">${l.file}</td><td class="num">${l.rows}</td>
+      <td>${l.by}</td><td>${thDate(l.at)}</td></tr>`).join('') + '</tbody></table>';
+}
+
+
+/* ---------------- ประวัติลงเวลา + โปรไฟล์พนักงาน ---------------- */
+let ATTHIST=[];
+function seedAttHist(){
+  const shift=n=>{const d=new Date(TODAY);d.setDate(d.getDate()-n);return d.toISOString().slice(0,10)};
+  ATTHIST=[];
+  STAFF.forEach((st,i)=>{
+    for(let d=1; d<=7; d++){
+      const day=new Date(TODAY); day.setDate(day.getDate()-d);
+      if(day.getDay()===0) continue;                       // วันอาทิตย์ร้านปิด
+      const seed=(i*7+d)%10;
+      const status = seed===3?'ลา' : seed===5?'สาย' : 'ปกติ';
+      ATTHIST.push({who:st.name, date:shift(d), status,
+        in: status==='ลา'?'—' : (status==='สาย'?'08:'+String(35+seed).padStart(2,'0'):'08:'+String(2+seed).padStart(2,'0')),
+        out: status==='ลา'?'—' : '17:'+String(3+seed).padStart(2,'0')});
+    }
+  });
+}
+function renderAttHist(){
+  const rows=STAFF.map(st=>{
+    const mine=ATTHIST.filter(a=>a.who===st.name);
+    return {name:st.name, role:st.role, ok:mine.filter(a=>a.status==='ปกติ').length,
+            late:mine.filter(a=>a.status==='สาย').length, leave:mine.filter(a=>a.status==='ลา').length};
+  });
+  $('#attHist').innerHTML=`<table><thead><tr><th>พนักงาน</th><th>บทบาท</th>
+    <th class="num">มาปกติ</th><th class="num">มาสาย</th><th class="num">ลา</th></tr></thead><tbody>`
+    + rows.map(r=>`<tr class="clik" onclick="openDetail('staff','${r.name}')"><td><b>${r.name}</b></td><td>${r.role}</td>
+      <td class="num">${r.ok}</td>
+      <td class="num">${r.late?`<span class="tag t-warn">${r.late}</span>`:0}</td>
+      <td class="num">${r.leave?`<span class="tag t-mute">${r.leave}</span>`:0}</td></tr>`).join('')
+    + '</tbody></table>';
+}
+function renderMe(){
+  const names=STAFF.map(x=>x.name);
+  const cur = names.includes($('#meSel').value) ? $('#meSel').value : names[0];
+  $('#meSel').innerHTML=names.map(n=>`<option${n===cur?' selected':''}>${n}</option>`).join('');
+  const st=STAFF.find(x=>x.name===cur)||{}; const u=USERS.find(x=>x.name===cur)||{};
+  const role=ROLES.find(r=>r.name===st.role);
+  const today=ATT.find(a=>a.who===cur)||{in:'—',out:'—'};
+  $('#meCard').innerHTML=`<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <span class="av" style="width:46px;height:46px;flex:0 0 46px;font-size:17px">${cur.slice(0,1)}</span>
+      <div style="flex:1;min-width:180px"><b style="font-size:16px">${cur}</b>
+        <div style="font-size:12.5px;color:var(--ink-2)">${st.role} · ${st.branch}</div></div>
+      <span class="tag t-${u.active?'good':'mute'}">${u.active?'ใช้งานอยู่':'ปิดใช้งาน'}</span>
+    </div>
+    <div class="perm" style="margin-top:12px">${PERMS.map(([k,l])=>`<span class="${role&&role.perms[k]?'y':''}">${role&&role.perms[k]?'✓ ':'✕ '}${l}</span>`).join('')}</div>
+    <div class="result" style="margin-top:12px"><div class="rt">วันนี้</div>
+      <div class="rl"><span>เวลาเข้า</span><b>${today.in}</b></div>
+      <div class="rl"><span>เวลาออก</span><b>${today.out}</b></div>
+      <div class="rl"><span>ใบลาที่รออนุมัติ</span><b>${LEAVES.filter(l=>l.who===cur&&l.status==='รออนุมัติ').length} ใบ</b></div></div>`;
+  const mine=ATTHIST.filter(a=>a.who===cur);
+  $('#meAtt').innerHTML= mine.length? `<table><thead><tr><th>วันที่</th><th>เข้า</th><th>ออก</th><th>สถานะ</th></tr></thead><tbody>`
+    + mine.map(a=>`<tr><td>${thDate(a.date)}</td><td class="mono">${a.in}</td><td class="mono">${a.out}</td>
+      <td><span class="tag t-${a.status==='ปกติ'?'good':a.status==='สาย'?'warn':'mute'}">${a.status}</span></td></tr>`).join('')
+    + '</tbody></table>' : '<div class="empty">ยังไม่มีประวัติ</div>';
+  const ml=LEAVES.filter(l=>l.who===cur);
+  $('#meLeaveList').innerHTML= ml.length? ml.slice().reverse().map(l=>`<div class="li">
+      <div class="g"><div class="t">${l.type}</div><div class="s">${thDate(l.from)}${l.from!==l.to?' ถึง '+thDate(l.to):''}</div></div>
+      <div class="r"><span class="tag t-${l.status==='รออนุมัติ'?'warn':l.status==='อนุมัติแล้ว'?'good':'bad'}">${l.status}</span></div></div>`).join('')
+    : '<div class="empty">ยังไม่เคยยื่นใบลา</div>';
+}
+function meSubmitLeave(){
+  const who=$('#meSel').value, d=$('#meDate').value;
+  LEAVES.push({id:newId('L'),who,type:$('#meType').value,from:d,to:d,status:'รออนุมัติ'});
+  toast('ยื่นใบลาแล้ว', who+' · '+$('#meType').value+' วันที่ '+thDate(d));
+  renderMe(); renderHr(); renderCal();
+}
+
+
+/* ================= หน้ารายละเอียด (กดดูรายตัวได้ทุกอย่าง) ================= */
+function closeDetail(){ $('#drw').classList.remove('on'); $('#drwOv').classList.remove('on'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeDetail(); });
+
+const dl = rows => '<dl class="dl">'+rows.filter(Boolean).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')+'</dl>';
+const sec = (title,body) => `<div class="drw-sec"><h4>${title}</h4>${body}</div>`;
+const emptyBox = t => `<div class="empty" style="padding:14px 0;font-size:12.5px">${t}</div>`;
+
+function openDetail(type,id){
+  const H=$('#drwK'), T=$('#drwT'), S=$('#drwS'), B=$('#drwB');
+  const hm=noMoney();
+  let ok=true;
+
+  if(type==='cust'){
+    const c=CUSTOMERS.find(x=>x.id===id)||CUSTOMERS.find(x=>x.name===id);
+    if(!c){ ok=false; }
+    else{
+      H.innerHTML='ลูกค้า <span class="tag t-sim" style="margin-left:5px">ข้อมูลสมมุติ</span>'; T.textContent=c.name; S.textContent=(c.phone||'ไม่มีเบอร์')+' · รู้จักร้านจาก '+c.src;
+      const buys=SALES.filter(x=>x.customer===c.name);
+      const tasks=TASKS.filter(t=>t.cust===c.name);
+      const fins=FINCASES.filter(f=>f.cust===c.name);
+      B.innerHTML =
+        sec('ข้อมูลลูกค้า', dl([
+          ['ขั้นตอนตอนนี้', `<span class="tag t-${c.stage==='รับรถสำเร็จ'?'good':'warn'}">${c.stage}</span>`],
+          ['เบอร์โทร', c.phone||'—'],
+          ['รู้จักร้านจาก', c.src],
+          ['วันที่ซื้อ', c.bought?thDate(c.bought):'ยังไม่ได้ซื้อ'],
+          ['งานติดตามที่ยังไม่ปิด', tasks.filter(t=>!t.done).length+' งาน']
+        ]))
+        + sec('รถที่ซื้อไป', buys.length
+          ? `<table><tbody>${buys.map(x=>`<tr class="clik" onclick="openDetail('unit','${x.unitId}')">
+              <td><b>${x.model}</b> ${x.color}<div style="font-size:11px;color:var(--ink-3)">${thDate(x.date)} · ${x.sales}</div></td>
+              <td class="num">${fmt(x.price)}${hm?'':`<div style="font-size:11px;color:var(--good)">กำไร ${fmt(x.gp)}</div>`}</td></tr>`).join('')}</tbody></table>`
+          : emptyBox('ยังไม่เคยซื้อรถจากร้าน'))
+        + sec('งานติดตามทั้งหมด', tasks.length
+          ? `<table><tbody>${tasks.map(t=>`<tr><td>รอบ ${t.label}</td><td>${thDate(t.due)}</td>
+              <td class="num"><span class="tag t-${t.done?'good':(t.due<ISO_TODAY()?'bad':'mute')}">${t.done?'ปิดแล้ว':(t.due<ISO_TODAY()?'เลยกำหนด':'ยังไม่ถึง')}</span></td>
+              <td class="num">${t.done?'':`<button class="btn ghost sm" onclick="event.stopPropagation();doneTask('${t.id}');openDetail('cust','${c.id}')">ปิดงาน</button>`}</td></tr>`).join('')}</tbody></table>`
+          : emptyBox('ยังไม่มีงานติดตาม'))
+        + sec('เคสสินเชื่อ', fins.length
+          ? `<table><tbody>${fins.map(f=>`<tr class="clik" onclick="openDetail('fin','${f.id}')">
+              <td><b>${f.co}</b><div style="font-size:11px;color:var(--ink-3)">${f.model}</div></td>
+              <td class="num">${hm?'':fmt(f.amount)}</td>
+              <td class="num"><span class="tag t-${f.status==='done'?'good':'warn'}">${(FIN_STEPS.find(x=>x[0]===f.status)||[])[1]||'—'}</span></td></tr>`).join('')}</tbody></table>`
+          : emptyBox('ไม่มีเคสสินเชื่อ'));
+    }
+  }
+
+  else if(type==='unit'){
+    const u=UNITS.find(x=>x.id===id);
+    if(!u){ ok=false; }
+    else{
+      const sale=SALES.find(x=>x.unitId===u.id);
+      const moves=PMOVES.filter(m=>m.unit && m.unit.includes(u.engine));
+      H.innerHTML='รถ <span class="tag t-real" style="margin-left:5px">ข้อมูลจริง</span>'; T.textContent=u.model+' '+u.color;
+      S.textContent=u.branchName+' · '+u.code;
+      B.innerHTML =
+        sec('ข้อมูลคันนี้', dl([
+          ['สถานะ', `<span class="tag t-${u.status==='sold'?'mute':'good'}">${u.status==='sold'?'ขายแล้ว':'พร้อมขาย'}</span>`],
+          ['เลขเครื่อง', '<span class="mono">'+u.engine+'</span>'],
+          ['เลขตัวถัง', '<span class="mono">'+u.frame+'</span>'],
+          ['ปีรถ', u.year+(u.yearGuess?' <span class="tag t-warn">ข้อมูลสมมุติ</span>':'')],
+          ['วันที่รับเข้า', thDate(u.recvDate)],
+          ['อยู่ในสต๊อกมาแล้ว', unitAge(u)+' วัน'+(unitAge(u)>CFG.agingDays?' <span class="tag t-bad">เกินเกณฑ์</span>':'')],
+          hm?null:['ต้นทุน', baht(u.cost)],
+          hm?null:['ราคาขายแนะนำ', u.retail?baht(u.retail):'ยังไม่ระบุ'],
+          hm||!u.retail?null:['กำไรถ้าขายตามราคาแนะนำ', baht(u.retail-u.cost)]
+        ]))
+        + sec('การขาย <span class="tag t-sim">ข้อมูลสมมุติ</span>', sale
+          ? dl([['ลูกค้า', `<span class="lnk" onclick="openDetail('cust','${sale.customer}')">${sale.customer}</span>`],
+                ['วันที่ขาย', thDate(sale.date)],
+                ['พนักงานขาย', `<span class="lnk" onclick="openDetail('staff','${sale.sales}')">${sale.sales}</span>`],
+                ['วิธีชำระ', sale.pay==='finance'?'ผ่อนไฟแนนซ์':'เงินสด'],
+                ['ราคาขายสุทธิ', baht(sale.price)],
+                ['ของแถม', sale.freebies||'ไม่มี'],
+                hm?null:['กำไรของคันนี้', baht(sale.gp)]])
+          : emptyBox('ยังไม่ได้ขาย')+ (u.status==='available'?`<button class="btn full" style="margin-top:8px" onclick="closeDetail();sellThis('${u.id}')">ไปเปิดการขายคันนี้</button>`:''))
+        + sec('อะไหล่ที่เบิกให้คันนี้ <span class="tag t-sim">ข้อมูลสมมุติ</span>', moves.length
+          ? `<table><tbody>${moves.map(m=>{const it=PARTS.find(x=>x.id===m.partId)||{name:'—'};
+              return `<tr class="clik" onclick="openDetail('part','${m.partId}')"><td><b>${it.name}</b></td><td class="num">${m.qty} ชิ้น</td><td>${thDate(m.date)}</td></tr>`}).join('')}</tbody></table>`
+          : emptyBox('ยังไม่มีการเบิกอะไหล่ให้คันนี้'));
+    }
+  }
+
+  else if(type==='part'){
+    const it=PARTS.find(x=>x.id===id);
+    if(!it){ ok=false; }
+    else{
+      const mv=PMOVES.filter(m=>m.partId===it.id).slice().reverse();
+      H.innerHTML='อะไหล่ <span class="tag t-sim" style="margin-left:5px">ข้อมูลสมมุติ</span>'; T.textContent=it.name; S.textContent='รหัส '+it.code;
+      B.innerHTML =
+        sec('สต๊อก', dl([
+          ['คงเหลือ', it.qty+' ชิ้น'+(it.qty<=it.min?' <span class="tag t-bad">ต้องสั่งเพิ่ม</span>':'')],
+          ['จุดสั่งซื้อ', it.min+' ชิ้น'],
+          hm?null:['ต้นทุนต่อชิ้น', baht(it.cost)],
+          ['ราคาขายต่อชิ้น', baht(it.price)],
+          hm?null:['กำไรต่อชิ้น', baht(it.price-it.cost)],
+          hm?null:['มูลค่าที่จมอยู่', baht(it.qty*it.cost)]
+        ]))
+        + sec('ประวัติการเคลื่อนไหว', mv.length
+          ? `<table><tbody>${mv.map(m=>`<tr><td>${thDate(m.date)}</td>
+              <td>${m.type==='sale'?'ขายหน้าร้าน':'เบิกใช้ในงานซ่อม'}${m.unit?`<div style="font-size:11px;color:var(--ink-3)">${m.unit}</div>`:''}</td>
+              <td class="num">− ${m.qty} ชิ้น</td></tr>`).join('')}</tbody></table>`
+          : emptyBox('ยังไม่มีการเบิกหรือขาย'))
+        + `<button class="btn full" onclick="closeDetail();go('partsale')">ไปเบิกหรือขายอะไหล่ตัวนี้</button>`;
+    }
+  }
+
+  else if(type==='fin'){
+    const f=FINCASES.find(x=>x.id===id);
+    if(!f){ ok=false; }
+    else{
+      const i=FIN_STEPS.findIndex(x=>x[0]===f.status);
+      H.innerHTML='เคสสินเชื่อ <span class="tag t-sim" style="margin-left:5px">ข้อมูลสมมุติ</span>'; T.textContent=f.cust; S.textContent=f.model+' · '+f.co;
+      B.innerHTML =
+        sec('ข้อมูลเคส', dl([
+          ['ลูกค้า', `<span class="lnk" onclick="openDetail('cust','${f.cust}')">${f.cust}</span>`],
+          ['ไฟแนนซ์', f.co],
+          hm?null:['ยอดจัด', baht(f.amount)],
+          ['วันที่ส่งเรื่อง', thDate(f.date)],
+          ['สถานะ', `<span class="tag t-${f.status==='done'?'good':'warn'}">${FIN_STEPS[i][1]}</span>`]
+        ]))
+        + sec('ขั้นตอน', '<div class="tl">'+FIN_STEPS.map(([k,l],j)=>
+            `<div class="st ${j<i?'done':j===i?'now':''}"><b>${l}</b><span>${j<i?'ผ่านแล้ว':j===i?'อยู่ขั้นนี้':'ยังไม่ถึง'}</span></div>`).join('')+'</div>')
+        + (i<FIN_STEPS.length-1
+            ? `<button class="btn full" onclick="advanceFin('${f.id}');openDetail('fin','${f.id}')">เลื่อนไปขั้น ${FIN_STEPS[i+1][1]}</button>`
+            : `<div class="result"><div class="rt">เคสนี้จบแล้ว</div></div>`);
+    }
+  }
+
+  else if(type==='staff'){
+    const st=STAFF.find(x=>x.name===id);
+    if(!st){ ok=false; }
+    else{
+      const u=USERS.find(x=>x.name===st.name)||{};
+      const role=ROLES.find(r=>r.name===st.role);
+      const today=ATT.find(a=>a.who===st.name)||{in:'—',out:'—'};
+      const hist=ATTHIST.filter(a=>a.who===st.name);
+      const lv=LEAVES.filter(l=>l.who===st.name);
+      const mySales=SALES.filter(x=>x.sales===st.name);
+      H.innerHTML='พนักงาน <span class="tag t-sim" style="margin-left:5px">ข้อมูลสมมุติ</span>'; T.textContent=st.name; S.textContent=st.role+' · '+st.branch;
+      B.innerHTML =
+        sec('ข้อมูลพนักงาน', dl([
+          ['บทบาท', st.role],
+          ['สาขา', st.branch],
+          ['สถานะบัญชี', `<span class="tag t-${u.active?'good':'mute'}">${u.active?'ใช้งานอยู่':'ปิดใช้งาน'}</span>`],
+          ['เวลาวันนี้', today.in+' – '+today.out],
+          ['มาสายใน 7 วัน', hist.filter(a=>a.status==='สาย').length+' วัน'],
+          ['ลาใน 7 วัน', hist.filter(a=>a.status==='ลา').length+' วัน']
+        ]))
+        + sec('สิทธิ์ที่ได้รับ', `<div class="perm">${PERMS.map(([k,l])=>`<span class="${role&&role.perms[k]?'y':''}">${role&&role.perms[k]?'✓ ':'✕ '}${l}</span>`).join('')}</div>`)
+        + (mySales.length ? sec('ยอดขายของคนนี้', dl([
+            ['ปิดได้ทั้งหมด', mySales.length+' คัน'],
+            hm?null:['ยอดขายรวม', baht(mySales.reduce((a,x)=>a+x.price,0))],
+            hm?null:['กำไรรวม', baht(mySales.reduce((a,x)=>a+x.gp,0))]
+          ])) : '')
+        + sec('เวลาเข้าออก 7 วัน', hist.length
+          ? `<table><tbody>${hist.map(a=>`<tr><td>${thDate(a.date)}</td><td class="mono">${a.in} – ${a.out}</td>
+              <td class="num"><span class="tag t-${a.status==='ปกติ'?'good':a.status==='สาย'?'warn':'mute'}">${a.status}</span></td></tr>`).join('')}</tbody></table>`
+          : emptyBox('ยังไม่มีประวัติ'))
+        + sec('ใบลา', lv.length
+          ? `<table><tbody>${lv.map(l=>`<tr><td><b>${l.type}</b></td><td>${thDate(l.from)}</td>
+              <td class="num"><span class="tag t-${l.status==='รออนุมัติ'?'warn':l.status==='อนุมัติแล้ว'?'good':'bad'}">${l.status}</span></td></tr>`).join('')}</tbody></table>`
+          : emptyBox('ยังไม่เคยลา'));
+    }
+  }
+
+  if(!ok){ toast('เปิดไม่ได้','ไม่พบข้อมูลรายการนี้',true); return; }
+  $('#drw').classList.add('on'); $('#drwOv').classList.add('on'); $('#drwB').scrollTop=0;
+}
+
+/* ---------------- settings ---------------- */
+const CFGMAP={agingDays:'#cfgAging',buckets:'#cfgBuckets',lowStock:'#cfgLowStock',vat:'#cfgVat',regDays:'#cfgReg',
+  finName1:'#cfgFinN1',finRate1:'#cfgFinR1',finName2:'#cfgFinN2',finRate2:'#cfgFinR2',terms:'#cfgTerms',
+  cadence:'#cfgCadence',km:'#cfgKm',sources:'#cfgSrc',freebies:'#cfgFree',salespeople:'#cfgSales'};
+function loadCfgForm(){
+  Object.entries(CFGMAP).forEach(([k,sel])=>{ $(sel).value=CFG[k]; });
+  $('#cfgFreeCost').checked=CFG.freebieIsCost;
+  $('#cfgFreeCostLab').textContent=CFG.freebieIsCost?'นับเป็นต้นทุน':'ไม่นับเป็นต้นทุน';
+}
+function saveCfg(){
+  Object.entries(CFGMAP).forEach(([k,sel])=>{
+    const v=$(sel).value;
+    CFG[k]= (typeof DEFAULTS[k]==='number') ? (parseFloat(v)||DEFAULTS[k]) : v;
+  });
+  CFG.freebieIsCost=$('#cfgFreeCost').checked;
+  $('#cfgMsg').textContent='บันทึกแล้ว ทุกหน้าคำนวณใหม่เรียบร้อย';
+  toast('บันทึกการตั้งค่าแล้ว','เกณฑ์ใหม่ถูกใช้ทุกหน้าทันที');
+  refreshAll();
+}
+$('#cfgFreeCost').addEventListener('change',e=>{ $('#cfgFreeCostLab').textContent=e.target.checked?'นับเป็นต้นทุน':'ไม่นับเป็นต้นทุน'; });
+
+/* ---------------- flow ---------------- */
+const LANES=[['ลูกค้า',['','เข้ามาดูรถ|เดินเข้าร้าน หรือทักมาทาง LINE','จ่ายเงินหรือยื่นไฟแนนซ์|เซ็นสัญญาและวางเงินดาวน์','รับรถ|พร้อมใบเสร็จและใบกำกับภาษี','ได้รับการติดตาม|ตามรอบที่ตั้งไว้ในระบบ']],
+  ['เซลล์',['เห็นสต๊อกล่าสุดเสมอ|กรองตามสาขา รุ่น สี ปี+','บันทึกลูกค้าเข้าระบบ|ชื่อ เบอร์ รุ่นที่สนใจ','เปิดการขาย|ระบบตัดสต๊อกให้เอง+','ส่งมอบรถ|ตรวจตามเช็กลิสต์','ได้รับงานติดตามอัตโนมัติ|ระบบเตือนตามรอบ+']],
+  ['สต๊อก',['บันทึกรับรถหรือนำเข้าไฟล์|ไม่ต้องพิมพ์ซ้ำ+','ระบบกันขายซ้ำ|ล็อกคันที่ถูกจองแล้ว+','','เตรียมรถส่งมอบ|','ดูรุ่นที่ค้างนาน|ส่งให้การตลาดวางโปร!']],
+  ['บัญชี',['ตรวจใบกำกับภาษีซื้อ|จับคู่กับใบรับรถ','','ออกใบเสร็จและใบกำกับภาษี|ชุดเอกสารต่างกันตามวิธีชำระ','ยืนยันรับเงินก่อนปล่อยรถ|จุดที่มักหลุด!','ลงรับเงินเข้าบัญชี|ปิดยอดของดีล+']],
+  ['ผู้บริหาร',['เห็นเงินที่จมในสต๊อก|แยกตามสาขา+','เห็นจำนวนลูกค้าที่เข้าร้าน|และอัตราปิดการขาย+','เห็นยอดขายและกำไรรายวัน|แยกสาขาและเซลล์+','เห็นดีลที่ยังค้าง|รอไฟแนนซ์หรือทะเบียน+','เห็นอัตราลูกค้ากลับมาซื้อซ้ำ|+']]];
+const STAGES=['1 · รับรถเข้าสต๊อก','2 · เปิดการขาย','3 · รับเงิน','4 · ส่งมอบและทะเบียน','5 · ติดตามหลังการขาย'];
+function renderFlow(){
+  let h='<div style="min-width:1020px;display:grid;grid-template-columns:104px repeat(5,1fr);gap:8px">';
+  h+='<div></div>'+STAGES.map(s=>`<div style="background:var(--ink);color:#FFFFFF;border-radius:9px;padding:9px;text-align:center;font-weight:800;font-size:12px">${s}</div>`).join('');
+  LANES.forEach(([name,cells])=>{
+    h+=`<div style="background:var(--soft-2);border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;padding:8px">${name}</div>`;
+    cells.forEach(c=>{
+      if(!c){ h+='<div></div>'; return; }
+      const auto=c.endsWith('+'), gap=c.endsWith('!');
+      const [t,d]=c.replace(/[+!]$/,'').split('|');
+      const col= auto?'var(--good)': gap?'var(--warn)':'var(--line-2)';
+      const bg = auto?'var(--good-bg)': gap?'var(--warn-bg)':'#FFFFFF';
+      h+=`<div style="background:${bg};border:1px solid var(--line);border-left:3px solid ${col};border-radius:9px;padding:9px 11px;font-size:11.5px;color:var(--ink-2)">
+        <b style="display:block;color:var(--ink);font-size:12px;margin-bottom:2px">${t}</b>${d||''}</div>`;
+    });
+  });
+  $('#flowGrid').innerHTML=h+'</div>';
+}
+
+/* ---------------- refresh ---------------- */
+function refreshAll(){
+  syncRoleSelect(); applyRole(true);
+  initDashControls(); renderDash(); renderCal();
+  renderParts(); renderPartSale(); renderFinance(); renderHr(); renderAttHist(); renderUsers(); renderMe(); renderImpLog(); initStockFilters(); renderStock(); renderUnitOptions(); initSell(); initCrm(); renderCrm();
+  renderRecvRecent(); fillSelect($('#sSales'), String(CFG.salespeople).split(',').map(s=>s.trim()).filter(Boolean));
+}
+
+/* ---------------- bind ---------------- */
+$('#rModel').onchange=syncModel; ['#rCost','#rRetail'].forEach(s=>$(s).oninput=previewRecv);
+$('#rSave').onclick=saveRecv;
+$('#rClear').onclick=()=>{ $('#rEngine').value='';$('#rFrame').value='';$('#fEngine').classList.remove('err');$('#fFrame').classList.remove('err'); syncModel(); };
+$('#impRun').onclick=runImport;
+['#fBranch','#fModel','#fColor','#fYear','#fStatus'].forEach(s=>$(s).onchange=renderStock);
+$('#fQ').oninput=renderStock;
+$('#fClear').onclick=()=>{['#fBranch','#fModel','#fColor','#fYear'].forEach(s=>$(s).value='');$('#fStatus').value='available';$('#fQ').value='';renderStock()};
+$('#sUnit').onchange=syncSell; ['#sPrice','#sDisc','#sDown'].forEach(s=>$(s).oninput=calcSell);
+$('#sPay').onchange=()=>{ $('#sFinBlock').style.display=$('#sPay').value==='finance'?'block':'none'; calcSell(); };
+$('#sSave').onclick=saveSale;
+$('#sReset').onclick=()=>{ picked={}; $('#sCust').value='';$('#sPhone').value='';$('#sDisc').value='0'; initSell(); };
+$('#custMode').onchange=e=>{ $('#custModeLab').textContent=e.target.checked?'เปิดอยู่ — ซ่อนต้นทุนและกำไรทุกหน้า':'ปิดอยู่'; applyRole(); calcSell(); };
+$('#cSave').onclick=saveCust;
+$('#cfgSave').onclick=saveCfg;
+$('#cfgReset').onclick=()=>{ const keepRoles=CFG.roles; CFG=Object.assign({},DEFAULTS); CFG.roles=keepRoles; loadCfgForm(); $('#cfgMsg').textContent='คืนค่าเริ่มต้นแล้ว'; toast('คืนค่าเริ่มต้นแล้ว'); refreshAll(); };
+
+/* ---------------- role scope ---------------- */
+function syncRoleSelect(){
+  const names = (typeof ROLES!=='undefined' && ROLES.length) ? ROLES.map(r=>r.name)
+    : String(CFG.roles).split(',').map(x=>x.trim()).filter(Boolean);
+  const cur = ($('#roleSel').value && names.includes($('#roleSel').value)) ? $('#roleSel').value : names[0];
+  $('#roleSel').innerHTML = names.map(r=>`<option${r===cur?' selected':''}>${r}</option>`).join('');
+  CFG.roles = names.join(',');
+}
+function applyRole(quiet){
+  const _prev=document.body.classList.contains('no-money');
+  const r=$('#roleSel').value;
+  const cm = $('#custMode') && $('#custMode').checked;
+  const role = (typeof ROLES!=='undefined') ? ROLES.find(x=>x.name===r) : null;
+  const hideMoney = cm || !(role && role.perms.money);   // ไม่รู้จักบทบาท = ซ่อนไว้ก่อน ปลอดภัยกว่า
+  document.body.classList.toggle('no-money', hideMoney);
+  if(!quiet && _prev!==hideMoney){
+    ['renderStock','renderDash','renderParts','renderPartSale','renderFinance','renderRecvRecent','previewRecv','calcSell','renderDocs','renderUnitOptions']
+      .forEach(f=>{ if(typeof window[f]==='function') try{ window[f](); }catch(e){} });
+  }
+}
+$('#roleSel').onchange=()=>{ applyRole();
+  const n=$('#roleSel').value, r=(typeof ROLES!=='undefined')?ROLES.find(x=>x.name===n):null;
+  const on=r? PERMS.filter(([k])=>r.perms[k]).map(([,l])=>l) : [];
+  toast('เปลี่ยนบทบาทเป็น '+n, on.length? 'สิทธิ์ที่เปิดอยู่: '+on.join(' · ') : 'ไม่มีสิทธิ์พิเศษ ซ่อนต้นทุนและกำไรทุกหน้า'); };
+
+/* ---------------- boot ---------------- */
+seedModules(); seedAttHist();
+initRecv(); loadCfgForm(); renderFlow(); refreshAll();
+/* เติมตัวอย่างในฟอร์มขาย เพื่อให้ทุกช่องมีผลลัพธ์ให้ดูตั้งแต่เปิดหน้าแรก */
+(function(){
+  $('#rEngine').value='E34RE-060112'; $('#rFrame').value='MLEUE364111400318';
+  $('#sCust').value='คุณศิริพร ทวีทรัพย์';
+  $('#sPhone').value='081-555-2210';
+  $('#sDisc').value='1500';
+  const f=freebieList()[0]; if(f){ picked[f.name]=f.cost; }
+  initSell(); calcSell();
+})();
+</script>
+</body>
+</html>
