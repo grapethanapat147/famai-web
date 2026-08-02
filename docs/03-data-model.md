@@ -125,8 +125,12 @@ create table price_history (                 -- ราคามีอายุ �
 ```
 
 > **แก้ปัญหาจริงที่พบ:** `แบบรถ` 3 รหัส (`DA6200`, `BJKE00`, `D13100`) ไม่มีในตารางราคา 5 มี.ค. 2569
-> ทำให้ **8 จาก 50 คันหาราคาขายไม่ได้** — โครงนี้เก็บได้หลายรุ่นราคาพร้อมวันที่มีผล
+> ทำให้ **8 จาก 50 คันหาราคาขายไม่ได้ · ต้นทุนจม 423,300 บาท** — โครงนี้เก็บได้หลายรุ่นราคาพร้อมวันที่มีผล
 > รถที่หาราคาไม่เจอให้ขึ้นธง `รอกำหนดราคา` **ไม่ใช่เดาเป็นต้นทุน+15% แบบ v0.5**
+>
+> **เจ้าของร้านตัดสินใจแล้วว่าเคลียร์ออก** — ผู้จัดการกรอกราคาเองทีละคัน แล้วบันทึกลง
+> `motorcycle_unit.retail` พร้อมตั้ง `is_clearance = true` และเก็บเหตุผลไว้ที่ `price_note`
+> ราคาที่ตั้งเองจึงแยกออกจากราคาที่มาจาก `price_history` ได้ชัดเจนตอนทำรายงาน
 
 ### 2.3 คันรถ
 
@@ -146,6 +150,10 @@ create table motorcycle_unit (
   cost          numeric(12,2) not null,
   cost_vat      numeric(12,2) not null,
   retail        numeric(12,2),               -- null = รอกำหนดราคา
+  is_clearance  boolean not null default false, -- ตั้งราคาเคลียร์สต๊อกด้วยมือ (ไม่ใช่ราคาจากตารางยามาฮ่า)
+  price_note    text,                        -- เหตุผลที่ตั้งราคานี้ — ต้องตรวจสอบย้อนหลังได้
+  priced_by     uuid references app_user(id),
+  priced_at     timestamptz,
   photo_url     text,
   -- ที่มาจากไฟล์ยามาฮ่า (เก็บไว้ตรวจสอบย้อนหลัง)
   src_file      text,
@@ -280,8 +288,14 @@ create table finance_company (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,                 -- กรุงศรี / ธนชาต / ทิสโก้ / …
   flat_rate_pct numeric(6,4),                -- ดอกเบี้ยคงที่ต่อเดือน (เรตจริง ไม่ใช่ค่าสมมุติ)
-  is_active boolean not null default true
+  min_down_pct  numeric(5,2),                -- เงินดาวน์ขั้นต่ำ (%)
+  commission    numeric(12,2) default 0,     -- ค่าคอมที่ร้านได้ต่อสัญญา — กำไรจริงของการขายผ่อน
+  note          text,
+  is_active boolean not null default true    -- ปิดใช้งานแทนการลบเมื่อมีเคสอ้างถึงอยู่
 );
+
+> **ห้ามลบเมื่อมีคนใช้อยู่** — `finance_case`, `receivable` และ `sale` อ้าง `finance_company(id)`
+> ถ้ามีแถวอ้างถึงให้ตั้ง `is_active = false` แทน รายการเก่าจะยังแสดงชื่อได้ถูกต้อง
 
 create table finance_case (
   id            uuid primary key default gen_random_uuid(),
@@ -312,7 +326,7 @@ create table receivable (                     -- เงินค้างรั�
   amount_paid numeric(12,2) not null default 0,
   due_at      date,
   settled_at  date,
-  generated_always as (amount_due - amount_paid) stored  -- คงค้าง
+  balance     numeric(12,2) generated always as (amount_due - amount_paid) stored  -- คงค้าง
 );
 
 create table receipt_payment (                -- ลงรับเงินจริง → เข้าบัญชีเงินสด
