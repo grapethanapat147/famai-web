@@ -601,12 +601,28 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
     <div class="lg-logo">FAMAI <b>MOTOR</b></div>
     <h2>เข้าสู่ระบบ</h2>
     <p class="hint">เลือกผู้ใช้เพื่อดูระบบตามสิทธิ์ของบทบาทนั้น</p>
-    <div class="lg-users" id="lgUsers"></div>
-    <div style="margin-bottom:var(--s2)">
-      <label class="fl">รหัสผ่าน</label>
-      <input class="inp" type="password" value="demo1234" id="lgPw">
+    <div id="lgDemo">
+      <div class="lg-users" id="lgUsers"></div>
+      <div style="margin-bottom:var(--s2)">
+        <label class="fl">รหัสผ่าน</label>
+        <input class="inp" type="password" value="demo1234" id="lgPw">
+      </div>
+      <button class="btn wide" id="lgGo">เข้าสู่ระบบ <svg class="i i-sm"><use href="#i-arrow"/></svg></button>
     </div>
-    <button class="btn wide" id="lgGo">เข้าสู่ระบบ <svg class="i i-sm"><use href="#i-arrow"/></svg></button>
+    <div id="lgLive" style="display:none">
+      <div style="margin-bottom:var(--s2)">
+        <label class="fl">อีเมล</label>
+        <input class="inp" type="email" id="lgEmail" placeholder="sales2@famai.local" autocomplete="username">
+      </div>
+      <div style="margin-bottom:var(--s2)">
+        <label class="fl">รหัสผ่าน</label>
+        <input class="inp" type="password" id="lgPw2" autocomplete="current-password">
+      </div>
+      <button class="btn wide" id="lgGo2">เข้าสู่ระบบ <svg class="i i-sm"><use href="#i-arrow"/></svg></button>
+    </div>
+    <div style="margin-top:var(--s2);text-align:center">
+      <button class="lnk" id="lgSwap">ใช้ข้อมูลจริงจากฐานข้อมูล</button>
+    </div>
   </div>
 </div>
 
@@ -2907,11 +2923,105 @@ function gsSearch(){
 function statusText(s){ return {available:'พร้อมขาย',reserved:'จองแล้ว',in_transfer:'กำลังโอนย้าย',sold:'ขายแล้ว'}[s]||s; }
 function closeGs(){ $('#gs').classList.remove('on'); }
 
+/* ============================= โหมดข้อมูลจริง (Supabase) =============================
+   เพิ่มเข้ามาโดยไม่แตะโหมดสาธิตเดิม — พังเมื่อไหร่ตกกลับโหมดสาธิตทันที
+   คีย์ publishable เปิดเผยได้ตามการออกแบบของ Supabase ข้อมูลถูกกันด้วย RLS ที่ฐานข้อมูล
+   ผู้ที่ไม่ล็อกอินยิง API ตรงจะได้ [] เปล่า                                            */
+const SB_URL = 'https://hpsmjavfvrdctclmlmhp.supabase.co';
+const SB_KEY = 'sb_publishable_WVL0ff-x2L0EwngZH8RZiw_4vNISVa_';
+let LIVE = false, SB_TOKEN = null;
+
+/* เรียก REST ตรง ๆ ด้วย fetch — ไม่พึ่ง CDN ใด ๆ ไฟล์เดียวยังเปิดออฟไลน์ได้เหมือนเดิม */
+async function sbFetch(path, opt){
+  opt = opt||{};
+  const h = { apikey: SB_KEY, 'Content-Type':'application/json' };
+  if(SB_TOKEN) h.Authorization = 'Bearer '+SB_TOKEN;
+  const r = await fetch(SB_URL+path, Object.assign({}, opt, {headers: Object.assign(h, opt.headers||{})}));
+  const txt = await r.text();
+  let j=null; if(txt){ try{ j=JSON.parse(txt); }catch(_){ j=null; } }
+  if(!r.ok) throw new Error((j && (j.msg||j.message||j.error_description||j.error)) || ('HTTP '+r.status));
+  return j;
+}
+function sbSelect(table, params){
+  const q = new URLSearchParams(params).toString();
+  return sbFetch('/rest/v1/'+table+(q?'?'+q:''));
+}
+async function liveLogin(){
+  const email=$('#lgEmail').value.trim(), pw=$('#lgPw2').value;
+  if(!email||!pw){ toast('กรอกอีเมลและรหัสผ่าน','',1); return; }
+  const btn=$('#lgGo2'); btn.disabled=true; btn.textContent='กำลังเชื่อมต่อ…';
+  try{
+    SB_TOKEN = null;
+    const auth = await sbFetch('/auth/v1/token?grant_type=password',
+      { method:'POST', body: JSON.stringify({ email, password: pw }) });
+    SB_TOKEN = auth.access_token;
+
+    /* ตัวตนและสิทธิ์ — RLS คัดข้อมูลตามผู้ใช้คนนี้ให้เอง */
+    const meRows = await sbSelect('app_user', {
+      select:'id,full_name,nickname,all_branch,app_user_role(role(code,name)),app_user_branch(branch(code,name))',
+      id:'eq.'+auth.user.id });
+    const me = meRows && meRows[0];
+    if(!me) throw new Error('ไม่พบผู้ใช้ในระบบ');
+
+    const roleCode = me.app_user_role?.[0]?.role?.code || 'sales';
+    const homeBranch = me.app_user_branch?.[0]?.branch?.code || 'FMG01';
+
+    /* รถจริงตามสิทธิ์ */
+    const rows = await sbSelect('motorcycle_unit', {
+      select:'id,color_code,sku,engine_no,frame_no,status,received_at,cost,cost_vat,retail,is_clearance,price_note,src_file,recv_no,po_no,po_date,supplier_inv_no,branch(code),model_variant(code,model_name,model_th,category,cc,model_year)',
+      order:'received_at', limit:'2000' });
+    const cols = await sbSelect('model_color', { select:'color_code,color_name,model_variant(code)', limit:'2000' });
+    const cmap={}; (cols||[]).forEach(c=>{ cmap[c.model_variant.code+'|'+c.color_code]=c.color_name; });
+
+    UNITS = rows.map(r=>({
+      id:r.id, branch:r.branch.code, variant:r.model_variant.code, colorCode:r.color_code, yColor:'',
+      color: cmap[r.model_variant.code+'|'+r.color_code] || '—',
+      model:r.model_variant.model_name, modelTh:r.model_variant.model_th||'',
+      cat:r.model_variant.category||'—', cc:r.model_variant.cc, year:r.model_variant.model_year,
+      sku:r.sku, engine:r.engine_no, frame:r.frame_no, received:r.received_at,
+      cost:+r.cost, vat:+r.cost_vat, retail: r.retail==null? null : +r.retail,
+      status:r.status, clearance:!!r.is_clearance, priceNote:r.price_note||'',
+      src:r.src_file||'—', recvNo:r.recv_no||'—', poNo:r.po_no||'—', poDate:r.po_date||'',
+      invNo:r.supplier_inv_no||'—', photo:null, files:[]
+    }));
+
+    /* ข้อมูลจริงมีแต่รถ — ไม่สร้างยอดขาย/ลูกค้าปลอมทับ */
+    SALES=[]; CUSTOMERS=[]; TASKS=[]; REGS=[]; FINCASES=[]; AR=[]; SERVICE=[]; REMIND=[]; TRANSFERS=[];
+    LIVE = true;
+    ME = { id:me.id, name:me.full_name, nick:me.nickname||me.full_name.slice(0,2),
+           role:roleCode, branch:homeBranch, salary:0, bank:'', ssn:'' };
+    CUSTOMER_MODE=false;
+    $('#login').classList.add('off'); $('#app').classList.remove('off');
+    $('#meAv').textContent = ME.nick.slice(0,2);
+    $('#meName').textContent = ME.name;
+    $('#meRole').textContent = (ROLES[roleCode]?.name||roleCode)+' · '+(rolePerm().allBranch?'ทุกสาขา':bName(homeBranch));
+    buildNav(); go(firstScreen());
+    toast('เชื่อมฐานข้อมูลแล้ว', UNITS.length+' คันตามสิทธิ์ของคุณ');
+  }catch(err){
+    SB_TOKEN=null; LIVE=false;
+    toast('เชื่อมฐานข้อมูลไม่สำเร็จ', String(err.message||err).slice(0,80)+' — ใช้โหมดสาธิตต่อได้', 1);
+    $('#lgLive').style.display='none'; $('#lgDemo').style.display='';
+    $('#lgSwap').textContent='ใช้ข้อมูลจริงจากฐานข้อมูล';
+  }finally{
+    btn.disabled=false; btn.innerHTML='เข้าสู่ระบบ <svg class="i i-sm"><use href="#i-arrow"/></svg>';
+  }
+}
+
 /* ============================= BOOT ============================= */
 renderLogin();
+$('#lgSwap').onclick=()=>{
+  const live = $('#lgLive').style.display==='none';
+  $('#lgLive').style.display = live?'':'none';
+  $('#lgDemo').style.display = live?'none':'';
+  $('#lgSwap').textContent = live? 'กลับไปโหมดสาธิต' : 'ใช้ข้อมูลจริงจากฐานข้อมูล';
+};
+$('#lgGo2').onclick=liveLogin;
+$('#lgPw2').onkeydown=e=>{ if(e.key==='Enter') liveLogin(); };
 $('#lgGo').onclick=doLogin;
 $('#lgPw').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
-$('#btnOut').onclick=()=>{ $('#app').classList.add('off'); $('#login').classList.remove('off'); ME=null; };
+$('#btnOut').onclick=()=>{
+  if(LIVE){ SB_TOKEN=null; LIVE=false; location.reload(); return; }   /* ข้อมูลจริงถูกโหลดทับไว้ — เริ่มใหม่ให้สะอาด */
+  $('#app').classList.add('off'); $('#login').classList.remove('off'); ME=null; };
 $('#burger').onclick=()=> $('#side').classList.toggle('open');
 $('#btnFont').onclick=()=>{ document.body.classList.toggle('looped');
   $('#btnFont').classList.toggle('on', document.body.classList.contains('looped'));

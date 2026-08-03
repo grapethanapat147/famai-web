@@ -224,22 +224,27 @@ end $$;
 ### 4.2 แยกข้อมูลรายสาขา (RLS)
 
 ```sql
-alter table sale enable row level security;
+alter table sale enable row level security;      -- ลืมบรรทัดนี้ = policy ไม่มีผลบังคับ
 
 create policy sale_branch_scope on sale
 for all to authenticated
-using (
-  branch_id = any (
-    select branch_id from user_branch where user_id = auth.uid()
-  )
-  or exists (                                  -- ผู้บริหาร/แอดมิน เห็นทุกสาขา
-    select 1 from app_user
-     where id = auth.uid() and all_branch = true
-  )
-);
+using      (is_all_branch() or branch_id in (select my_branches()))
+with check (is_all_branch() or branch_id in (select my_branches()));
 ```
 
+`my_branches()` / `is_all_branch()` เป็นฟังก์ชัน `security definer` ที่อ่านจาก `app_user_branch`
+และ `app_user.all_branch` — แยกออกมาเพื่อไม่ต้องเขียน subquery ซ้ำ 20 ตาราง
+(ดูตัวจริงที่ `supabase/migrations/20260803231705_05_functions_and_audit.sql`)
+
 เขียนครั้งเดียวต่อตาราง — **ใช้กับทุกหน้าจอ ทุก API โดยอัตโนมัติ**
+
+ข้อควรระวังที่เจอตอนลงจริง 3 ข้อ
+- ตารางที่ `branch_id` เป็น `null` ได้ (เช่น `promotion` null = ทุกสาขา) ต้องเขียน
+  `branch_id is null or ...` ไม่งั้น `null in (...)` ได้ค่า NULL แถวจะหายไปจากทุกคน
+- 5 ตารางที่ไม่มี `branch_id` เลย (`receipt_payment` `attendance` `leave_request`
+  `payroll_line` `attachment`) ต้องเขียนแบบ `exists (select 1 from <ตารางแม่> ...)`
+- ห้ามถอน `execute` ของฟังก์ชันช่วยออกจาก role `authenticated` — policy ถูกประเมิน
+  ในสิทธิ์ของผู้เรียก ถอนแล้วจะได้ `permission denied for function my_branches`
 
 ### 4.3 Audit log
 

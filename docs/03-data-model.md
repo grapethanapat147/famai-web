@@ -2,6 +2,13 @@
 
 PostgreSQL · ออกแบบให้ครอบคลุมทุกข้อในผังไวท์บอร์ด และแก้ปัญหาโครงสร้างของ v0.5
 
+> **เอกสารนี้อธิบาย — ของจริงที่รันแล้วอยู่ที่ `supabase/migrations/`**
+> ไฟล์ในโฟลเดอร์นั้นคือ SQL ที่ถูกรันจริงบนฐานข้อมูล เรียงลำดับให้ FK ไม่ชนกันแล้ว
+> ที่นี่จัดกลุ่มตารางตามเรื่องเพื่อให้อ่านง่าย จึงมีบางตารางถูกอ้างถึงก่อนถูกสร้าง
+> (`document` → `service_job`, `service_job_line` → `part`, `sale` → `finance_company`)
+> ถ้าจะสร้างฐานข้อมูลใหม่ให้รันจาก `supabase/migrations/` ไม่ใช่ก๊อปจากหน้านี้
+> วิธีต่อและวิธีย้ายไปโปรเจกต์ใหม่อยู่ใน [`06-supabase-setup.md`](06-supabase-setup.md)
+
 **หลักที่ยึด**
 
 1. ทุกความสัมพันธ์ใช้ **id (UUID)** ไม่ใช้ชื่อคน — v0.5 ผูกด้วยชื่อ แก้ชื่อทีเดียวข้อมูลขาด
@@ -70,7 +77,7 @@ create table branch (
 
 ```sql
 create table app_user (
-  id           uuid primary key,           -- = auth.users.id ของ Supabase
+  id           uuid primary key references auth.users(id) on delete cascade,  -- ผูกกับบัญชีล็อกอินจริง
   username     text not null unique,
   full_name    text not null,
   nickname     text,
@@ -80,6 +87,7 @@ create table app_user (
 
 create table role (
   id    uuid primary key default gen_random_uuid(),
+  code  text not null unique,        -- admin | manager | sales | stock | acct | tech | hr — คีย์ที่โค้ดใช้เทียบสิทธิ์
   name  text not null unique,        -- ผู้ดูแลระบบ / ผู้บริหาร / เซลล์ / สต๊อก / บัญชี / ช่าง / HR
   perms jsonb not null default '{}'  -- {"money":true,"approve":true,"admin":false,...}
 );
@@ -232,6 +240,7 @@ create table sale (
   freebie_cost  numeric(12,2) not null default 0,
   gross_profit  numeric(12,2) not null,
   pay_method    text not null,               -- cash | finance
+  finance_id    uuid references finance_company(id),  -- ขายผ่อนผ่านเจ้าไหน (ต้องสร้าง finance_company ก่อน sale)
   down_payment  numeric(12,2),               -- ← v0.5 กรอกได้แต่ไม่บันทึก
   term_months   int,                         -- ← เช่นกัน
   note          text,                        -- ← เช่นกัน
@@ -293,10 +302,12 @@ create table finance_company (
   note          text,
   is_active boolean not null default true    -- ปิดใช้งานแทนการลบเมื่อมีเคสอ้างถึงอยู่
 );
+```
 
 > **ห้ามลบเมื่อมีคนใช้อยู่** — `finance_case`, `receivable` และ `sale` อ้าง `finance_company(id)`
 > ถ้ามีแถวอ้างถึงให้ตั้ง `is_active = false` แทน รายการเก่าจะยังแสดงชื่อได้ถูกต้อง
 
+```sql
 create table finance_case (
   id            uuid primary key default gen_random_uuid(),
   branch_id     uuid not null references branch(id),
@@ -526,7 +537,8 @@ create table attendance (
   work_date date not null,
   check_in timestamptz, check_out timestamptz,         -- ← v0.5 ใช้เวลาปลอม
   status text,                                          -- ปกติ | สาย | ลา | ขาด
-  late_minutes int generated always as (...) stored,
+  late_minutes int,                                     -- คิดตอนบันทึก ไม่ใช่ generated column
+                                                        -- (ต้องเทียบกับเวลาเข้างานใน app_setting = subquery ซึ่ง generated column ห้าม)
   work_minutes int, ot_minutes int not null default 0,  -- ← v0.5 ไม่คิด OT
   unique (employee_id, work_date)
 );
