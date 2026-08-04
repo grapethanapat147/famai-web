@@ -8,6 +8,12 @@ PostgreSQL · ออกแบบให้ครอบคลุมทุกข้
 > (`document` → `service_job`, `service_job_line` → `part`, `sale` → `finance_company`)
 > ถ้าจะสร้างฐานข้อมูลใหม่ให้รันจาก `supabase/migrations/` ไม่ใช่ก๊อปจากหน้านี้
 > วิธีต่อและวิธีย้ายไปโปรเจกต์ใหม่อยู่ใน [`06-supabase-setup.md`](06-supabase-setup.md)
+>
+> **v1.0 เพิ่ม migration 10** (`10_v1_features.sql` — เขียนไว้ในรีโป ยังไม่ apply รอ Phase 1):
+> `attendance` + คอลัมน์หลักฐานลงเวลา (รูปถ่าย พิกัด อุปกรณ์ ผู้แก้+เหตุผล) ·
+> `finance_company.rate_tiers` เรตรายช่วงงวด · `finance_case.stage_log` ประวัติสถานะ ·
+> `model_variant.photo_url` · `customer.address, note` · ตารางใหม่ `company_event`
+> (ปฏิทินผู้บริหาร — RLS เฉพาะ role admin/manager)
 
 **หลักที่ยึด**
 

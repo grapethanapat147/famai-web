@@ -99,6 +99,7 @@ SQL ที่รันจริงอยู่ที่ `supabase/migrations/` �
 | `07_tighten_grants_and_attachment` | ปิดสิทธิ์ที่ไม่จำเป็น |
 | `08_seed_reference_data` | สาขา บทบาท หมวดค่าใช้จ่าย ค่าตั้งค่า ไฟแนนซ์ |
 | `09_seed_price_and_units` | แบบรถ สี ราคา และรถ 50 คัน |
+| `10_v1_features` | **ยังไม่ apply** — คอลัมน์หลักฐานลงเวลา · `company_event` · เรตรายช่วงงวด · ฯลฯ รอ Phase 1 เริ่มเขียนลงฐานจริง |
 
 **สร้างฐานข้อมูลใหม่จากศูนย์** — สร้างโปรเจกต์ Supabase ใหม่ แล้วรันไฟล์ทั้ง 9 เรียงตามชื่อ
 ในหน้า SQL Editor หรือ `supabase db push` ถ้าใช้ CLI

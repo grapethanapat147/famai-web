@@ -309,10 +309,10 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .bar .bl{ display:flex; justify-content:space-between; align-items:baseline;
   font-size:var(--t-table); margin-bottom:var(--s-half); gap:var(--s2); }
 .bar .bl b{ font-weight:600; font-variant-numeric:tabular-nums; }
-.bar .bt{ height:6px; border-radius:var(--r-pill); background:var(--hairline-2); overflow:hidden; }
-.bar .bf{ height:100%; border-radius:var(--r-pill); background:var(--ink); }
-.bar .bf.g{ background:var(--pos); } .bar .bf.w{ background:var(--attn); }
-.bar .bf.d{ background:var(--accent); }
+.bar .bt,.prog .bt{ height:6px; border-radius:var(--r-pill); background:var(--hairline-2); overflow:hidden; }
+.bar .bf,.prog .bf{ height:100%; border-radius:var(--r-pill); background:var(--ink); }
+.bar .bf.g,.prog .bf.g{ background:var(--pos); } .bar .bf.w{ background:var(--attn); }
+.bar .bf.d,.prog .bf.d{ background:var(--accent); }
 .vbars{ display:flex; align-items:flex-end; gap:var(--s2); height:160px; padding-top:var(--s3); }
 .vb{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; height:100%; }
 .vb .col{ width:100%; max-width:40px; height:100%; background:var(--hairline-2);
@@ -486,6 +486,28 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   border-radius:var(--r-pill); background:currentColor; }
 .cal .ev.e-task{ color:var(--accent); } .cal .ev.e-reg{ color:var(--attn); }
 .cal .ev.e-leave{ color:var(--muted); }
+.cal .ev.e-recv{ color:var(--pos); } .cal .ev.e-sale{ color:var(--ink); }
+.cal .ev.e-exec{ color:var(--accent); }
+/* รูปรถ — เงา SVG หรือรูปจริงที่อัปโหลด */
+.bph{ width:74px; height:44px; flex:0 0 auto; display:grid; place-items:center;
+  background:var(--paper-2); border-radius:var(--r-input); overflow:hidden; }
+.bph svg{ width:100%; height:100%; } .bph img{ width:100%; height:100%; object-fit:cover; }
+.gcard .ph svg.bike{ width:82%; height:82%; }
+.gcard .ph img.bike{ width:100%; height:100%; object-fit:cover; }
+/* แถวรายคันใต้กลุ่มคงเหลือ */
+tr.grp-sub td{ background:var(--paper-2); }
+/* ช่องกรอกเรตรายงวด */
+.tiers{ display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s1); }
+.tiers label{ font-size:var(--t-label); color:var(--muted); display:block; margin-bottom:2px; }
+@media (max-width:760px){ .tiers{ grid-template-columns:repeat(2,1fr); } }
+/* แถวติดตามไฟแนนซ์รายคน */
+.fprow{ display:flex; gap:var(--s2); align-items:center; padding:var(--s2) 0;
+  border-bottom:1px solid var(--hairline-2); cursor:pointer; }
+.fprow:last-child{ border-bottom:none; }
+.fprow .who{ flex:0 0 190px; min-width:0; }
+.fprow .prog{ flex:1; min-width:120px; }
+.fprow .amt{ flex:0 0 auto; text-align:right; }
+@media (max-width:760px){ .fprow{ flex-wrap:wrap; } .fprow .who{ flex-basis:100%; } }
 .cal .hh{ min-width:0; text-align:center; font-size:var(--t-label); color:var(--muted);
   padding-bottom:var(--s-half); }
 #printArea{ display:none; }
@@ -686,14 +708,17 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 
       <!-- ============ 2. ปฏิทินงาน ============ -->
       <section class="screen" id="s-cal">
+        <div class="tabs" id="calTabs"><button class="on" data-c="veh">ปฏิทินรถ</button><button data-c="exec" id="calExecTab">ปฏิทินผู้บริหาร</button></div>
         <div class="card"><div class="hd">
           <button class="btn sec sm" id="calPrev"><svg class="i i-sm"><use href="#i-left"/></svg></button>
           <h3 id="calTitle" style="min-width:190px;text-align:center">—</h3>
           <button class="btn sec sm" id="calNext"><svg class="i i-sm"><use href="#i-right"/></svg></button>
           <div class="sp"></div>
-          <span class="pill p-brand">ติดตาม</span><span class="pill p-warn">ทะเบียน</span><span class="pill p-mut">ลา</span>
+          <span id="calLegend"></span>
         </div><div class="bd"><div class="cal" id="calGrid"></div></div></div>
-        <div class="card"><div class="hd"><h3 id="calDayT">งานของวันที่เลือก</h3></div><div class="bd" id="calDay"></div></div>
+        <div class="card"><div class="hd"><h3 id="calDayT">งานของวันที่เลือก</h3><div class="sp"></div>
+          <button class="btn sec sm" id="evAdd" style="display:none"><svg class="i i-sm"><use href="#i-calendar"/></svg> เพิ่มงานผู้บริหาร</button>
+        </div><div class="bd" id="calDay"></div></div>
       </section>
 
       <!-- ============ 3. รับรถเข้าสต๊อก ============ -->
@@ -748,18 +773,19 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
               <option value="sold">ขายแล้ว</option></select></div>
           </div>
           <input class="inp" id="stQ" placeholder="ค้นหา เลขเครื่อง / เลขถัง / รุ่น / รหัสรุ่น…">
-          <div class="tabs" style="margin-top:var(--s2)"><button class="on" data-v="table">ตาราง</button><button data-v="gal">แกลเลอรี</button>
+          <div class="tabs" style="margin-top:var(--s2)"><button class="on" data-v="grp">คงเหลือ</button><button data-v="table">ตาราง</button><button data-v="gal">แกลเลอรี</button>
             <div class="sp"></div><button class="lnk" id="expStock"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div>
           <div id="stSum" style="font-size:var(--t-label);color:var(--ink-soft);margin-bottom:var(--s2)"></div>
         </div>
-        <div class="bd flush" id="stTableWrap"><div class="tw"><table id="stTable"></table></div></div>
+        <div class="bd flush" id="stGrpWrap"><div class="tw"><table id="stGrp"></table></div></div>
+        <div class="bd flush" id="stTableWrap" style="display:none"><div class="tw"><table id="stTable"></table></div></div>
         <div class="bd" id="stGalWrap" style="display:none"><div class="gal" id="stGal"></div></div>
         </div>
       </section>
 
       <!-- ============ 5. ขายรถ ============ -->
       <section class="screen" id="s-sell">
-        <div class="tabs" id="sellTabs"><button class="on" data-p="p1">เปิดการขาย</button><button data-p="p2">เทียบไฟแนนซ์</button><button data-p="p3">เอกสารที่ออก</button></div>
+        <div class="tabs" id="sellTabs"><button class="on" data-p="p1">เปิดการขาย</button><button data-p="p2">คำนวณค่างวด</button><button data-p="p3">เอกสารที่ออก</button></div>
         <div class="pane on" id="p1"><div class="g2">
           <div class="card"><div class="hd"><h3>รายละเอียดการขาย</h3></div><div class="bd">
             <div class="f">
@@ -792,17 +818,28 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
             <div class="card"><div class="hd"><h3>ผลที่จะเกิดขึ้น</h3></div><div class="bd" id="sImpact"></div></div>
           </div>
         </div></div>
-        <div class="pane" id="p2"><div class="card"><div class="hd"><h3>เทียบค่างวด 2 ไฟแนนซ์</h3></div><div class="bd">
-          <div class="note w"><svg class="i i-sm"><use href="#i-alert"/></svg><span>เรตดอกเบี้ยเป็นค่าสมมุติ — ใส่เรตจริงได้ที่หน้าตั้งค่า</span></div>
+        <div class="pane" id="p2"><div class="card"><div class="hd"><h3>คำนวณค่างวด — เลือกรุ่น + ดาวน์ เทียบทุกไฟแนนซ์ทุกงวดทันที</h3></div><div class="bd">
+          <div class="note w"><svg class="i i-sm"><use href="#i-alert"/></svg><span>เรตดอกเบี้ยเป็นค่าสมมุติ — แก้เรตจริง/เรตรายช่วงงวดได้ที่หน้าเคสสินเชื่อ แท็บบริษัทไฟแนนซ์</span></div>
           <div class="f3" style="margin-bottom:var(--s2)">
+            <div><label class="fl">รุ่นรถ</label><select class="inp" id="fModel"></select></div>
             <div><label class="fl">ราคาสุทธิ (฿)</label><input class="inp num" id="fNet"></div>
+            <div><label class="fl">เงินต้นที่จัด (฿)</label><input class="inp num" id="fPrin" readonly></div>
+          </div>
+          <div class="f2" style="margin-bottom:var(--s2)">
             <div><label class="fl">เงินดาวน์ (฿)</label><input class="inp num" id="fDown" value="5000"></div>
-            <div><label class="fl">เงินต้น (฿)</label><input class="inp num" id="fPrin" readonly></div>
+            <div><label class="fl">หรือเลือกเป็น % ของราคา</label><div class="chips" id="fDownPct"></div></div>
           </div>
           <div class="tw"><table id="finCmp"></table></div>
+          <div id="fWarn"></div>
         </div></div></div>
         <div class="pane" id="p3"><div class="g2e">
-          <div class="card"><div class="hd"><h3>เอกสารที่ต้องออก</h3></div><div class="bd" id="docList"></div></div>
+          <div>
+            <div class="card"><div class="hd"><h3>ประเภทเอกสาร</h3></div><div class="bd">
+              <div class="chips" id="docTypes" style="margin-bottom:var(--s2)"></div>
+              <div id="docList"></div>
+            </div></div>
+            <div class="card"><div class="hd"><h3>การขายล่าสุด</h3><div class="d">เลือกเพื่อพิมพ์เอกสารย้อนหลัง</div></div><div class="bd flush"><div class="tw"><table id="docSales"></table></div></div></div>
+          </div>
           <div class="card"><div class="hd"><h3>ตัวอย่างเอกสาร</h3><div class="sp"></div><button class="btn sec sm noprint" id="docPrint"><svg class="i i-sm"><use href="#i-print"/></svg> พิมพ์</button></div><div class="bd"><div id="docPrev"></div></div></div>
         </div></div>
       </section>
@@ -846,27 +883,25 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
         <div class="card"><div class="bd"><div id="qDoc"></div></div></div>
       </section>
 
-      <!-- ============ 8. ลูกค้าและติดตาม ============ -->
-      <section class="screen" id="s-crm">
-        <div class="tabs" id="crmTabs"><button class="on" data-p="c1">งานติดตาม</button><button data-p="c2">รายชื่อลูกค้า</button><button data-p="c3">เพิ่มลูกค้าใหม่</button></div>
-        <div class="pane on" id="c1"><div class="g2">
+      <!-- ============ 8. ลูกค้า ============ -->
+      <section class="screen" id="s-cust">
+        <div class="card"><div class="hd"><h3>ฐานลูกค้า</h3><div class="d">ข้อมูลเบื้องต้น — งานติดตามอยู่หน้า “ติดตามการขาย”</div><div class="sp"></div>
+          <input class="inp" id="cQ" placeholder="ค้นหา ชื่อ / เบอร์" style="width:220px;height:34px">
+          <button class="btn sm" id="cAdd">เพิ่มลูกค้า <svg class="i i-sm"><use href="#i-arrow"/></svg></button>
+        </div><div class="bd flush"><div class="tw"><table id="custTable"></table></div></div></div>
+      </section>
+
+      <!-- ============ 8b. ติดตามการขาย ============ -->
+      <section class="screen" id="s-follow">
+        <div class="g2">
           <div class="card"><div class="hd"><h3>งานที่ต้องทำ</h3><div class="sp"></div><span id="taskCnt" class="pill p-brand"></span></div><div class="bd flush"><div class="tw"><table id="taskTable"></table></div></div></div>
           <div><div class="card"><div class="hd"><h3>Pipeline ลูกค้า</h3></div><div class="bd" id="funnel"></div></div>
           <div class="card"><div class="hd"><h3>รอบการติดตาม</h3></div><div class="bd" id="cadence"></div></div></div>
-        </div></div>
-        <div class="pane" id="c2"><div class="card"><div class="hd"><h3>ฐานลูกค้า</h3><div class="sp"></div><input class="inp" id="cQ" placeholder="ค้นหา ชื่อ / เบอร์ / เลขเครื่อง" style="width:250px;height:34px"></div><div class="bd flush"><div class="tw"><table id="custTable"></table></div></div></div></div>
-        <div class="pane" id="c3"><div class="card"><div class="hd"><h3>เพิ่มลูกค้า / Lead</h3></div><div class="bd">
-          <div class="f2">
-            <div><label class="fl">ชื่อ</label><input class="inp" id="cName"></div>
-            <div><label class="fl">เบอร์โทร</label><input class="inp" id="cPhone"></div>
-          </div>
-          <div class="f3" style="margin-top:var(--s2)">
-            <div><label class="fl">รู้จักจาก</label><select class="inp" id="cSrc"><option>Facebook</option><option>เดินเข้าร้าน</option><option>เพื่อนแนะนำ</option><option>LINE</option><option>TikTok</option></select></div>
-            <div><label class="fl">รุ่นที่สนใจ</label><select class="inp" id="cModel"></select></div>
-            <div><label class="fl">สถานะ</label><select class="inp" id="cStage"><option>เข้ามาดูรถ</option><option>สนใจ</option><option>ทำสัญญา</option><option>ผ่าน</option><option>ไม่ผ่าน</option><option>รับรถสำเร็จ</option></select></div>
-          </div>
-          <div class="savebar"><button class="btn" id="cSave">บันทึกลูกค้า</button></div>
-        </div></div></div>
+        </div>
+        <div class="card"><div class="hd"><h3>ลูกค้า × รถ</h3><div class="d">เปลี่ยนสถานะได้จากแถว</div><div class="sp"></div>
+          <select class="inp" id="fwStage" style="width:auto;height:34px;font-size:var(--t-label)"></select>
+          <input class="inp" id="fwQ" placeholder="ค้นหาชื่อ" style="width:180px;height:34px">
+        </div><div class="bd flush"><div class="tw"><table id="fwTable"></table></div></div></div>
       </section>
 
       <!-- ============ 9. ทะเบียน ============ -->
@@ -880,7 +915,7 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 
       <!-- ============ 10. เคสสินเชื่อ ============ -->
       <section class="screen" id="s-fin">
-        <div class="tabs" id="finTabs"><button class="on" data-p="n1">เคสสินเชื่อ</button><button data-p="n2">บริษัทไฟแนนซ์</button></div>
+        <div class="tabs" id="finTabs"><button class="on" data-p="n1">เคสสินเชื่อ</button><button data-p="n3">รายคน</button><button data-p="n2">บริษัทไฟแนนซ์</button></div>
         <div class="pane on" id="n1">
           <div class="kpis" id="finKpi"></div>
           <div class="card"><div class="hd"><h3>สถานะเคสสินเชื่อ</h3><div class="sp"></div>
@@ -889,16 +924,25 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
           </div></div>
           <div class="card"><div class="hd"><h3>อัตราการอนุมัติแยกตามไฟแนนซ์</h3></div><div class="bd flush"><div class="tw"><table id="finRate"></table></div></div></div>
         </div>
+        <div class="pane" id="n3">
+          <div class="card"><div class="hd"><h3>ติดตามรายคน</h3><div class="sp"></div>
+            <select class="inp" id="fpStatus" style="width:auto;height:34px;font-size:var(--t-label)"></select>
+            <select class="inp" id="fpSales" style="width:auto;height:34px;font-size:var(--t-label)"></select>
+            <select class="inp" id="fpBranch" style="width:auto;height:34px;font-size:var(--t-label)"></select>
+            <input class="inp" id="fpQ" placeholder="ค้นหาชื่อลูกค้า" style="width:170px;height:34px">
+          </div><div class="bd" id="fpList"></div></div>
+        </div>
         <div class="pane" id="n2"><div class="g2">
           <div class="card"><div class="hd"><h3>บริษัทไฟแนนซ์</h3></div><div class="bd flush"><div class="tw"><table id="fcTable"></table></div></div></div>
           <div class="card" id="fcFormCard"><div class="hd"><h3>เพิ่มบริษัทไฟแนนซ์</h3></div><div class="bd">
             <div class="f">
               <div><label class="fl">ชื่อบริษัท</label><input class="inp" id="fcName" placeholder="ซัมมิท แคปปิตอล"></div>
               <div class="f3">
-                <div><label class="fl">ดอกเบี้ย (%/เดือน)</label><input class="inp num" id="fcRate" value="1.40"></div>
+                <div><label class="fl">ดอกเบี้ยฐาน (%/เดือน)</label><input class="inp num" id="fcRate" value="1.40"></div>
                 <div><label class="fl">ดาวน์ขั้นต่ำ (%)</label><input class="inp num" id="fcDown" value="15"></div>
                 <div><label class="fl">ค่าคอม (฿/สัญญา)</label><input class="inp num" id="fcComm" value="0"></div>
               </div>
+              <div><label class="fl">เรตเฉพาะงวด (%/เดือน — เว้นว่าง = ใช้เรตฐาน)</label><div id="fcTiers"></div></div>
               <div><label class="fl">หมายเหตุ</label><input class="inp" id="fcNote" placeholder="เงื่อนไขพิเศษ ผู้ติดต่อ"></div>
             </div>
             <div class="savebar"><button class="btn" id="fcSave">เพิ่ม<svg class="i"><use href="#i-arrow"/></svg></button></div>
@@ -1038,8 +1082,10 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
       <!-- ============ 17. ลงเวลาและลา ============ -->
       <section class="screen" id="s-hr">
         <div class="tabs" id="hrTabs"><button class="on" data-p="h1">ลงเวลาวันนี้</button><button data-p="h2">ใบลา</button></div>
-        <div class="pane on" id="h1"><div class="g2">
-          <div class="card"><div class="hd"><h3>ลงเวลาวันนี้</h3><div class="d" id="hrDate"></div></div><div class="bd flush"><div class="tw"><table id="attTable"></table></div></div></div>
+        <div class="pane on" id="h1"><div class="g2e">
+          <div class="card"><div class="hd"><h3>ลงเวลาวันนี้</h3><div class="d" id="hrDate"></div><div class="sp"></div>
+            <span class="pill p-mut mono" id="hrClock" style="font-size:var(--t-table)">—:—:—</span>
+          </div><div class="bd flush"><div class="tw"><table id="attTable"></table></div></div></div>
           <div class="card"><div class="hd"><h3>สรุปเวลาทำงาน</h3></div><div class="bd" id="attSum"></div></div>
         </div></div>
         <div class="pane" id="h2"><div class="g2">
@@ -1097,6 +1143,8 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 
       <!-- ============ 21. ตั้งค่าระบบ ============ -->
       <section class="screen" id="s-settings">
+        <div class="tabs" id="cfTabs"><button class="on" data-p="cf1">เกณฑ์ระบบ</button><button data-p="cf2">รุ่นรถและสี</button></div>
+        <div class="pane on" id="cf1">
         <div class="g2e">
           <div class="card"><div class="hd"><h3>ข้อมูลบริษัท</h3></div><div class="bd">
             <div class="f">
@@ -1123,6 +1171,27 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
         </div>
         <div class="card"><div class="hd"><h3>ไฟแนนซ์</h3><div class="sp"></div><button class="lnk" id="cfFinGo">แก้ไขที่หน้าเคสสินเชื่อ<svg class="i i-sm"><use href="#i-right"/></svg></button></div><div class="bd flush"><div class="tw"><table id="cfFin"></table></div></div></div>
         <div class="savebar"><button class="btn" id="cfSave">บันทึกการตั้งค่า</button><button class="btn sec" id="cfReset">คืนค่าเริ่มต้น</button></div>
+        </div>
+        <div class="pane" id="cf2">
+          <div class="card"><div class="hd"><h3>รุ่นรถทั้งหมด</h3><div class="d">ใช้เป็นตัวเลือกในหน้ารับรถเข้าสต๊อก ใบเสนอราคา และคำนวณค่างวด</div><div class="sp"></div>
+            <button class="btn sm" id="vmAdd">เพิ่มรุ่น <svg class="i i-sm"><use href="#i-arrow"/></svg></button>
+          </div><div class="bd flush"><div class="tw"><table id="vmTable"></table></div></div></div>
+        </div>
+      </section>
+
+      <!-- ============ 23. รายงาน ============ -->
+      <section class="screen" id="s-report">
+        <div class="tabs" id="rpTabs"></div>
+        <div class="card"><div class="hd"><h3 id="rpTitle">รายงาน</h3><div class="sp"></div>
+          <select class="inp" id="rpMonth" style="width:auto;height:34px;font-size:var(--t-label)"></select>
+          <select class="inp" id="rpBranch" style="width:auto;height:34px;font-size:var(--t-label)"></select>
+          <button class="btn sec sm noprint" id="rpPrint"><svg class="i i-sm"><use href="#i-print"/></svg> พิมพ์</button>
+          <button class="lnk" id="rpCsv"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button>
+        </div><div class="bd">
+          <div class="kpis k3" id="rpKpi" style="margin-bottom:var(--s3)"></div>
+          <div class="tw"><table id="rpTable"></table></div>
+          <div id="rpNote"></div>
+        </div></div>
       </section>
 
       <!-- ============ 22. ผังกระบวนการ ============ -->
@@ -1143,7 +1212,7 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 <div id="printArea"></div>
 <script>
 /* ============================================================================
-   Famai Motor Group — ต้นแบบระบบหลังบ้าน v0.8
+   Famai Motor Group — ต้นแบบระบบหลังบ้าน v1.0
    ข้อมูลรถ 50 คัน = ข้อมูลจริงจากไฟล์ยามาฮ่า 5 ไฟล์ (reference/yamaha-export/)
    ข้อมูลการขาย ลูกค้า พนักงาน อะไหล่ = ข้อมูลสมมุติสำหรับสาธิต (ติดป้ายกำกับไว้)
    ============================================================================ */
@@ -1170,7 +1239,8 @@ let _id=0; const nid = p => p+(++_id);
 function pick(a,i){ return a[i%a.length]; }
 
 /* ---------- ตารางราคายามาฮ่า 5 มี.ค. 2569 (reference/deck/yamaha-price-list…) ---------- */
-const PRICE = {
+/* แก้ไข/เพิ่มรุ่นได้ที่ ตั้งค่าระบบ → แท็บรุ่นรถและสี — จึงเป็น let ไม่ใช่ const */
+let PRICE = {
  B6FS00:{m:'FINN',th:'ฟินน์ ล้อซี่ลวดดรัมเบรก',cat:'Moped',cc:114,yr:2567,cost:36000,vat:2520,retail:41200,c:{'010A':'ดำ'}},
  B6FT00:{m:'FINN',th:'ฟินน์ ล้อซี่ลวด',cat:'Moped',cc:114,yr:2567,cost:39000,vat:2730,retail:44900,c:{'010A':'ดำ','010B':'แดง'}},
  B6FU00:{m:'FINN',th:'ฟินน์ ล้อแม็ก',cat:'Moped',cc:114,yr:2567,cost:40800,vat:2856,retail:46900,c:{'010A':'น้ำเงิน','010B':'เขียว','010C':'ฟ้า'}},
@@ -1187,6 +1257,40 @@ const PRICE = {
 const NO_PRICE = ['DA6200','BJKE00','D13100'];
 const COLOR_HEX = {'ดำ':'#1A1A1A','แดง':'#D62828','น้ำเงิน':'#1B4F9C','ฟ้า':'#4FA3D9','เขียว':'#2E9E5B',
   'เทา':'#8A8F94','น้ำตาล':'#7A5230','ดำ-เทา':'#3A4045','ดำ/เทา':'#3A4045','ขาว':'#EDEDED','ม่วง':'#6B3FA0','ฟ้า/ดำ':'#2C5F8A'};
+
+/* ---------- รูปรถ ----------
+   ไม่มีรูปจริง → วาดเงารถตามประเภท tint ด้วยสีจริงของคัน
+   อัปโหลดรูปจริงต่อรุ่นได้ที่ ตั้งค่าระบบ → รุ่นรถและสี (เก็บ dataURL เฉพาะเซสชันสาธิต) */
+function bikeSVG(cat, cc, hex){
+  hex = hex || '#8A8F94';
+  const dark='#2E3338', ln='rgba(21,30,35,.28)';
+  const wheels = '<circle cx="30" cy="49" r="9.5" fill="none" stroke="'+dark+'" stroke-width="3.4"/><circle cx="30" cy="49" r="3" fill="'+dark+'"/>'
+               + '<circle cx="93" cy="49" r="9.5" fill="none" stroke="'+dark+'" stroke-width="3.4"/><circle cx="93" cy="49" r="3" fill="'+dark+'"/>';
+  let body, seat, bar;
+  if(cat==='Moped'){
+    /* รถครอบครัว — เบาะยาว เส้นลำตัวแนวนอน แฮนด์อยู่หน้า */
+    body='<path fill="'+hex+'" stroke="'+ln+'" d="M20 46c0-8 6-14 14-15l9-1 17-2c4-8 12-13 21-12l13 2-2 6-11-1c-6 0-11 4-13 9l-5 11-25 4z"/>';
+    seat='<path fill="'+dark+'" d="M56 25l19-3c3 0 4 3 2 5l-18 4c-3 0-4-3-3-6z"/>';
+    bar ='<path stroke="'+dark+'" stroke-width="3" stroke-linecap="round" d="M91 15l8-3"/>';
+  } else if(cat==='Automatic' && +cc>=250){
+    /* สกู๊ตเตอร์คันใหญ่ — หน้ารถสูง ลำตัวหนา */
+    body='<path fill="'+hex+'" stroke="'+ln+'" d="M15 47c-2-13 4-24 14-29l9-4 4 6-8 5c-6 5-9 12-9 20l25-2 3-9c3-6 10-10 17-10l16 2c9 2 15 8 16 15l-2 6h-9c-2-6-8-10-15-9l-14 3-6 6z"/>';
+    seat='<path fill="'+dark+'" d="M60 25l25-5c4 0 5 4 2 6l-23 6c-3 0-5-4-4-7z"/>';
+    bar ='<path stroke="'+dark+'" stroke-width="3.4" stroke-linecap="round" d="M39 13l10-4"/>';
+  } else {
+    /* สกู๊ตเตอร์ทั่วไป — บังลมหน้า พื้นเรียบ เบาะท้าย */
+    body='<path fill="'+hex+'" stroke="'+ln+'" d="M17 46c-2-10 3-20 12-24l8-4 3 5-6 4c-6 4-8 10-8 16l24-1 3-8c2-5 8-8 13-8l16 1c8 1 13 6 14 12l-1 6h-9c-2-6-7-9-13-8l-13 3-5 6z"/>';
+    seat='<path fill="'+dark+'" d="M59 27l23-4c3 0 4 3 2 5l-21 5c-3 0-5-3-4-6z"/>';
+    bar ='<path stroke="'+dark+'" stroke-width="3" stroke-linecap="round" d="M36 17l9-3"/>';
+  }
+  return '<svg class="bike" viewBox="0 0 120 62" aria-hidden="true">'+body+seat+bar+wheels+'</svg>';
+}
+/* รูปของรุ่น — รูปจริงที่อัปโหลดมาก่อน ไม่มีก็วาดเงา */
+function bikeArt(variant, colorName){
+  const p=PRICE[variant];
+  if(p && p.img) return '<img class="bike" src="'+p.img+'" alt="">';
+  return bikeSVG(p?p.cat:'Automatic', p?p.cc:0, COLOR_HEX[colorName]||'#8A8F94');
+}
 
 /* ---------- ตั้งค่าระบบ ---------- */
 const DEFAULTS = {
@@ -1231,6 +1335,9 @@ const FIN_CO = [
 ];
 const finActive = () => FIN_CO.filter(f=>f.active);
 const finById   = id => FIN_CO.find(f=>f.id===id);
+/* เรตของเจ้านั้น ณ จำนวนงวดนั้น — ถ้าตั้งเรตรายช่วงงวดไว้ (f.rates) ใช้ก่อน ไม่งั้นเรตฐาน */
+const finRate = (f, term) => (f.rates && f.rates[term]!=null) ? f.rates[term] : f.rate;
+const FIN_TERMS = [12,18,24,30,36,42,48,60];
 /* ค่างวดคงที่ (flat) — สูตรเดียวใช้ทั้งหน้าขายและใบเสนอราคา */
 const installment = (principal, ratePct, months) =>
   months>0 ? Math.round(principal*(1+ratePct/100*months)/months) : 0;
@@ -1293,8 +1400,13 @@ function seedDemo(){
     /* ไฟแนนซ์ + เงินค้างรับ */
     if(pay==='finance'){
       const st = FIN_STAGES[Math.min(4, Math.floor(ago/7))];
+      const fst = (i===11?'ปฏิเสธ':st);
+      /* log จำลองไล่ขั้นถึงสถานะปัจจุบัน — ให้ progress bar รายคนมีวันที่จริงใช้ */
+      const flog = FIN_STAGES.slice(0, Math.max(1, FIN_STAGES.indexOf(st)+1))
+        .map((x,xi)=>({to:x, at:addDays(soldAt, xi*4)}));
+      if(i===11) flog.push({to:'ปฏิเสธ', at:addDays(soldAt,8)});
       FINCASES.push({id:nid('FC'), saleId:s.id, custId:cust.id, branch:s.branch, finId,
-        status: (i===11?'ปฏิเสธ':st), amount:net-s.down, at:soldAt, demo:true});
+        status: fst, amount:net-s.down, at:soldAt, log:flog, demo:true});
       const paid = ago>25 ? net-s.down : 0;
       AR.push({id:nid('AR'), saleId:s.id, branch:s.branch, kind:'finance', finId,
         due:net-s.down, paid, dueAt:addDays(soldAt,15), demo:true,
@@ -1397,6 +1509,12 @@ let PROMOS = [
 let IMPLOG = [];
 let DOCS = [];
 let DOC_COUNTER = {};
+/* ปฏิทินผู้บริหาร — งานของบริษัท ไม่ใช่งานปฏิบัติการ (admin/manager เท่านั้น) */
+let EXEC_EVENTS = [
+  {id:'EV1', d:addDays(TODAY,3),  type:'อีเวนท์',  title:'ออกบูธงานมอเตอร์โชว์ประจำจังหวัด', note:'เตรียมรถโชว์ 4 คัน', demo:true},
+  {id:'EV2', d:addDays(TODAY,8),  type:'ประชุม',   title:'ประชุมยอดขายรายเดือนทุกสาขา',     note:'', demo:true},
+  {id:'EV3', d:addDays(TODAY,15), type:'รับเชิญ',  title:'งานเปิดตัวรุ่นใหม่ของยามาฮ่า',      note:'ผู้บริหารได้รับเชิญ', demo:true}
+];
 
 /* ---------- เลขที่เอกสาร: แยกสาขา × ประเภท × ปี พ.ศ. ---------- */
 /* ดูเลขถัดไปโดยไม่กินเลข — ใช้ตอนพรีวิว เลขจริงออกตอนบันทึกการขาย */
@@ -1423,7 +1541,8 @@ const inScope = c => myBranches().indexOf(c) >= 0;
 const MENU = [
   {g:'ภาพรวม'},
   {k:'dash',     t:'Dashboard',        s:'ภาพรวมทั้งกิจการ',            ic:'chart', r:['admin','manager','acct','sales','stock','hr','tech']},
-  {k:'cal',      t:'ปฏิทินงาน',        s:'งานติดตาม ทะเบียน และวันลา',   ic:'calendar', r:['admin','manager','acct','sales','hr']},
+  {k:'cal',      t:'ปฏิทิน',           s:'ปฏิทินรถ และปฏิทินผู้บริหาร',   ic:'calendar', r:['admin','manager','acct','sales','hr']},
+  {k:'report',   t:'รายงาน',           s:'สรุปแยกประเภท พิมพ์และส่งออกได้', ic:'files', r:['admin','manager','acct','stock','hr']},
   {g:'มอเตอร์ไซค์'},
   {k:'recv',     t:'รับรถเข้าสต๊อก',    s:'บันทึกรถทีละคัน',              ic:'inbox', r:['admin','manager','stock']},
   {k:'stock',    t:'สต๊อกรถ',          s:'ค้นหาและจัดการรถทุกคัน',        ic:'bike',  r:['admin','manager','stock','sales','acct']},
@@ -1431,7 +1550,8 @@ const MENU = [
   {k:'transfer', t:'โอนย้ายสาขา',      s:'ย้ายรถระหว่างสาขา',            ic:'repeat', r:['admin','manager','stock']},
   {g:'ลูกค้าและการเงิน'},
   {k:'quote',    t:'ใบเสนอราคา',       s:'เทียบรถและไฟแนนซ์ให้ลูกค้า',    ic:'file', r:['admin','manager','sales']},
-  {k:'crm',      t:'ลูกค้าและติดตาม',   s:'งานติดตามและฐานลูกค้า',        ic:'users', r:['admin','manager','sales']},
+  {k:'cust',     t:'ลูกค้า',           s:'ฐานข้อมูลลูกค้า',              ic:'user', r:['admin','manager','sales']},
+  {k:'follow',   t:'ติดตามการขาย',     s:'จับคู่ลูกค้ากับรถ ตามจนปิดดีล',  ic:'users', r:['admin','manager','sales']},
   {k:'reg',      t:'ทะเบียน',          s:'ติดตามงานทะเบียน 6 ขั้น',       ic:'clipboard', r:['admin','manager','acct','sales']},
   {k:'fin',      t:'เคสสินเชื่อ',       s:'ติดตามเรื่องกับไฟแนนซ์',       ic:'bank', r:['admin','manager','acct','sales']},
   {k:'ar',       t:'เงินค้างรับ',       s:'ยอดที่ยังไม่ได้รับ',           ic:'cash', r:['admin','manager','acct']},
@@ -1546,8 +1666,8 @@ function go(k){
 /* ============================= RENDER ทั้งหมด ============================= */
 function refreshAll(){ render(); badges(); promoBar(); }
 function render(){
-  const f={dash:rDash,cal:rCal,recv:rRecv,stock:rStock,sell:rSell,transfer:rTransfer,quote:rQuote,
-    crm:rCrm,reg:rReg,fin:rFin,ar:rAr,service:rService,parts:rParts,partsale:rPartSale,gift:rGift,
+  const f={dash:rDash,cal:rCal,report:rReport,recv:rRecv,stock:rStock,sell:rSell,transfer:rTransfer,quote:rQuote,
+    cust:rCust,follow:rFollow,reg:rReg,fin:rFin,ar:rAr,service:rService,parts:rParts,partsale:rPartSale,gift:rGift,
     expense:rExpense,hr:rHr,payroll:rPayroll,users:rUsers,imp:rImp,settings:rSettings,flow:rFlow}[CUR];
   if(f) f();
   badges();
@@ -1772,8 +1892,13 @@ function statusPill(s){ return {available:pill('พร้อมขาย','good'
 
 /* ============================= 2. ปฏิทิน ============================= */
 let CAL={y:NOW.getFullYear(), m:NOW.getMonth(), sel:TODAY};
+/* ปฏิทินรถ — ภาพรวมการรับเข้า/ขาย + งานปฏิบัติการ (ติดตาม ทะเบียน ลา) */
 function calEvents(){
   const ev=[];
+  UNITS.filter(u=>inScope(u.branch)).forEach(u=>
+    ev.push({d:u.received,k:'recv',t:'รับเข้า '+u.model+' ('+bOf(u.branch).prefix+')'}));
+  SALES.filter(s=>inScope(s.branch)).forEach(s=>{ const u=UNITS.find(x=>x.id===s.unitId);
+    ev.push({d:s.soldAt,k:'sale',t:'ขาย '+(u?u.model:'')+' ('+bOf(s.branch).prefix+')'}); });
   TASKS.filter(t=>!t.done&&inScope(t.branch)).forEach(t=>{ const c=CUSTOMERS.find(x=>x.id===t.custId);
     ev.push({d:t.due,k:'task',t:'ติดตาม '+(c?c.name:'')}); });
   REGS.filter(r=>inScope(r.branch)&&r.stage!=='ส่งมอบแล้ว').forEach(r=>{ const s=SALES.find(x=>x.id===r.saleId);
@@ -1782,14 +1907,30 @@ function calEvents(){
     let d=l.from, n=0; while(d<=l.to && n<40){ ev.push({d,k:'leave',t:'ลา '+(st?st.nick:'')}); d=addDays(d,1); n++; } });
   return ev;
 }
+const EV_META={ recv:{p:'p-good',n:'รับเข้า'}, sale:{p:'p-info',n:'ขาย'}, task:{p:'p-brand',n:'ติดตาม'},
+  reg:{p:'p-warn',n:'ทะเบียน'}, leave:{p:'p-mut',n:'ลา'}, exec:{p:'p-brand',n:'ผู้บริหาร'} };
+let CAL_TAB='veh';
+const canExecCal = () => ['admin','manager'].indexOf(ME.role)>=0;
 function rCal(){
   if(!$('#calPrev').dataset.init){ $('#calPrev').dataset.init=1;
     $('#calPrev').onclick=()=>{ CAL.m--; if(CAL.m<0){CAL.m=11;CAL.y--;} rCal(); };
-    $('#calNext').onclick=()=>{ CAL.m++; if(CAL.m>11){CAL.m=0;CAL.y++;} rCal(); }; }
+    $('#calNext').onclick=()=>{ CAL.m++; if(CAL.m>11){CAL.m=0;CAL.y++;} rCal(); };
+    $$('#calTabs button').forEach(b=> b.onclick=()=>{ CAL_TAB=b.dataset.c;
+      $$('#calTabs button').forEach(x=>x.classList.toggle('on',x===b)); rCal(); });
+    $('#evAdd').onclick=execEventModal;
+  }
+  /* แท็บผู้บริหารเห็นเฉพาะ admin/manager */
+  $('#calExecTab').style.display = canExecCal()? '' : 'none';
+  if(CAL_TAB==='exec' && !canExecCal()) CAL_TAB='veh';
+  $$('#calTabs button').forEach(x=>x.classList.toggle('on', x.dataset.c===CAL_TAB));
+  const exec = CAL_TAB==='exec';
+  $('#evAdd').style.display = exec? '' : 'none';
+  $('#calLegend').innerHTML = (exec? ['exec'] : ['recv','sale','task','reg','leave'])
+    .map(k=>'<span class="pill '+EV_META[k].p+'">'+EV_META[k].n+'</span>').join(' ');
   $('#calTitle').textContent = TH_M[CAL.m].replace('.','.')+' '+(CAL.y+543);
   const first=new Date(CAL.y,CAL.m,1); const startDow=(first.getDay()+6)%7;
   const dim=new Date(CAL.y,CAL.m+1,0).getDate();
-  const ev=calEvents();
+  const ev = exec? EXEC_EVENTS.map(e=>({d:e.d,k:'exec',t:e.title,id:e.id})) : calEvents();
   let h=['จ','อ','พ','พฤ','ศ','ส','อา'].map(d=>'<div class="hh">'+d+'</div>').join('');
   for(let i=0;i<startDow;i++) h+='<div class="cd mut"></div>';
   for(let d=1;d<=dim;d++){
@@ -1806,20 +1947,38 @@ function rCal(){
     const de=ev.filter(e=>e.d===CAL.sel);
     $('#calDayT').textContent='งานวันที่ '+thDate(CAL.sel);
     $('#calDay').innerHTML = de.length? de.map(e=>'<div style="display:flex;gap:var(--s2);align-items:center;padding:var(--s1) 0;border-bottom:1px solid var(--hairline-2)">'
-      +'<span class="pill '+({task:'p-brand',reg:'p-warn',leave:'p-mut'}[e.k])+'">'+({task:'ติดตาม',reg:'ทะเบียน',leave:'ลา'}[e.k])+'</span><span>'+esc(e.t)+'</span></div>').join('')
+      +'<span class="pill '+EV_META[e.k].p+'">'+EV_META[e.k].n+'</span><span style="flex:1">'+esc(e.t)+'</span>'
+      +(e.k==='exec'? '<button class="lnk" data-evd="'+e.id+'">ลบ</button>':'')+'</div>').join('')
       : '<div class="empty"><b>ไม่มีงานในวันนี้</b>เลือกวันอื่นจากปฏิทินด้านบน</div>';
+    $$('#calDay [data-evd]').forEach(b=> b.onclick=()=>{ const i=EXEC_EVENTS.findIndex(x=>x.id===b.dataset.evd);
+      if(i>=0){ EXEC_EVENTS.splice(i,1); toast('ลบงานแล้ว'); rCal(); } });
   }
+}
+function execEventModal(){
+  openModal('เพิ่มงานผู้บริหาร',
+    '<div class="f"><div><label class="fl">ชื่องาน</label><input class="inp" id="evTitle" placeholder="ออกบูธงานประจำจังหวัด"></div>'
+    +'<div class="f2"><div><label class="fl">ประเภท</label><select class="inp" id="evType"><option>อีเวนท์</option><option>ประชุม</option><option>รับเชิญ</option><option>อื่นๆ</option></select></div>'
+    +'<div><label class="fl">วันที่</label><input class="inp" type="date" id="evDate" value="'+(CAL.sel||TODAY)+'"></div></div>'
+    +'<div><label class="fl">หมายเหตุ</label><input class="inp" id="evNote"></div></div>'
+    +'<div class="savebar"><button class="btn" id="evGo">บันทึก<svg class="i"><use href="#i-check"/></svg></button></div>');
+  $('#evGo').onclick=()=>{ const t=$('#evTitle').value.trim();
+    if(!t){ toast('กรอกชื่องานก่อน','',1); return; }
+    EXEC_EVENTS.push({id:nid('EV'), d:$('#evDate').value||TODAY, type:$('#evType').value, title:t, note:$('#evNote').value.trim()});
+    closeModal(); toast('เพิ่มงานผู้บริหารแล้ว', t); rCal(); };
 }
 
 /* ============================= 3. รับรถ ============================= */
 let rFilesArr=[];
 function rRecv(){
-  if($('#rBranch').dataset.init) { rPreview(); return; }
+  /* dropdown รุ่นเติมใหม่ทุกครั้ง — รับรุ่นที่เพิ่ม/แก้จากตั้งค่า → รุ่นรถและสี */
+  (function(){ const el=$('#rVariant'), want=el.value;
+    const vs=Object.keys(PRICE).concat(NO_PRICE.filter(v=>!PRICE[v]));
+    el.innerHTML=vs.map(v=>'<option value="'+v+'">'+v+' — '+esc(PRICE[v]?PRICE[v].m:'(ไม่มีในตารางราคา)')+'</option>').join('');
+    if(want && vs.indexOf(want)>=0) el.value=want; })();
+  if($('#rBranch').dataset.init) { if(window._rSync) window._rSync(); rRecent(); return; }
   $('#rBranch').dataset.init=1;
   $('#rBranch').innerHTML=BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
   $('#rDate').value=TODAY;
-  const vs=Object.keys(PRICE).concat(NO_PRICE);
-  $('#rVariant').innerHTML=vs.map(v=>'<option value="'+v+'">'+v+' — '+esc(PRICE[v]?PRICE[v].m:'(ไม่มีในตารางราคา)')+'</option>').join('');
   $('#rVariant').onchange=syncVariant; syncVariant();
   $('#rColor').onchange=rPreview;
   $('#rFile').onchange=e=>{ rFilesArr=rFilesArr.concat(Array.from(e.target.files).map(f=>f.name)); drawFiles(); };
@@ -1828,6 +1987,7 @@ function rRecv(){
   function drawFiles(){ $('#rFiles').innerHTML=rFilesArr.map((f,i)=>'<div class="frow">'+ic('clip','i i-sm')+'<span>'+esc(f)+'</span><button class="fx" data-i="'+i+'">'+ic('x','i i-sm')+'</button></div>').join('');
     $$('#rFiles .fx').forEach(b=> b.onclick=()=>{ rFilesArr.splice(+b.dataset.i,1); drawFiles(); }); }
   window._rDrawFiles=drawFiles;
+  window._rSync=()=>syncVariant();
   function syncVariant(){
     const v=$('#rVariant').value, p=PRICE[v];
     $('#rColor').innerHTML = p? Object.keys(p.c).map(c=>'<option value="'+c+'">'+c+' — '+esc(p.c[c])+'</option>').join('')
@@ -1882,7 +2042,7 @@ function saveRecv(){
 }
 
 /* ============================= 4. สต๊อก ============================= */
-let stView='table';
+let stView='grp', stOpen={};   /* stOpen = กลุ่มรุ่น+สีที่กางดูรายคันอยู่ */
 /* รายการรถตามตัวกรองปัจจุบัน — ใช้ทั้งการแสดงผลและการส่งออก */
 function stList(){
   const q=$('#stQ').value.trim().toLowerCase();
@@ -1910,9 +2070,39 @@ function rStock(){
   const av=list.filter(u=>u.status!=='sold');
   $('#stSum').innerHTML='พบ <b>'+list.length+'</b> คัน · พร้อมขาย <b>'+av.length+'</b> · ต้นทุนจม <b>'+money(av.reduce((s,u)=>s+u.cost,0))
     +'</b> · ค้างเกิน '+CFG.aging+' วัน <b>'+av.filter(u=>age(u)>CFG.aging).length+'</b> คัน';
+  $('#stGrpWrap').style.display   = stView==='grp'?'':'none';
   $('#stTableWrap').style.display = stView==='table'?'':'none';
   $('#stGalWrap').style.display   = stView==='gal'?'':'none';
-  if(stView==='table'){
+  if(stView==='grp'){
+    /* คงเหลือแยกรุ่น+สี × สาขา — คลิกแถวเพื่อกางดูเลขเครื่องและต้นทุนรายคัน */
+    const brs=BRANCHES.filter(b=>inScope(b.code));
+    const grp={};
+    av.forEach(u=>{ const k=u.variant+'|'+u.color; grp[k]=grp[k]||{u:u,n:0,by:{},units:[]};
+      grp[k].n++; grp[k].by[u.branch]=(grp[k].by[u.branch]||0)+1; grp[k].units.push(u); });
+    const keys=Object.keys(grp).sort((a,b)=> grp[b].n-grp[a].n || a.localeCompare(b));
+    const head=['รุ่น / สี',{t:'คงเหลือ',n:1}].concat(brs.map(b=>({t:bOf(b.code).prefix,n:1}))).concat([{t:'ราคาขาย',n:1},'']);
+    tbl($('#stGrp'), head, keys.map(k=>{ const g=grp[k], u=g.u, open=!!stOpen[k];
+      let rows='<tr class="clk" data-grp="'+esc(k)+'">'
+        +'<td><div style="display:flex;gap:var(--s2);align-items:center"><span class="bph">'+bikeArt(u.variant,u.color)+'</span>'
+        +'<div><b>'+esc(u.model)+'</b><div class="tsub"><span class="dot" style="background:'+(COLOR_HEX[u.color]||'#ccc')+'"></span> '
+        +esc(u.color)+' · '+esc(u.variant)+'</div></div></div></td>'
+        +'<td class="n"><b>'+g.n+'</b></td>'
+        +brs.map(b=>'<td class="n">'+(g.by[b.code]||'—')+'</td>').join('')
+        +'<td class="n">'+(u.retail==null?pill('รอกำหนดราคา','warn'):fmt(u.retail)+(u.clearance?' '+pill('เคลียร์','warn'):''))+'</td>'
+        +'<td>'+ic(open?'up':'down','i i-sm')+'</td></tr>';
+      if(open) rows+=g.units.map(x=>'<tr class="grp-sub clk" data-unit="'+x.id+'">'
+        +'<td style="padding-left:var(--s4)"><span class="mono">'+esc(x.engine)+'</span><div class="tsub mono">'+esc(x.frame)+'</div></td>'
+        +'<td class="n">'+ageTag(age(x))+'</td>'
+        +brs.map(b=>'<td class="n">'+(x.branch===b.code?'●':'')+'</td>').join('')
+        +'<td class="n">'+(noMoney()?'—':'ทุน '+fmt(x.cost))+'</td>'
+        +'<td>'+(x.status==='available'&&canSee('sell')?'<button class="lnk" data-sell="'+x.id+'">ขาย</button>':statusPill(x.status))+'</td></tr>').join('');
+      return rows; }), 'ไม่พบรถตามเงื่อนไข');
+    $$('#stGrp [data-grp]').forEach(r=> r.onclick=()=>{ const k=r.dataset.grp;
+      stOpen[k]=!stOpen[k]; rStock(); });
+    wireUnitRows();
+    $$('#stGrp [data-sell]').forEach(b=> b.onclick=e=>{ e.stopPropagation(); go('sell');
+      setTimeout(()=>{ $('#sUnit').value=b.dataset.sell; calcSell(); },30); });
+  } else if(stView==='table'){
     tbl($('#stTable'), ['รุ่น / สี','รหัสรุ่น','เลขเครื่อง','สาขา',{t:'ต้นทุน',n:1},{t:'ราคาขาย',n:1},{t:'อายุ',n:1},'สถานะ',''],
       list.slice().sort((a,b)=>age(b)-age(a)).map(u=>'<tr class="clk" data-unit="'+u.id+'">'
         +'<td><b>'+esc(u.model)+'</b><div class="tsub"><span class="dot" style="background:'+(COLOR_HEX[u.color]||'#ccc')+'"></span> '+esc(u.color)+'</div></td>'
@@ -1929,7 +2119,7 @@ function rStock(){
     av.forEach(u=>{ const k=u.variant+'|'+u.model; grp[k]=grp[k]||{u:u,n:0,colors:{},age:0};
       grp[k].n++; grp[k].age+=age(u); grp[k].colors[u.color]=(grp[k].colors[u.color]||0)+1; });
     $('#stGal').innerHTML = Object.keys(grp).length? Object.keys(grp).map(k=>{ const g=grp[k];
-      return '<div class="gcard"><div class="ph">'+ic('bike')+'<span class="qty">'+g.n+'</span></div>'
+      return '<div class="gcard"><div class="ph">'+bikeArt(g.u.variant, g.u.color)+'<span class="qty">'+g.n+'</span></div>'
         +'<div class="gb"><b>'+esc(g.u.model)+'</b><div class="c">'+esc(g.u.variant)+' · '+esc(g.u.modelTh||'—')+'</div>'
         +'<div class="c">'+(g.u.retail==null?'<span style="color:var(--attn)">รอกำหนดราคา</span>':baht(g.u.retail)+(g.u.clearance?' <span style="color:var(--attn)">· เคลียร์</span>':''))+'</div>'
         +'<div class="cs">'+Object.keys(g.colors).map(c=>'<span class="pill p-mut"><span class="dot" style="background:'+(COLOR_HEX[c]||'#ccc')+'"></span>'+esc(c)+' '+g.colors[c]+'</span>').join('')+'</div>'
@@ -1953,7 +2143,8 @@ function rSell(){
       b.classList.add('on'); $$('#s-sell .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p));
       if(b.dataset.p==='p2') finCompare(); if(b.dataset.p==='p3') renderDocs(); });
     ['fNet','fDown'].forEach(k=> $('#'+k).oninput=finCompare);
-    $('#docPrint').onclick=()=>{ printHTML(docCopies($('#docPrev').innerHTML)); };
+    $('#fModel').onchange=finCompare;
+    $('#docPrint').onclick=printCurrentDoc;
   }
   /* เติมใหม่ทุกครั้ง — รับการเพิ่ม/ลบ/ปิดใช้งานไฟแนนซ์ */
   (function(){ const el=$('#sFinCo'), want=el.value, act=finActive();
@@ -2016,12 +2207,14 @@ function saveSale(){
     finId: pay==='finance'?$('#sFinCo').value:'', down: pay==='finance'?num($('#sDown').value):0,
     term: pay==='finance'?+$('#sTerm').value:null, note:$('#sNote').value.trim(),
     docNo: nextDocNo(u.branch,'TAXINV')};   /* เลขใบกำกับภาษีออกตอนบันทึก ไม่ใช่ตอนพรีวิว */
+  s.docs={TAXINV:s.docNo};   /* เอกสารประเภทอื่นออกเลขครั้งแรกที่พิมพ์ (docNoFor) */
   SALES.push(s); u.status='sold';
   Object.keys(sFree).forEach(id=>{ const g=GIFTS.find(x=>x.id===id); if(g) g.qty=Math.max(0,g.qty-1); });
   REGS.push({id:nid('RG'),saleId:s.id,branch:s.branch,stage:'ขายแล้ว',due:addDays(TODAY,CFG.regDays),plate:'',
     log:[{to:'ขายแล้ว',at:TODAY}]});
   if(pay==='finance'){
-    FINCASES.push({id:nid('FC'),saleId:s.id,custId:c.id,branch:s.branch,finId:s.finId,status:'ส่งเรื่อง',amount:net-s.down,at:TODAY});
+    FINCASES.push({id:nid('FC'),saleId:s.id,custId:c.id,branch:s.branch,finId:s.finId,status:'ส่งเรื่อง',amount:net-s.down,at:TODAY,
+      log:[{to:'ส่งเรื่อง',at:TODAY}]});
     AR.push({id:nid('AR'),saleId:s.id,branch:s.branch,kind:'finance',finId:s.finId,due:net-s.down,paid:0,dueAt:addDays(TODAY,15),pays:[]});
   }
   String(CFG.cadence).split(',').map(x=>parseInt(x)).forEach(d=>
@@ -2032,56 +2225,139 @@ function saveSale(){
   sFree={}; $('#sCust').value=''; $('#sPhone').value=''; $('#sDisc').value=0; $('#sNote').value='';
   refreshAll();
 }
+/* เลือกรุ่น + ดาวน์ → เทียบค่างวดทุกไฟแนนซ์ที่เปิดใช้ ทุกช่วงงวด ทันที
+   ดาวน์ต่ำกว่าขั้นต่ำของเจ้าไหน คอลัมน์เจ้านั้นถูกขีดออกพร้อมเหตุผล */
 function finCompare(){
-  const u=curUnit();
-  if(!$('#fNet').value || document.activeElement!==$('#fNet')) $('#fNet').value = u? fmt(u.retail-num($('#sDisc').value)) : 0;
+  /* dropdown รุ่น — เติมใหม่ทุกครั้ง รับรุ่นที่เพิ่มจากหน้าตั้งค่า */
+  (function(){ const el=$('#fModel'), want=el.value, vs=Object.keys(PRICE);
+    el.innerHTML='<option value="">— กรอกราคาเอง —</option>'
+      +vs.map(v=>'<option value="'+v+'">'+esc(PRICE[v].m)+' · '+v+' — '+fmt(PRICE[v].retail)+' ฿</option>').join('');
+    if(want && (want===''||PRICE[want])) el.value=want; })();
+  const u=curUnit(), mv=$('#fModel').value;
+  if(mv && document.activeElement!==$('#fNet')) $('#fNet').value=fmt(PRICE[mv].retail);
+  else if(!$('#fNet').value && u) $('#fNet').value=fmt(u.retail-num($('#sDisc').value));
   const net=num($('#fNet').value), down=num($('#fDown').value), prin=Math.max(0,net-down);
   $('#fPrin').value=fmt(prin);
-  const act=finActive(), terms=[12,18,24,30,36,42,48];
-  if(act.length<2){
-    tbl($('#finCmp'), ['จำนวนงวด'], [], 'ต้องมีไฟแนนซ์ที่เปิดใช้งานอย่างน้อย 2 เจ้าจึงเทียบได้');
-    return;
-  }
-  const a=act[0], b=act[1];
-  tbl($('#finCmp'), ['จำนวนงวด',{t:a.name,n:1},{t:b.name,n:1},{t:'ต่างกัน / เดือน',n:1},'ถูกกว่า'],
-    terms.map(n=>{ const x=installment(prin,a.rate,n), y=installment(prin,b.rate,n);
-      return '<tr><td><b>'+n+' งวด</b></td><td class="n">'+fmt(x)+'</td><td class="n">'+fmt(y)+'</td>'
-        +'<td class="n">'+fmt(Math.abs(x-y))+'</td><td>'+pill(x<y?a.name:b.name,'good')+'</td></tr>'; }),
-    'กรอกราคาสุทธิก่อน');
+  const downPct = net>0? down/net*100 : 0;
+  $('#fDownPct').innerHTML=[10,15,20,30].map(p=>'<button class="chip'+(Math.abs(downPct-p)<0.5?' on':'')+'" data-pct="'+p+'">'+p+'%'
+    +(net>0?' <span class="tsub">('+fmt(net*p/100)+')</span>':'')+'</button>').join('');
+  $$('#fDownPct .chip').forEach(b=> b.onclick=()=>{ $('#fDown').value=Math.round(net*(+b.dataset.pct)/100); finCompare(); });
+  const act=finActive();
+  if(!act.length){ tbl($('#finCmp'), ['จำนวนงวด'], [], 'ยังไม่มีไฟแนนซ์ที่เปิดใช้งาน — เพิ่มได้ที่แท็บบริษัทไฟแนนซ์'); $('#fWarn').innerHTML=''; return; }
+  const blocked=act.filter(f=> f.minDownPct>0 && downPct < f.minDownPct-0.01);
+  const okOf=f=> blocked.indexOf(f)<0;
+  tbl($('#finCmp'),
+    ['จำนวนงวด'].concat(act.map(f=>({t:f.name,n:1}))).concat(act.length>1?['ถูกสุด']:[]),
+    FIN_TERMS.map(n=>{
+      const pays=act.map(f=> okOf(f)? installment(prin, finRate(f,n), n) : null);
+      const best=Math.min.apply(null, pays.filter(p=>p!=null));
+      const bi=pays.indexOf(best);
+      return '<tr><td><b>'+n+' งวด</b><div class="tsub">'+(n/12).toFixed(n%12?1:0)+' ปี</div></td>'
+        +pays.map((p,i)=> p==null? '<td class="n"><span class="tsub" style="text-decoration:line-through">ดาวน์ไม่ถึง</span></td>'
+          : '<td class="n"'+(i===bi&&act.length>1?' style="font-weight:700"':'')+'>'+fmt(p)
+            +(finRate(act[i],n)!==act[i].rate?'<div class="tsub">'+finRate(act[i],n)+'%</div>':'')+'</td>').join('')
+        +(act.length>1?'<td>'+(bi>=0?pill(act[bi].name,'good'):'—')+'</td>':'')+'</tr>';
+    }), 'กรอกราคาสุทธิก่อน');
+  $('#fWarn').innerHTML = blocked.length?
+    '<div class="note w" style="margin-top:var(--s2)">'+ic('alert','i i-sm')+'<span>ดาวน์ '+fmt(down)+' ฿ ('+downPct.toFixed(1)+'%) ต่ำกว่าขั้นต่ำของ '
+    +blocked.map(f=>esc(f.name)+' ('+f.minDownPct+'%)').join(' · ')+'</span></div>' : '';
 }
 /* laser A4 ทำสำเนาคาร์บอนไม่ได้ — พิมพ์ต้นฉบับและสำเนาเป็นคนละแผ่นในงานเดียว */
 function docCopies(html){
   return ['ต้นฉบับ','สำเนา'].map(m=>
     html.replace('<div class="doc">', '<div class="doc"><div class="mark">'+m+'</div>')).join('');
 }
-function renderDocs(){
-  const u=curUnit(); const pay=$('#sPay').value;
-  const list = pay==='cash'
-    ? ['ใบเสร็จรับเงิน','ใบกำกับภาษี (ถ้าลูกค้าขอ)']
-    : ['ใบเสร็จรับเงิน (เงินดาวน์)','ใบกำกับภาษีเงินดาวน์','ใบกำกับภาษีที่ออกให้ไฟแนนซ์','สัญญาเช่าซื้อ'];
-  $('#docList').innerHTML=list.map(d=>'<div style="display:flex;align-items:center;gap:var(--s1);padding:var(--s1) 0;border-bottom:1px solid var(--hairline-2)">'
-    +'<span style="flex:1;font-size:var(--t-table)">'+esc(d)+'</span>'+pill('พร้อมออก','good')+'</div>').join('')
-    +'<p class="foot">เลขที่เอกสารแยกตามสาขา × ประเภท × ปี</p>';
-  if(!u){ $('#docPrev').innerHTML='<div class="empty"><b>เลือกรถก่อน</b></div>'; return; }
-  const disc=num($('#sDisc').value), net=u.retail-disc;
-  const rate=CFG.vat/100, base=net/(1+rate), tax=net-base;
-  const br=bOf(u.branch);
-  $('#docPrev').innerHTML=
-   '<div class="doc"><h2>'+esc(CFG.company)+'</h2>'
-   +'<div class="dsub">'+esc(CFG.address)+' · โทร '+esc(CFG.phone)+'<br>เลขประจำตัวผู้เสียภาษี '+esc(CFG.taxId)+' · '+esc(br.name)+' ('+esc(br.branchNo)+')</div>'
-   +'<h2 style="margin-top:var(--s2)">ใบเสร็จรับเงิน / ใบกำกับภาษี</h2>'
-   +'<div class="co"><div><b>ลูกค้า</b><br>'+esc($('#sCust').value||'— ยังไม่ระบุ —')+'<br>'+esc($('#sPhone').value||'')+'</div>'
-   +'<div style="text-align:right"><b>เลขที่</b> <span class="mono">'+esc(peekDocNo(u.branch,'TAXINV'))+'</span><br>'
-   +'<b>วันที่</b> '+thDate(TODAY)+'</div></div>'
+/* ---------- เอกสารการขายแยกประเภท ----------
+   ใบกำกับภาษีเต็มรูป = 2 แผ่น (ต้นฉบับ+สำเนา) · ใบเสร็จ/อย่างย่อ = แผ่นเดียว
+   เลขที่แยกตัวนับต่อประเภท ออกเลขจริงครั้งแรกที่พิมพ์จากการขายจริง แล้วใช้เลขเดิมเมื่อพิมพ์ซ้ำ */
+const DOC_DEFS = {
+  RECEIPT:{n:'ใบเสร็จรับเงิน',            copies:1},
+  TAXINV :{n:'ใบกำกับภาษี (เต็มรูป)',      copies:2, tax:true},
+  TAXABB :{n:'ใบกำกับภาษีอย่างย่อ',        copies:1, tax:true},
+  DOWNTX :{n:'ใบกำกับภาษีเงินดาวน์',       copies:2, tax:true},
+  FINTX  :{n:'ใบกำกับภาษีออกให้ไฟแนนซ์',   copies:2, tax:true}
+};
+const docAllowed = pay => pay==='finance' ? ['RECEIPT','DOWNTX','FINTX'] : ['RECEIPT','TAXINV','TAXABB'];
+let DOC_SEL='RECEIPT', DOC_SALE='';
+/* เลขเอกสารของการขายจริง — ออกครั้งแรกครั้งเดียวต่อประเภท เก็บไว้พิมพ์ซ้ำ */
+function docNoFor(s, type){
+  s.docs = s.docs || (s.docNo? {TAXINV:s.docNo} : {});
+  if(!s.docs[type]) s.docs[type]=nextDocNo(s.branch, type);
+  return s.docs[type];
+}
+/* ข้อมูลที่เอกสารต้องใช้ — จากการขายจริง หรือจากฟอร์มที่ยังไม่บันทึก */
+function docData(){
+  if(DOC_SALE){
+    const s=SALES.find(x=>x.id===DOC_SALE);
+    if(s){ const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+      return {s, u, cust:c?c.name:'—', phone:c?c.phone:'', pay:s.pay, disc:s.disc, net:s.net, down:s.down||0, date:s.soldAt}; }
+  }
+  const u=curUnit(); if(!u) return null;
+  const disc=num($('#sDisc').value);
+  return {s:null, u, cust:$('#sCust').value||'— ยังไม่ระบุ —', phone:$('#sPhone').value||'',
+    pay:$('#sPay').value, disc, net:u.retail-disc, down:num($('#sDown').value)||0, date:TODAY};
+}
+function docHTML(type, d){
+  const def=DOC_DEFS[type], u=d.u, br=bOf(u.branch);
+  /* ยอดของเอกสาร: เงินดาวน์ = เฉพาะดาวน์ · ออกให้ไฟแนนซ์ = ยอดจัด · อื่น ๆ = สุทธิ */
+  const amt = type==='DOWNTX' ? d.down
+            : type==='FINTX'  ? d.net-d.down
+            : (d.pay==='finance' ? d.down : d.net);
+  const rate=CFG.vat/100, base=amt/(1+rate), tax=amt-base;
+  const docNo = d.s ? docNoFor(d.s, type) : peekDocNo(u.branch, type);
+  const fin = d.s? finById(d.s.finId) : finById($('#sFinCo').value);
+  const buyer = type==='FINTX' && fin ? fin.name+' (ผู้ให้เช่าซื้อ)' : d.cust;
+  return '<div class="doc"><h2>'+esc(CFG.company)+'</h2>'
+   +'<div class="dsub">'+esc(CFG.address)+' · โทร '+esc(CFG.phone)
+   +(def.tax? '<br>เลขประจำตัวผู้เสียภาษี '+esc(CFG.taxId)+' · '+esc(br.name)+' ('+esc(br.branchNo)+')' : '<br>'+esc(br.name))+'</div>'
+   +'<h2 style="margin-top:var(--s2)">'+esc(def.n)+'</h2>'
+   +(d.s? '' : '<div class="dsub">(ตัวอย่าง — เลขที่จริงออกเมื่อบันทึกการขาย)</div>')
+   +'<div class="co"><div><b>'+(type==='FINTX'?'ออกให้':'ลูกค้า')+'</b><br>'+esc(buyer)+'<br>'+esc(type==='FINTX'?'':d.phone)+'</div>'
+   +'<div style="text-align:right"><b>เลขที่</b> <span class="mono">'+esc(docNo)+'</span><br>'
+   +'<b>วันที่</b> '+thDate(d.date)+'</div></div>'
    +'<table><thead><tr><th>รายการ</th><th class="n">จำนวน</th><th class="n">ราคา</th></tr></thead><tbody>'
-   +'<tr><td>'+esc(u.model)+' ('+esc(u.variant)+') สี'+esc(u.color)+'<br><span class="tsub mono">เลขเครื่อง '+esc(u.engine)+' · เลขถัง '+esc(u.frame)+'</span></td>'
-   +'<td class="n">1</td><td class="n">'+fmt(u.retail)+'</td></tr>'
-   +(disc?'<tr><td>ส่วนลด</td><td class="n">—</td><td class="n">-'+fmt(disc)+'</td></tr>':'')
+   +'<tr><td>'+(type==='DOWNTX'||( d.pay==='finance'&&type==='RECEIPT')? 'เงินดาวน์ — ' : '')
+   +esc(u.model)+' ('+esc(u.variant)+') สี'+esc(u.color)
+   +'<br><span class="tsub mono">เลขเครื่อง '+esc(u.engine)+' · เลขถัง '+esc(u.frame)+'</span></td>'
+   +'<td class="n">1</td><td class="n">'+fmt(type==='DOWNTX'||(d.pay==='finance'&&type==='RECEIPT')? d.down : (type==='FINTX'? d.net-d.down : u.retail))+'</td></tr>'
+   +(d.disc && type!=='DOWNTX' && type!=='FINTX' && d.pay!=='finance' ? '<tr><td>ส่วนลด</td><td class="n">—</td><td class="n">-'+fmt(d.disc)+'</td></tr>':'')
    +'</tbody></table>'
    +'<div class="tot"><div><span>มูลค่าก่อนภาษี</span><span>'+fmt(base)+'</span></div>'
    +'<div><span>ภาษีมูลค่าเพิ่ม '+CFG.vat+'%</span><span>'+fmt(tax)+'</span></div>'
-   +'<div class="g"><span>รวมทั้งสิ้น</span><span>'+fmt(net)+' ฿</span></div></div>'
+   +'<div class="g"><span>รวมทั้งสิ้น</span><span>'+fmt(amt)+' ฿</span></div></div>'
    +'<div class="sig"><div>ผู้รับเงิน</div><div>ผู้รับสินค้า</div></div></div>';
+}
+function printCurrentDoc(){
+  const d=docData(); if(!d){ toast('เลือกรถหรือรายการขายก่อน','',1); return; }
+  const html=docHTML(DOC_SEL, d);
+  printHTML(DOC_DEFS[DOC_SEL].copies===2 ? docCopies(html) : html);
+  if(d.s) renderDocs();   /* เลขที่เพิ่งออกจริงต้องโชว์ในตาราง */
+}
+function renderDocs(){
+  const d=docData();
+  const pay = d? d.pay : $('#sPay').value;
+  const allowed=docAllowed(pay);
+  if(allowed.indexOf(DOC_SEL)<0) DOC_SEL=allowed[0];
+  $('#docTypes').innerHTML=allowed.map(t=>'<button class="chip'+(t===DOC_SEL?' on':'')+'" data-dt="'+t+'">'+esc(DOC_DEFS[t].n)+'</button>').join('');
+  $$('#docTypes .chip').forEach(b=> b.onclick=()=>{ DOC_SEL=b.dataset.dt; renderDocs(); });
+  $('#docList').innerHTML=(DOC_SALE?'<div class="note g">'+ic('check','i i-sm')+'<span>กำลังดูเอกสารของการขายจริง — เลขที่ออกครั้งแรกที่พิมพ์ แล้วใช้เลขเดิมตลอด</span></div>':'')
+    +'<p class="foot">'+esc(DOC_DEFS[DOC_SEL].n)+' พิมพ์ '+(DOC_DEFS[DOC_SEL].copies===2?'ต้นฉบับ + สำเนา (2 แผ่น)':'แผ่นเดียว')
+    +' · เลขที่เอกสารแยกตามสาขา × ประเภท × ปี</p>';
+  /* การขายล่าสุด — คลิกแถวเพื่อสลับไปพิมพ์เอกสารของรายการนั้น */
+  const recent=sScoped().slice().sort((a,b)=>b.soldAt.localeCompare(a.soldAt)).slice(0,10);
+  tbl($('#docSales'), ['วันที่','ลูกค้า','รุ่น',{t:'สุทธิ',n:1},'เลขที่ออกแล้ว'],
+    [{}].concat(recent).map((s,ix)=>{
+      if(ix===0) return '<tr class="clk'+(DOC_SALE===''?'':'')+'" data-dsale=""><td colspan="5">'
+        +(DOC_SALE===''?'<b>◉ ':'○ ')+'ฟอร์มที่กำลังกรอก (ยังไม่บันทึก)'+(DOC_SALE===''?'</b>':'')+'</td></tr>';
+      const c=CUSTOMERS.find(x=>x.id===s.custId), u=UNITS.find(x=>x.id===s.unitId);
+      const nos=Object.keys(s.docs||{}).length + (s.docNo&&!(s.docs&&s.docs.TAXINV)?1:0);
+      return '<tr class="clk" data-dsale="'+s.id+'"><td>'+(DOC_SALE===s.id?'<b>◉</b> ':'○ ')+thDate(s.soldAt)+'</td>'
+        +'<td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(u?u.model:'—')+'</td>'
+        +'<td class="n">'+money(s.net)+'</td>'
+        +'<td class="mono" style="font-size:var(--t-label)">'+esc(Object.values(s.docs||{}).concat(s.docNo&&!(s.docs&&s.docs.TAXINV)?[s.docNo]:[]).join(' · ')||'—')+'</td></tr>'; }),
+    'ยังไม่มีการขาย');
+  $$('#docSales [data-dsale]').forEach(r=> r.onclick=()=>{ DOC_SALE=r.dataset.dsale; renderDocs(); });
+  $('#docPrev').innerHTML = d? docHTML(DOC_SEL, d) : '<div class="empty"><b>เลือกรถก่อน</b>หรือคลิกการขายล่าสุดด้านซ้าย</div>';
 }
 
 /* ============================= 6. โอนย้าย ============================= */
@@ -2154,8 +2430,9 @@ function qDraw(){
       +'<tr><td>'+esc(p.th)+' · '+p.cc+' cc · ปี พ.ศ. '+p.yr+'</td><td class="n">'+fmt(p.retail)+'</td></tr>'
       +'<tr><td>เงินดาวน์</td><td class="n">'+fmt(down)+'</td></tr>'
       +'<tr><td><b>ยอดจัดไฟแนนซ์</b></td><td class="n"><b>'+fmt(prin)+'</b></td></tr></tbody></table>'
-      +'<table><thead><tr><th>จำนวนงวด</th><th class="n">'+esc(f1.name)+' ('+f1.rate+'%)</th><th class="n">'+esc(f2.name)+' ('+f2.rate+'%)</th></tr></thead><tbody>'
-      +terms.map(n=>'<tr><td>'+n+' งวด</td><td class="n">'+fmt(installment(prin,f1.rate,n))+'</td><td class="n">'+fmt(installment(prin,f2.rate,n))+'</td></tr>').join('')
+      +'<table><thead><tr><th>จำนวนงวด</th><th class="n">'+esc(f1.name)+'</th><th class="n">'+esc(f2.name)+'</th></tr></thead><tbody>'
+      +terms.map(n=>'<tr><td>'+n+' งวด</td><td class="n">'+fmt(installment(prin,finRate(f1,n),n))+' <span class="tsub">('+finRate(f1,n)+'%)</span></td>'
+        +'<td class="n">'+fmt(installment(prin,finRate(f2,n),n))+' <span class="tsub">('+finRate(f2,n)+'%)</span></td></tr>').join('')
       +'</tbody></table>';
   });
   if(!slots.length) h+='<div class="empty"><b>เลือกรุ่นรถก่อน</b></div>';
@@ -2164,17 +2441,59 @@ function qDraw(){
   $('#qDoc').innerHTML=h;
 }
 
-/* ============================= 8. ลูกค้า / ติดตาม ============================= */
-function rCrm(){
-  if(!$('#cSave').dataset.init){ $('#cSave').dataset.init=1;
-    $('#cModel').innerHTML=Object.keys(PRICE).map(v=>'<option value="'+v+'">'+esc(PRICE[v].m)+' · '+v+'</option>').join('');
-    $$('#crmTabs button').forEach(b=> b.onclick=()=>{ $$('#crmTabs button').forEach(x=>x.classList.remove('on'));
-      b.classList.add('on'); $$('#s-crm .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p)); });
-    $('#cQ').oninput=rCrm;
-    $('#cSave').onclick=()=>{ const n=$('#cName').value.trim(); if(!n){ toast('กรอกชื่อลูกค้า','',1); return; }
-      CUSTOMERS.push({id:nid('CU'),name:n,phone:$('#cPhone').value.trim(),src:$('#cSrc').value,
-        stage:$('#cStage').value,branch:ME.branch,variant:$('#cModel').value,owner:ME.nick});
-      toast('เพิ่มลูกค้าแล้ว',n); $('#cName').value=''; $('#cPhone').value=''; refreshAll(); };
+/* ============================= 8. ลูกค้า (ข้อมูลเบื้องต้น) ============================= */
+const CUST_STAGES=['เข้ามาดูรถ','สนใจ','ทำสัญญา','ผ่าน','ไม่ผ่าน','รับรถสำเร็จ'];
+function custModal(id){
+  const c=id? CUSTOMERS.find(x=>x.id===id) : null;
+  const opt=(list,sel)=>list.map(x=>'<option'+(x===sel?' selected':'')+'>'+esc(x)+'</option>').join('');
+  openModal(c? 'แก้ไข '+c.name : 'เพิ่มลูกค้า',
+    '<div class="f"><div class="f2">'
+    +'<div><label class="fl">ชื่อ</label><input class="inp" id="cmName" value="'+esc(c?c.name:'')+'"></div>'
+    +'<div><label class="fl">เบอร์โทร</label><input class="inp" id="cmPhone" value="'+esc(c?c.phone||'':'')+'"></div></div>'
+    +'<div><label class="fl">ที่อยู่</label><input class="inp" id="cmAddr" value="'+esc(c?c.addr||'':'')+'"></div>'
+    +'<div class="f2">'
+    +'<div><label class="fl">รู้จักจาก</label><select class="inp" id="cmSrc">'+opt(['Facebook','เดินเข้าร้าน','เพื่อนแนะนำ','LINE','TikTok'], c?c.src:'เดินเข้าร้าน')+'</select></div>'
+    +'<div><label class="fl">รุ่นที่สนใจ</label><select class="inp" id="cmModel">'
+    +Object.keys(PRICE).map(v=>'<option value="'+v+'"'+((c?c.variant:'')===v?' selected':'')+'>'+esc(PRICE[v].m)+' · '+v+'</option>').join('')+'</select></div></div>'
+    +'<div><label class="fl">หมายเหตุ</label><input class="inp" id="cmNote" value="'+esc(c?c.note||'':'')+'"></div></div>'
+    +'<div class="savebar"><button class="btn" id="cmGo">'+(c?'บันทึก':'เพิ่มลูกค้า')+'<svg class="i"><use href="#i-check"/></svg></button></div>');
+  $('#cmGo').onclick=()=>{ const n=$('#cmName').value.trim();
+    if(!n){ toast('กรอกชื่อลูกค้า','',1); return; }
+    if(c){ c.name=n; c.phone=$('#cmPhone').value.trim(); c.addr=$('#cmAddr').value.trim();
+      c.src=$('#cmSrc').value; c.variant=$('#cmModel').value; c.note=$('#cmNote').value.trim();
+      toast('บันทึกแล้ว', n); }
+    else { CUSTOMERS.push({id:nid('CU'), name:n, phone:$('#cmPhone').value.trim(), addr:$('#cmAddr').value.trim(),
+      src:$('#cmSrc').value, stage:'เข้ามาดูรถ', branch:ME.branch, variant:$('#cmModel').value,
+      owner:ME.nick, note:$('#cmNote').value.trim()});
+      toast('เพิ่มลูกค้าแล้ว', n+' · ตามสถานะได้ที่หน้า “ติดตามการขาย”'); }
+    closeModal(); refreshAll(); };
+}
+function rCust(){
+  if(!$('#cAdd').dataset.init){ $('#cAdd').dataset.init=1;
+    $('#cAdd').onclick=()=>custModal();
+    $('#cQ').oninput=rCust;
+  }
+  const q=$('#cQ').value.trim().toLowerCase();
+  const cs=CUSTOMERS.filter(c=>inScope(c.branch));
+  tbl($('#custTable'), ['ลูกค้า','เบอร์','ที่อยู่','รู้จักจาก','รุ่นที่สนใจ/ซื้อ',{t:'ซื้อแล้ว',n:1},''],
+    cs.filter(c=>!q||(c.name+(c.phone||'')).toLowerCase().indexOf(q)>=0).map(c=>{
+      const bought=SALES.filter(s=>s.custId===c.id).length;
+      return '<tr class="clk" data-cust="'+c.id+'"><td><b>'+esc(c.name)+'</b>'
+        +(c.note?'<div class="tsub">'+esc(c.note)+'</div>':'')+'</td><td>'+esc(c.phone||'—')+'</td>'
+        +'<td>'+esc(c.addr||'—')+'</td><td>'+esc(c.src)+'</td>'
+        +'<td>'+esc(PRICE[c.variant]?PRICE[c.variant].m:c.variant||'—')+'</td>'
+        +'<td class="n">'+(bought||'—')+'</td>'
+        +'<td><button class="lnk" data-cedit="'+c.id+'">แก้ไข</button></td></tr>'; }),
+    'ยังไม่มีลูกค้า — กดปุ่ม “เพิ่มลูกค้า” มุมขวาบน');
+  $$('#custTable [data-cust]').forEach(r=> r.onclick=()=>custDrawer(r.dataset.cust));
+  $$('#custTable [data-cedit]').forEach(b=> b.onclick=e=>{ e.stopPropagation(); custModal(b.dataset.cedit); });
+}
+
+/* ============================= 8b. ติดตามการขาย (ลูกค้า × รถ) ============================= */
+function rFollow(){
+  if(!$('#fwStage').dataset.init){ $('#fwStage').dataset.init=1;
+    $('#fwStage').innerHTML='<option value="">ทุกสถานะ</option>'+CUST_STAGES.map(s=>'<option>'+esc(s)+'</option>').join('');
+    $('#fwStage').onchange=rFollow; $('#fwQ').oninput=rFollow;
   }
   const due=TASKS.filter(t=>!t.done&&inScope(t.branch)).sort((a,b)=>a.due.localeCompare(b.due));
   $('#taskCnt').textContent=due.filter(t=>t.due<=TODAY).length+' ถึงกำหนดแล้ว';
@@ -2188,25 +2507,37 @@ function rCrm(){
   $$('[data-task]').forEach(b=> b.onclick=()=>{ const t=TASKS.find(x=>x.id===b.dataset.task); t.done=true;
     toast('ปิดงานติดตามแล้ว'); refreshAll(); });
 
-  const stages=['เข้ามาดูรถ','สนใจ','ทำสัญญา','ผ่าน','ไม่ผ่าน','รับรถสำเร็จ'];
   const cs=CUSTOMERS.filter(c=>inScope(c.branch));
-  $('#funnel').innerHTML=stages.map(s=>{ const n=cs.filter(c=>c.stage===s).length;
-    const mx=Math.max(1,...stages.map(x=>cs.filter(c=>c.stage===x).length));
+  $('#funnel').innerHTML=CUST_STAGES.map(s=>{ const n=cs.filter(c=>c.stage===s).length;
+    const mx=Math.max(1,...CUST_STAGES.map(x=>cs.filter(c=>c.stage===x).length));
     return '<div class="bar"><div class="bl"><span>'+esc(s)+'</span><b>'+n+'</b></div>'
       +'<div class="bt"><div class="bf '+(s==='ไม่ผ่าน'?'d':(s==='รับรถสำเร็จ'?'g':''))+'" style="width:'+(n/mx*100)+'%"></div></div></div>'; }).join('');
   const labels={7:'ถามความรู้สึกหลังออกรถ',30:'เช็กระยะและเรื่องทะเบียน',90:'เช็กระยะครั้งถัดไป',365:'ต่อ พ.ร.บ. / เสนอเปลี่ยนรถ',1095:'เสนอเปลี่ยนรถใหม่'};
   $('#cadence').innerHTML=String(CFG.cadence).split(',').map(d=>'<div style="display:flex;gap:var(--s2);padding:var(--s1) 0;border-bottom:1px solid var(--hairline-2);font-size:var(--t-table)">'
     +pill(d+' วัน','brand')+'<span>'+esc(labels[+d]||'ติดตามลูกค้า')+'</span></div>').join('');
 
-  const q=$('#cQ').value.trim().toLowerCase();
-  tbl($('#custTable'), ['ลูกค้า','เบอร์','รู้จักจาก','สถานะ','รุ่นที่สนใจ/ซื้อ',{t:'งานค้าง',n:1}],
-    cs.filter(c=>!q||(c.name+c.phone).toLowerCase().indexOf(q)>=0).map(c=>{
+  /* ลูกค้า × รถ — แถวละคน เปลี่ยนสถานะได้ทันที */
+  const q=$('#fwQ').value.trim().toLowerCase(), st=$('#fwStage').value;
+  tbl($('#fwTable'), ['ลูกค้า','รถที่สนใจ/ซื้อ','เซลล์','สถานะ','เลื่อนสถานะ',{t:'งานค้าง',n:1}],
+    cs.filter(c=>(!st||c.stage===st)&&(!q||c.name.toLowerCase().indexOf(q)>=0)).map(c=>{
+      const s=SALES.find(x=>x.custId===c.id), u=s&&UNITS.find(x=>x.id===s.unitId);
+      const veh = u? u.model+' · '+u.color+' <span class="tsub mono">'+u.engine+'</span>'
+                : esc(PRICE[c.variant]?PRICE[c.variant].m+' (สนใจ)':c.variant||'—');
+      const i=CUST_STAGES.indexOf(c.stage);
       const open=TASKS.filter(t=>t.custId===c.id&&!t.done).length;
-      return '<tr class="clk" data-cust="'+c.id+'"><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.phone||'—')+'</td>'
-        +'<td>'+esc(c.src)+'</td><td>'+pill(c.stage, c.stage==='รับรถสำเร็จ'?'good':(c.stage==='ไม่ผ่าน'?'bad':'info'))+'</td>'
-        +'<td>'+esc(PRICE[c.variant]?PRICE[c.variant].m:c.variant||'—')+'</td><td class="n">'+(open||'—')+'</td></tr>'; }),
-    'ยังไม่มีลูกค้า');
-  $$('[data-cust]').forEach(r=> r.onclick=()=>custDrawer(r.dataset.cust));
+      return '<tr class="clk" data-cust="'+c.id+'"><td><b>'+esc(c.name)+'</b><div class="tsub">'+esc(c.phone||'')+'</div></td>'
+        +'<td>'+veh+'</td><td>'+esc(c.owner||'—')+'</td>'
+        +'<td>'+pill(c.stage, c.stage==='รับรถสำเร็จ'?'good':(c.stage==='ไม่ผ่าน'?'bad':'info'))+'</td>'
+        +'<td style="white-space:nowrap">'
+        +(i>0?'<button class="lnk" data-fwmv="'+c.id+'|-1">◀</button> ':'')
+        +(i<CUST_STAGES.length-1&&c.stage!=='รับรถสำเร็จ'?'<button class="lnk" data-fwmv="'+c.id+'|1">'+esc(CUST_STAGES[i+1])+' ▶</button>':'')
+        +'</td><td class="n">'+(open||'—')+'</td></tr>'; }),
+    'ไม่พบลูกค้าตามเงื่อนไข');
+  $$('#fwTable [data-cust]').forEach(r=> r.onclick=()=>custDrawer(r.dataset.cust));
+  $$('#fwTable [data-fwmv]').forEach(b=> b.onclick=e=>{ e.stopPropagation();
+    const [id,dir]=b.dataset.fwmv.split('|'); const c=CUSTOMERS.find(x=>x.id===id);
+    const i=CUST_STAGES.indexOf(c.stage)+(+dir);
+    if(i>=0&&i<CUST_STAGES.length){ c.stage=CUST_STAGES[i]; toast('อัปเดตสถานะแล้ว', c.name+' → '+c.stage); rFollow(); } });
 }
 function custDrawer(id){
   const c=CUSTOMERS.find(x=>x.id===id); if(!c) return;
@@ -2317,21 +2648,73 @@ function rFin(){
       +'<td class="n">'+cs.length+'</td><td class="n">'+a+'</td><td class="n">'+r+'</td>'
       +'<td class="n">'+(cs.length? pill(Math.round(a/cs.length*100)+'%', a/cs.length>=.7?'good':'warn') :'—')+'</td></tr>'; });
   tbl($('#finRate'), ['ไฟแนนซ์',{t:'ยื่น',n:1},{t:'อนุมัติ',n:1},{t:'ปฏิเสธ',n:1},{t:'อัตราอนุมัติ',n:1}], rate, 'ยังไม่มีเคส');
+  rFinPeople();
+}
+/* ---------- ติดตามสถานะไฟแนนซ์รายคน — progress bar + ตัวกรอง ---------- */
+function rFinPeople(){
+  const fill=(el,opts,label)=>{ const want=el.value;
+    el.innerHTML='<option value="">'+label+'</option>'+opts.map(o=>'<option>'+esc(o)+'</option>').join('');
+    if(want && opts.indexOf(want)>=0) el.value=want; };
+  const scoped=FINCASES.filter(c=>inScope(c.branch));
+  fill($('#fpStatus'), FIN_STAGES.concat(['ปฏิเสธ']), 'ทุกสถานะ');
+  fill($('#fpSales'), [...new Set(scoped.map(c=>{ const s=SALES.find(x=>x.id===c.saleId); return s?s.sales:''; }).filter(Boolean))], 'ทุกเซลล์');
+  (function(){ const el=$('#fpBranch'), want=el.value;
+    el.innerHTML='<option value="">ทุกสาขา</option>'+BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    if(want) el.value=want; })();
+  if(!$('#fpStatus').dataset.init){ $('#fpStatus').dataset.init=1;
+    ['fpStatus','fpSales','fpBranch'].forEach(k=> $('#'+k).onchange=rFinPeople);
+    $('#fpQ').oninput=rFinPeople;
+  }
+  const q=$('#fpQ').value.trim().toLowerCase();
+  const list=scoped.filter(c=>{
+    const cu=CUSTOMERS.find(x=>x.id===c.custId), s=SALES.find(x=>x.id===c.saleId);
+    return (!$('#fpStatus').value || c.status===$('#fpStatus').value)
+      && (!$('#fpBranch').value || c.branch===$('#fpBranch').value)
+      && (!$('#fpSales').value || (s&&s.sales===$('#fpSales').value))
+      && (!q || (cu&&cu.name.toLowerCase().indexOf(q)>=0));
+  }).sort((a,b)=> (a.status==='ปฏิเสธ'?1:0)-(b.status==='ปฏิเสธ'?1:0) || a.at.localeCompare(b.at));
+  $('#fpList').innerHTML = list.length? list.map(c=>{
+    const cu=CUSTOMERS.find(x=>x.id===c.custId), f=finById(c.finId);
+    const s=SALES.find(x=>x.id===c.saleId), u=s&&UNITS.find(x=>x.id===s.unitId);
+    const rej=c.status==='ปฏิเสธ', i=FIN_STAGES.indexOf(c.status);
+    const pct=rej? 100 : Math.round((i+1)/FIN_STAGES.length*100);
+    const last=(c.log&&c.log.length)? c.log[c.log.length-1].at : c.at;
+    const stay=days(last,TODAY);
+    return '<div class="fprow" data-fin="'+c.id+'">'
+      +'<div class="who"><b>'+esc(cu?cu.name:'—')+'</b><div class="tsub">'+esc(u?u.model:'')+' · '+esc(f?f.name:'')+' · '+esc(s?s.sales:'')+'</div></div>'
+      +'<div class="prog"><div class="bl" style="display:flex;justify-content:space-between;font-size:var(--t-label)">'
+      +'<span>'+esc(c.status)+'</span><span class="tsub">'+(rej?'':'ขั้น '+(i+1)+'/'+FIN_STAGES.length+' · ')+'ค้าง '+stay+' วัน</span></div>'
+      +'<div class="bt"><div class="bf'+(rej?' d':(c.status==='อนุมัติแล้ว'?' g':''))+'" style="width:'+pct+'%"></div></div></div>'
+      +'<div class="amt">'+(noMoney()?'':'<b>'+fmt(c.amount)+'</b> ฿')+'<div class="tsub">ยื่น '+thDate(c.at)+'</div></div></div>';
+  }).join('') : '<div class="empty"><b>ไม่พบเคสตามเงื่อนไข</b>ลองปรับตัวกรอง</div>';
+  $$('#fpList [data-fin]').forEach(r=> r.onclick=()=>finDrawer(r.dataset.fin));
 }
 const canEditFin = () => ['admin','manager'].indexOf(ME.role)>=0;
-/* ---------- บริษัทไฟแนนซ์ — เพิ่ม / แก้ / ปิดใช้งาน / ลบ ---------- */
+/* ช่องกรอกเรตรายช่วงงวด — prefix กันชน id ระหว่างฟอร์มเพิ่มกับ modal แก้ไข */
+function tierInputs(prefix, rates){
+  return '<div class="tiers">'+FIN_TERMS.map(t=>'<div><label>'+t+' งวด</label>'
+    +'<input class="inp num" id="'+prefix+t+'" value="'+((rates&&rates[t]!=null)?rates[t]:'')+'" placeholder="เรตฐาน"></div>').join('')+'</div>';
+}
+function tierRead(prefix){
+  const r={}; let any=false;
+  FIN_TERMS.forEach(t=>{ const v=$('#'+prefix+t).value.trim(); if(v!==''){ r[t]=num(v); any=true; } });
+  return any? r : null;
+}
+/* ---------- บริษัทไฟแนนซ์ — เพิ่ม / แก้ / ปิดใช้งาน / ลบ / เรตรายช่วงงวด ---------- */
 function rFinCo(){
   const edit=canEditFin();
   $('#fcFormCard').style.display = edit? '' : 'none';
   if(edit && !$('#fcSave').dataset.init){ $('#fcSave').dataset.init=1;
+    $('#fcTiers').innerHTML=tierInputs('fcT');
     $('#fcSave').onclick=()=>{
       const name=$('#fcName').value.trim();
       if(!name){ toast('กรอกชื่อบริษัท','',1); return; }
       if(FIN_CO.some(f=>f.name===name)){ toast('ชื่อบริษัทซ้ำ',name,1); return; }
       FIN_CO.push({id:nid('FN'), name, rate:num($('#fcRate').value), minDownPct:num($('#fcDown').value),
-        commission:num($('#fcComm').value), active:true, note:$('#fcNote').value.trim()});
+        commission:num($('#fcComm').value), active:true, note:$('#fcNote').value.trim(), rates:tierRead('fcT')});
       toast('เพิ่มบริษัทไฟแนนซ์แล้ว',name);
-      $('#fcName').value=''; $('#fcNote').value=''; refreshAll();
+      $('#fcName').value=''; $('#fcNote').value=''; FIN_TERMS.forEach(t=>$('#fcT'+t).value='');
+      refreshAll();
     };
   }
   const head=['บริษัท',{t:'ดอกเบี้ย (%/เดือน)',n:1},'สถานะ'];
@@ -2341,7 +2724,9 @@ function rFinCo(){
     const sub=['ดาวน์ขั้นต่ำ '+f.minDownPct+'%']
       .concat(noMoney()? [] : ['ค่าคอม '+fmt(f.commission)+' ฿'])
       .concat(n? ['ใช้อยู่ '+n+' รายการ'] : []).join(' · ');
+    const tiers=f.rates? FIN_TERMS.filter(t=>f.rates[t]!=null).map(t=>t+' งวด '+f.rates[t]+'%').join(' · ') : '';
     return '<tr><td><b>'+esc(f.name)+'</b><div class="tsub">'+esc(sub)+'</div>'
+      +(tiers? '<div class="tsub">เรตเฉพาะงวด: '+esc(tiers)+'</div>':'')
       +(f.note? '<div class="tsub">'+esc(f.note)+'</div>':'')+'</td>'
       +'<td class="n">'+f.rate+'</td>'
       +'<td>'+(f.active? pill('ใช้งาน','good') : pill('ปิดใช้งาน','mut'))+'</td>'
@@ -2358,16 +2743,17 @@ function rFinCo(){
   $$('[data-fce]').forEach(b=> b.onclick=()=>{ const f=finById(b.dataset.fce);
     openModal('แก้ไข '+f.name,
       '<div class="f"><div><label class="fl">ชื่อบริษัท</label><input class="inp" id="feName" value="'+esc(f.name)+'"></div>'
-      +'<div class="f3"><div><label class="fl">ดอกเบี้ย (%/เดือน)</label><input class="inp num" id="feRate" value="'+f.rate+'"></div>'
+      +'<div class="f3"><div><label class="fl">ดอกเบี้ยฐาน (%/เดือน)</label><input class="inp num" id="feRate" value="'+f.rate+'"></div>'
       +'<div><label class="fl">ดาวน์ขั้นต่ำ (%)</label><input class="inp num" id="feDown" value="'+f.minDownPct+'"></div>'
       +'<div><label class="fl">ค่าคอม (฿/สัญญา)</label><input class="inp num" id="feComm" value="'+f.commission+'"></div></div>'
+      +'<div><label class="fl">เรตเฉพาะงวด (เว้นว่าง = ใช้เรตฐาน)</label>'+tierInputs('feT', f.rates)+'</div>'
       +'<div><label class="fl">หมายเหตุ</label><input class="inp" id="feNote" value="'+esc(f.note||'')+'"></div></div>'
       +'<div class="savebar"><button class="btn" id="feGo">บันทึก<svg class="i"><use href="#i-check"/></svg></button></div>');
     $('#feGo').onclick=()=>{ const nm=$('#feName').value.trim();
       if(!nm){ toast('กรอกชื่อบริษัท','',1); return; }
       if(FIN_CO.some(x=>x!==f&&x.name===nm)){ toast('ชื่อบริษัทซ้ำ',nm,1); return; }
       f.name=nm; f.rate=num($('#feRate').value); f.minDownPct=num($('#feDown').value);
-      f.commission=num($('#feComm').value); f.note=$('#feNote').value.trim();
+      f.commission=num($('#feComm').value); f.note=$('#feNote').value.trim(); f.rates=tierRead('feT');
       closeModal(); toast('บันทึกแล้ว',f.name); refreshAll(); };
   });
 }
@@ -2387,9 +2773,10 @@ function finDrawer(id){
   if(c.status!=='ปฏิเสธ') h+='<button class="btn dgr" id="fnRej">ปฏิเสธ</button>';
   h+='</div>';
   openDrawer('เคสสินเชื่อ', h);
-  if($('#fnNext')) $('#fnNext').onclick=()=>{ c.status=FIN_STAGES[i+1]; toast('อัปเดตแล้ว',c.status); closeDrawer(); refreshAll(); };
-  if($('#fnBack')) $('#fnBack').onclick=()=>{ c.status=FIN_STAGES[i-1]; toast('ถอยกลับแล้ว',c.status); closeDrawer(); refreshAll(); };
-  if($('#fnRej')) $('#fnRej').onclick=()=>{ c.status='ปฏิเสธ'; const cu2=CUSTOMERS.find(x=>x.id===c.custId);
+  const flog=to=>{ (c.log=c.log||[]).push({to, at:TODAY}); };   /* เก็บประวัติทุกครั้งที่ขยับ — progress รายคนใช้คิดวันค้าง */
+  if($('#fnNext')) $('#fnNext').onclick=()=>{ c.status=FIN_STAGES[i+1]; flog(c.status); toast('อัปเดตแล้ว',c.status); closeDrawer(); refreshAll(); };
+  if($('#fnBack')) $('#fnBack').onclick=()=>{ c.status=FIN_STAGES[i-1]; flog(c.status); toast('ถอยกลับแล้ว',c.status); closeDrawer(); refreshAll(); };
+  if($('#fnRej')) $('#fnRej').onclick=()=>{ c.status='ปฏิเสธ'; flog('ปฏิเสธ'); const cu2=CUSTOMERS.find(x=>x.id===c.custId);
     if(cu2) cu2.stage='ไม่ผ่าน'; toast('บันทึกการปฏิเสธแล้ว','อัปเดตสถานะลูกค้าเป็น “ไม่ผ่าน”',1); closeDrawer(); refreshAll(); };
 }
 
@@ -2656,6 +3043,44 @@ function rExpense(){
 }
 
 /* ============================= 17. ลงเวลาและลา ============================= */
+/* ---------- ยืนยันตัวตนตอนลงเวลา ----------
+   3 ชั้น: (1) ผูกบัญชี — ปุ่มลงเวลากดได้เฉพาะแถวของคนที่ล็อกอินอยู่
+   (2) ถ่ายภาพจากกล้อง ณ วินาทีที่กด (3) พิกัด GPS — สองอย่างหลังมีเท่าไหร่เก็บเท่านั้น
+   ไม่มีกล้อง/ไม่อนุญาต/เปิดแบบ file:// ก็ยังลงเวลาได้ แต่ธงหลักฐานจะบอกว่าขาดอะไร */
+const hhmmss = d => [d.getHours(),d.getMinutes(),d.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+async function attProof(){
+  const proof={ by:ME.id, byName:ME.name, device:navigator.userAgent.slice(0,80) };
+  /* กล้อง — getUserMedia มีเฉพาะ HTTPS/localhost */
+  if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({video:{width:320,height:240}});
+      const v=document.createElement('video'); v.srcObject=stream; v.muted=true;
+      await v.play(); await new Promise(r=>setTimeout(r,350));   /* รอกล้องปรับแสง */
+      const cv=document.createElement('canvas'); cv.width=320; cv.height=240;
+      cv.getContext('2d').drawImage(v,0,0,320,240);
+      proof.photo=cv.toDataURL('image/jpeg',0.7);
+      stream.getTracks().forEach(t=>t.stop());
+    }catch(_){ /* ไม่มีกล้อง/ไม่อนุญาต — บันทึกต่อโดยไม่มีรูป */ }
+  }
+  if(navigator.geolocation){
+    try{
+      const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:4000,maximumAge:60000}));
+      proof.geo={lat:+pos.coords.latitude.toFixed(6), lng:+pos.coords.longitude.toFixed(6), acc:Math.round(pos.coords.accuracy)};
+    }catch(_){ }
+  }
+  return proof;
+}
+function attBadges(a, side){
+  const p=side==='out'? (a.outProof||{}) : (a.inProof||{});
+  if(!a[side==='out'?'out':'in']) return '';
+  const b=[];
+  b.push(p.by? '<span title="ลงเวลาจากบัญชีที่ล็อกอิน">'+ic('key','i i-sm')+'</span>' : '');
+  b.push(p.photo? '<button class="lnk" data-attph="'+a.staffId+'|'+side+'" title="ดูรูปถ่ายตอนลงเวลา">'+ic('eye','i i-sm')+'</button>'
+                : '<span class="tsub" title="ไม่มีรูป — ไม่มีกล้องหรือไม่อนุญาต">'+ic('alert','i i-sm')+'</span>');
+  b.push(p.geo? '<span title="พิกัด '+p.geo.lat+','+p.geo.lng+' (±'+p.geo.acc+' ม.)">'+ic('route','i i-sm')+'</span>' : '');
+  return '<span style="display:inline-flex;gap:4px;align-items:center;vertical-align:middle">'+b.join('')+'</span>';
+}
+let hrClockTimer=null;
 function rHr(){
   if(!$('#lvSave').dataset.init){ $('#lvSave').dataset.init=1;
     $$('#hrTabs button').forEach(b=> b.onclick=()=>{ $$('#hrTabs button').forEach(x=>x.classList.remove('on'));
@@ -2666,33 +3091,84 @@ function rHr(){
       from:$('#lvFrom').value,to:$('#lvTo').value,status:'รออนุมัติ'});
       toast('ยื่นใบลาแล้ว','รอผู้มีสิทธิ์อนุมัติ'); refreshAll(); };
   }
+  /* นาฬิกาสดหน่วยวินาที — เดินเฉพาะตอนอยู่หน้านี้ */
+  if(hrClockTimer) clearInterval(hrClockTimer);
+  const tick=()=>{ const el=$('#hrClock'); if(!el || CUR!=='hr'){ clearInterval(hrClockTimer); hrClockTimer=null; return; }
+    el.textContent=hhmmss(new Date()); };
+  tick(); hrClockTimer=setInterval(tick,1000);
   $('#hrDate').textContent=thDate(TODAY);
   const mine = rolePerm().allBranch ? STAFF : STAFF.filter(s=>s.branch===ME.branch || s.id===ME.id);
+  const canFix = ['admin','hr'].indexOf(ME.role)>=0;
   tbl($('#attTable'), ['พนักงาน','สาขา','เข้า','ออก',{t:'ชั่วโมง',n:1},{t:'OT',n:1},'สถานะ',''],
     mine.map(s=>{ const a=ATT.find(x=>x.staffId===s.id)||{};
       const hrs=(a.in&&a.out)? ((toMin(a.out)-toMin(a.in))/60) : 0;
       const ot = hrs>8.5? (hrs-8.5) : 0;
       const late = a.in && toMin(a.in)>toMin(CFG.workIn);
-      return '<tr><td><b>'+esc(s.nick)+'</b><div class="tsub">'+esc(ROLES[s.role].name)+'</div></td>'
-        +'<td>'+esc(bName(s.branch))+'</td><td class="mono">'+esc(a.in||'—')+'</td><td class="mono">'+esc(a.out||'—')+'</td>'
+      const self = s.id===ME.id;
+      /* ปุ่มลงเวลาเฉพาะแถวตัวเอง — คนอื่นลงแทนไม่ได้ · HR/แอดมินแก้ย้อนหลังได้แบบมีบันทึก */
+      const act = self && !a.in && a.status!=='ลา' ? '<button class="lnk" data-in="'+s.id+'">ลงเวลาเข้า</button>'
+                : self && a.in && !a.out           ? '<button class="lnk" data-out="'+s.id+'">ลงเวลาออก</button>'
+                : canFix && !self                  ? '<button class="lnk" data-fix="'+s.id+'">แก้ไข</button>'
+                : '';
+      return '<tr'+(self?' style="background:var(--paper-2)"':'')+'><td><b>'+esc(s.nick)+'</b>'+(self?' '+pill('คุณ','brand'):'')
+        +'<div class="tsub">'+esc(ROLES[s.role].name)+'</div></td>'
+        +'<td>'+esc(bName(s.branch))+'</td>'
+        +'<td class="mono">'+esc(a.in||'—')+' '+attBadges(a,'in')+(a.editLog?' <span title="'+esc(a.editLog[a.editLog.length-1].why)+'">'+pill('แก้ไขแล้ว','warn')+'</span>':'')+'</td>'
+        +'<td class="mono">'+esc(a.out||'—')+' '+attBadges(a,'out')+'</td>'
         +'<td class="n">'+(hrs?hrs.toFixed(1):'—')+'</td><td class="n">'+(ot?ot.toFixed(1):'—')+'</td>'
         +'<td>'+(a.status==='ลา'?pill('ลา','info'):(late?pill('สาย','warn'):(a.in?pill('ปกติ','good'):pill('ยังไม่เข้า','mut'))))+'</td>'
-        +'<td>'+(!a.in&&a.status!=='ลา'?'<button class="lnk" data-in="'+s.id+'">ลงเวลาเข้า</button>':
-          (a.in&&!a.out?'<button class="lnk" data-out="'+s.id+'">ลงเวลาออก</button>':''))+'</td></tr>'; }),
+        +'<td>'+act+'</td></tr>'; }),
     'ไม่มีพนักงาน');
-  const now=new Date(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-  $$('[data-in]').forEach(b=> b.onclick=()=>{ let a=ATT.find(x=>x.staffId===b.dataset.in);
-    if(!a){ a={staffId:b.dataset.in,date:TODAY}; ATT.push(a); } a.in=hhmm;
-    toast('ลงเวลาเข้าแล้ว','เวลาจริงจากนาฬิกาเครื่อง '+hhmm); rHr(); });
-  $$('[data-out]').forEach(b=> b.onclick=()=>{ const a=ATT.find(x=>x.staffId===b.dataset.out); a.out=hhmm;
-    toast('ลงเวลาออกแล้ว',hhmm); rHr(); });
+  /* จับเวลา ณ วินาทีที่กด ไม่ใช่ตอนวาดหน้าจอ */
+  $$('[data-in]').forEach(b=> b.onclick=async ()=>{
+    b.disabled=true; b.textContent='กำลังบันทึก…';
+    const proof=await attProof(); const t=hhmmss(new Date());
+    let a=ATT.find(x=>x.staffId===b.dataset.in);
+    if(!a){ a={staffId:b.dataset.in,date:TODAY}; ATT.push(a); }
+    a.in=t; a.inProof=proof;
+    toast('ลงเวลาเข้าแล้ว '+t, proof.photo? 'พร้อมรูปถ่ายยืนยันตัวตน'+(proof.geo?' และพิกัด GPS':'')
+      : 'ไม่มีรูปยืนยัน (ไม่มีกล้องหรือไม่อนุญาต) — บันทึกบัญชีผู้กดไว้แล้ว');
+    rHr(); });
+  $$('[data-out]').forEach(b=> b.onclick=async ()=>{
+    b.disabled=true; b.textContent='กำลังบันทึก…';
+    const proof=await attProof(); const t=hhmmss(new Date());
+    const a=ATT.find(x=>x.staffId===b.dataset.out); a.out=t; a.outProof=proof;
+    toast('ลงเวลาออกแล้ว '+t); rHr(); });
+  /* HR/แอดมิน แก้ย้อนหลังพร้อมเหตุผล — เก็บว่าใครแก้ อะไร ทำไม */
+  $$('[data-fix]').forEach(b=> b.onclick=()=>{ const s=STAFF.find(x=>x.id===b.dataset.fix);
+    let a=ATT.find(x=>x.staffId===s.id); if(!a){ a={staffId:s.id,date:TODAY}; ATT.push(a); }
+    openModal('แก้เวลาย้อนหลัง — '+s.nick,
+      '<div class="note w">'+ic('alert','i i-sm')+'<span>การแก้จะถูกบันทึกว่าใครแก้ เวลาไหน เหตุผลอะไร</span></div>'
+      +'<div class="f"><div class="f2">'
+      +'<div><label class="fl">เวลาเข้า</label><input class="inp mono" id="fxIn" value="'+esc(a.in||'')+'" placeholder="08:30:00"></div>'
+      +'<div><label class="fl">เวลาออก</label><input class="inp mono" id="fxOut" value="'+esc(a.out||'')+'" placeholder="17:30:00"></div></div>'
+      +'<div><label class="fl">เหตุผล (จำเป็น)</label><input class="inp" id="fxWhy" placeholder="เช่น ลืมลงเวลา ระบบล่ม"></div></div>'
+      +'<div class="savebar"><button class="btn" id="fxGo">บันทึก<svg class="i"><use href="#i-check"/></svg></button></div>');
+    $('#fxGo').onclick=()=>{ const why=$('#fxWhy').value.trim();
+      if(!why){ toast('ต้องระบุเหตุผล','การแก้เวลาย้อนหลังต้องมีบันทึก',1); return; }
+      (a.editLog=a.editLog||[]).push({by:ME.name, at:hhmmss(new Date()), why,
+        from:{in:a.in||null,out:a.out||null}});
+      a.in=$('#fxIn').value.trim()||null; a.out=$('#fxOut').value.trim()||null;
+      closeModal(); toast('แก้เวลาแล้ว', s.nick+' · '+why); rHr(); }; });
+  /* ดูรูปถ่ายตอนลงเวลา */
+  $$('[data-attph]').forEach(b=> b.onclick=()=>{ const [sid,side]=b.dataset.attph.split('|');
+    const a=ATT.find(x=>x.staffId===sid); const p=side==='out'? a.outProof : a.inProof;
+    const s=STAFF.find(x=>x.id===sid);
+    openModal('รูปยืนยันตัวตน — '+(s?s.nick:''),
+      '<img src="'+p.photo+'" style="width:100%;border-radius:var(--r-input)" alt="">'
+      +'<dl class="kv" style="margin-top:var(--s2)"><dt>เวลา</dt><dd class="mono">'+esc(side==='out'?a.out:a.in)+'</dd>'
+      +'<dt>บัญชีที่กด</dt><dd>'+esc(p.byName||'—')+'</dd>'
+      +(p.geo?'<dt>พิกัด</dt><dd class="mono">'+p.geo.lat+', '+p.geo.lng+' (±'+p.geo.acc+' ม.)</dd>':'')
+      +'<dt>อุปกรณ์</dt><dd style="font-size:var(--t-label)">'+esc(p.device||'—')+'</dd></dl>'); });
   const present=mine.filter(s=>{const a=ATT.find(x=>x.staffId===s.id)||{}; return a.in;}).length;
   const lateN=mine.filter(s=>{const a=ATT.find(x=>x.staffId===s.id)||{}; return a.in&&toMin(a.in)>toMin(CFG.workIn);}).length;
   $('#attSum').innerHTML='<div style="font-size:var(--t-table);line-height:2.1">'
     +'• เข้างานแล้ว <b>'+present+'</b> จาก '+mine.length+' คน<br>'
     +'• มาสาย <b style="color:var(--attn)">'+lateN+'</b> คน (เกิน '+CFG.workIn+')<br>'
     +'• ลา <b>'+mine.filter(s=>{const a=ATT.find(x=>x.staffId===s.id)||{}; return a.status==='ลา';}).length+'</b> คน<br>'
-    +'• เวลาทำงานมาตรฐาน '+CFG.workIn+' – '+CFG.workOut+' · OT คิด '+CFG.otRate+' เท่า</div>';
+    +'• เวลาทำงานมาตรฐาน '+CFG.workIn+' – '+CFG.workOut+' · OT คิด '+CFG.otRate+' เท่า<br>'
+    +'• เวลาเก็บละเอียดถึง<b>วินาที</b> · ลงเวลาแทนกันไม่ได้ — ปุ่มขึ้นเฉพาะแถวของคนที่ล็อกอิน<br>'
+    +'• กดแล้วระบบถ่ายรูป + เก็บพิกัด (ถ้าเครื่องมีและอนุญาต) ดูได้จากไอคอนหลังเวลา</div>';
   tbl($('#lvTable'), ['พนักงาน','ประเภท','ตั้งแต่','ถึง','สถานะ',''],
     LEAVES.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId);
       return '<tr><td><b>'+esc(s?s.nick:'—')+'</b></td><td>'+esc(l.type)+'</td><td>'+thDate(l.from)+'</td><td>'+thDate(l.to)+'</td>'
@@ -2865,11 +3341,77 @@ function rSettings(){
       +'<td>'+(f.active? pill('ใช้งาน','good') : pill('ปิดใช้งาน','mut'))+'</td></tr>'),'');
   $('#cfFinGo').onclick=()=>go('fin');
   if(!$('#cfSave').dataset.init){ $('#cfSave').dataset.init=1;
+    $$('#cfTabs button').forEach(b=> b.onclick=()=>{ $$('#cfTabs button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on'); $$('#s-settings .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p)); });
+    $('#vmAdd').onclick=()=>modelModal();
     $('#cfSave').onclick=()=>{ Object.keys(CFMAP).forEach(k=>{ const v=$('#'+k).value;
       CFG[CFMAP[k]] = ['aging','regDays','lowStock','vat','otRate','commPct'].indexOf(CFMAP[k])>=0 ? num(v) : v; });
       toast('บันทึกการตั้งค่าแล้ว','ทุกหน้าจะใช้เกณฑ์ใหม่ทันที'); refreshAll(); };
     $('#cfReset').onclick=()=>{ CFG=Object.assign({},DEFAULTS); rSettings(); toast('คืนค่าเริ่มต้นแล้ว'); refreshAll(); };
   }
+  rModels();
+}
+/* ---------- ตั้งค่ารุ่นรถและสี — ป้อนหน้ารับรถเข้า ใบเสนอราคา และคำนวณค่างวด ---------- */
+function vmRefs(code){ return UNITS.filter(u=>u.variant===code).length; }
+function rModels(){
+  tbl($('#vmTable'), ['รูป','โมเดล','รหัสรุ่น','สี',{t:'ทุน',n:1},{t:'ราคาขาย',n:1},{t:'ในสต๊อก',n:1},''],
+    Object.keys(PRICE).map(v=>{ const p=PRICE[v]; const n=vmRefs(v);
+      return '<tr><td><span class="bph">'+bikeArt(v, Object.values(p.c)[0])+'</span></td>'
+        +'<td><b>'+esc(p.m)+'</b><div class="tsub">'+esc(p.th||'')+' · '+esc(p.cat||'—')+' · '+(p.cc||'—')+' cc · ปี '+(p.yr||'—')+'</div></td>'
+        +'<td class="mono">'+esc(v)+'</td>'
+        +'<td><div class="cs" style="display:flex;gap:4px;flex-wrap:wrap">'+Object.keys(p.c).map(cc=>'<span class="pill p-mut" title="'+esc(cc)+'"><span class="dot" style="background:'+(COLOR_HEX[p.c[cc]]||'#ccc')+'"></span>'+esc(p.c[cc])+'</span>').join('')+'</div></td>'
+        +'<td class="n">'+money(p.cost)+'</td><td class="n">'+fmt(p.retail)+'</td>'
+        +'<td class="n">'+(n||'—')+'</td>'
+        +'<td style="white-space:nowrap"><button class="lnk" data-vme="'+esc(v)+'">แก้ไข</button>'
+        +' <button class="lnk" data-vmd="'+esc(v)+'">ลบ</button></td></tr>'; }),
+    'ยังไม่มีรุ่นรถ');
+  $$('#vmTable [data-vme]').forEach(b=> b.onclick=()=>modelModal(b.dataset.vme));
+  $$('#vmTable [data-vmd]').forEach(b=> b.onclick=()=>{ const v=b.dataset.vmd, n=vmRefs(v);
+    if(n){ toast('ลบไม่ได้ — มีรถในสต๊อก '+n+' คันใช้รหัสรุ่นนี้', 'รุ่นที่เลิกขายให้ปล่อยไว้ ไม่กระทบข้อมูลเก่า',1); return; }
+    delete PRICE[v]; toast('ลบรุ่นแล้ว', v); refreshAll(); });
+}
+function modelModal(code){
+  const p=code? PRICE[code] : null;
+  const colorRows = p? Object.keys(p.c).map(cc=>cc+' = '+p.c[cc]).join('\n') : '010A = ดำ\n010B = แดง';
+  openModal(p? 'แก้ไขรุ่น '+code : 'เพิ่มรุ่นรถ',
+    '<div class="f"><div class="f3">'
+    +'<div><label class="fl">รหัสรุ่น (6 ตัว)</label><input class="inp mono" id="vmCode" value="'+esc(code||'')+'" '+(p?'disabled':'placeholder="BTF400"')+'></div>'
+    +'<div><label class="fl">โมเดล</label><input class="inp" id="vmName" value="'+esc(p?p.m:'')+'" placeholder="NMAX"></div>'
+    +'<div><label class="fl">ชื่อรุ่น (ไทย)</label><input class="inp" id="vmTh" value="'+esc(p?p.th:'')+'" placeholder="เอ็นแม็กซ์"></div></div>'
+    +'<div class="f3">'
+    +'<div><label class="fl">ประเภท</label><select class="inp" id="vmCat">'+['Automatic','Moped','Sport'].map(c=>'<option'+((p?p.cat:'Automatic')===c?' selected':'')+'>'+c+'</option>').join('')+'</select></div>'
+    +'<div><label class="fl">ซีซี</label><input class="inp num" id="vmCc" value="'+(p?p.cc:'')+'"></div>'
+    +'<div><label class="fl">ปี (พ.ศ.)</label><input class="inp num" id="vmYr" value="'+(p?p.yr:new Date().getFullYear()+543)+'"></div></div>'
+    +'<div class="f3">'
+    +'<div><label class="fl">ต้นทุน (฿)</label><input class="inp num" id="vmCost" value="'+(p?p.cost:'')+'"></div>'
+    +'<div><label class="fl">VAT 7% (คิดให้เอง)</label><input class="inp num" id="vmVat" value="'+(p?p.vat:'')+'" readonly></div>'
+    +'<div><label class="fl">ราคาขาย (฿)</label><input class="inp num" id="vmRetail" value="'+(p?p.retail:'')+'"></div></div>'
+    +'<div><label class="fl">สี — บรรทัดละสี รูปแบบ รหัส = ชื่อสี</label>'
+    +'<textarea class="inp mono" id="vmColors" rows="4">'+esc(colorRows)+'</textarea></div>'
+    +'<div><label class="fl">รูปรุ่น (ไม่บังคับ — ไม่มีรูประบบจะวาดเงารถให้)</label>'
+    +'<label class="drop" for="vmImg">'+ic('clip','i i-sm')+' เลือกรูป</label><input type="file" id="vmImg" accept="image/*" style="display:none">'
+    +'<span id="vmImgName" class="tsub" style="margin-left:var(--s1)">'+(p&&p.img?'มีรูปอยู่แล้ว — เลือกใหม่เพื่อแทนที่':'')+'</span></div></div>'
+    +'<div class="savebar"><button class="btn" id="vmGo">'+(p?'บันทึก':'เพิ่มรุ่น')+'<svg class="i"><use href="#i-check"/></svg></button></div>');
+  let imgData = p? p.img : null;
+  $('#vmCost').oninput=()=>{ $('#vmVat').value=Math.round(num($('#vmCost').value)*0.07); };
+  if(!p) $('#vmVat').value='';
+  $('#vmImg').onchange=e=>{ const f=e.target.files[0]; if(!f) return;
+    const rd=new FileReader(); rd.onload=()=>{ imgData=rd.result; $('#vmImgName').textContent=f.name; }; rd.readAsDataURL(f); };
+  $('#vmGo').onclick=()=>{
+    const v=(code||$('#vmCode').value.trim().toUpperCase());
+    if(!/^[A-Z0-9]{6}$/.test(v)){ toast('รหัสรุ่นต้องเป็นตัวอักษร/ตัวเลข 6 ตัว','เช่น BTF300',1); return; }
+    if(!code && PRICE[v]){ toast('รหัสรุ่นนี้มีอยู่แล้ว',v,1); return; }
+    const m=$('#vmName').value.trim(); if(!m){ toast('กรอกชื่อโมเดล','',1); return; }
+    const c={};
+    $('#vmColors').value.split('\n').map(x=>x.trim()).filter(Boolean).forEach(line=>{
+      const mm=line.split('=').map(x=>x.trim()); if(mm.length===2 && mm[0] && mm[1]) c[mm[0]]=mm[1]; });
+    if(!Object.keys(c).length){ toast('ต้องมีอย่างน้อย 1 สี','รูปแบบ: 010A = ดำ',1); return; }
+    const cost=num($('#vmCost').value);
+    PRICE[v]={ m, th:$('#vmTh').value.trim(), cat:$('#vmCat').value, cc:num($('#vmCc').value)||null,
+      yr:num($('#vmYr').value)||null, cost, vat:Math.round(cost*0.07), retail:num($('#vmRetail').value)||null,
+      c, img:imgData||undefined };
+    closeModal(); toast(code?'บันทึกรุ่นแล้ว':'เพิ่มรุ่นแล้ว', m+' ('+v+') · ใช้ได้ทันทีในหน้ารับรถเข้า');
+    refreshAll(); };
 }
 
 /* ============================= 22. ผังกระบวนการ ============================= */
@@ -2892,6 +3434,149 @@ function rFlow(){
     +'<p class="foot">“ระบบทำให้” = ขั้นตอนอัตโนมัติ · “จุดที่มักหลุด” = ขั้นตอนที่หลุดบ่อยถ้าไม่มีระบบเตือน</p>';
 }
 
+/* ============================= 23. รายงาน ============================= */
+/* 6 ประเภท แยกแท็บตามที่เจ้าของร้านขอ — ทุกแท็บ: ตัวกรองเดือน/สาขา + KPI + ตาราง + CSV + พิมพ์
+   คอลัมน์เงินถูกตัดตามสิทธิ์ทั้งบนจอ ใน CSV และตอนพิมพ์ (ผ่านธง money ต่อคอลัมน์) */
+const RP_TABS=[
+  {k:'vstock',  n:'สต็อกรถ',          r:['admin','manager','acct','stock']},
+  {k:'pstock',  n:'สต็อกอะไหล่',      r:['admin','manager','acct','stock']},
+  {k:'sales',   n:'การขาย',           r:['admin','manager','acct']},
+  {k:'money',   n:'การเงิน',          r:['admin','manager','acct']},
+  {k:'tax',     n:'ภาษี',             r:['admin','manager','acct']},
+  {k:'payroll', n:'เงินเดือน + ค่าคอม', r:['admin','manager','acct','hr']}
+];
+let RP_SEL='';
+function rpMonths(){
+  const set=new Set([TODAY.slice(0,7)]);
+  SALES.forEach(s=>set.add(s.soldAt.slice(0,7)));
+  EXPENSES.forEach(e=>set.add(String(e.at).slice(0,7)));
+  return [...set].sort().reverse();
+}
+const rpMonthTh = m => m? TH_M[+m.slice(5,7)-1]+' '+(+m.slice(0,4)+543) : 'ทุกช่วงเวลา';
+/* ตัวกรองที่เลือกอยู่ — สาขาเคารพ scope เสมอ */
+function rpScope(){
+  const m=$('#rpMonth').value, b=$('#rpBranch').value;
+  return { m, b, inB:c=>inScope(c)&&(!b||c===b), inM:d=>!m||String(d||'').slice(0,7)===m };
+}
+/* แต่ละแท็บคืน {kpi:[[หัว,ค่า,รอง]], head:[{t,n,money}], rows:[[ค่าดิบ]], note} — ตัวเดียวใช้ทั้งจอ/CSV/พิมพ์ */
+function rpBuild(tab){
+  const sc=rpScope();
+  if(tab==='vstock'){
+    const av=UNITS.filter(u=>u.status!=='sold'&&sc.inB(u.branch));
+    const grp={};
+    av.forEach(u=>{ const k=u.variant+'|'+u.color; grp[k]=grp[k]||{u,n:0,cost:0,age:0,old:0,np:0};
+      const g=grp[k]; g.n++; g.cost+=u.cost; g.age+=age(u); if(age(u)>CFG.aging) g.old++; if(u.retail==null) g.np++; });
+    const rows=Object.values(grp).sort((a,b)=>b.n-a.n).map(g=>[
+      g.u.model, g.u.variant, g.u.color, g.n, g.cost, g.u.retail==null?'รอกำหนดราคา':g.u.retail*g.n,
+      Math.round(g.age/g.n), g.old||'', g.np?g.np+' คัน':'' ]);
+    return { kpi:[['คงเหลือ',av.length+' <small>คัน</small>',''],
+        ['ทุนจมรวม', money(av.reduce((s,u)=>s+u.cost,0)),''],
+        ['ค้างเกิน '+CFG.aging+' วัน', av.filter(u=>age(u)>CFG.aging).length+' <small>คัน</small>','ต้องเร่งระบาย']],
+      head:[{t:'รุ่น'},{t:'รหัส'},{t:'สี'},{t:'คงเหลือ',n:1},{t:'มูลค่าทุน',n:1,money:1},{t:'มูลค่าขาย',n:1},{t:'อายุเฉลี่ย (วัน)',n:1},{t:'ค้างเกินเกณฑ์',n:1},{t:'รอราคา'}],
+      rows, note:'สต็อก ณ ปัจจุบัน — ตัวกรองเดือนไม่มีผลกับแท็บนี้' };
+  }
+  if(tab==='pstock'){
+    const ps=PARTS.filter(p=>sc.inB(p.branch));
+    const mv=PMOVES.filter(x=>sc.inB(x.branch)&&sc.inM(x.at)&&x.qty<0).reduce((s,x)=>s-x.qty,0);
+    return { kpi:[['รายการอะไหล่',ps.length,''],
+        ['ต่ำกว่าจุดสั่งซื้อ',ps.filter(p=>p.qty<p.min).length,'ต้องสั่งเพิ่ม'],
+        ['มูลค่าสต๊อก (ทุน)', money(ps.reduce((s,p)=>s+p.cost*p.qty,0)),'']],
+      head:[{t:'รหัส'},{t:'ชื่อ'},{t:'สาขา'},{t:'คงเหลือ',n:1},{t:'จุดสั่งซื้อ',n:1},{t:'ทุน/ชิ้น',n:1,money:1},{t:'มูลค่าทุนรวม',n:1,money:1},{t:'สถานะ'}],
+      rows: ps.map(p=>[p.code,p.name,bName(p.branch),p.qty,p.min,p.cost,p.cost*p.qty,
+        p.qty===0?'หมด':(p.qty<p.min?'ใกล้หมด':'ปกติ')]),
+      note:'เบิก/ขายออกช่วง'+rpMonthTh(sc.m)+' รวม '+mv+' ชิ้น' };
+  }
+  if(tab==='sales'){
+    const ss=SALES.filter(s=>sc.inB(s.branch)&&sc.inM(s.soldAt)).sort((a,b)=>a.soldAt.localeCompare(b.soldAt));
+    return { kpi:[['ขายได้',ss.length+' <small>คัน</small>',rpMonthTh(sc.m)],
+        ['ยอดขายรวม', money(ss.reduce((s,x)=>s+x.net,0)),''],
+        ['กำไรขั้นต้นรวม', money(ss.reduce((s,x)=>s+x.gp,0)),'หลังหักของแถม']],
+      head:[{t:'วันที่'},{t:'ลูกค้า'},{t:'รุ่น'},{t:'สาขา'},{t:'เซลล์'},{t:'ชำระ'},{t:'ก่อน VAT',n:1},{t:'VAT',n:1},{t:'สุทธิ',n:1},{t:'ทุน',n:1,money:1},{t:'กำไร',n:1,money:1}],
+      rows: ss.map(s=>{ const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+        const base=Math.round(s.net/(1+CFG.vat/100));
+        return [thDate(s.soldAt), c?c.name:'—', u?u.model:'—', bName(s.branch), s.sales,
+          s.pay==='cash'?'สด':'ผ่อน', base, s.net-base, s.net, s.cost, s.gp]; }),
+      note:'' };
+  }
+  if(tab==='money'){
+    const recv=[]; AR.filter(a=>sc.inB(a.branch)).forEach(a=>{ (a.pays||[]).filter(p=>sc.inM(p.at)).forEach(p=>{
+      const s=SALES.find(x=>x.id===a.saleId), c=s&&CUSTOMERS.find(x=>x.id===s.custId);
+      recv.push([thDate(p.at),'รับเงิน', (a.kind==='finance'?(finById(a.finId)||{}).name||'ไฟแนนซ์':'ลูกค้า')+(c?' — '+c.name:''), bName(a.branch), p.way||'', p.amt]); }); });
+    const exp=EXPENSES.filter(e=>sc.inB(e.branch)&&sc.inM(e.at))
+      .map(e=>[thDate(e.at),'จ่ายออก', e.cat+' — '+e.vendor, bName(e.branch), e.inv||'', -e.amt]);
+    const rows=recv.concat(exp);
+    const rin=recv.reduce((s,r)=>s+r[5],0), rout=-exp.reduce((s,r)=>s+r[5],0);
+    const owe=AR.filter(a=>sc.inB(a.branch)).reduce((s,a)=>s+(a.due-a.paid),0);
+    return { kpi:[['รับเงินจริง', money(rin), rpMonthTh(sc.m)],
+        ['จ่ายออก', money(rout),''],
+        ['ค้างรับคงเหลือ', money(owe),'ทุกงวดรวมกัน']],
+      head:[{t:'วันที่'},{t:'ประเภท'},{t:'รายการ'},{t:'สาขา'},{t:'อ้างอิง/วิธี'},{t:'จำนวน (฿)',n:1,money:1}],
+      rows, note:'รับเงินนับจากวันที่รับจริง ไม่ใช่วันขาย — ตรงกับเงินเข้าบัญชี' };
+  }
+  if(tab==='tax'){
+    const ss=SALES.filter(s=>sc.inB(s.branch)&&sc.inM(s.soldAt)).sort((a,b)=>a.soldAt.localeCompare(b.soldAt));
+    const rows=ss.map(s=>{ const c=CUSTOMERS.find(x=>x.id===s.custId), u=UNITS.find(x=>x.id===s.unitId);
+      const base=Math.round(s.net/(1+CFG.vat/100));
+      return [thDate(s.soldAt), (s.docs&&s.docs.TAXINV)||s.docNo||'(ยังไม่ออกใบกำกับ)', c?c.name:'—',
+        u?u.model:'—', base, s.net-base, s.net]; });
+    const outVat=ss.reduce((s,x)=>s+(x.net-Math.round(x.net/(1+CFG.vat/100))),0);
+    const expInv=EXPENSES.filter(e=>sc.inB(e.branch)&&sc.inM(e.at)&&e.inv);
+    const inVat=Math.round(expInv.reduce((s,e)=>s+e.amt,0)*CFG.vat/(100+CFG.vat));
+    return { kpi:[['ภาษีขาย', money(outVat), ss.length+' ใบ · '+rpMonthTh(sc.m)],
+        ['ภาษีซื้อ (ประมาณ)', money(inVat), 'จากรายจ่ายที่มีเลขใบกำกับ '+expInv.length+' ใบ'],
+        ['ต้องนำส่ง (ประมาณ)', money(outVat-inVat),'ภาษีขาย − ภาษีซื้อ']],
+      head:[{t:'วันที่'},{t:'เลขที่ใบกำกับ'},{t:'ลูกค้า'},{t:'รายการ'},{t:'ก่อนภาษี',n:1,money:1},{t:'VAT '+CFG.vat+'%',n:1,money:1},{t:'รวม',n:1,money:1}],
+      rows, note:'ภาษีซื้อเป็น<b>ประมาณการ</b>จากรายจ่ายที่มีเลขใบกำกับ (คิด '+CFG.vat+'/107) — ตัวจริงต้องดูใบกำกับภาษีซื้อทีละใบ' };
+  }
+  if(tab==='payroll'){
+    const rows=prCalc().filter(r=>sc.inB(r.s.branch));
+    return { kpi:[['จ่ายสุทธิรวม', money(rows.reduce((s,r)=>s+r.net,0)), 'งวดเดือนนี้ '+rows.length+' คน'],
+        ['ค่าคอมรวม', money(rows.reduce((s,r)=>s+r.comm,0)), CFG.commPct+'% ของกำไร'],
+        ['OT รวม', money(rows.reduce((s,r)=>s+r.ot,0)),'']],
+      head:[{t:'พนักงาน'},{t:'ตำแหน่ง'},{t:'สาขา'},{t:'เงินเดือน',n:1,money:1},{t:'OT',n:1,money:1},{t:'ค่าคอม',n:1,money:1},{t:'หักสาย',n:1,money:1},{t:'ปกส.',n:1,money:1},{t:'สุทธิ',n:1,money:1}],
+      rows: rows.map(r=>[r.s.name, ROLES[r.s.role].name, bName(r.s.branch), r.base, r.ot, r.comm, r.lateD, r.ssn, r.net]),
+      note:'ใช้สูตรเดียวกับหน้าเงินเดือน — เดือนปัจจุบันเท่านั้น (ต้นแบบยังไม่เก็บงวดย้อนหลัง)' };
+  }
+}
+function rReport(){
+  const tabs=RP_TABS.filter(t=>t.r.indexOf(ME.role)>=0);
+  if(!tabs.length){ return; }
+  if(!RP_SEL || !tabs.some(t=>t.k===RP_SEL)) RP_SEL=tabs[0].k;
+  $('#rpTabs').innerHTML=tabs.map(t=>'<button class="'+(t.k===RP_SEL?'on':'')+'" data-rp="'+t.k+'">'+esc(t.n)+'</button>').join('');
+  $$('#rpTabs [data-rp]').forEach(b=> b.onclick=()=>{ RP_SEL=b.dataset.rp; rReport(); });
+  /* ตัวกรอง */
+  (function(){ const el=$('#rpMonth'), want=el.value;
+    el.innerHTML='<option value="">ทุกช่วงเวลา</option>'+rpMonths().map(m=>'<option value="'+m+'"'+(!want&&m===TODAY.slice(0,7)?' selected':'')+'>'+rpMonthTh(m)+'</option>').join('');
+    if(want) el.value=want; })();
+  (function(){ const el=$('#rpBranch'), want=el.value;
+    el.innerHTML='<option value="">ทุกสาขาที่ดูแล</option>'+BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    if(want) el.value=want; })();
+  if(!$('#rpMonth').dataset.init){ $('#rpMonth').dataset.init=1;
+    $('#rpMonth').onchange=rReport; $('#rpBranch').onchange=rReport;
+    $('#rpCsv').onclick=()=>{ const d=rpBuild(RP_SEL);
+      csvMoney('รายงาน'+RP_TABS.find(t=>t.k===RP_SEL).n.replace(/\s/g,''),
+        d.head.map(h=>h.t), d.rows, d.head.map((h,i)=>h.money?i:-1).filter(i=>i>=0)); };
+    $('#rpPrint').onclick=()=>{ const d=rpBuild(RP_SEL), t=RP_TABS.find(x=>x.k===RP_SEL);
+      const keep=d.head.map((h,i)=> noMoney()&&h.money? -1:i).filter(i=>i>=0);
+      printHTML('<div class="doc"><h2>'+esc(CFG.company)+'</h2>'
+        +'<div class="dsub">รายงาน'+esc(t.n)+' · '+esc($('#rpBranch').value?bName($('#rpBranch').value):'ทุกสาขาที่ดูแล')
+        +' · '+esc(rpMonthTh($('#rpMonth').value))+' · พิมพ์ '+thDate(TODAY)+'</div>'
+        +'<table><thead><tr>'+keep.map(i=>'<th'+(d.head[i].n?' class="n"':'')+'>'+esc(d.head[i].t)+'</th>').join('')+'</tr></thead><tbody>'
+        +d.rows.map(r=>'<tr>'+keep.map(i=>'<td'+(d.head[i].n?' class="n"':'')+'>'
+          +(typeof r[i]==='number'? fmt(r[i]) : esc(r[i]==null?'—':r[i]))+'</td>').join('')+'</tr>').join('')
+        +'</tbody></table></div>'); };
+  }
+  const d=rpBuild(RP_SEL);
+  $('#rpTitle').textContent='รายงาน'+RP_TABS.find(t=>t.k===RP_SEL).n;
+  $('#rpKpi').innerHTML=d.kpi.map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
+  tbl($('#rpTable'), d.head.map(h=>h.n?{t:h.t,n:1}:h.t),
+    d.rows.map(r=>'<tr>'+r.map((v,i)=>{ const h=d.head[i];
+      const cell = h.money&&noMoney()? '—' : (typeof v==='number'? fmt(v) : esc(v==null||v===''?'—':v));
+      return '<td'+(h.n?' class="n"':'')+'>'+cell+'</td>'; }).join('')+'</tr>'),
+    'ไม่มีข้อมูลตามเงื่อนไข');
+  $('#rpNote').innerHTML=d.note? '<p class="foot">'+d.note+'</p>' : '';
+}
+
 /* ============================= ค้นหารวม ============================= */
 function gsOpen(){ $('#gs').classList.add('on'); $('#gsQ').value=''; $('#gsR').innerHTML=''; $('#gsQ').focus(); }
 function gsSearch(){
@@ -2904,7 +3589,7 @@ function gsSearch(){
   });
   CUSTOMERS.filter(c=>inScope(c.branch)).forEach(c=>{
     if((c.name+(c.phone||'')).toLowerCase().indexOf(q)>=0)
-      res.push({ik:'user',t:c.name,s:(c.phone||'')+' · '+c.stage,go:()=>{ closeGs(); go('crm'); setTimeout(()=>custDrawer(c.id),120); }});
+      res.push({ik:'user',t:c.name,s:(c.phone||'')+' · '+c.stage,go:()=>{ closeGs(); go('cust'); setTimeout(()=>custDrawer(c.id),120); }});
   });
   SALES.filter(s=>inScope(s.branch)).forEach(s=>{ const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
     if(((c?c.name:'')+u.engine+u.model).toLowerCase().indexOf(q)>=0)
