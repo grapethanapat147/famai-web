@@ -3355,9 +3355,9 @@ function rService(){
         +r.slice(0,25).map(x=>{ const c=CUSTOMERS.find(y=>y.id===x.custId);
           return '<tr><td>'+esc(c?c.name:'—')+'</td><td>'+esc(c?c.phone:'')+'</td><td class="n">'+fmt(x.km)+'</td><td>'+thDate(x.due)+'</td></tr>'; }).join('')
         +'</tbody></table></div>'); };
-    $('#expSv').onclick=()=> csvMoney('ใบงานซ่อม',['เลขที่','วันที่','ลูกค้า','เลขเครื่อง','ประเภท','เลขไมล์','ค่าแรง','ค่าอะไหล่','รวม','สถานะ'],[6,7,8],
+    $('#expSv').onclick=()=> csvMoney('ใบงานซ่อม',['เลขที่','วันที่','ลูกค้า','เลขเครื่อง','ประเภท','เลขไมล์','ค่าแรง','ค่าอะไหล่','รวม','สถานะ'],
       SERVICE.filter(s=>inScope(s.branch)).map(s=>{ const c=CUSTOMERS.find(x=>x.id===s.custId);
-        return [s.no,s.at,c?c.name:'',s.engine,s.type,s.km,s.labor,s.parts,s.labor+s.parts,s.status]; }));
+        return [s.no,s.at,c?c.name:'',s.engine,s.type,s.km,s.labor,s.parts,s.labor+s.parts,s.status]; }), [6,7,8]);
   }
   $('#svPart').innerHTML='<option value="">ไม่ใช้อะไหล่</option>'+PARTS.filter(p=>inScope(p.branch))
     .map(p=>'<option value="'+p.id+'">'+esc(p.name)+' · '+fmt(p.price)+' ฿ (เหลือ '+p.qty+')</option>').join('');
@@ -3453,8 +3453,8 @@ function rParts(){
       PARTS.push({id:nid('PT'),code,name,cost:num($('#pCost').value),price:num($('#pPrice').value),
         qty:num($('#pQty').value),min:num($('#pMin').value),branch:ME.branch});
       toast('เพิ่มอะไหล่แล้ว',name); $('#pCode').value=''; $('#pName').value=''; refreshAll(); };
-    $('#expParts').onclick=()=> csvMoney('อะไหล่',['รหัส','ชื่อ','สาขา','คงเหลือ','จุดสั่งซื้อ','ต้นทุน','ราคาขาย'],[5,6],
-      PARTS.filter(p=>inScope(p.branch)).map(p=>[p.code,p.name,bName(p.branch),p.qty,p.min,p.cost,p.price]));
+    $('#expParts').onclick=()=> csvMoney('อะไหล่',['รหัส','ชื่อ','สาขา','คงเหลือ','จุดสั่งซื้อ','ต้นทุน','ราคาขาย'],
+      PARTS.filter(p=>inScope(p.branch)).map(p=>[p.code,p.name,bName(p.branch),p.qty,p.min,p.cost,p.price]), [5,6]);
   }
   const ps=PARTS.filter(p=>inScope(p.branch));
   const sold=PMOVES.filter(m=>m.qty<0&&inScope(m.branch));
@@ -3532,7 +3532,16 @@ function bookkeeperPack(){
     const s=SALES.find(x=>x.id===a.saleId), c=s&&CUSTOMERS.find(x=>x.id===s.custId);
     rec.push([pp.at,bName(a.branch), a.kind==='finance'?(finById(a.finId)||{}).name||'ไฟแนนซ์':'ลูกค้า', c?c.name:'', pp.amt, pp.way||'']); }); });
   csv(label+'_รับเงิน',['วันที่','สาขา','ผู้จ่าย','ลูกค้า','จำนวนเงิน','วิธีรับ'], rec);
-  toast('ส่งออกชุดส่งบัญชีแล้ว','3 ไฟล์ · งวด '+m);
+  /* ศูนย์ซ่อม + ขายอะไหล่หน้าร้าน — ที่เจ้าของขอให้รวมเข้าชุดส่งบัญชี */
+  const sv=SERVICE.filter(v=>inScope(v.branch)&&inM(v.at));
+  csv(label+'_ศูนย์ซ่อม',['วันที่','สาขา','ลูกค้า','เลขที่ใบงาน','ประเภทงาน','ค่าแรง','ค่าอะไหล่','รวม','สถานะ'],
+    sv.map(v=>{ const c=CUSTOMERS.find(x=>x.id===v.custId);
+      return [v.at,bName(v.branch),c?c.name:'',v.no||'',v.type,v.labor,v.parts,v.labor+v.parts,v.status]; }));
+  const pm=PMOVES.filter(x=>x.qty<0&&x.type==='sale'&&inScope(x.branch)&&inM(x.at));
+  csv(label+'_ขายอะไหล่',['วันที่','สาขา','รหัส','ชื่ออะไหล่','จำนวน','ราคา/ชิ้น','รวม'],
+    pm.map(x=>{ const p=PARTS.find(y=>y.id===x.partId);
+      return [x.at,bName(x.branch),p?p.code:'',p?p.name:'',-x.qty,p?p.price:0,p?p.price*-x.qty:0]; }));
+  toast('ส่งออกชุดส่งบัญชีแล้ว','5 ไฟล์ · งวด '+m);
 }
 function rExpense(){
   if(!$('#eSave').dataset.init){ $('#eSave').dataset.init=1;
@@ -3551,8 +3560,8 @@ function rExpense(){
       const v=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
       return '<option value="'+v+'">'+TH_M[d.getMonth()]+' '+(d.getFullYear()+543)+'</option>'; }).join('');
     $('#expBook').onclick=bookkeeperPack;
-    $('#expExp').onclick=()=> csvMoney('ค่าใช้จ่าย',['วันที่','สาขา','หมวดหมู่','ผู้ขาย','เลขที่ใบกำกับ','จำนวนเงิน','ใบเสร็จ'],[5],
-      EXPENSES.filter(e=>inScope(e.branch)).map(e=>[e.at,bName(e.branch),e.cat,e.vendor,e.inv,e.amt,e.files.length?'แนบแล้ว':'หาย']));
+    $('#expExp').onclick=()=> csvMoney('ค่าใช้จ่าย',['วันที่','สาขา','หมวดหมู่','ผู้ขาย','เลขที่ใบกำกับ','จำนวนเงิน','ใบเสร็จ'],
+      EXPENSES.filter(e=>inScope(e.branch)).map(e=>[e.at,bName(e.branch),e.cat,e.vendor,e.inv,e.amt,e.files.length?'แนบแล้ว':'หาย']), [5]);
     function eDraw(){ $('#eFiles').innerHTML=eFilesArr.map((f,i)=>'<div class="frow">'+ic('clip','i i-sm')+'<span>'+esc(f)+'</span><button class="fx" data-i="'+i+'">'+ic('x','i i-sm')+'</button></div>').join('');
       $$('#eFiles .fx').forEach(b=> b.onclick=()=>{ eFilesArr.splice(+b.dataset.i,1); eDraw(); }); }
     window._eDraw=eDraw;
