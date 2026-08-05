@@ -611,6 +611,10 @@ body.lock{ overflow:hidden; }
   tbody td b{ white-space:normal; }
   .tw table.cards{ min-width:0; }
   .tw td.cwrap{ white-space:normal; padding:0; border:0; }
+  /* แท็บรายงาน 9 ตัว — แถวเดียวเลื่อนแนวนอนแทนการพันบรรทัด */
+  #rpTabs{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  #rpTabs::-webkit-scrollbar{ display:none; }
+  #rpTabs button{ flex:0 0 auto; white-space:nowrap; }
   .card>.hd,.card>.bd{ padding-left:var(--s2); padding-right:var(--s2); }
   .kpi{ padding:var(--s2); }
   .kv{ grid-template-columns:96px 1fr; }
@@ -1254,6 +1258,10 @@ body.lock{ overflow:hidden; }
       <section class="screen" id="s-report">
         <div class="tabs" id="rpTabs"></div>
         <div class="card"><div class="hd"><h3 id="rpTitle">รายงาน</h3><div class="sp"></div>
+          <input class="inp ct noprint" type="date" id="rpDay" style="display:none">
+          <select class="inp ct noprint" id="rpDim" style="display:none">
+            <option value="model">แยกตามรุ่น</option><option value="sales">แยกตามเซลล์</option><option value="branch">แยกตามสาขา</option>
+          </select>
           <select class="inp ct" id="rpMonth"></select>
           <select class="inp ct" id="rpBranch"></select>
           <button class="btn sec sm noprint" id="rpPrint"><svg class="i i-sm"><use href="#i-print"/></svg> พิมพ์</button>
@@ -1419,7 +1427,7 @@ const finRefs = id => FINCASES.filter(c=>c.finId===id).length
                     + AR.filter(a=>a.finId===id).length
                     + SALES.filter(s=>s.finId===id).length;
 const DEMO_BUYERS = [
-  ['คุณศิริพร ทวีทรัพย์','081-555-2210','Facebook',0,'finance','F1',3],
+  ['คุณศิริพร ทวีทรัพย์','081-555-2210','Facebook',0,'finance','F1',0],   /* ago 0 = ขายวันนี้ — ให้ปิดยอดรายวันมีเงินดาวน์สาธิต */
   ['คุณอนันต์ พูนผล','089-221-3390','เดินเข้าร้าน',0,'cash','',6],
   ['คุณกาญจนา แสงทอง','092-114-7788','เพื่อนแนะนำ',1,'finance','F2',9],
   ['คุณธนกฤต วงศ์ไทย','086-330-2214','Facebook',1,'finance','F1',13],
@@ -1532,6 +1540,12 @@ function seedDemo(){
       name:'คุณต้น ภูผา', phone:'095-772-1109', until:addDays(TODAY,1),
       v1:qAvail[qAvail.length-1].variant, v2:'', f1:FIN_CO[0].id, f2:f2q, down:8000, by:'คุณเบล', demo:true});
   }
+  /* ธุรกรรมวันนี้อีกสองรายการ — ให้ปิดยอดรายวันสาธิตครบทุกช่องทางเงินเข้า */
+  SERVICE.push({id:nid('SV'), no:'', branch:'FMG01', custId:CUSTOMERS[0].id, unitId:'',
+    engine:'', frame:'', km:8200, type:'เปลี่ยนถ่ายน้ำมันเครื่อง', symptom:'walk-in เข้ารับบริการ',
+    at:TODAY, status:'รับเข้า', labor:150, parts:0, tech:'ช่างเอก', demo:true});
+  const arOpen=AR.find(a=>a.due-a.paid>=5000);
+  if(arOpen){ (arOpen.pays=arOpen.pays||[]).push({at:TODAY, amt:5000, way:'เงินสด'}); arOpen.paid+=5000; }
 }
 
 /* ---------- อะไหล่ / ของแถม / ค่าใช้จ่าย ---------- */
@@ -1549,7 +1563,8 @@ let PMOVES = [
   {id:'MV1',partId:'PT3',qty:-2,type:'sale',at:addDays(TODAY,-1),branch:'FMG01'},
   {id:'MV2',partId:'PT7',qty:-4,type:'job',at:addDays(TODAY,-2),branch:'FMG01'},
   {id:'MV3',partId:'PT1',qty:-1,type:'sale',at:addDays(TODAY,-3),branch:'FMG01'},
-  {id:'MV4',partId:'PT4',qty:-3,type:'sale',at:addDays(TODAY,-4),branch:'FMM01'}
+  {id:'MV4',partId:'PT4',qty:-3,type:'sale',at:addDays(TODAY,-4),branch:'FMM01'},
+  {id:'MV5',partId:'PT7',qty:-2,type:'sale',at:TODAY,branch:'FMG01'}   /* ขายหน้าร้านวันนี้ — สาธิตปิดยอดรายวัน */
 ];
 let GIFTS = [
   {id:'G1',name:'หมวกกันน็อก',cost:450,qty:24,min:10,branch:'FMG01'},
@@ -1562,7 +1577,8 @@ let EXPENSES = [
   {id:'EX1',cat:'ออกบูธ',branch:'FMG01',amt:5000,at:addDays(TODAY,-4),vendor:'Event Co., Ltd.',inv:'INV-88231',files:['booth_receipt.pdf'],demo:true},
   {id:'EX2',cat:'ค่าขนส่ง',branch:'FMM01',amt:1000,at:addDays(TODAY,-6),vendor:'ขนส่งไทย',inv:'INV-88240',files:['transport.pdf'],demo:true},
   {id:'EX3',cat:'เงินเดือน',branch:'FMG01',amt:12000,at:addDays(TODAY,-8),vendor:'พนักงาน',inv:'',files:[],demo:true},
-  {id:'EX4',cat:'ค่าน้ำไฟ',branch:'FCG01',amt:7500,at:addDays(TODAY,-11),vendor:'กฟภ.',inv:'INV-77120',files:['bill.pdf'],demo:true}
+  {id:'EX4',cat:'ค่าน้ำไฟ',branch:'FCG01',amt:7500,at:addDays(TODAY,-11),vendor:'กฟภ.',inv:'INV-77120',files:['bill.pdf'],demo:true},
+  {id:'EX5',cat:'ค่าน้ำไฟ',branch:'FMG01',amt:1200,at:TODAY,vendor:'กฟภ.',inv:'INV-90001',files:[],demo:true}   /* จ่ายออกวันนี้ — สาธิตปิดยอดรายวัน */
 ];
 
 /* ---------- พนักงาน / บทบาท / ผู้ใช้ ---------- */
@@ -3950,13 +3966,17 @@ function rFlow(){
 }
 
 /* ============================= 23. รายงาน ============================= */
-/* 6 ประเภท แยกแท็บตามที่เจ้าของร้านขอ — ทุกแท็บ: ตัวกรองเดือน/สาขา + KPI + ตาราง + CSV + พิมพ์
-   คอลัมน์เงินถูกตัดตามสิทธิ์ทั้งบนจอ ใน CSV และตอนพิมพ์ (ผ่านธง money ต่อคอลัมน์) */
+/* 9 ประเภท แยกแท็บตามที่เจ้าของร้านขอ — ทุกแท็บ: ตัวกรองเดือน/สาขา + KPI + ตาราง + CSV + พิมพ์
+   คอลัมน์เงินถูกตัดตามสิทธิ์ทั้งบนจอ ใน CSV และตอนพิมพ์ (ผ่านธง money ต่อคอลัมน์)
+   แท็บ daily ใช้ตัวกรองวัน (rpDay) แทนเดือน · แท็บ monthly มีตัวสลับมิติ (rpDim) */
 const RP_TABS=[
   {k:'vstock',  n:'สต็อกรถ',          r:['admin','manager','acct','stock']},
   {k:'pstock',  n:'สต็อกอะไหล่',      r:['admin','manager','acct','stock']},
   {k:'sales',   n:'การขาย',           r:['admin','manager','acct']},
+  {k:'monthly', n:'ขายรายเดือน',      r:['admin','manager','acct']},
+  {k:'daily',   n:'ปิดยอดรายวัน',     r:['admin','manager','acct']},
   {k:'money',   n:'การเงิน',          r:['admin','manager','acct']},
+  {k:'finsum',  n:'ไฟแนนซ์',          r:['admin','manager','acct']},
   {k:'tax',     n:'ภาษี',             r:['admin','manager','acct']},
   {k:'payroll', n:'เงินเดือน + ค่าคอม', r:['admin','manager','acct','hr']}
 ];
@@ -3965,13 +3985,19 @@ function rpMonths(){
   const set=new Set([TODAY.slice(0,7)]);
   SALES.forEach(s=>set.add(s.soldAt.slice(0,7)));
   EXPENSES.forEach(e=>set.add(String(e.at).slice(0,7)));
+  SERVICE.forEach(v=>set.add(String(v.at).slice(0,7)));
+  PMOVES.forEach(x=>set.add(String(x.at).slice(0,7)));
+  AR.forEach(a=>(a.pays||[]).forEach(p=>set.add(String(p.at).slice(0,7))));
   return [...set].sort().reverse();
 }
 const rpMonthTh = m => m? TH_M[+m.slice(5,7)-1]+' '+(+m.slice(0,4)+543) : 'ทุกช่วงเวลา';
-/* ตัวกรองที่เลือกอยู่ — สาขาเคารพ scope เสมอ */
+/* ตัวกรองที่เลือกอยู่ — สาขาเคารพ scope เสมอ · d/dim ใช้เฉพาะแท็บ daily/monthly */
 function rpScope(){
   const m=$('#rpMonth').value, b=$('#rpBranch').value;
-  return { m, b, inB:c=>inScope(c)&&(!b||c===b), inM:d=>!m||String(d||'').slice(0,7)===m };
+  const d=($('#rpDay')&&$('#rpDay').value)||TODAY;
+  return { m, b, d, dim:($('#rpDim')&&$('#rpDim').value)||'model',
+    inB:c=>inScope(c)&&(!b||c===b), inM:x=>!m||String(x||'').slice(0,7)===m,
+    inD:x=>String(x||'').slice(0,10)===d };
 }
 /* แต่ละแท็บคืน {kpi:[[หัว,ค่า,รอง]], head:[{t,n,money}], rows:[[ค่าดิบ]], note} — ตัวเดียวใช้ทั้งจอ/CSV/พิมพ์ */
 function rpBuild(tab){
@@ -4017,16 +4043,103 @@ function rpBuild(tab){
     const recv=[]; AR.filter(a=>sc.inB(a.branch)).forEach(a=>{ (a.pays||[]).filter(p=>sc.inM(p.at)).forEach(p=>{
       const s=SALES.find(x=>x.id===a.saleId), c=s&&CUSTOMERS.find(x=>x.id===s.custId);
       recv.push([thDate(p.at),'รับเงิน', (a.kind==='finance'?(finById(a.finId)||{}).name||'ไฟแนนซ์':'ลูกค้า')+(c?' — '+c.name:''), bName(a.branch), p.way||'', p.amt]); }); });
+    /* รายได้ศูนย์ซ่อม + ขายอะไหล่หน้าร้าน — ที่เจ้าของขอให้รวมเข้ารายงานการเงิน */
+    const svc=SERVICE.filter(v=>sc.inB(v.branch)&&sc.inM(v.at)).map(v=>{
+      const c=CUSTOMERS.find(x=>x.id===v.custId);
+      return [thDate(v.at),'งานซ่อม', (v.no||'ใบงาน')+' — '+v.type+(c?' · '+c.name:''), bName(v.branch), v.status, v.labor+v.parts]; });
+    const pts=PMOVES.filter(x=>x.qty<0&&x.type==='sale'&&sc.inB(x.branch)&&sc.inM(x.at)).map(x=>{
+      const p=PARTS.find(y=>y.id===x.partId);
+      return [thDate(x.at),'ขายอะไหล่', (p?p.name:'—')+' × '+(-x.qty), bName(x.branch), '', p?p.price*-x.qty:0]; });
     const exp=EXPENSES.filter(e=>sc.inB(e.branch)&&sc.inM(e.at))
       .map(e=>[thDate(e.at),'จ่ายออก', e.cat+' — '+e.vendor, bName(e.branch), e.inv||'', -e.amt]);
-    const rows=recv.concat(exp);
-    const rin=recv.reduce((s,r)=>s+r[5],0), rout=-exp.reduce((s,r)=>s+r[5],0);
+    const rows=recv.concat(svc, pts, exp);
+    const rin=recv.concat(svc,pts).reduce((s,r)=>s+r[5],0), rout=-exp.reduce((s,r)=>s+r[5],0);
     const owe=AR.filter(a=>sc.inB(a.branch)).reduce((s,a)=>s+(a.due-a.paid),0);
     return { kpi:[['รับเงินจริง', money(rin), rpMonthTh(sc.m)],
         ['จ่ายออก', money(rout),''],
         ['ค้างรับคงเหลือ', money(owe),'ทุกงวดรวมกัน']],
       head:[{t:'วันที่'},{t:'ประเภท'},{t:'รายการ'},{t:'สาขา'},{t:'อ้างอิง/วิธี'},{t:'จำนวน (฿)',n:1,money:1}],
-      rows, note:'รับเงินนับจากวันที่รับจริง ไม่ใช่วันขาย — ตรงกับเงินเข้าบัญชี' };
+      rows, note:'รับเงินนับจากวันที่รับจริง ไม่ใช่วันขาย — ตรงกับเงินเข้าบัญชี'
+        +' · งานซ่อมนับตามวันเปิดใบงาน · อะไหล่นับเฉพาะขายหน้าร้าน (เบิกเข้าใบงานรวมในค่าอะไหล่งานซ่อมแล้ว) ราคาอ้างอิงปัจจุบัน' };
+  }
+  if(tab==='daily'){
+    /* ปิดยอดรายวัน — เงินเข้า/ออกของวันเดียว ใช้ปิดร้านตอนเย็น (กรองด้วย rpDay ไม่ใช่เดือน) */
+    const day=sc.d, rows=[];
+    SALES.filter(s=>!s.void&&s.pay==='cash'&&sc.inB(s.branch)&&s.soldAt===day).forEach(s=>{
+      const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+      const ar=AR.find(a=>a.saleId===s.id);                      /* ตั้งลูกหนี้ไว้เท่าไร ไปนับวันรับชำระจริง */
+      const amt=s.net-(ar?ar.due:0);
+      if(amt>0) rows.push(['ขายรถ (สด)', (c?c.name:'—')+' — '+(u?u.model:'—'), bName(s.branch), s.docNo||'', amt]); });
+    SALES.filter(s=>!s.void&&s.pay==='finance'&&s.down>0&&sc.inB(s.branch)&&s.soldAt===day).forEach(s=>{
+      const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+      rows.push(['เงินดาวน์', (c?c.name:'—')+' — '+(u?u.model:'—'), bName(s.branch), s.docNo||'', s.down]); });
+    AR.filter(a=>sc.inB(a.branch)).forEach(a=>{ (a.pays||[]).filter(p=>sc.inD(p.at)).forEach(p=>{
+      const s=SALES.find(x=>x.id===a.saleId), c=s&&CUSTOMERS.find(x=>x.id===s.custId);
+      rows.push(['รับชำระ', (a.kind==='finance'?(finById(a.finId)||{}).name||'ไฟแนนซ์':'ลูกค้า')+(c?' — '+c.name:''), bName(a.branch), p.way||'', p.amt]); }); });
+    PMOVES.filter(x=>x.qty<0&&x.type==='sale'&&sc.inB(x.branch)&&sc.inD(x.at)).forEach(x=>{
+      const p=PARTS.find(y=>y.id===x.partId);
+      rows.push(['ขายอะไหล่', (p?p.name:'—')+' × '+(-x.qty), bName(x.branch), '', p?p.price*-x.qty:0]); });
+    SERVICE.filter(v=>sc.inB(v.branch)&&sc.inD(v.at)).forEach(v=>{
+      const c=CUSTOMERS.find(x=>x.id===v.custId);
+      rows.push(['ศูนย์ซ่อม', (v.no||'ใบงาน')+' — '+v.type+(c?' · '+c.name:''), bName(v.branch), v.status, v.labor+v.parts]); });
+    const nIn=rows.length;
+    EXPENSES.filter(e=>sc.inB(e.branch)&&sc.inD(e.at)).forEach(e=>
+      rows.push(['จ่ายออก', e.cat+' — '+e.vendor, bName(e.branch), e.inv||'', -e.amt]));
+    const inn=rows.slice(0,nIn).reduce((s,r)=>s+r[4],0);
+    const out=-rows.slice(nIn).reduce((s,r)=>s+r[4],0);
+    return { kpi:[['รับเข้ารวม', money(inn), thDate(day)],
+        ['จ่ายออกรวม', money(out), (rows.length-nIn)+' รายการ'],
+        ['เงินสุทธิของวัน', money(inn-out), 'รับเข้า − จ่ายออก']],
+      head:[{t:'ประเภท'},{t:'รายการ'},{t:'สาขา'},{t:'อ้างอิง/วิธี'},{t:'จำนวน (฿)',n:1,money:1}],
+      rows, note:'ปิดยอดวันเดียว — เลือกวันได้จากช่องวันที่ด้านบน (ตัวกรองเดือนไม่มีผล)'
+        +' · ขายสดนับเงินรับวันขาย ยอดที่ตั้งเป็นลูกหนี้ไปนับวันรับชำระจริง · งานซ่อมนับทุกใบงานที่เปิดในวัน'
+        +' · อะไหล่นับเฉพาะขายหน้าร้าน ราคาอ้างอิงราคาขายปัจจุบัน' };
+  }
+  if(tab==='monthly'){
+    /* ยอดขายรายเดือนแยกมิติ — สลับ รุ่น/เซลล์/สาขา ด้วย rpDim */
+    const ss=SALES.filter(s=>!s.void&&sc.inB(s.branch)&&sc.inM(s.soldAt));
+    const keyOf=s=> sc.dim==='sales'? s.sales
+      : sc.dim==='branch'? bName(s.branch)
+      : (UNITS.find(x=>x.id===s.unitId)||{}).model||'—';
+    const grp={};
+    ss.forEach(s=>{ const k=keyOf(s); const g=grp[k]=grp[k]||{n:0,net:0,gp:0,disc:0,fin:0};
+      g.n++; g.net+=s.net; g.gp+=s.gp; g.disc+=s.disc; if(s.pay==='finance') g.fin++; });
+    const keys=Object.keys(grp).sort((a,b)=>grp[b].net-grp[a].net);
+    const tot=ss.reduce((s,x)=>s+x.net,0);
+    const dimTh={model:'รุ่น',sales:'เซลล์',branch:'สาขา'}[sc.dim];
+    return { kpi:[['ขายได้', ss.length+' <small>คัน</small>', rpMonthTh(sc.m)],
+        ['ยอดขายรวม', money(tot), keys.length+' '+dimTh],
+        ['อันดับ 1', keys.length?esc(keys[0]):'—', keys.length&&tot? Math.round(grp[keys[0]].net/tot*100)+'% ของยอดขาย':'']],
+      head:[{t:dimTh},{t:'ขายได้ (คัน)',n:1},{t:'ยอดขายรวม',n:1,money:1},{t:'สัดส่วน',n:1},
+        {t:'ส่วนลดรวม',n:1,money:1},{t:'กำไรขั้นต้น',n:1,money:1},{t:'กำไร/คัน',n:1,money:1},{t:'ผ่อน/ทั้งหมด',n:1}],
+      rows: keys.map(k=>{ const g=grp[k];
+        return [k, g.n, g.net, tot?Math.round(g.net/tot*100)+'%':'—', g.disc, g.gp, Math.round(g.gp/g.n), g.fin+'/'+g.n]; }),
+      note:'สลับมุมมอง รุ่น/เซลล์/สาขา จากตัวเลือกด้านบน — นับเฉพาะการขายที่ไม่ถูกยกเลิก' };
+  }
+  if(tab==='finsum'){
+    /* สรุปไฟแนนซ์รายบริษัท — อัตราอนุมัติ เวลารอผล ยอดจัด ค่าคอม (กรองตามเดือนที่ยื่นเรื่อง) */
+    const cs=FINCASES.filter(c=>sc.inB(c.branch)&&sc.inM(c.at));
+    const rows=FIN_CO.map(f=>{
+      const g=cs.filter(c=>c.finId===f.id);
+      const aL=g.filter(c=>c.status==='อนุมัติแล้ว'), rL=g.filter(c=>c.status==='ปฏิเสธ');
+      const pend=g.length-aL.length-rL.length;
+      let dsum=0, dn=0;                                 /* วันส่งเรื่อง → วันตัดสิน จากประวัติเคส */
+      aL.concat(rL).forEach(c=>{ const l=(c.log||[]).slice().reverse().find(x=>String(x.to).indexOf(c.status)===0);
+        if(l&&l.at){ dsum+=Math.max(0,days(c.at,l.at)); dn++; } });
+      const amt=aL.reduce((s,c)=>s+c.amount,0);
+      return [f.name, g.length, aL.length, rL.length, pend,
+        g.length?Math.round(aL.length/g.length*100)+'%':'—', dn?Math.round(dsum/dn):'—',
+        amt, aL.length*(f.commission||0)];
+    }).filter(r=>r[1]>0 || !sc.m);                      /* เดือนที่เลือกไม่มีเคสของเจ้าไหน ตัดแถวนั้นออก */
+    const aAll=cs.filter(c=>c.status==='อนุมัติแล้ว').length;
+    const totComm=rows.reduce((s,r)=>s+r[8],0);
+    return { kpi:[['เคสยื่นในงวด', cs.length+' <small>เคส</small>', rpMonthTh(sc.m)],
+        ['อัตราอนุมัติรวม', cs.length?Math.round(aAll/cs.length*100)+'%':'—', 'อนุมัติ '+aAll+' จาก '+cs.length+' เคส'],
+        ['ค่าคอมคาดรับ', money(totComm), 'เคสอนุมัติ × เรตต่อสัญญา']],
+      head:[{t:'ไฟแนนซ์'},{t:'ยื่น',n:1},{t:'อนุมัติ',n:1},{t:'ปฏิเสธ',n:1},{t:'รอผล',n:1},
+        {t:'อัตราอนุมัติ',n:1},{t:'เฉลี่ยรอผล (วัน)',n:1},{t:'ยอดจัดอนุมัติ',n:1,money:1},{t:'ค่าคอมคาดรับ',n:1,money:1}],
+      rows, note:'นับเคสตามเดือนที่ยื่นเรื่อง · เวลารอผลนับจากวันส่งเรื่องถึงวันตัดสิน (จากประวัติเคส)'
+        +' · ค่าคอมประมาณจากเรตต่อสัญญาของแต่ละเจ้า' };
   }
   if(tab==='tax'){
     const ss=SALES.filter(s=>!s.void&&sc.inB(s.branch)&&sc.inM(s.soldAt)).sort((a,b)=>a.soldAt.localeCompare(b.soldAt));
@@ -4059,23 +4172,34 @@ function rReport(){
   if(!RP_SEL || !tabs.some(t=>t.k===RP_SEL)) RP_SEL=tabs[0].k;
   $('#rpTabs').innerHTML=tabs.map(t=>'<button class="'+(t.k===RP_SEL?'on':'')+'" data-rp="'+t.k+'">'+esc(t.n)+'</button>').join('');
   $$('#rpTabs [data-rp]').forEach(b=> b.onclick=()=>{ RP_SEL=b.dataset.rp; rReport(); });
+  /* ตัวกรองเฉพาะแท็บ — daily ใช้วันแทนเดือน · monthly มีตัวสลับมิติ (ค่าคงอยู่เพราะไม่ถูก rebuild) */
+  const isDaily=RP_SEL==='daily', isMon=RP_SEL==='monthly';
+  $('#rpDay').style.display = isDaily?'':'none';
+  $('#rpDim').style.display = isMon?'':'none';
+  $('#rpMonth').style.display = isDaily?'none':'';
+  if(isDaily && !$('#rpDay').value) $('#rpDay').value=TODAY;
   /* ตัวกรอง */
-  (function(){ const el=$('#rpMonth'), want=el.value;
-    el.innerHTML='<option value="">ทุกช่วงเวลา</option>'+rpMonths().map(m=>'<option value="'+m+'"'+(!want&&m===TODAY.slice(0,7)?' selected':'')+'>'+rpMonthTh(m)+'</option>').join('');
-    if(want) el.value=want; })();
+  /* ครั้งแรก default เดือนปัจจุบัน — หลังจากนั้นเคารพค่าที่เลือกจริง รวมถึง "ทุกช่วงเวลา" (ค่าว่าง) */
+  (function(){ const el=$('#rpMonth'), want=el.value, first=!el.dataset.ready;
+    el.innerHTML='<option value="">ทุกช่วงเวลา</option>'+rpMonths().map(m=>'<option value="'+m+'"'+(first&&m===TODAY.slice(0,7)?' selected':'')+'>'+rpMonthTh(m)+'</option>').join('');
+    if(!first) el.value=want; el.dataset.ready=1; })();
   (function(){ const el=$('#rpBranch'), want=el.value;
     el.innerHTML='<option value="">ทุกสาขาที่ดูแล</option>'+BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
     if(want) el.value=want; })();
   if(!$('#rpMonth').dataset.init){ $('#rpMonth').dataset.init=1;
     $('#rpMonth').onchange=rReport; $('#rpBranch').onchange=rReport;
+    $('#rpDay').onchange=rReport; $('#rpDim').onchange=rReport;
     $('#rpCsv').onclick=()=>{ const d=rpBuild(RP_SEL);
       csvMoney('รายงาน'+RP_TABS.find(t=>t.k===RP_SEL).n.replace(/\s/g,''),
         d.head.map(h=>h.t), d.rows, d.head.map((h,i)=>h.money?i:-1).filter(i=>i>=0)); };
     $('#rpPrint').onclick=()=>{ const d=rpBuild(RP_SEL), t=RP_TABS.find(x=>x.k===RP_SEL);
       const keep=d.head.map((h,i)=> noMoney()&&h.money? -1:i).filter(i=>i>=0);
+      const period = RP_SEL==='daily'? thDate($('#rpDay').value||TODAY)
+        : rpMonthTh($('#rpMonth').value)
+          +(RP_SEL==='monthly'?' · แยกตาม'+({model:'รุ่น',sales:'เซลล์',branch:'สาขา'}[$('#rpDim').value||'model']):'');
       printHTML('<div class="doc"><h2>'+esc(CFG.company)+'</h2>'
         +'<div class="dsub">รายงาน'+esc(t.n)+' · '+esc($('#rpBranch').value?bName($('#rpBranch').value):'ทุกสาขาที่ดูแล')
-        +' · '+esc(rpMonthTh($('#rpMonth').value))+' · พิมพ์ '+thDate(TODAY)+'</div>'
+        +' · '+esc(period)+' · พิมพ์ '+thDate(TODAY)+'</div>'
         +'<table><thead><tr>'+keep.map(i=>'<th'+(d.head[i].n?' class="n"':'')+'>'+esc(d.head[i].t)+'</th>').join('')+'</tr></thead><tbody>'
         +d.rows.map(r=>'<tr>'+keep.map(i=>'<td'+(d.head[i].n?' class="n"':'')+'>'
           +(typeof r[i]==='number'? fmt(r[i]) : esc(r[i]==null?'—':r[i]))+'</td>').join('')+'</tr>').join('')
