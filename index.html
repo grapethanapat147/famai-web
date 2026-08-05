@@ -263,6 +263,15 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .inp.bad{ border-color:var(--accent); }
 .inp:disabled,.inp[readonly]{ background:var(--paper-2); color:var(--ink-soft); }
 .inp.ct{ height:34px; width:auto; font-size:var(--t-label); }
+/* รายชื่อลูกค้าแนะนำใต้ช่องกรอก — ป้องกันสร้างลูกค้าซ้ำ */
+.sug{ position:absolute; top:100%; left:0; right:0; z-index:20; background:var(--card);
+  border:1px solid var(--hairline); border-radius:var(--r-input); box-shadow:var(--sh-md);
+  max-height:220px; overflow-y:auto; }
+.sug .si{ display:flex; align-items:center; gap:var(--s1); width:100%; text-align:left;
+  min-height:44px; padding:var(--s1) var(--s2); font-size:var(--t-table); }
+.sug .si:not(:last-child){ border-bottom:1px solid var(--hairline-2); }
+.sug .si b{ font-weight:600; }
+.sug .si .sp2{ color:var(--muted); font-size:var(--t-label); margin-left:auto; flex:0 0 auto; }
 .hint{ font-size:var(--t-label); color:var(--muted); margin-top:var(--s-half); }
 
 .btn{ height:40px; padding:0 var(--s3); border-radius:var(--r-btn);
@@ -851,8 +860,8 @@ body.lock{ overflow:hidden; }
             <div class="f">
               <div><label class="fl">เลือกคันรถ</label><select class="inp" id="sUnit"></select></div>
               <div class="f2">
-                <div><label class="fl">ชื่อลูกค้า</label><input class="inp" id="sCust" placeholder="คุณศิริพร ทวีทรัพย์"></div>
-                <div><label class="fl">เบอร์โทร</label><input class="inp" id="sPhone" placeholder="081-555-2210"></div>
+                <div style="position:relative"><label class="fl">ชื่อลูกค้า</label><input class="inp" id="sCust" placeholder="คุณศิริพร ทวีทรัพย์" autocomplete="off"><div class="sug" id="sSugN" style="display:none"></div></div>
+                <div style="position:relative"><label class="fl">เบอร์โทร</label><input class="inp" id="sPhone" placeholder="081-555-2210" autocomplete="off"><div class="sug" id="sSugP" style="display:none"></div></div>
               </div>
               <div class="f3">
                 <div><label class="fl">ราคาตั้ง (฿)</label><input class="inp num" id="sList" readonly></div>
@@ -1952,8 +1961,9 @@ function rDash(){
     rsL.map(({s,u,c})=>crow('data-unit="'+u.id+'"',
       esc(u.model)+' · '+esc(c?c.name:'—'), fmt(s.net),
       thDate(s.soldAt)+' · '+esc(bName(s.branch))+' · '+esc(s.sales),
-      (s.pay==='cash'?pill('เงินสด','mut'):pill('ผ่อน','info')))));
-  wireGo(); wireUnitRows();
+      (s.pay==='cash'?pill('เงินสด','mut'):pill('ผ่อน','info'))
+        +'<span style="flex:1"></span><button class="lnk" data-sdet="'+s.id+'">ดูการขาย</button>')));
+  wireGo(); wireUnitRows(); wireSaleLinks();
 }
 function vbar(el, data){
   const mx=Math.max(1,...data.map(d=>d.v));
@@ -2003,12 +2013,14 @@ function unitDrawer(id){
   if(s){ const c=CUSTOMERS.find(x=>x.id===s.custId);
     h+='<h4 class="sec">การขาย</h4><dl class="kv"><dt>ลูกค้า</dt><dd>'+esc(c?c.name:'—')+'</dd>'
       +'<dt>วันที่ขาย</dt><dd>'+thDate(s.soldAt)+'</dd><dt>ราคาสุทธิ</dt><dd>'+baht(s.net)+'</dd>'
-      +'<dt>กำไร</dt><dd>'+money(s.gp)+'</dd><dt>เซลล์</dt><dd>'+esc(s.sales)+'</dd></dl>'; }
+      +'<dt>กำไร</dt><dd>'+money(s.gp)+'</dd><dt>เซลล์</dt><dd>'+esc(s.sales)
+      +' · <button class="lnk" data-sdet="'+s.id+'">ดูการขาย</button></dd></dl>'; }
   h+='<h4 class="sec">ประวัติซ่อม ('+svc.length+')</h4>';
   h+= svc.length? svc.map(v=>'<div style="padding:var(--s1) 0;border-bottom:1px solid var(--hairline-2);font-size:var(--t-table)">'
       +'<b>'+esc(v.type)+'</b> · '+thDate(v.at)+' · '+fmt(v.km)+' กม. <div class="tsub">'+esc(v.symptom)+'</div></div>').join('')
     : '<div class="tsub">ยังไม่มีประวัติซ่อม</div>';
   openDrawer(u.model+' · '+u.engine, h);
+  wireSaleLinks();
   $$('[data-clr]').forEach(b=> b.onclick=()=>clearanceModal(b.dataset.clr));
 }
 /* ตั้งราคาเคลียร์สต๊อก — ผู้จัดการกรอกเอง ระบบไม่เดาราคาให้ */
@@ -2289,7 +2301,7 @@ function rStock(){
 }
 
 /* ============================= 5. ขายรถ ============================= */
-let sFree={};
+let sFree={}, sCustSel='';
 function rSell(){
   if(!$('#sUnit').dataset.init){ $('#sUnit').dataset.init=1;
     $('#sSales').innerHTML=SALESPEOPLE.map(s=>'<option>'+esc(s)+'</option>').join('');
@@ -2297,8 +2309,29 @@ function rSell(){
     $('#sPay').onchange=()=>{ $('#sFinBox').style.display=$('#sPay').value==='finance'?'grid':'none'; calcSell(); };
     ['sUnit','sDisc'].forEach(k=> $('#'+k).oninput=calcSell);
     $('#sUnit').onchange=calcSell;
-    $('#sSave').onclick=saveSale;
-    $('#sReset').onclick=()=>{ $('#sCust').value=''; $('#sPhone').value=''; $('#sDisc').value=0; $('#sNote').value=''; sFree={}; rSell(); };
+    $('#sSave').onclick=()=>saveSale(false);
+    $('#sReset').onclick=()=>{ $('#sCust').value=''; $('#sPhone').value=''; $('#sDisc').value=0; $('#sNote').value=''; sFree={}; sCustSel=''; rSell(); };
+    /* autocomplete ลูกค้า — พิมพ์ชื่อหรือเบอร์แล้วเลือกคนเดิม กันสร้างซ้ำ */
+    const sugHide=()=>{ $('#sSugN').style.display='none'; $('#sSugP').style.display='none'; };
+    const sugShow=(inp,box)=>{
+      const q=inp.value.trim().toLowerCase(), qd=q.replace(/\D/g,'');
+      sCustSel='';                                      /* แก้ข้อความเมื่อไหร่ ถือว่ายังไม่ยืนยันตัวตน */
+      if(q.length<2){ box.style.display='none'; return; }
+      const hit=CUSTOMERS.filter(c=>inScope(c.branch)).filter(c=>{
+        const pd=(c.phone||'').replace(/\D/g,'');
+        return (qd.length>=3 && pd && pd.indexOf(qd)>=0) || c.name.toLowerCase().indexOf(q)>=0;
+      }).slice(0,6);
+      if(!hit.length){ box.style.display='none'; return; }
+      box.innerHTML=hit.map(c=>'<button class="si" data-c="'+c.id+'"><b>'+esc(c.name)+'</b> '
+        +pill(c.stage,'info')+'<span class="sp2">'+esc(c.phone||'—')+'</span></button>').join('');
+      box.style.display='';
+      box.querySelectorAll('.si').forEach(b=> b.onmousedown=e=>{ e.preventDefault();
+        const c=CUSTOMERS.find(x=>x.id===b.dataset.c);
+        $('#sCust').value=c.name; $('#sPhone').value=c.phone||''; sCustSel=c.id; sugHide(); });
+    };
+    $('#sCust').oninput=()=>sugShow($('#sCust'),$('#sSugN'));
+    $('#sPhone').oninput=()=>sugShow($('#sPhone'),$('#sSugP'));
+    $('#sCust').onblur=$('#sPhone').onblur=()=>setTimeout(sugHide,150);
     $$('#sellTabs button').forEach(b=> b.onclick=()=>{ $$('#sellTabs button').forEach(x=>x.classList.remove('on'));
       b.classList.add('on'); $$('#s-sell .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p));
       if(b.dataset.p==='p2') finCompare(); if(b.dataset.p==='p3') renderDocs(); });
@@ -2351,39 +2384,88 @@ function calcSell(){
     +($('#sPay').value==='finance'?'• สร้าง<b>เคสสินเชื่อ</b>และ<b>รายการเงินค้างรับ</b>อัตโนมัติ<br>':'')
     +'• ตัดสต๊อกของแถม <b>'+Object.keys(sFree).length+'</b> รายการ</div>';
 }
-function saveSale(){
+function saveSale(force){
   const u=curUnit(); if(!u){ toast('ไม่มีรถให้ขาย','',1); return; }
   const name=$('#sCust').value.trim();
   if(!name){ toast('กรอกชื่อลูกค้าก่อน','',1); return; }
   const disc=num($('#sDisc').value), net=u.retail-disc;
-  const fc=Object.keys(sFree).reduce((s,id)=>{ const g=GIFTS.find(x=>x.id===id); return s+(g?g.cost:0); },0);
-  let c=CUSTOMERS.find(x=>x.name===name && x.phone===$('#sPhone').value.trim());
-  if(!c){ c={id:nid('CU'),name,phone:$('#sPhone').value.trim(),src:'เดินเข้าร้าน',stage:'รับรถสำเร็จ',
-    branch:u.branch,variant:u.variant,owner:$('#sSales').value}; CUSTOMERS.push(c); }
-  else c.stage='รับรถสำเร็จ';
   const pay=$('#sPay').value;
+  /* ดาวน์ต่ำกว่าขั้นต่ำของไฟแนนซ์ — เตือนก่อน ยืนยันแล้วค่อยผ่าน */
+  if(pay==='finance' && !force){
+    const f=finActive().find(x=>x.id===$('#sFinCo').value);
+    const down=num($('#sDown').value), pct=net>0? down/net*100 : 0;
+    if(f && f.minDownPct>0 && pct<f.minDownPct-0.01){
+      openModal('เงินดาวน์ต่ำกว่าขั้นต่ำ',
+        '<p style="margin:0 0 var(--s2)">'+esc(f.name)+' กำหนดดาวน์ขั้นต่ำ <b>'+f.minDownPct+'%</b> ('+fmt(Math.ceil(net*f.minDownPct/100))+' ฿)'
+        +' — ตอนนี้ดาวน์ '+fmt(down)+' ฿ ('+pct.toFixed(1)+'%) เคสอาจไม่ผ่านการพิจารณา</p>'
+        +'<div style="display:flex;gap:var(--s2);flex-wrap:wrap"><button class="btn" id="mdFix">กลับไปแก้</button>'
+        +'<button class="btn sec" id="mdForce">บันทึกต่อ (ยืนยัน)</button></div>');
+      $('#mdFix').onclick=closeModal;
+      $('#mdForce').onclick=()=>{ closeModal(); saveSale(true); };
+      return;
+    }
+  }
+  const freeCost=Object.keys(sFree).reduce((s,id)=>{ const g=GIFTS.find(x=>x.id===id); return s+(g?g.cost:0); },0);
+  /* หา "คนเดิม" ตามลำดับความมั่นใจ: เลือกจาก autocomplete → เบอร์ตรง → ชื่อตรง → สร้างใหม่ */
+  const phone=$('#sPhone').value.trim(), pd=phone.replace(/\D/g,'');
+  let c = sCustSel? CUSTOMERS.find(x=>x.id===sCustSel) : null;
+  if(!c && pd) c=CUSTOMERS.find(x=>(x.phone||'').replace(/\D/g,'')===pd);
+  if(!c) c=CUSTOMERS.find(x=>x.name===name);
+  if(!c){ c={id:nid('CU'),name,phone,src:'เดินเข้าร้าน',stage:'ทำสัญญา',
+    branch:u.branch,variant:u.variant,owner:$('#sSales').value}; CUSTOMERS.push(c); }
+  else{
+    if(phone && !c.phone) c.phone=phone;
+    if(!c.owner) c.owner=$('#sSales').value;
+    if(c.stage!=='รับรถสำเร็จ') c.stage='ทำสัญญา';   /* ลูกค้าเก่าที่รับรถแล้วไม่ถูกดึงถอยหลัง */
+  }
   const s={id:nid('SA'),branch:u.branch,unitId:u.id,custId:c.id,sales:$('#sSales').value,soldAt:TODAY,
-    list:u.retail,disc,net,cost:u.cost,freeCost:fc,gp:net-u.cost-fc,pay,
+    list:u.retail,disc,net,cost:u.cost,freeCost,gp:net-u.cost-freeCost,pay,
     finId: pay==='finance'?$('#sFinCo').value:'', down: pay==='finance'?num($('#sDown').value):0,
     term: pay==='finance'?+$('#sTerm').value:null, note:$('#sNote').value.trim(),
+    gifts:Object.keys(sFree),                        /* เก็บไว้คืนสต๊อกถ้ายกเลิกการขาย */
     docNo: nextDocNo(u.branch,'TAXINV')};   /* เลขใบกำกับภาษีออกตอนบันทึก ไม่ใช่ตอนพรีวิว */
   s.docs={TAXINV:s.docNo};   /* เอกสารประเภทอื่นออกเลขครั้งแรกที่พิมพ์ (docNoFor) */
   SALES.push(s); u.status='sold';
   Object.keys(sFree).forEach(id=>{ const g=GIFTS.find(x=>x.id===id); if(g) g.qty=Math.max(0,g.qty-1); });
-  REGS.push({id:nid('RG'),saleId:s.id,branch:s.branch,stage:'ขายแล้ว',due:addDays(TODAY,CFG.regDays),plate:'',
-    log:[{to:'ขายแล้ว',at:TODAY}]});
+  const rg={id:nid('RG'),saleId:s.id,branch:s.branch,stage:'ขายแล้ว',due:addDays(TODAY,CFG.regDays),plate:'',
+    log:[{to:'ขายแล้ว',at:TODAY}]};
+  REGS.push(rg);
+  let fcCase=null;
   if(pay==='finance'){
-    FINCASES.push({id:nid('FC'),saleId:s.id,custId:c.id,branch:s.branch,finId:s.finId,status:'ส่งเรื่อง',amount:net-s.down,at:TODAY,
-      log:[{to:'ส่งเรื่อง',at:TODAY}]});
+    fcCase={id:nid('FC'),saleId:s.id,custId:c.id,branch:s.branch,finId:s.finId,status:'ส่งเรื่อง',amount:net-s.down,at:TODAY,
+      log:[{to:'ส่งเรื่อง',at:TODAY}]};
+    FINCASES.push(fcCase);
     AR.push({id:nid('AR'),saleId:s.id,branch:s.branch,kind:'finance',finId:s.finId,due:net-s.down,paid:0,dueAt:addDays(TODAY,15),pays:[]});
   }
   String(CFG.cadence).split(',').map(x=>parseInt(x)).forEach(d=>
     TASKS.push({id:nid('TK'),custId:c.id,saleId:s.id,branch:s.branch,kind:d+' วัน',due:addDays(TODAY,d),done:false}));
   String(CFG.km).split(',').map(x=>parseInt(x)).forEach((km,i)=>
     REMIND.push({id:nid('RM'),custId:c.id,unitId:u.id,km,due:addDays(TODAY,[20,45,150,300][i]||300),status:'รอถึงกำหนด'}));
-  toast('บันทึกการขายแล้ว', s.docNo+' · '+u.model+' · '+name+(pay==='finance'?' · สร้างเคสสินเชื่อและเงินค้างรับให้แล้ว':''));
-  sFree={}; $('#sCust').value=''; $('#sPhone').value=''; $('#sDisc').value=0; $('#sNote').value='';
+  toast('บันทึกการขายแล้ว', s.docNo+' · '+u.model+' · '+name);
+  sFree={}; sCustSel=''; $('#sCust').value=''; $('#sPhone').value=''; $('#sDisc').value=0; $('#sNote').value='';
   refreshAll();
+  /* ขายเสร็จไม่ใช่ทางตัน — ต่อยอดไปเคสสินเชื่อ / ทะเบียน / เอกสาร ได้จากตรงนี้เลย */
+  openModal('ขายแล้ว 🎉',
+    '<dl class="kv"><dt>เลขที่</dt><dd class="mono">'+esc(s.docNo)+'</dd>'
+    +'<dt>รถ</dt><dd><b>'+esc(u.model)+'</b> · '+esc(u.color)+'</dd>'
+    +'<dt>ลูกค้า</dt><dd>'+esc(c.name)+'</dd>'
+    +'<dt>ราคาสุทธิ</dt><dd><b>'+baht(net)+'</b>'+(pay==='finance'?' · ดาวน์ '+fmt(s.down)+' ฿':' · เงินสด')+'</dd></dl>'
+    +'<div class="f" style="margin-top:var(--s3)">'
+    +(fcCase?'<button class="btn" id="psFin">ไปเคสสินเชื่อ →</button>':'')
+    +'<button class="btn'+(fcCase?' sec':'')+'" id="psReg">ไปงานทะเบียน →</button>'
+    +'<button class="btn sec" id="psDoc">พิมพ์เอกสาร</button>'
+    +'<button class="btn sec" id="psSale">ดูการขายนี้</button>'
+    +'<button class="btn ghost" id="psNext">ขายคันต่อไป</button></div>');
+  if(fcCase) $('#psFin').onclick=()=>{ closeModal(); go('fin'); setTimeout(()=>finDrawer(fcCase.id),150); };
+  $('#psReg').onclick=()=>{ closeModal(); go('reg'); setTimeout(()=>regDrawer(rg.id),150); };
+  $('#psDoc').onclick=()=>{ closeModal(); sellTab('p3'); DOC_SALE=s.id; renderDocs(); };
+  $('#psSale').onclick=()=>{ closeModal(); saleDrawer(s.id); };
+  $('#psNext').onclick=closeModal;
+}
+/* สลับแท็บหน้าขายจากโค้ด — ใช้ตอนคัดลอกเงื่อนไขผ่อนและตอนกดพิมพ์เอกสารหลังขาย */
+function sellTab(p){
+  $$('#sellTabs button').forEach(x=>x.classList.toggle('on', x.dataset.p===p));
+  $$('#s-sell .pane').forEach(x=>x.classList.toggle('on', x.id===p));
 }
 /* เลือกรุ่น + ดาวน์ → เทียบค่างวดทุกไฟแนนซ์ที่เปิดใช้ ทุกช่วงงวด ทันที
    ดาวน์ต่ำกว่าขั้นต่ำของเจ้าไหน คอลัมน์เจ้านั้นถูกขีดออกพร้อมเหตุผล */
@@ -2414,10 +2496,20 @@ function finCompare(){
       const bi=pays.indexOf(best);
       return '<tr><td><b>'+n+' งวด</b><div class="tsub">'+(n/12).toFixed(n%12?1:0)+' ปี</div></td>'
         +pays.map((p,i)=> p==null? '<td class="n"><span class="tsub" style="text-decoration:line-through">ดาวน์ไม่ถึง</span></td>'
-          : '<td class="n"'+(i===bi&&act.length>1?' style="font-weight:700"':'')+'>'+fmt(p)
-            +(finRate(act[i],n)!==act[i].rate?'<div class="tsub">'+finRate(act[i],n)+'%</div>':'')+'</td>').join('')
+          : '<td class="n clk" data-pick="'+act[i].id+'|'+n+'"'+(i===bi&&act.length>1?' style="font-weight:700"':'')+'>'+fmt(p)
+            +(finRate(act[i],n)!==act[i].rate?'<div class="tsub">'+finRate(act[i],n)+'%</div>':'')
+            +'<div class="tsub" style="color:var(--accent)">ใช้ตัวเลือกนี้</div></td>').join('')
         +(act.length>1?'<td>'+(bi>=0?pill(act[bi].name,'good'):'—')+'</td>':'')+'</tr>';
     }), 'กรอกราคาสุทธิก่อน');
+  /* แตะค่างวดที่ถูกใจ → เงื่อนไขทั้งชุด (ไฟแนนซ์/งวด/ดาวน์) ไหลกลับเข้าฟอร์มขายให้เอง */
+  $$('#finCmp [data-pick]').forEach(td=> td.onclick=()=>{
+    const pk=td.dataset.pick.split('|'), f=FIN_CO.find(x=>x.id===pk[0]);
+    $('#sPay').value='finance'; $('#sFinBox').style.display='grid';
+    $('#sFinCo').value=pk[0]; $('#sTerm').value=pk[1];
+    $('#sDown').value=num($('#fDown').value);
+    sellTab('p1'); calcSell();
+    toast('คัดลอกเงื่อนไขผ่อนแล้ว', (f?f.name+' · ':'')+pk[1]+' งวด · ดาวน์ '+fmt(num($('#fDown').value))+' ฿');
+  });
   $('#fWarn').innerHTML = blocked.length?
     '<div class="note w" style="margin-top:var(--s2)">'+ic('alert','i i-sm')+'<span>ดาวน์ '+fmt(down)+' ฿ ('+downPct.toFixed(1)+'%) ต่ำกว่าขั้นต่ำของ '
     +blocked.map(f=>esc(f.name)+' ('+f.minDownPct+'%)').join(' · ')+'</span></div>' : '';
@@ -2512,7 +2604,8 @@ function renderDocs(){
       return '<tr class="clk" data-dsale="'+s.id+'"><td>'+(DOC_SALE===s.id?'<b>◉</b> ':'○ ')+thDate(s.soldAt)+'</td>'
         +'<td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(u?u.model:'—')+'</td>'
         +'<td class="n">'+money(s.net)+'</td>'
-        +'<td class="mono" style="font-size:var(--t-label)">'+esc(Object.values(s.docs||{}).concat(s.docNo&&!(s.docs&&s.docs.TAXINV)?[s.docNo]:[]).join(' · ')||'—')+'</td></tr>'; };
+        +'<td class="mono" style="font-size:var(--t-label)">'+esc(Object.values(s.docs||{}).concat(s.docNo&&!(s.docs&&s.docs.TAXINV)?[s.docNo]:[]).join(' · ')||'—')
+        +' <button class="lnk q" data-sdet="'+s.id+'">ดู</button></td></tr>'; };
   const dsCard=(s,ix)=>{
       if(ix===0) return crow('data-dsale=""',
         (DOC_SALE===''?'◉ ':'○ ')+'ฟอร์มที่กำลังกรอก (ยังไม่บันทึก)','','','');
@@ -2520,12 +2613,14 @@ function renderDocs(){
       return crow('data-dsale="'+s.id+'"',
         (DOC_SALE===s.id?'◉ ':'○ ')+esc(c?c.name:'—'), money(s.net),
         thDate(s.soldAt)+' · '+esc(u?u.model:'—'),
-        '<span class="mono" style="font-size:var(--t-label)">'+esc(Object.values(s.docs||{}).concat(s.docNo&&!(s.docs&&s.docs.TAXINV)?[s.docNo]:[]).join(' · ')||'ยังไม่ออกเลขที่')+'</span>');
+        '<span class="mono" style="font-size:var(--t-label)">'+esc(Object.values(s.docs||{}).concat(s.docNo&&!(s.docs&&s.docs.TAXINV)?[s.docNo]:[]).join(' · ')||'ยังไม่ออกเลขที่')+'</span>'
+        +'<span style="flex:1"></span><button class="lnk" data-sdet="'+s.id+'">ดูการขาย</button>');
     };
   tbl($('#docSales'), ['วันที่','ลูกค้า','รุ่น',{t:'สุทธิ',n:1},'เลขที่ออกแล้ว'],
     [{}].concat(recent).map(dsRow), 'ยังไม่มีการขาย',
     [{}].concat(recent).map(dsCard));
   $$('#docSales [data-dsale]').forEach(r=> r.onclick=()=>{ DOC_SALE=r.dataset.dsale; renderDocs(); });
+  wireSaleLinks();
   $('#docPrev').innerHTML = d? docHTML(DOC_SEL, d) : '<div class="empty"><b>เลือกรถก่อน</b>หรือคลิกการขายล่าสุดด้านซ้าย</div>';
 }
 
@@ -2733,6 +2828,7 @@ function custDrawer(id){
   h+='<h4 class="sec">ประวัติการซื้อ ('+ss.length+')</h4>';
   h+= ss.length? ss.map(s=>{ const u=UNITS.find(x=>x.id===s.unitId);
     return '<div style="padding:var(--s1) 0;border-bottom:1px solid var(--hairline-2);font-size:var(--t-table)"><b>'+esc(u.model)+'</b> · '+esc(u.color)
+      +' <button class="lnk" data-sdet="'+s.id+'">ดูการขาย</button>'
       +'<div class="tsub mono">'+esc(u.engine)+'</div><div class="tsub">'+thDate(s.soldAt)+' · '+baht(s.net)+' · '+esc(s.sales)+'</div></div>'; }).join('')
     : '<div class="tsub">ยังไม่เคยซื้อ</div>';
   h+='<h4 class="sec">ประวัติเข้าศูนย์ ('+sv.length+')</h4>';
@@ -2742,6 +2838,51 @@ function custDrawer(id){
   h+= ts.length? ts.map(t=>'<div style="display:flex;gap:var(--s1);padding:var(--s1) 0;font-size:var(--t-table);border-bottom:1px solid var(--hairline-2)">'
       +(t.done?pill('เสร็จ','good'):pill(t.kind,'brand'))+'<span>'+thDate(t.due)+'</span></div>').join('') : '<div class="tsub">—</div>';
   openDrawer(c.name, h);
+  wireSaleLinks();
+}
+
+/* ---------- มุมมองการขายหนึ่งรายการ — ฮับต่อยอดหลังขาย: สินเชื่อ / ทะเบียน / เอกสาร ---------- */
+function saleDrawer(id){
+  const s=SALES.find(x=>x.id===id); if(!s) return;
+  const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+  const fc=FINCASES.find(x=>x.saleId===s.id), rg=REGS.find(x=>x.saleId===s.id);
+  const f=fc && FIN_CO.find(x=>x.id===fc.finId);
+  let h='';
+  if(s.void) h+='<div class="note b">'+ic('alert','i i-sm')+'<span>การขายนี้ถูกยกเลิกเมื่อ '+thDate(s.voidedAt)+'</span></div>';
+  h+='<dl class="kv"><dt>เลขที่</dt><dd class="mono">'+esc(s.docNo||'—')+'</dd>'
+    +'<dt>วันที่ขาย</dt><dd>'+thDate(s.soldAt)+'</dd>'
+    +'<dt>รถ</dt><dd><b>'+esc(u.model)+'</b> · '+esc(u.color)+'</dd>'
+    +'<dt>เลขเครื่อง</dt><dd class="mono">'+esc(u.engine)+'</dd>'
+    +'<dt>ลูกค้า</dt><dd>'+esc(c?c.name:'—')+(c&&c.phone?' · '+esc(c.phone):'')+'</dd>'
+    +'<dt>ราคาสุทธิ</dt><dd><b>'+baht(s.net)+'</b></dd>'
+    +'<dt>ชำระ</dt><dd>'+(s.pay==='cash'?'เงินสด':'ผ่อน'+(f?' · '+esc(f.name):'')+(s.term?' · '+s.term+' งวด · ดาวน์ '+fmt(s.down)+' ฿':''))+'</dd>'
+    +'<dt>เซลล์</dt><dd>'+esc(s.sales)+'</dd>'
+    +(s.deliveredAt?'<dt>ส่งมอบเมื่อ</dt><dd>'+thDate(s.deliveredAt)+'</dd>':'')+'</dl>';
+  h+='<h4 class="sec">งานที่เกี่ยวข้อง</h4>';
+  if(fc) h+='<div class="frow">'+pill(fc.status, fc.status==='อนุมัติแล้ว'?'good':(fc.status==='ปฏิเสธ'?'bad':'info'))
+    +'<span>เคสสินเชื่อ'+(f?' · '+esc(f.name):'')+'</span>'
+    +(canSee('fin')?'<button class="lnk fx" data-opfin="'+fc.id+'">เปิดเคส →</button>':'')+'</div>';
+  if(rg) h+='<div class="frow">'+pill(rg.stage, rg.stage==='ส่งมอบแล้ว'?'good':'info')
+    +'<span>งานทะเบียน'+(rg.plate?' · ป้าย '+esc(rg.plate):'')+'</span>'
+    +(canSee('reg')?'<button class="lnk fx" data-opreg="'+rg.id+'">เปิดงาน →</button>':'')+'</div>';
+  if(!fc && !rg) h+='<p class="foot">ไม่มีงานค้างที่เกี่ยวข้อง</p>';
+  const dts=Object.keys(s.docs||{});
+  h+='<h4 class="sec">เอกสาร</h4>'
+    +(dts.length? dts.map(t=>'<div class="frow"><span class="mono">'+esc(s.docs[t])+'</span>'
+        +'<span class="tsub">'+esc(DOC_DEFS[t]?DOC_DEFS[t].n:t)+'</span></div>').join('') : '<p class="foot">ยังไม่ออกเอกสาร</p>')
+    +(canSee('sell')&&!s.void?'<div style="margin-top:var(--s1)"><button class="lnk" id="sdDocs">พิมพ์ / ออกเอกสารของการขายนี้ →</button></div>':'');
+  if(!s.void && (ME.role==='admin'||ME.role==='manager') && typeof cancelSale==='function')
+    h+='<div class="savebar"><button class="btn dgr" id="sdVoid">ยกเลิกการขาย</button></div>';
+  openDrawer('การขาย · '+esc(c?c.name:''), h);
+  $$('#drwB [data-opfin]').forEach(b=> b.onclick=()=>{ closeDrawer(); go('fin'); setTimeout(()=>finDrawer(b.dataset.opfin),150); });
+  $$('#drwB [data-opreg]').forEach(b=> b.onclick=()=>{ closeDrawer(); go('reg'); setTimeout(()=>regDrawer(b.dataset.opreg),150); });
+  const sd=$('#sdDocs'); if(sd) sd.onclick=()=>{ closeDrawer(); go('sell');
+    setTimeout(()=>{ sellTab('p3'); DOC_SALE=s.id; renderDocs(); },120); };
+  const sv=$('#sdVoid'); if(sv) sv.onclick=()=>cancelSale(s.id);
+}
+/* ปุ่ม "ดูการขาย" ใช้ร่วมกันหลายหน้า — เรียกหลัง render ที่มี [data-sdet] */
+function wireSaleLinks(){
+  $$('[data-sdet]').forEach(b=> b.onclick=e=>{ e.stopPropagation(); saleDrawer(b.dataset.sdet); });
 }
 
 /* ============================= 9. ทะเบียน ============================= */
