@@ -228,6 +228,15 @@ tfoot th{ padding:var(--s2) var(--s3); border-top:1px solid var(--hairline);
 tfoot th.n{ text-align:right; }
 .empty{ padding:var(--s5) var(--s3); text-align:center; color:var(--muted); font-size:var(--t-table); }
 .empty b{ display:block; color:var(--ink-soft); margin-bottom:var(--s-half); font-weight:600; }
+/* การ์ดแทนแถวตารางบนจอแคบ — สร้างโดย tbl(...,cards) */
+.crow{ background:var(--paper); border-radius:var(--r-input); padding:var(--s2);
+  margin:0 var(--s2) var(--s1); font-size:var(--t-table); }
+.crow[data-unit],.crow[data-cust],.crow[data-reg2],.crow[data-fin2],.crow[data-sdet],.crow[data-dsale],.crow.clk{ cursor:pointer; }
+.crow .cr1{ display:flex; justify-content:space-between; gap:var(--s2); align-items:baseline; }
+.crow .crt{ font-weight:600; min-width:0; }
+.crow .crr{ font-variant-numeric:tabular-nums; flex:0 0 auto; }
+.crow .crs{ font-size:var(--t-label); color:var(--muted); margin-top:2px; overflow-wrap:anywhere; }
+.crow .crf{ display:flex; gap:var(--s2); align-items:center; margin-top:var(--s1); flex-wrap:wrap; }
 
 /* -------------------- PILL — เส้นขอบบาง + จุดสี ไม่มีพื้นสี -------------------- */
 .pill{ display:inline-flex; align-items:center; gap:var(--s-half);
@@ -1664,10 +1673,29 @@ function csvMoney(name, head, rows, moneyCols){
   const keep = head.map((_,i)=> moneyCols.indexOf(i)<0);
   csv(name, head.filter((_,i)=>keep[i]), rows.map(r=>r.filter((_,i)=>keep[i])));
 }
-function tbl(el, head, rows, empty){
+/* จอ ≤600px: ตารางที่ส่ง cards มาด้วยจะแสดงเป็นการ์ดแทนแถว — เปลี่ยนขนาดจอแล้ววาดใหม่ */
+const MQ_CARD = matchMedia('(max-width:600px)');
+MQ_CARD.addEventListener('change', ()=>{ if(ME) refreshAll(); });
+function tbl(el, head, rows, empty, cards){
+  if(cards && MQ_CARD.matches){
+    /* การ์ดอยู่ใน <td> เดียว — selector เดิมที่ยิงเข้า element ตารางยังใช้ได้ */
+    el.classList.add('cards');
+    el.innerHTML='<tbody><tr><td class="cwrap">'
+      +(rows.length? cards.join('') : '<div class="empty"><b>'+esc(empty||'ไม่มีข้อมูล')+'</b>ลองปรับตัวกรอง หรือเพิ่มรายการใหม่</div>')
+      +'</td></tr></tbody>';
+    return;
+  }
+  el.classList.remove('cards');
   if(!rows.length){ el.innerHTML='<tbody><tr><td><div class="empty"><b>'+esc(empty||'ไม่มีข้อมูล')+'</b>ลองปรับตัวกรอง หรือเพิ่มรายการใหม่</div></td></tr></tbody>'; return; }
   el.innerHTML='<thead><tr>'+head.map(h=>'<th'+(h.n?' class="n"':'')+'>'+esc(h.t||h)+'</th>').join('')+'</tr></thead>'
     +'<tbody>'+rows.join('')+'</tbody>';
+}
+/* การ์ดหนึ่งใบ: หัวเรื่อง + ตัวเลขขวา + บรรทัดรอง + แถวปุ่มล่าง — attrs ใส่ data-* ให้ wiring เดิมจับได้ */
+function crow(attrs, title, right, sub, foot){
+  return '<div class="crow"'+(attrs?' '+attrs:'')+'>'
+    +'<div class="cr1"><div class="crt">'+title+'</div>'+(right?'<div class="crr">'+right+'</div>':'')+'</div>'
+    +(sub?'<div class="crs">'+sub+'</div>':'')
+    +(foot?'<div class="crf">'+foot+'</div>':'')+'</div>';
 }
 function pill(txt, kind){ return '<span class="pill p-'+kind+'">'+esc(txt)+'</span>'; }
 function ageTag(d){ const a=CFG.aging; if(d<=a*0.34) return pill(d+' วัน','good');
@@ -1913,14 +1941,18 @@ function rDash(){
     : '<div class="empty"><b>สต๊อกทุกรุ่นเพียงพอ</b>ไม่มีรุ่นไหนต่ำกว่า '+CFG.lowStock+' คัน</div>';
 
   /* ขายล่าสุด */
+  const rsL=sScoped().slice().sort((a,b)=>b.soldAt.localeCompare(a.soldAt)).slice(0,10)
+    .map(s=>({s, u:UNITS.find(x=>x.id===s.unitId), c:CUSTOMERS.find(x=>x.id===s.custId)}));
   tbl($('#recentSales'), ['วันที่','สาขา','รุ่น','ลูกค้า',{t:'ราคา',n:1},{t:'กำไร',n:1},'ชำระ','เซลล์'],
-    sScoped().slice().sort((a,b)=>b.soldAt.localeCompare(a.soldAt)).slice(0,10).map(s=>{
-      const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
-      return '<tr class="clk" data-unit="'+u.id+'"><td>'+thDate(s.soldAt)+'</td><td>'+esc(bName(s.branch))+'</td>'
+    rsL.map(({s,u,c})=>'<tr class="clk" data-unit="'+u.id+'"><td>'+thDate(s.soldAt)+'</td><td>'+esc(bName(s.branch))+'</td>'
         +'<td><b>'+esc(u.model)+'</b><div class="tsub mono">'+esc(u.engine)+'</div></td>'
         +'<td>'+esc(c?c.name:'—')+'</td><td class="n">'+fmt(s.net)+'</td><td class="n">'+(noMoney()?'—':fmt(s.gp))+'</td>'
-        +'<td>'+(s.pay==='cash'?pill('เงินสด','mut'):pill('ผ่อน','info'))+'</td><td>'+esc(s.sales)+'</td></tr>';
-    }), 'ยังไม่มีรายการขาย');
+        +'<td>'+(s.pay==='cash'?pill('เงินสด','mut'):pill('ผ่อน','info'))+'</td><td>'+esc(s.sales)+'</td></tr>'),
+    'ยังไม่มีรายการขาย',
+    rsL.map(({s,u,c})=>crow('data-unit="'+u.id+'"',
+      esc(u.model)+' · '+esc(c?c.name:'—'), fmt(s.net),
+      thDate(s.soldAt)+' · '+esc(bName(s.branch))+' · '+esc(s.sales),
+      (s.pay==='cash'?pill('เงินสด','mut'):pill('ผ่อน','info')))));
   wireGo(); wireUnitRows();
 }
 function vbar(el, data){
@@ -1935,7 +1967,7 @@ function hbar(el, data){
     +'<div class="bt"><div class="bf '+(d.cls||'')+'" style="width:'+(d.v/mx*100)+'%"></div></div></div>').join('');
 }
 function wireGo(){ $$('[data-go]').forEach(b=> b.onclick=()=>go(b.dataset.go)); }
-function wireUnitRows(){ $$('tr[data-unit]').forEach(r=> r.onclick=()=>unitDrawer(r.dataset.unit)); }
+function wireUnitRows(){ $$('tr[data-unit],.crow[data-unit]').forEach(r=> r.onclick=()=>unitDrawer(r.dataset.unit)); }
 
 function unitDrawer(id){
   const u=UNITS.find(x=>x.id===id); if(!u) return;
@@ -2224,15 +2256,22 @@ function rStock(){
     $$('#stGrp [data-sell]').forEach(b=> b.onclick=e=>{ e.stopPropagation(); go('sell');
       setTimeout(()=>{ $('#sUnit').value=b.dataset.sell; calcSell(); },30); });
   } else if(stView==='table'){
+    const stL=list.slice().sort((a,b)=>age(b)-age(a));
     tbl($('#stTable'), ['รุ่น / สี','รหัสรุ่น','เลขเครื่อง','สาขา',{t:'ต้นทุน',n:1},{t:'ราคาขาย',n:1},{t:'อายุ',n:1},'สถานะ',''],
-      list.slice().sort((a,b)=>age(b)-age(a)).map(u=>'<tr class="clk" data-unit="'+u.id+'">'
+      stL.map(u=>'<tr class="clk" data-unit="'+u.id+'">'
         +'<td><b>'+esc(u.model)+'</b><div class="tsub"><span class="dot" style="background:'+(COLOR_HEX[u.color]||'#ccc')+'"></span> '+esc(u.color)+'</div></td>'
         +'<td class="mono">'+esc(u.variant)+'</td><td class="mono">'+esc(u.engine)+'</td>'
         +'<td>'+esc(bName(u.branch))+'</td><td class="n">'+money(u.cost)+'</td>'
         +'<td class="n">'+(u.retail==null?pill('รอกำหนดราคา','warn'):fmt(u.retail)+(u.clearance?' '+pill('เคลียร์สต๊อก','warn'):''))+'</td>'
         +'<td class="n">'+ageTag(age(u))+'</td><td>'+statusPill(u.status)+'</td>'
         +'<td>'+(u.status==='available'&&canSee('sell')?'<button class="lnk" data-sell="'+u.id+'">ขายคันนี้</button>':'')+'</td></tr>'),
-      'ไม่พบรถตามเงื่อนไข');
+      'ไม่พบรถตามเงื่อนไข',
+      stL.map(u=>crow('data-unit="'+u.id+'"',
+        esc(u.model)+' <span class="tsub">'+esc(u.color)+'</span>',
+        (u.retail==null?pill('รอกำหนดราคา','warn'):fmt(u.retail)),
+        '<span class="mono">'+esc(u.engine)+'</span> · '+esc(bName(u.branch))+(u.clearance?' · เคลียร์สต๊อก':''),
+        statusPill(u.status)+' '+ageTag(age(u))
+          +(u.status==='available'&&canSee('sell')?'<span style="flex:1"></span><button class="lnk" data-sell="'+u.id+'">ขายคันนี้</button>':''))));
     wireUnitRows();
     $$('[data-sell]').forEach(b=> b.onclick=e=>{ e.stopPropagation(); go('sell'); setTimeout(()=>{ $('#sUnit').value=b.dataset.sell; calcSell(); },30); });
   } else {
@@ -2466,17 +2505,26 @@ function renderDocs(){
     +' · เลขที่เอกสารแยกตามสาขา × ประเภท × ปี</p>';
   /* การขายล่าสุด — คลิกแถวเพื่อสลับไปพิมพ์เอกสารของรายการนั้น */
   const recent=sScoped().slice().sort((a,b)=>b.soldAt.localeCompare(a.soldAt)).slice(0,10);
-  tbl($('#docSales'), ['วันที่','ลูกค้า','รุ่น',{t:'สุทธิ',n:1},'เลขที่ออกแล้ว'],
-    [{}].concat(recent).map((s,ix)=>{
-      if(ix===0) return '<tr class="clk'+(DOC_SALE===''?'':'')+'" data-dsale=""><td colspan="5">'
+  const dsRow=(s,ix)=>{
+      if(ix===0) return '<tr class="clk" data-dsale=""><td colspan="5">'
         +(DOC_SALE===''?'<b>◉ ':'○ ')+'ฟอร์มที่กำลังกรอก (ยังไม่บันทึก)'+(DOC_SALE===''?'</b>':'')+'</td></tr>';
       const c=CUSTOMERS.find(x=>x.id===s.custId), u=UNITS.find(x=>x.id===s.unitId);
-      const nos=Object.keys(s.docs||{}).length + (s.docNo&&!(s.docs&&s.docs.TAXINV)?1:0);
       return '<tr class="clk" data-dsale="'+s.id+'"><td>'+(DOC_SALE===s.id?'<b>◉</b> ':'○ ')+thDate(s.soldAt)+'</td>'
         +'<td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(u?u.model:'—')+'</td>'
         +'<td class="n">'+money(s.net)+'</td>'
-        +'<td class="mono" style="font-size:var(--t-label)">'+esc(Object.values(s.docs||{}).concat(s.docNo&&!(s.docs&&s.docs.TAXINV)?[s.docNo]:[]).join(' · ')||'—')+'</td></tr>'; }),
-    'ยังไม่มีการขาย');
+        +'<td class="mono" style="font-size:var(--t-label)">'+esc(Object.values(s.docs||{}).concat(s.docNo&&!(s.docs&&s.docs.TAXINV)?[s.docNo]:[]).join(' · ')||'—')+'</td></tr>'; };
+  const dsCard=(s,ix)=>{
+      if(ix===0) return crow('data-dsale=""',
+        (DOC_SALE===''?'◉ ':'○ ')+'ฟอร์มที่กำลังกรอก (ยังไม่บันทึก)','','','');
+      const c=CUSTOMERS.find(x=>x.id===s.custId), u=UNITS.find(x=>x.id===s.unitId);
+      return crow('data-dsale="'+s.id+'"',
+        (DOC_SALE===s.id?'◉ ':'○ ')+esc(c?c.name:'—'), money(s.net),
+        thDate(s.soldAt)+' · '+esc(u?u.model:'—'),
+        '<span class="mono" style="font-size:var(--t-label)">'+esc(Object.values(s.docs||{}).concat(s.docNo&&!(s.docs&&s.docs.TAXINV)?[s.docNo]:[]).join(' · ')||'ยังไม่ออกเลขที่')+'</span>');
+    };
+  tbl($('#docSales'), ['วันที่','ลูกค้า','รุ่น',{t:'สุทธิ',n:1},'เลขที่ออกแล้ว'],
+    [{}].concat(recent).map(dsRow), 'ยังไม่มีการขาย',
+    [{}].concat(recent).map(dsCard));
   $$('#docSales [data-dsale]').forEach(r=> r.onclick=()=>{ DOC_SALE=r.dataset.dsale; renderDocs(); });
   $('#docPrev').innerHTML = d? docHTML(DOC_SEL, d) : '<div class="empty"><b>เลือกรถก่อน</b>หรือคลิกการขายล่าสุดด้านซ้าย</div>';
 }
@@ -2596,8 +2644,9 @@ function rCust(){
   }
   const q=$('#cQ').value.trim().toLowerCase();
   const cs=CUSTOMERS.filter(c=>inScope(c.branch));
+  const cL=cs.filter(c=>!q||(c.name+(c.phone||'')).toLowerCase().indexOf(q)>=0);
   tbl($('#custTable'), ['ลูกค้า','เบอร์','ที่อยู่','รู้จักจาก','รุ่นที่สนใจ/ซื้อ',{t:'ซื้อแล้ว',n:1},''],
-    cs.filter(c=>!q||(c.name+(c.phone||'')).toLowerCase().indexOf(q)>=0).map(c=>{
+    cL.map(c=>{
       const bought=SALES.filter(s=>s.custId===c.id).length;
       return '<tr class="clk" data-cust="'+c.id+'"><td><b>'+esc(c.name)+'</b>'
         +(c.note?'<div class="tsub">'+esc(c.note)+'</div>':'')+'</td><td>'+esc(c.phone||'—')+'</td>'
@@ -2605,7 +2654,13 @@ function rCust(){
         +'<td>'+esc(PRICE[c.variant]?PRICE[c.variant].m:c.variant||'—')+'</td>'
         +'<td class="n">'+(bought||'—')+'</td>'
         +'<td><button class="lnk" data-cedit="'+c.id+'">แก้ไข</button></td></tr>'; }),
-    'ยังไม่มีลูกค้า — กดปุ่ม “เพิ่มลูกค้า” มุมขวาบน');
+    'ยังไม่มีลูกค้า — กดปุ่ม “เพิ่มลูกค้า” มุมขวาบน',
+    cL.map(c=>{
+      const bought=SALES.filter(s=>s.custId===c.id).length;
+      return crow('data-cust="'+c.id+'"',
+        esc(c.name), pill(c.stage, c.stage==='รับรถสำเร็จ'?'good':(c.stage==='ไม่ผ่าน'?'bad':'info')),
+        esc(c.phone||'—')+' · '+esc(c.src)+' · '+esc(PRICE[c.variant]?PRICE[c.variant].m:c.variant||'—')+(bought?' · ซื้อแล้ว '+bought:''),
+        '<button class="lnk" data-cedit="'+c.id+'">แก้ไข</button>'); }));
   $$('#custTable [data-cust]').forEach(r=> r.onclick=()=>custDrawer(r.dataset.cust));
   $$('#custTable [data-cedit]').forEach(b=> b.onclick=e=>{ e.stopPropagation(); custModal(b.dataset.cedit); });
 }
@@ -2624,7 +2679,13 @@ function rFollow(){
         +'<td>'+esc(t.kind)+'</td><td>'+thDate(t.due)+'</td>'
         +'<td>'+(d>0?pill('เลย '+d+' วัน','bad'):(d===0?pill('วันนี้','warn'):pill('อีก '+(-d)+' วัน','mut')))+'</td>'
         +'<td><button class="lnk" data-task="'+t.id+'">เสร็จแล้ว</button></td></tr>'; }),
-    'ไม่มีงานติดตามค้าง');
+    'ไม่มีงานติดตามค้าง',
+    due.slice(0,25).map(t=>{ const c=CUSTOMERS.find(x=>x.id===t.custId); const d=days(t.due,TODAY);
+      return crow('',
+        esc(c?c.name:'—'),
+        (d>0?pill('เลย '+d+' วัน','bad'):(d===0?pill('วันนี้','warn'):pill('อีก '+(-d)+' วัน','mut'))),
+        esc(c?c.phone:'')+' · '+esc(t.kind)+' · '+thDate(t.due),
+        '<button class="lnk" data-task="'+t.id+'">เสร็จแล้ว</button>'); }));
   $$('[data-task]').forEach(b=> b.onclick=()=>{ const t=TASKS.find(x=>x.id===b.dataset.task); t.done=true;
     toast('ปิดงานติดตามแล้ว'); refreshAll(); });
 
@@ -2639,21 +2700,24 @@ function rFollow(){
 
   /* ลูกค้า × รถ — แถวละคน เปลี่ยนสถานะได้ทันที */
   const q=$('#fwQ').value.trim().toLowerCase(), st=$('#fwStage').value;
-  tbl($('#fwTable'), ['ลูกค้า','รถที่สนใจ/ซื้อ','เซลล์','สถานะ','เลื่อนสถานะ',{t:'งานค้าง',n:1}],
-    cs.filter(c=>(!st||c.stage===st)&&(!q||c.name.toLowerCase().indexOf(q)>=0)).map(c=>{
+  const fwL=cs.filter(c=>(!st||c.stage===st)&&(!q||c.name.toLowerCase().indexOf(q)>=0)).map(c=>{
       const s=SALES.find(x=>x.custId===c.id), u=s&&UNITS.find(x=>x.id===s.unitId);
       const veh = u? u.model+' · '+u.color+' <span class="tsub mono">'+u.engine+'</span>'
                 : esc(PRICE[c.variant]?PRICE[c.variant].m+' (สนใจ)':c.variant||'—');
-      const i=CUST_STAGES.indexOf(c.stage);
-      const open=TASKS.filter(t=>t.custId===c.id&&!t.done).length;
-      return '<tr class="clk" data-cust="'+c.id+'"><td><b>'+esc(c.name)+'</b><div class="tsub">'+esc(c.phone||'')+'</div></td>'
-        +'<td>'+veh+'</td><td>'+esc(c.owner||'—')+'</td>'
-        +'<td>'+pill(c.stage, c.stage==='รับรถสำเร็จ'?'good':(c.stage==='ไม่ผ่าน'?'bad':'info'))+'</td>'
-        +'<td style="white-space:nowrap">'
-        +(i>0?'<button class="lnk" data-fwmv="'+c.id+'|-1">◀</button> ':'')
-        +(i<CUST_STAGES.length-1&&c.stage!=='รับรถสำเร็จ'?'<button class="lnk" data-fwmv="'+c.id+'|1">'+esc(CUST_STAGES[i+1])+' ▶</button>':'')
-        +'</td><td class="n">'+(open||'—')+'</td></tr>'; }),
-    'ไม่พบลูกค้าตามเงื่อนไข');
+      return {c, veh, i:CUST_STAGES.indexOf(c.stage), open:TASKS.filter(t=>t.custId===c.id&&!t.done).length}; });
+  const fwMv=({c,i})=>(i>0?'<button class="lnk" data-fwmv="'+c.id+'|-1">◀</button> ':'')
+    +(i<CUST_STAGES.length-1&&c.stage!=='รับรถสำเร็จ'?'<button class="lnk" data-fwmv="'+c.id+'|1">'+esc(CUST_STAGES[i+1])+' ▶</button>':'');
+  tbl($('#fwTable'), ['ลูกค้า','รถที่สนใจ/ซื้อ','เซลล์','สถานะ','เลื่อนสถานะ',{t:'งานค้าง',n:1}],
+    fwL.map(x=>'<tr class="clk" data-cust="'+x.c.id+'"><td><b>'+esc(x.c.name)+'</b><div class="tsub">'+esc(x.c.phone||'')+'</div></td>'
+        +'<td>'+x.veh+'</td><td>'+esc(x.c.owner||'—')+'</td>'
+        +'<td>'+pill(x.c.stage, x.c.stage==='รับรถสำเร็จ'?'good':(x.c.stage==='ไม่ผ่าน'?'bad':'info'))+'</td>'
+        +'<td style="white-space:nowrap">'+fwMv(x)+'</td><td class="n">'+(x.open||'—')+'</td></tr>'),
+    'ไม่พบลูกค้าตามเงื่อนไข',
+    fwL.map(x=>crow('data-cust="'+x.c.id+'"',
+      esc(x.c.name),
+      pill(x.c.stage, x.c.stage==='รับรถสำเร็จ'?'good':(x.c.stage==='ไม่ผ่าน'?'bad':'info')),
+      x.veh+' · '+esc(x.c.owner||'—')+(x.open?' · ค้าง '+x.open+' งาน':''),
+      fwMv(x))));
   $$('#fwTable [data-cust]').forEach(r=> r.onclick=()=>custDrawer(r.dataset.cust));
   $$('#fwTable [data-fwmv]').forEach(b=> b.onclick=e=>{ e.stopPropagation();
     const [id,dir]=b.dataset.fwmv.split('|'); const c=CUSTOMERS.find(x=>x.id===id);
@@ -2703,16 +2767,20 @@ function rReg(){
           +(d>0&&st!=='ส่งมอบแล้ว'?'<div style="margin-top:var(--s-half)">'+pill('ค้าง '+d+' วัน','bad')+'</div>':'')+'</div>'; }).join('')
       +(items.length>6?'<div class="tsub" style="text-align:center">+ อีก '+(items.length-6)+'</div>':'')+'</div>'; }).join('');
   $$('[data-reg]').forEach(k=> k.onclick=()=>regDrawer(k.dataset.reg));
-  tbl($('#regTable'), ['ลูกค้า','รุ่น','เลขเครื่อง','สาขา','ขั้นตอน','ครบกำหนด','ทะเบียน',''],
-    rs.slice().sort((a,b)=>a.due.localeCompare(b.due)).map(r=>{
+  const rgL=rs.slice().sort((a,b)=>a.due.localeCompare(b.due)).map(r=>{
       const s=SALES.find(x=>x.id===r.saleId), u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
-      const d=days(r.due,TODAY);
-      return '<tr><td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(u.model)+'</td><td class="mono">'+esc(u.engine)+'</td>'
+      return {r, u, c, d:days(r.due,TODAY)}; });
+  tbl($('#regTable'), ['ลูกค้า','รุ่น','เลขเครื่อง','สาขา','ขั้นตอน','ครบกำหนด','ทะเบียน',''],
+    rgL.map(({r,u,c,d})=>'<tr><td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(u.model)+'</td><td class="mono">'+esc(u.engine)+'</td>'
         +'<td>'+esc(bName(r.branch))+'</td><td>'+pill(r.stage, r.stage==='ส่งมอบแล้ว'?'good':'info')+'</td>'
         +'<td>'+thDate(r.due)+(d>0&&r.stage!=='ส่งมอบแล้ว'?' '+pill('ค้าง '+d,'bad'):'')+'</td>'
         +'<td class="mono">'+esc(r.plate||'—')+'</td>'
-        +'<td><button class="lnk" data-reg2="'+r.id+'">ดู</button></td></tr>'; }),
-    'ยังไม่มีงานทะเบียน');
+        +'<td><button class="lnk" data-reg2="'+r.id+'">ดู</button></td></tr>'),
+    'ยังไม่มีงานทะเบียน',
+    rgL.map(({r,u,c,d})=>crow('data-reg2="'+r.id+'"',
+      esc(c?c.name:'—'), pill(r.stage, r.stage==='ส่งมอบแล้ว'?'good':'info'),
+      esc(u.model)+' · <span class="mono">'+esc(u.engine)+'</span>'+(r.plate?' · ป้าย '+esc(r.plate):''),
+      'ครบกำหนด '+thDate(r.due)+(d>0&&r.stage!=='ส่งมอบแล้ว'?' '+pill('ค้าง '+d+' วัน','bad'):''))));
   $$('[data-reg2]').forEach(b=> b.onclick=()=>regDrawer(b.dataset.reg2));
 }
 function regDrawer(id){
@@ -2917,17 +2985,25 @@ function rAr(){
     ['เลยกำหนดแล้ว', fmt(overdue.reduce((s,a)=>s+a.due-a.paid,0))+' <small>฿</small>', overdue.length+' รายการ'],
     ['รับแล้วเดือนนี้', fmt(list.reduce((s,a)=>s+a.paid,0))+' <small>฿</small>','เข้าบัญชีแล้ว']
   ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
-  tbl($('#arTable'), ['ลูกค้า','รุ่น','ประเภท','ผู้จ่าย',{t:'ต้องรับ',n:1},{t:'รับแล้ว',n:1},{t:'คงค้าง',n:1},'ครบกำหนด',''],
-    list.slice().sort((a,b)=>(b.due-b.paid)-(a.due-a.paid)).map(a=>{
+  const arL=list.slice().sort((a,b)=>(b.due-b.paid)-(a.due-a.paid)).map(a=>{
       const s=SALES.find(x=>x.id===a.saleId), u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
-      const f=FIN_CO.find(x=>x.id===a.finId); const left=a.due-a.paid; const od=days(a.dueAt,TODAY);
-      return '<tr><td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(u.model)+'</td>'
+      return {a, u, c, f:FIN_CO.find(x=>x.id===a.finId), left:a.due-a.paid, od:days(a.dueAt,TODAY)}; });
+  tbl($('#arTable'), ['ลูกค้า','รุ่น','ประเภท','ผู้จ่าย',{t:'ต้องรับ',n:1},{t:'รับแล้ว',n:1},{t:'คงค้าง',n:1},'ครบกำหนด',''],
+    arL.map(({a,u,c,f,left,od})=>'<tr><td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(u.model)+'</td>'
         +'<td>'+(a.kind==='finance'?pill('ไฟแนนซ์','info'):pill('ลูกค้า','mut'))+'</td>'
         +'<td>'+esc(f?f.name:'—')+'</td><td class="n">'+fmt(a.due)+'</td><td class="n">'+fmt(a.paid)+'</td>'
         +'<td class="n"><b style="color:'+(left>0?'var(--accent)':'var(--pos)')+'">'+fmt(left)+'</b></td>'
         +'<td>'+thDate(a.dueAt)+(left>0&&od>0?' '+pill('เลย '+od+' วัน','bad'):'')+'</td>'
-        +'<td>'+(left>0?'<button class="lnk" data-ar="'+a.id+'">ลงรับเงิน</button>':pill('ครบแล้ว','good'))+'</td></tr>'; }),
-    'ไม่มีเงินค้างรับ');
+        +'<td>'+(left>0?'<button class="lnk" data-ar="'+a.id+'">ลงรับเงิน</button>':pill('ครบแล้ว','good'))+'</td></tr>'),
+    'ไม่มีเงินค้างรับ',
+    arL.map(({a,u,c,f,left,od})=>crow('',
+      esc(c?c.name:'—'),
+      '<b style="color:'+(left>0?'var(--accent)':'var(--pos)')+'">'+fmt(left)+'</b>',
+      esc(u.model)+' · '+(a.kind==='finance'?'ไฟแนนซ์ '+esc(f?f.name:'—'):'ลูกค้าจ่ายเอง')
+        +' · รับแล้ว '+fmt(a.paid)+'/'+fmt(a.due),
+      'ครบกำหนด '+thDate(a.dueAt)+(left>0&&od>0?' '+pill('เลย '+od+' วัน','bad'):'')
+        +'<span style="flex:1"></span>'
+        +(left>0?'<button class="lnk" data-ar="'+a.id+'">ลงรับเงิน</button>':pill('ครบแล้ว','good')))));
   $$('[data-ar]').forEach(b=> b.onclick=()=>{ const a=AR.find(x=>x.id===b.dataset.ar); const left=a.due-a.paid;
     openModal('ลงรับเงิน','<div class="f"><div><label class="fl">ยอดคงค้าง</label><input class="inp num" value="'+fmt(left)+'" disabled></div>'
       +'<div><label class="fl">จำนวนเงินที่รับ (฿)</label><input class="inp num" id="arAmt" value="'+left+'"></div>'
@@ -2962,15 +3038,20 @@ function rService(){
   }
   $('#svPart').innerHTML='<option value="">ไม่ใช้อะไหล่</option>'+PARTS.filter(p=>inScope(p.branch))
     .map(p=>'<option value="'+p.id+'">'+esc(p.name)+' · '+fmt(p.price)+' ฿ (เหลือ '+p.qty+')</option>').join('');
+  const svL=SERVICE.filter(s=>inScope(s.branch)).slice().sort((a,b)=>b.at.localeCompare(a.at)).map(s=>
+      ({s, c:CUSTOMERS.find(x=>x.id===s.custId), u:UNITS.find(x=>x.id===s.unitId)}));
   tbl($('#svTable'), ['เลขที่','วันที่','ลูกค้า','รุ่น / เลขเครื่อง','ประเภท',{t:'เลขไมล์',n:1},{t:'รวม',n:1},'สถานะ',''],
-    SERVICE.filter(s=>inScope(s.branch)).slice().sort((a,b)=>b.at.localeCompare(a.at)).map(s=>{
-      const c=CUSTOMERS.find(x=>x.id===s.custId), u=UNITS.find(x=>x.id===s.unitId);
-      return '<tr><td class="mono">'+esc(s.no||'—')+'</td><td>'+thDate(s.at)+'</td><td><b>'+esc(c?c.name:'—')+'</b></td>'
+    svL.map(({s,c,u})=>'<tr><td class="mono">'+esc(s.no||'—')+'</td><td>'+thDate(s.at)+'</td><td><b>'+esc(c?c.name:'—')+'</b></td>'
         +'<td>'+esc(u?u.model:'—')+'<div class="tsub mono">'+esc(s.engine)+'</div></td><td>'+esc(s.type)+'</td>'
         +'<td class="n">'+fmt(s.km)+'</td><td class="n">'+fmt(s.labor+s.parts)+'</td>'
         +'<td>'+pill(s.status, s.status==='ส่งมอบแล้ว'?'good':'info')+'</td>'
-        +'<td>'+(s.status!=='ส่งมอบแล้ว'?'<button class="lnk" data-sv="'+s.id+'">ปิดงาน</button>':'')+'</td></tr>'; }),
-    'ยังไม่มีใบงานซ่อม');
+        +'<td>'+(s.status!=='ส่งมอบแล้ว'?'<button class="lnk" data-sv="'+s.id+'">ปิดงาน</button>':'')+'</td></tr>'),
+    'ยังไม่มีใบงานซ่อม',
+    svL.map(({s,c,u})=>crow('',
+      esc(c?c.name:'—'), fmt(s.labor+s.parts),
+      '<span class="mono">'+esc(s.no||'—')+'</span> · '+thDate(s.at)+' · '+esc(u?u.model:'—')+' · '+esc(s.type),
+      pill(s.status, s.status==='ส่งมอบแล้ว'?'good':'info')
+        +(s.status!=='ส่งมอบแล้ว'?'<span style="flex:1"></span><button class="lnk" data-sv="'+s.id+'">ปิดงาน</button>':''))));
   $$('[data-sv]').forEach(b=> b.onclick=()=>{ const s=SERVICE.find(x=>x.id===b.dataset.sv); s.status='ส่งมอบแล้ว';
     toast('ปิดงานแล้ว','ตั้งเตือนเช็กระยะรอบถัดไปอัตโนมัติ'); refreshAll(); });
   const rr=REMIND.filter(r=>r.status==='รอถึงกำหนด').sort((a,b)=>a.due.localeCompare(b.due));
@@ -2980,7 +3061,13 @@ function rService(){
       return '<tr><td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(c?c.phone:'')+'</td><td>'+esc(u?u.model:'—')+'</td>'
         +'<td class="n">'+fmt(r.km)+'</td><td>'+thDate(r.due)+'</td>'
         +'<td>'+(d>0?pill('ถึงกำหนดแล้ว','warn'):pill('อีก '+(-d)+' วัน','mut'))+'</td></tr>'; }),
-    'ยังไม่มีรายการเตือน');
+    'ยังไม่มีรายการเตือน',
+    rr.slice(0,30).map(r=>{ const c=CUSTOMERS.find(x=>x.id===r.custId), u=UNITS.find(x=>x.id===r.unitId);
+      const d=days(r.due,TODAY);
+      return crow('',
+        esc(c?c.name:'—'),
+        (d>0?pill('ถึงกำหนดแล้ว','warn'):pill('อีก '+(-d)+' วัน','mut')),
+        esc(c?c.phone:'')+' · '+esc(u?u.model:'—')+' · รอบ '+fmt(r.km)+' กม. · '+thDate(r.due)); }));
 }
 function svLookup(){
   const q=$('#svSearch').value.trim().toLowerCase();
