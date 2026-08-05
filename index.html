@@ -583,7 +583,8 @@ body.lock{ overflow:hidden; }
   .drw .dh .x,.mbox .mh .x{ width:44px; height:44px; display:grid; place-items:center;
     margin:-8px -8px -8px auto; }
   .sw{ transform:scale(1.2); transform-origin:left center; }
-  .savebar{ position:sticky; bottom:calc(64px + env(safe-area-inset-bottom)); z-index:5;
+  /* sticky เฉพาะฟอร์มในหน้า — ใน drawer/modal ไม่มี bottom nav ให้หลบ ปล่อย static ตามเดิม */
+  .screen .savebar{ position:sticky; bottom:calc(64px + env(safe-area-inset-bottom)); z-index:5;
     background:var(--card); padding-bottom:var(--s2);
     margin-left:calc(-1 * var(--s2)); margin-right:calc(-1 * var(--s2));
     padding-left:var(--s2); padding-right:var(--s2); }
@@ -2950,7 +2951,7 @@ function saleDrawer(id){
     +(canSee('sell')&&!s.void?'<div style="margin-top:var(--s1)"><button class="lnk" id="sdDocs">พิมพ์ / ออกเอกสารของการขายนี้ →</button></div>':'');
   if(!s.void && (ME.role==='admin'||ME.role==='manager') && typeof cancelSale==='function')
     h+='<div class="savebar"><button class="btn dgr" id="sdVoid">ยกเลิกการขาย</button></div>';
-  openDrawer('การขาย · '+esc(c?c.name:''), h);
+  openDrawer('การขาย · '+(c?c.name:''), h);
   $$('#drwB [data-opfin]').forEach(b=> b.onclick=()=>{ closeDrawer(); go('fin'); setTimeout(()=>finDrawer(b.dataset.opfin),150); });
   $$('#drwB [data-opreg]').forEach(b=> b.onclick=()=>{ closeDrawer(); go('reg'); setTimeout(()=>regDrawer(b.dataset.opreg),150); });
   const sd=$('#sdDocs'); if(sd) sd.onclick=()=>{ closeDrawer(); go('sell');
