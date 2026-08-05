@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- โหลดฟอนต์แบบไม่บล็อกการเรนเดอร์ — หน้าเว็บขึ้นทันทีแม้เซิร์ฟเวอร์ฟอนต์ช้าหรือเน็ตล่ม -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;family=Sarabun:wght@400;500;600;700&amp;family=Trirong:wght@500;600&amp;display=swap" media="print" onload="this.media='all';this.onload=null">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;family=Sarabun:wght@400;500;600;700&amp;family=Trirong:wght@500;600&amp;display=swap"></noscript>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+Thai:wght@400;500;600;700&amp;display=swap" media="print" onload="this.media='all';this.onload=null">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+Thai:wght@400;500;600;700&amp;display=swap"></noscript>
 <style>
 /* --------------------
    FAMAI MOTOR — DESIGN TOKENS
@@ -24,7 +24,6 @@
   /* -- Ink -- หมึกหนึ่ง หมึกอ่อนหนึ่ง เทาหนึ่ง -- */
   --ink:#16181D;  --ink-soft:#3A3E47;  --muted:#8B8F98;
   --hairline:rgba(22,24,29,.12);  --hairline-2:rgba(22,24,29,.06);
-  --hairline-dark:rgba(255,255,255,.10);
 
   /* -- Accent -- แดงยามาฮ่า หนึ่งเดียว สองตัวแปร -- */
   --accent:#E60012;  --accent-hover:#FF2B39;  --accent-deep:#B3000E;
@@ -49,9 +48,9 @@
   --t-label:12px; --t-table:14px; --t-body:15px; --t-lead:18px;
   --t-h2:20px; --t-h1:28px; --t-stat:32px; --t-display:34px;
 
-  /* -- Font -- display serif หนึ่ง + body sans หนึ่ง -- */
-  --f-display:'Trirong', Georgia, serif;
-  --f-thai:'Anuphan';
+  /* -- Font -- Noto Sans Thai ฟอนต์เดียวทั้งแอป + Inter สำหรับตัวเลข/อังกฤษ -- */
+  --f-display:'Noto Sans Thai', system-ui, -apple-system, sans-serif;
+  --f-thai:'Noto Sans Thai';
   --f-body:'Inter', var(--f-thai), system-ui, -apple-system, sans-serif;
   --f-mono:ui-monospace, SFMono-Regular, Menlo, monospace;
 
@@ -60,7 +59,6 @@
 
   --side-w:248px;
 }
-body.looped{ --f-thai:'Sarabun'; }
 
 /* -------------------- RESET -------------------- */
 *{ box-sizing:border-box; }
@@ -119,7 +117,6 @@ h2,h3{ font-size:var(--t-h2); line-height:1.3; letter-spacing:-.01em; }
 .app.off{ display:none; }
 .side{ flex:0 0 var(--side-w); width:var(--side-w); position:sticky; top:0; height:100vh;
   display:flex; flex-direction:column; z-index:40; border-right:1px solid var(--hairline); }
-body.dark-side .side{ background:var(--dark); color:var(--paper); border-right-color:var(--hairline-dark); }
 .brand{ padding:var(--s3) var(--s3) var(--s2); font-family:var(--f-display);
   font-size:var(--t-lead); font-weight:600; letter-spacing:.06em; }
 .brand b{ color:var(--accent); font-weight:600; }
@@ -131,12 +128,9 @@ body.dark-side .side{ background:var(--dark); color:var(--paper); border-right-c
   padding:var(--s1); border-radius:var(--r-input); color:var(--ink-soft);
   font-size:var(--t-table); font-weight:500; position:relative;
   transition:color var(--dur-ui) var(--ease), background var(--dur-ui) var(--ease); }
-body.dark-side .nb{ color:#B6BAC2; }
 .nb .i{ opacity:.7; }
 .nb:hover{ color:var(--ink); background:var(--hairline-2); }
-body.dark-side .nb:hover{ color:var(--paper); background:rgba(255,255,255,.05); }
 .nb.on{ color:var(--ink); font-weight:600; background:var(--card); box-shadow:var(--sh-sm); }
-body.dark-side .nb.on{ color:var(--paper); background:rgba(255,255,255,.07); box-shadow:none; }
 .nb.on::before{ content:''; position:absolute; left:0; top:8px; bottom:8px; width:2px;
   background:var(--accent); border-radius:var(--r-pill); }
 .nb.on .i{ opacity:1; color:var(--accent); }
@@ -144,11 +138,9 @@ body.dark-side .nb.on{ color:var(--paper); background:rgba(255,255,255,.07); box
   font-variant-numeric:tabular-nums; }
 .nb.on .bdg{ color:var(--accent); }
 .side-foot{ border-top:1px solid var(--hairline); padding:var(--s2); }
-body.dark-side .side-foot{ border-top-color:var(--hairline-dark); }
 .me{ display:flex; align-items:center; gap:var(--s2); padding:var(--s1) 0 var(--s2); }
 .me .av{ width:32px; height:32px; border-radius:var(--r-pill); background:var(--ink); color:var(--card);
   display:grid; place-items:center; font-size:var(--t-label); font-weight:600; flex:0 0 32px; }
-body.dark-side .me .av{ background:var(--accent); }
 .me b{ display:block; font-size:var(--t-table); font-weight:600; line-height:1.3; }
 .me span{ display:block; font-size:var(--t-label); color:var(--muted); }
 .out{ display:flex; align-items:center; justify-content:center; gap:var(--s1); width:100%;
@@ -590,9 +582,6 @@ tr.grp-sub td{ background:var(--paper-2); }
 <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
 <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M6 16V8a3 3 0 0 1 3-3h6M18 8v8a3 3 0 0 1-3 3H9"/></symbol>
 <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
-<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
-<symbol id="i-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></symbol>
-<symbol id="i-type" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></symbol>
 <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
 <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></symbol>
 <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
@@ -665,9 +654,6 @@ tr.grp-sub td{ background:var(--paper-2); }
       <div><h1 id="pgT">Dashboard</h1><div class="sub" id="pgS">ภาพรวมทั้งกิจการ</div></div>
       <div class="sp"></div>
       <div class="srch noprint"><span class="mag"><svg class="i i-sm"><use href="#i-search"/></svg></span><input id="gsInput" placeholder="ค้นหา" readonly></div>
-      <button class="tbtn noprint" id="btnCust" title="ซ่อนต้นทุนและกำไร ตอนหันจอให้ลูกค้าดู"><svg class="i i-sm"><use href="#i-eye"/></svg><span class="tlab">โหมดลูกค้า</span></button>
-      <button class="tbtn noprint" id="btnFont" title="สลับฟอนต์ไทยมีหัว / ไม่มีหัว"><svg class="i i-sm"><use href="#i-type"/></svg></button>
-      <button class="tbtn noprint" id="btnSide" title="สลับธีมสว่าง / เข้ม"><svg class="i i-sm"><use href="#i-contrast"/></svg></button>
     </header>
 
     <div class="wrap">
@@ -1530,9 +1516,9 @@ function nextDocNo(branchCode, type){
 }
 
 /* ---------- สถานะผู้ใช้ปัจจุบัน ---------- */
-let ME = null, CUSTOMER_MODE = false;
+let ME = null;
 const rolePerm = () => ROLES[ME? ME.role : 'sales'];
-const noMoney  = () => CUSTOMER_MODE || !rolePerm().money;
+const noMoney  = () => !rolePerm().money;
 const money    = v => noMoney() ? '—' : baht(v);
 const myBranches = () => rolePerm().allBranch ? BRANCHES.map(b=>b.code) : [ME.branch];
 const inScope = c => myBranches().indexOf(c) >= 0;
@@ -1627,7 +1613,7 @@ function renderLogin(){
 }
 function doLogin(){
   const sel=$('#lgUsers .lg-u.on'); const st=STAFF.find(s=>s.id===(sel?sel.dataset.id:'ST1'));
-  ME = st; CUSTOMER_MODE=false;
+  ME = st;
   $('#login').classList.add('off'); $('#app').classList.remove('off');
   $('#meAv').textContent = st.nick.slice(0,2);
   $('#meName').textContent = st.name;
@@ -3675,7 +3661,6 @@ async function liveLogin(){
     LIVE = true;
     ME = { id:me.id, name:me.full_name, nick:me.nickname||me.full_name.slice(0,2),
            role:roleCode, branch:homeBranch, salary:0, bank:'', ssn:'' };
-    CUSTOMER_MODE=false;
     $('#login').classList.add('off'); $('#app').classList.remove('off');
     $('#meAv').textContent = ME.nick.slice(0,2);
     $('#meName').textContent = ME.name;
@@ -3708,14 +3693,6 @@ $('#btnOut').onclick=()=>{
   if(LIVE){ SB_TOKEN=null; LIVE=false; location.reload(); return; }   /* ข้อมูลจริงถูกโหลดทับไว้ — เริ่มใหม่ให้สะอาด */
   $('#app').classList.add('off'); $('#login').classList.remove('off'); ME=null; };
 $('#burger').onclick=()=> $('#side').classList.toggle('open');
-$('#btnFont').onclick=()=>{ document.body.classList.toggle('looped');
-  $('#btnFont').classList.toggle('on', document.body.classList.contains('looped'));
-  toast('สลับฟอนต์แล้ว', document.body.classList.contains('looped')?'ฟอนต์มีหัว':'ฟอนต์ไม่มีหัว'); };
-$('#btnSide').onclick=()=>{ document.body.classList.toggle('dark-side');
-  $('#btnSide').classList.toggle('on', document.body.classList.contains('dark-side')); };
-$('#btnCust').onclick=()=>{ CUSTOMER_MODE=!CUSTOMER_MODE;
-  $('#btnCust').classList.toggle('on',CUSTOMER_MODE);
-  toast(CUSTOMER_MODE?'เปิดโหมดลูกค้า':'ปิดโหมดลูกค้า', CUSTOMER_MODE?'ซ่อนต้นทุนและกำไรทุกหน้า':'แสดงตัวเงินตามสิทธิ์'); refreshAll(); };
 $('#drwX').onclick=closeDrawer; $('#ov').onclick=()=>{ closeDrawer(); };
 $('#mdX').onclick=closeModal;
 $('#gsInput').onclick=gsOpen; $('#gsQ').oninput=gsSearch;
