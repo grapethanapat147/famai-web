@@ -3931,6 +3931,10 @@ function attFlags(a){
   if(c.openIn && a.date!==curDate()) f.push({k:'open', t:'ไม่ได้ลงเวลาออก', tone:'bad'});
   if(a.editLog) f.push({k:'edit', t:'ถูกแก้เวลา '+a.editLog.length+' ครั้ง', tone:'warn'});
   if(a.in && !(a.inProof&&(a.inProof.photoId||a.inProof.photo))) f.push({k:'nophoto', t:'ไม่มีรูปตอนเข้า', tone:'mut'});
+  /* บัญชีที่กดต้องเป็นเจ้าของแถว — เดิมเก็บ by ไว้แต่ไม่เคยเทียบ */
+  ['in','out'].forEach(side=>{ const p=a[side+'Proof'];
+    if(p && p.by && p.by!==a.staffId)
+      f.push({k:'notme', t:'บัญชีที่กดไม่ใช่เจ้าของแถว ('+(p.byName||p.by)+')', tone:'bad'}); });
   return f;
 }
 const rvNeeds = f => f.some(x=>x.k!=='nophoto');   /* ไม่มีรูปอย่างเดียวไม่ต้องเรียกผู้จัดการมาตรวจ */
@@ -4014,7 +4018,9 @@ const hhmmss = d => [d.getHours(),d.getMinutes(),d.getSeconds()].map(x=>String(x
 async function camShot(w,h,q){
   if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return null;
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({video:{width:w,height:h}});
+    /* facingMode:'user' = บังคับกล้องหน้า — รูปหลักฐานต้องเป็นหน้าคนที่กด ไม่ใช่พื้นหรือเพดาน
+       ใช้ ideal ไม่ใช่ exact เพื่อให้เครื่องที่มีกล้องเดียว (เช่นโน้ตบุ๊ก) ยังถ่ายได้ */
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:w,height:h,facingMode:{ideal:'user'}}});
     const v=document.createElement('video'); v.srcObject=stream; v.muted=true; v.playsInline=true;
     await v.play(); await new Promise(r=>setTimeout(r,350));   /* รอกล้องปรับแสง */
     const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
@@ -4024,8 +4030,13 @@ async function camShot(w,h,q){
   }catch(_){ return null; }   /* ไม่มีกล้อง/ไม่อนุญาต — บันทึกต่อโดยไม่มีรูป */
 }
 const dataBytes = s => Math.round((String(s).split(',')[1]||'').length*3/4);
+/* รหัสรูปต้องไม่ซ้ำ "ข้ามรอบการเปิดแอป" — nid() เริ่มนับ 1 ใหม่ทุกครั้งที่โหลดหน้า
+   แต่ IndexedDB อยู่ข้ามรอบ ถ้าใช้ nid รูปหลักฐานเก่าจะถูกรูปใหม่ทับแบบเงียบ ๆ */
+const photoId = () => 'PH_'+Date.now().toString(36)+'_'+
+  ((window.crypto && crypto.randomUUID) ? crypto.randomUUID().slice(0,8)
+                                        : Math.random().toString(36).slice(2,10));
 async function photoSave(data,w,h,tier,at){
-  const rec={ id:nid('PH'), data, w, h, bytes:dataBytes(data), at:at||new Date().toISOString(), tier:tier||'fresh' };
+  const rec={ id:photoId(), data, w, h, bytes:dataBytes(data), at:at||new Date().toISOString(), tier:tier||'fresh' };
   await idbPut(rec); return rec.id;
 }
 /* ---------- ย่อรูปอัตโนมัติตามอายุ ----------
@@ -4050,7 +4061,11 @@ function shrinkData(data, w, h, q){
 async function agePhotos(now, limit){
   const t0=now? new Date(now) : new Date();
   const all=await idbAll();
-  const out={shrunk:0, deleted:0, checked:all.length, freed:0};
+  const out={shrunk:0, deleted:0, checked:all.length, freed:0, skipped:''};
+  /* กันนาฬิกาเครื่องเพี้ยน — ถ้าเวลาเครื่องล้ำหน้ารูปที่ใหม่ที่สุดเกิน 400 วัน
+     แปลว่านาฬิกาน่าจะถูกตั้งผิด (หรือถูกตั้งเพื่อล้างหลักฐาน) ให้ข้ามการเก็บกวาดรอบนี้ */
+  const newest=all.reduce((m,r)=>{ const t=+new Date(r.at); return t>m? t : m; }, 0);
+  if(newest && (t0-newest) > 400*864e5){ out.skipped='นาฬิกาเครื่องล้ำหน้ารูปล่าสุดเกิน 400 วัน'; return out; }
   let n=0;
   for(const rec of all){
     if(limit && n>=limit) break;
@@ -4095,6 +4110,9 @@ async function attProof(){
 /* กด → บันทึกเวลาทันทีแบบไม่รออะไรเลย → รูปกับพิกัดตามมาแนบทีหลัง
    ของเดิมจับเวลา "หลัง" รอกล้อง+GPS ทำให้เวลาที่บันทึกช้ากว่าวินาทีที่กดจริงได้ถึง ~4 วินาที */
 function punch(staffId, side){
+  /* ลงเวลาแทนกันไม่ได้ — เดิมด่านเดียวคือการซ่อนปุ่มใน HTML ซึ่งเลี่ยงได้
+     ด่านจริงต้องอยู่ในฟังก์ชันที่เขียนข้อมูล ไม่ใช่ที่ปุ่ม */
+  if(staffId!==ME.id){ toast('ลงเวลาแทนคนอื่นไม่ได้','ปุ่มลงเวลาขึ้นเฉพาะแถวของคนที่ล็อกอินอยู่',1); return null; }
   const t=hhmmss(new Date());
   const a=attEnsure(staffId, curDate());
   a[side]=t;
@@ -4143,13 +4161,18 @@ function attFixModal(s, date, after){
 async function attReviewSheet(staffId, date){
   const s=STAFF.find(x=>x.id===staffId), a=attOf(staffId,date);
   if(!s||!a) return;
-  const c=attCalc(a), f=attFlags(a);
+  const c=attCalc(a), f=attFlags(a), self=staffId===ME.id;
   const shot=async side=>{ const p=(side==='out'? a.outProof : a.inProof)||{};
     const rec=p.photoId? await idbGet(p.photoId) : null;
     const src=rec? rec.data : p.photo;
+    /* เวลาที่ถ่ายรูปจริง — ถ้าเวลาถูกแก้ทีหลัง สองค่านี้จะไม่ตรงกัน ผู้ตรวจต้องเห็น */
+    const shotAt=rec&&rec.at? hhmmss(new Date(rec.at)) : null;
+    const drift=shotAt && a[side] && Math.abs(toSec(shotAt)-toSec(a[side]))>120;
     return '<div><div class="fl">'+(side==='out'?'ออก':'เข้า')+' <span class="mono">'+esc(a[side]||'—')+'</span></div>'
       +(src? '<img src="'+src+'" style="width:100%;border-radius:var(--r-input)" alt="">'
            : '<div class="note w" style="margin:0">'+ic('alert','i i-sm')+'<span>ไม่มีรูป</span></div>')
+      +(drift? '<div class="tsub" style="color:var(--attn)">รูปถ่ายตอน '+esc(shotAt)+' ไม่ตรงกับเวลาที่บันทึก — เวลาถูกแก้ทีหลัง</div>'
+             : (shotAt? '<div class="tsub mono">ถ่ายตอน '+esc(shotAt)+'</div>':''))
       +(p.geo? '<div class="tsub mono">'+p.geo.lat+', '+p.geo.lng+' (±'+p.geo.acc+' ม.)</div>':'')
       +(p.device? '<div class="tsub" style="overflow-wrap:anywhere">'+esc(p.device)+'</div>':'')+'</div>'; };
   openModal('ตรวจการลงเวลา — '+s.nick+' · '+thDate(date),
@@ -4162,16 +4185,23 @@ async function attReviewSheet(staffId, date){
     +(a.review? '<dt>ตรวจแล้ว</dt><dd>'+esc(a.review.by)+' · '+(a.review.status==='ok'?'ยืนยัน':'ติดปัญหา')
         +(a.review.note?' · '+esc(a.review.note):'')+'</dd>':'')
     +'</dl>'
-    +'<div><label class="fl">หมายเหตุ (จำเป็นเมื่อติดปัญหา)</label><input class="inp" id="rvNoteIn" value="'+esc(a.review?a.review.note:'')+'" placeholder="เช่น มาสายเพราะส่งของก่อนเข้างาน"></div>'
-    +'<div class="savebar"><button class="btn" id="rvOk">ยืนยัน<svg class="i"><use href="#i-check"/></svg></button>'
-    +'<button class="btn sec" id="rvFlag">ติดปัญหา</button>'
-    +(canFixAtt()? '<button class="btn sec" id="rvFix">แก้เวลา</button>':'')+'</div>');
-  $('#rvOk').onclick=()=>{ attReview(a,'ok',$('#rvNoteIn').value.trim());
-    closeModal(); toast('ยืนยันแล้ว', s.nick+' · '+thDate(date)); rHr(); refreshAll(); };
-  $('#rvFlag').onclick=()=>{ const n=$('#rvNoteIn').value.trim();
-    if(!n){ toast('ต้องระบุเหตุผล','การติดปัญหาต้องบอกว่าติดตรงไหน',1); return; }
-    attReview(a,'flag',n); closeModal(); toast('ติดปัญหาแล้ว', s.nick+' · '+n); rHr(); refreshAll(); };
-  if($('#rvFix')) $('#rvFix').onclick=()=> attFixModal(s, date, ()=>{ rHr(); refreshAll(); });
+    /* ตรวจบันทึกของตัวเองไม่ได้ — คนแก้กับคนตรวจต้องไม่ใช่คนเดียวกัน
+       ร้านมีคนตรวจได้ 3 คน (แอดมิน ผู้จัดการ HR) จึงตรวจไขว้กันได้เสมอ */
+    +(self
+      ? '<div class="note w">'+ic('alert','i i-sm')+'<span>นี่คือบันทึกของคุณเอง — ตรวจหรือแก้เองไม่ได้ '
+        +'ต้องให้แอดมิน ผู้จัดการ หรือ HR คนอื่นเป็นคนตรวจ</span></div>'
+      : '<div><label class="fl">หมายเหตุ (จำเป็นเมื่อติดปัญหา)</label><input class="inp" id="rvNoteIn" value="'+esc(a.review?a.review.note:'')+'" placeholder="เช่น มาสายเพราะส่งของก่อนเข้างาน"></div>'
+        +'<div class="savebar"><button class="btn" id="rvOk">ยืนยัน<svg class="i"><use href="#i-check"/></svg></button>'
+        +'<button class="btn sec" id="rvFlag">ติดปัญหา</button>'
+        +(canFixAtt()? '<button class="btn sec" id="rvFix">แก้เวลา</button>':'')+'</div>'));
+  if(!self){
+    $('#rvOk').onclick=()=>{ attReview(a,'ok',$('#rvNoteIn').value.trim());
+      closeModal(); toast('ยืนยันแล้ว', s.nick+' · '+thDate(date)); rHr(); refreshAll(); };
+    $('#rvFlag').onclick=()=>{ const n=$('#rvNoteIn').value.trim();
+      if(!n){ toast('ต้องระบุเหตุผล','การติดปัญหาต้องบอกว่าติดตรงไหน',1); return; }
+      attReview(a,'flag',n); closeModal(); toast('ติดปัญหาแล้ว', s.nick+' · '+n); rHr(); refreshAll(); };
+    if($('#rvFix')) $('#rvFix').onclick=()=> attFixModal(s, date, ()=>{ rHr(); refreshAll(); });
+  }
 }
 /* ---------- การ์ดลงเวลาบนหน้าแรก ----------
    ปุ่มลงเวลาเดิมอยู่ในหน้า "ลงเวลาและลา" ซึ่งบางบทบาทต้องกดผ่านแผ่น "อื่น ๆ" ก่อน
@@ -4372,10 +4402,16 @@ function rReview(ym){
       +'('+esc([...new Set(miss.map(m=>m.s.nick))].slice(0,4).join(' · '))+(new Set(miss.map(m=>m.s.nick)).size>4?' และอื่น ๆ':'')+') '
       +'— เปิดแท็บลงเวลา เลือกวันนั้น แล้วกดแก้ไขเพื่อเติมเวลาพร้อมเหตุผล</span></div>'
     : '<div class="note g">'+ic('check-circle','i i-sm')+'<span>ทุกคนมีบันทึกครบทุกวันทำงานในงวดนี้</span></div>';
-  $('#rvAllOk').disabled = !q.length;
-  $('#rvAllOk').onclick=()=>{ if(!q.length) return;
-    q.forEach(x=>attReview(x.a,'ok',''));
-    toast('ยืนยันแล้ว '+q.length+' รายการ','บันทึกว่าใครตรวจและตรวจเมื่อไหร่'); rHr(); refreshAll(); };
+  /* ยืนยันรวดต้องข้ามบันทึกของตัวเอง — ไม่งั้นผู้จัดการอนุมัติตัวเองได้ด้วยปุ่มเดียว */
+  const bulk=q.filter(x=>x.s.id!==ME.id);
+  $('#rvAllOk').disabled = !bulk.length;
+  $('#rvAllOk').textContent = bulk.length? 'ยืนยันทั้งหมด ('+bulk.length+')' : 'ยืนยันทั้งหมด';
+  $('#rvAllOk').onclick=()=>{ if(!bulk.length) return;
+    bulk.forEach(x=>attReview(x.a,'ok',''));
+    toast('ยืนยันแล้ว '+bulk.length+' รายการ',
+      q.length>bulk.length? 'ข้ามบันทึกของคุณเอง '+(q.length-bulk.length)+' รายการ — ต้องให้คนอื่นตรวจ'
+                          : 'บันทึกว่าใครตรวจและตรวจเมื่อไหร่');
+    rHr(); refreshAll(); };
   tbl($('#rvDone'), ['พนักงาน','วันที่','ผล','ผู้ตรวจ','หมายเหตุ'],
     done.slice(0,30).map(x=>'<tr><td><b>'+esc(x.s.nick)+'</b></td><td>'+thShort(x.a.date)+'</td>'
       +'<td>'+pill(x.a.review.status==='ok'?'ยืนยัน':'ติดปัญหา', x.a.review.status==='ok'?'good':'bad')+'</td>'
