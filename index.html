@@ -196,6 +196,23 @@ a.nb{ text-decoration:none; box-sizing:border-box; }
 .g2e{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s3); align-items:start; }
 .g3{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s3); align-items:start; }
 .g2>*,.g2e>*,.g3>*,.kpis>*{ min-width:0; }
+/* ---------- การ์ดลงเวลาเข้า-ออก บนสุดของหน้าแรก ---------- */
+.pc{ margin-bottom:var(--s3); }
+.pc>.bd{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; }
+.pc .pcL{ flex:1 1 220px; min-width:0; }
+.pc .pcState{ font-size:var(--t-h2); font-weight:600; line-height:1.3; letter-spacing:-.01em; }
+.pc .pcSub{ font-size:var(--t-label); color:var(--muted); margin-top:var(--s-half); }
+.pc .pcNow{ font-variant-numeric:tabular-nums; font-feature-settings:'tnum'; }
+.pc .pcGo{ height:56px; min-width:190px; padding:0 var(--s4); font-size:var(--t-h2); font-weight:600; }
+.pc .pcGo.out{ background:var(--card); color:var(--ink); border:1.5px solid var(--ink); box-shadow:none; }
+.pc .pcGo:disabled{ opacity:.55; }
+.pc .pcDone{ display:inline-flex; align-items:center; gap:var(--s1);
+  font-size:var(--t-table); font-weight:600; color:var(--pos); }
+@media (max-width:600px){
+  .pc>.bd{ gap:var(--s2); }
+  .pc .pcL{ flex:1 1 100%; }
+  .pc .pcGo{ width:100%; min-width:0; }
+}
 .kpis{ display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s3); margin-bottom:var(--s3); }
 .kpis.k3{ grid-template-columns:repeat(3,1fr); }
 .kpis.k6{ grid-template-columns:repeat(6,1fr); }
@@ -775,6 +792,8 @@ body.lock{ overflow:hidden; }
 
       <!-- ============ 1. DASHBOARD ============ -->
       <section class="screen on" id="s-dash">
+        <!-- ลงเวลาเข้า-ออก อยู่บนสุดของหน้าแรก เห็นทันทีที่เปิดแอป ไม่ต้องเดินเมนู -->
+        <div class="card pc" id="punchCard"><div class="bd" id="punchBody"></div></div>
         <div class="chips" style="margin-bottom:var(--s2)">
           <span style="font-size:var(--t-label);color:var(--muted);align-self:center;margin-right:4px">ช่วงเวลา</span>
           <button class="chip" data-r="1">วันนี้</button>
@@ -2069,6 +2088,7 @@ let dRange=7, dBranch='';
 function dSales(){ return sScoped().filter(s=>(!dBranch||s.branch===dBranch) && days(s.soldAt,TODAY)<=dRange); }
 function dUnits(){ return uAvail().filter(u=>!dBranch||u.branch===dBranch); }
 function rDash(){
+  rPunch();
   const sel=$('#dBranch');
   if(!sel.dataset.init){ sel.dataset.init=1;
     sel.innerHTML='<option value="">ทุกสาขาที่เห็นได้</option>'+BRANCHES.filter(b=>inScope(b.code))
@@ -3864,7 +3884,10 @@ function attCalc(a){
   const g=(+CFG.lateGrace||0)*60, inRef=toSec(CFG.workIn), outRef=toSec(CFG.workOut);
   const inS=a&&a.in? toSec(a.in):0, outS=a&&a.out? toSec(a.out):0;
   const workSec=(inS&&outS&&outS>inS)? outS-inS : 0;
-  const otSec  = outS? Math.max(0, outS-outRef) : 0;
+  /* OT = เวลาที่อยู่ "หลังเวลาเลิกงาน" และต้องอยู่จริงด้วย
+     นับจาก max(เวลาเข้า, เวลาเลิกงาน) ไม่งั้นคนที่เข้างาน 20:00 ออก 20:15
+     จะได้ OT 2.8 ชม. ทั้งที่อยู่แค่ 15 นาที */
+  const otSec  = (inS&&outS&&outS>inS)? Math.max(0, outS-Math.max(inS,outRef)) : 0;
   const lateSec= inS?  Math.max(0, inS-inRef-g) : 0;
   return { inS, outS, workSec, otSec, lateSec, hrs:workSec/3600, otH:otSec/3600,
     lateMin:lateSec/60, late:lateSec>0, openIn: !!inS && !outS };
@@ -4149,6 +4172,53 @@ async function attReviewSheet(staffId, date){
     if(!n){ toast('ต้องระบุเหตุผล','การติดปัญหาต้องบอกว่าติดตรงไหน',1); return; }
     attReview(a,'flag',n); closeModal(); toast('ติดปัญหาแล้ว', s.nick+' · '+n); rHr(); refreshAll(); };
   if($('#rvFix')) $('#rvFix').onclick=()=> attFixModal(s, date, ()=>{ rHr(); refreshAll(); });
+}
+/* ---------- การ์ดลงเวลาบนหน้าแรก ----------
+   ปุ่มลงเวลาเดิมอยู่ในหน้า "ลงเวลาและลา" ซึ่งบางบทบาทต้องกดผ่านแผ่น "อื่น ๆ" ก่อน
+   ย้ายมาไว้บนสุดของหน้าแรกด้วย เห็นทันทีที่เปิดแอปและกดครั้งเดียวจบ
+   ใช้ punch() ตัวเดียวกับหน้าลงเวลา — หลักฐานและกติกาทั้งหมดจึงเหมือนกันเป๊ะ */
+let punchTimer=null;
+const durTh = sec => { const h=Math.floor(sec/3600), m=Math.floor(sec/60)%60;
+  return (h? h+' ชม. ':'')+m+' นาที'; };
+function rPunch(){
+  const el=$('#punchBody'); if(!el || !ME) return;
+  const day=curDate(), a=attOf(ME.id,day), c=attCalc(a||{});
+  const leave=isLeaveDay(a, ME.id, day);
+  const now=new Date();
+  const head='<div class="pcL"><div class="pcState" id="pcState"></div><div class="pcSub" id="pcSub"></div></div>';
+  let right='';
+  if(leave)            right='<span class="pcDone">'+ic('check-circle','i i-sm')+' วันนี้ลา</span>';
+  else if(!a || !a.in) right='<button class="btn pcGo" id="pcIn">'+ic('clock')+' ลงเวลาเข้า</button>';
+  else if(!a.out)      right='<button class="btn pcGo out" id="pcOut">'+ic('clock')+' ลงเวลาออก</button>';
+  else                 right='<span class="pcDone">'+ic('check-circle','i i-sm')+' ลงเวลาครบแล้ววันนี้</span>';
+  el.innerHTML=head+right;
+  const tick=()=>{
+    const s=$('#pcState'), b=$('#pcSub');
+    if(!s || CUR!=='dash'){ clearInterval(punchTimer); punchTimer=null; return; }
+    const t=new Date();
+    if(leave){ s.textContent='วันนี้ลา'; b.textContent=thDate(day)+' · ไม่ต้องลงเวลา'; return; }
+    if(!a || !a.in){
+      s.innerHTML='ยังไม่ได้ลงเวลาเข้า';
+      b.innerHTML='<span class="pcNow mono">'+hhmmss(t)+'</span> · เวลาเข้างาน '+CFG.workIn
+        +' (ผ่อนผัน '+(+CFG.lateGrace||0)+' นาที)';
+      return;
+    }
+    if(!a.out){
+      const worked=Math.max(0, Math.floor((t-new Date(day+'T'+a.in))/1000));
+      s.innerHTML='เข้างานแล้ว <span class="mono">'+esc(a.in)+'</span>'
+        +(c.late? ' '+pill('สาย '+Math.round(c.lateMin)+' นาที','warn'):'');
+      b.innerHTML='ทำงานมาแล้ว '+durTh(worked)+' · ตอนนี้ <span class="pcNow mono">'+hhmmss(t)+'</span>';
+      return;
+    }
+    s.innerHTML='วันนี้ทำงาน '+hm1(c.hrs)+' ชม.'+(c.otH? ' '+pill('OT '+hm1(c.otH)+' ชม.','info'):'');
+    b.innerHTML='เข้า <span class="mono">'+esc(a.in)+'</span> ออก <span class="mono">'+esc(a.out)+'</span>';
+  };
+  tick();
+  if(punchTimer) clearInterval(punchTimer);
+  punchTimer=setInterval(tick,1000);
+  const go=(side,btn)=>{ btn.disabled=true; punch(ME.id, side); refreshAll(); };   /* refreshAll วาด rDash ซึ่งเรียก rPunch ให้เอง */
+  if($('#pcIn'))  $('#pcIn').onclick =e=> go('in',  e.currentTarget);
+  if($('#pcOut')) $('#pcOut').onclick=e=> go('out', e.currentTarget);
 }
 let hrClockTimer=null;
 let ATT_DAY=null;                       /* วันที่กำลังดูในหน้าลงเวลา */
