@@ -559,6 +559,12 @@ tr.grp-sub td{ background:var(--paper-2); }
 .sheet .sfoot{ border-top:1px solid var(--hairline); margin-top:var(--s2); padding-top:var(--s2); }
 #gsBtn{ display:none; }
 body.lock{ overflow:hidden; }
+/* แผ่นตัวกรอง — บนเดสก์ท็อปไม่ใช้ ตัวกรองอยู่ในหัวการ์ดตามเดิม */
+.card>.hd .fbtn, .card>.hd .fsum{ display:none; }
+.fsrow{ margin-bottom:var(--s2); }
+.fsh{ display:flex; align-items:center; gap:var(--s2); }
+.fsh h6{ margin:0; font-size:var(--t-lead); font-weight:600; }
+.fsh .x{ margin-left:auto; width:44px; height:44px; display:grid; place-items:center; color:var(--muted); }
 
 /* -------------------- RESPONSIVE -------------------- */
 @media (max-width:1200px){
@@ -629,6 +635,12 @@ body.lock{ overflow:hidden; }
   .tabs button.on::after{ display:none; }
   .card>.hd,.card>.bd{ padding-left:var(--s2); padding-right:var(--s2); }
   .kpi{ padding:var(--s2); }
+  /* ตัวกรองย้ายลงแผ่นล่าง — หัวการ์ดเหลือปุ่มกับบรรทัดสรุปว่ากำลังกรองอะไรอยู่ */
+  .card>.hd>.inp.ct{ display:none; }
+  .card>.hd .fbtn{ display:inline-flex; }
+  .card>.hd .fsum{ display:block; flex:0 0 100%; margin-top:var(--s1);
+    font-size:var(--t-label); color:var(--muted); overflow-wrap:anywhere; }
+  #fsBody .inp.ct{ display:block; width:100%; height:44px; font-size:16px; }
   .kv{ grid-template-columns:96px 1fr; }
   .kv dd{ min-width:0; overflow-wrap:anywhere; }
   .drw{ top:auto; left:0; right:0; bottom:0; width:100%; max-height:88dvh;
@@ -989,6 +1001,8 @@ body.lock{ overflow:hidden; }
         <div class="card"><div class="hd"><h3>ลูกค้า × รถ</h3><div class="d">เปลี่ยนสถานะได้จากแถว</div><div class="sp"></div>
           <select class="inp ct" id="fwStage"></select>
           <input class="inp ct" id="fwQ" placeholder="ค้นหาชื่อ" style="width:180px;font-size:var(--t-table)">
+          <button class="btn sec sm fbtn noprint" id="fwFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> ตัวกรอง</button>
+          <div class="fsum" id="fwFsum"></div>
         </div><div class="bd flush"><div class="tw"><table id="fwTable"></table></div></div></div>
       </section>
 
@@ -1018,6 +1032,8 @@ body.lock{ overflow:hidden; }
             <select class="inp ct" id="fpSales"></select>
             <select class="inp ct" id="fpBranch"></select>
             <input class="inp ct" id="fpQ" placeholder="ค้นหาชื่อลูกค้า" style="width:170px;font-size:var(--t-table)">
+            <button class="btn sec sm fbtn noprint" id="fpFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> ตัวกรอง</button>
+            <div class="fsum" id="fpFsum"></div>
           </div><div class="bd" id="fpList"></div></div>
         </div>
         <div class="pane" id="n2"><div class="g2">
@@ -1277,8 +1293,10 @@ body.lock{ overflow:hidden; }
           </select>
           <select class="inp ct" id="rpMonth"></select>
           <select class="inp ct" id="rpBranch"></select>
+          <button class="btn sec sm fbtn noprint" id="rpFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> ตัวกรอง</button>
           <button class="btn sec sm noprint" id="rpPrint"><svg class="i i-sm"><use href="#i-print"/></svg> พิมพ์</button>
           <button class="lnk" id="rpCsv"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button>
+          <div class="fsum" id="rpFsum"></div>
         </div><div class="bd">
           <div class="kpis k3" id="rpKpi" style="margin-bottom:var(--s3)"></div>
           <div class="tw"><table id="rpTable"></table></div>
@@ -1303,6 +1321,11 @@ body.lock{ overflow:hidden; }
 <div id="toasts"></div>
 <nav class="bnav noprint" id="bnav"></nav>
 <div class="sheet noprint" id="more"><div id="moreB"></div></div>
+<div class="sheet noprint" id="fsheet">
+  <div class="fsh"><h6 id="fsTitle">ตัวกรอง</h6><button class="x" id="fsX"><svg class="i i-sm"><use href="#i-x"/></svg></button></div>
+  <div id="fsBody"></div>
+  <div class="sfoot"><button class="btn wide" id="fsDone">ดูผลลัพธ์</button></div>
+</div>
 <div id="printArea"></div>
 <script>
 /* ============================================================================
@@ -1707,7 +1730,7 @@ function openModal(title, html){ $('#mdT').textContent=title; $('#mdB').innerHTM
 function closeModal(){ $('#modal').classList.remove('on'); syncLock(); }
 /* ล็อก scroll พื้นหลังเมื่อมี overlay ใดเปิดอยู่ — จำเป็นบนมือถือ */
 function syncLock(){ document.body.classList.toggle('lock',
-  ['#drw','#modal','#gs','#more'].some(s=>{ const e=$(s); return e && e.classList.contains('on'); })); }
+  ['#drw','#modal','#gs','#more','#fsheet'].some(s=>{ const e=$(s); return e && e.classList.contains('on'); })); }
 function printHTML(html){
   const pa=$('#printArea'); pa.innerHTML=html; document.body.classList.add('print-mode');
   setTimeout(()=>{ window.print(); setTimeout(()=>{ document.body.classList.remove('print-mode'); pa.innerHTML=''; },300); },60);
@@ -1734,7 +1757,7 @@ function csvMoney(name, head, rows, moneyCols){
 }
 /* จอ ≤600px: ตารางที่ส่ง cards มาด้วยจะแสดงเป็นการ์ดแทนแถว — เปลี่ยนขนาดจอแล้ววาดใหม่ */
 const MQ_CARD = matchMedia('(max-width:600px)');
-MQ_CARD.addEventListener('change', ()=>{ if(ME) refreshAll(); });
+MQ_CARD.addEventListener('change', ()=>{ closeFilters(); if(ME) refreshAll(); });   /* คืนตัวกรองเข้าที่ก่อนสลับ layout */
 /* คัมบังใช้เส้นแบ่งเดียวกับเปลือกมือถือ (≤900) ไม่ใช่เส้นการ์ดตาราง (≤600) */
 const MQ_KAN = matchMedia('(max-width:900px)');
 MQ_KAN.addEventListener('change', ()=>{ if(ME) refreshAll(); });
@@ -1864,6 +1887,52 @@ function buildTabs(){
   $$('#moreB .nb').forEach(b=> b.onclick=()=>{ go(b.dataset.s); closeMore(); });
   $('#moreOut').onclick=doLogout;
 }
+/* ---------- แผ่นตัวกรองบนมือถือ ----------
+   ย้าย element ตัวจริงลงแผ่น (ไม่ใช่สำเนา) — onchange และค่าที่ผูกไว้เดิมทำงานต่อทันที
+   โดยไม่ต้องแก้โค้ดหน้าไหน ปิดแล้วย้ายกลับที่เดิมด้วย comment marker */
+const FILTERS = {
+  report:{ t:'ตัวกรองรายงาน', sum:'rpFsum',
+    f:[['rpDay','วันที่'],['rpDim','แยกตาม'],['rpMonth','งวดเดือน'],['rpBranch','สาขา']] },
+  follow:{ t:'ตัวกรองลูกค้า × รถ', sum:'fwFsum',
+    f:[['fwStage','สถานะลูกค้า'],['fwQ','ค้นหาชื่อ']] },
+  finpp :{ t:'ตัวกรองติดตามรายคน', sum:'fpFsum',
+    f:[['fpStatus','สถานะ'],['fpSales','เซลล์'],['fpBranch','สาขา'],['fpQ','ค้นหาชื่อลูกค้า']] }
+};
+let FS_OPEN=null, FS_HOME=[];
+function fsSummary(key){
+  return FILTERS[key].f.map(([id])=>{ const el=$('#'+id); if(!el) return null;
+    if(el.style.display==='none') return null;
+    if(el.tagName==='SELECT'){ const o=el.selectedOptions[0]; return o? o.text.trim() : null; }
+    if(el.type==='date') return el.value? thDate(el.value) : null;
+    return el.value.trim()? '“'+el.value.trim()+'”' : null;
+  }).filter(Boolean).join(' · ');
+}
+function fsSync(key){ const el=$('#'+FILTERS[key].sum); if(el) el.textContent=fsSummary(key); }
+function openFilters(key){
+  if(FS_OPEN) closeFilters();
+  const g=FILTERS[key]; FS_OPEN=key; FS_HOME=[];
+  $('#fsTitle').textContent=g.t; $('#fsBody').innerHTML='';
+  g.f.forEach(([id,label])=>{ const el=$('#'+id); if(!el) return;
+    const mark=document.createComment('fs:'+id); el.parentNode.insertBefore(mark, el);
+    const row=document.createElement('div'); row.className='fsrow';
+    row.innerHTML='<label class="fl">'+esc(label)+'</label>';
+    row.appendChild(el);
+    if(el.style.display==='none') row.style.display='none';
+    $('#fsBody').appendChild(row); FS_HOME.push({el,mark}); });
+  $('#fsheet').classList.add('on'); $('#ov').classList.add('on'); syncLock();
+}
+function closeFilters(){
+  if(!FS_OPEN) return;
+  FS_HOME.forEach(({el,mark})=>{ if(mark.parentNode) mark.parentNode.insertBefore(el, mark); mark.remove(); });
+  $('#fsBody').innerHTML=''; FS_HOME=[];
+  $('#fsheet').classList.remove('on');
+  if(!$('#drw').classList.contains('on')) $('#ov').classList.remove('on');
+  const k=FS_OPEN; FS_OPEN=null; syncLock(); fsSync(k);
+}
+/* ตัวกรองบางตัวโผล่เฉพาะบางแท็บ — ต้องซ่อนทั้งแถวในแผ่นด้วย ไม่ใช่แค่ตัว control */
+function fsShow(id, on){ const el=$('#'+id); if(!el) return;
+  el.style.display = on?'':'none';
+  const row=el.closest('.fsrow'); if(row) row.style.display = on?'':'none'; }
 function openMore(){ $('#more').classList.add('on'); $('#ov').classList.add('on'); syncLock(); }
 function closeMore(){ $('#more').classList.remove('on');
   if(!$('#drw').classList.contains('on')) $('#ov').classList.remove('on'); syncLock(); }
@@ -1876,6 +1945,7 @@ function doLogout(){
 let CUR='dash';
 function go(k){
   if(!canSee(k)){ toast('ไม่มีสิทธิ์เข้าถึงหน้านี้','บทบาท '+ROLES[ME.role].name+' ไม่ได้รับสิทธิ์',1); return; }
+  closeFilters();   /* ออกจากหน้าไปแล้วอย่าทิ้งตัวกรองค้างอยู่ในแผ่น */
   CUR=k;
   $$('.screen').forEach(s=>s.classList.toggle('on', s.id==='s-'+k));
   $$('#nav .nb').forEach(b=>b.classList.toggle('on', b.dataset.s===k));
@@ -2939,6 +3009,7 @@ function rFollow(){
   if(!$('#fwStage').dataset.init){ $('#fwStage').dataset.init=1;
     $('#fwStage').innerHTML='<option value="">ทุกสถานะ</option>'+CUST_STAGES.map(s=>'<option>'+esc(s)+'</option>').join('');
     $('#fwStage').onchange=rFollow; $('#fwQ').oninput=rFollow;
+    $('#fwFilt').onclick=()=>openFilters('follow');
   }
   const due=TASKS.filter(t=>!t.done&&inScope(t.branch)).sort((a,b)=>a.due.localeCompare(b.due));
   $('#taskCnt').textContent=due.filter(t=>t.due<=TODAY).length+' ถึงกำหนดแล้ว';
@@ -2992,6 +3063,7 @@ function rFollow(){
     const [id,dir]=b.dataset.fwmv.split('|'); const c=CUSTOMERS.find(x=>x.id===id);
     const i=CUST_STAGES.indexOf(c.stage)+(+dir);
     if(i>=0&&i<CUST_STAGES.length){ c.stage=CUST_STAGES[i]; toast('อัปเดตสถานะแล้ว', c.name+' → '+c.stage); rFollow(); } });
+  fsSync('follow');
 }
 function custDrawer(id){
   const c=CUSTOMERS.find(x=>x.id===id); if(!c) return;
@@ -3206,6 +3278,7 @@ function rFinPeople(){
   if(!$('#fpStatus').dataset.init){ $('#fpStatus').dataset.init=1;
     ['fpStatus','fpSales','fpBranch'].forEach(k=> $('#'+k).onchange=rFinPeople);
     $('#fpQ').oninput=rFinPeople;
+    $('#fpFilt').onclick=()=>openFilters('finpp');
   }
   const q=$('#fpQ').value.trim().toLowerCase();
   const list=scoped.filter(c=>{
@@ -3230,6 +3303,7 @@ function rFinPeople(){
       +'<div class="amt">'+(noMoney()?'':'<b>'+fmt(c.amount)+'</b> ฿')+'<div class="tsub">ยื่น '+thDate(c.at)+'</div></div></div>';
   }).join('') : '<div class="empty"><b>ไม่พบเคสตามเงื่อนไข</b>ลองปรับตัวกรอง</div>';
   $$('#fpList [data-fin]').forEach(r=> r.onclick=()=>finDrawer(r.dataset.fin));
+  fsSync('finpp');
 }
 const canEditFin = () => ['admin','manager'].indexOf(ME.role)>=0;
 /* ช่องกรอกเรตรายช่วงงวด — prefix กันชน id ระหว่างฟอร์มเพิ่มกับ modal แก้ไข */
@@ -4363,10 +4437,10 @@ function rReport(){
   $$('#rpTabs [data-rp]').forEach(b=> b.onclick=()=>{ RP_SEL=b.dataset.rp; rReport(); });
   /* ตัวกรองเฉพาะแท็บ — daily ใช้วันแทนเดือน · monthly มีตัวสลับมิติ (ค่าคงอยู่เพราะไม่ถูก rebuild) */
   const isDaily=RP_SEL==='daily', isMon=RP_SEL==='monthly';
-  $('#rpDay').style.display = isDaily?'':'none';
-  $('#rpDim').style.display = isMon?'':'none';
-  $('#rpMonth').style.display = isDaily?'none':'';
   if(isDaily && !$('#rpDay').value) $('#rpDay').value=TODAY;
+  fsShow('rpDay', isDaily);
+  fsShow('rpDim', isMon);
+  fsShow('rpMonth', !isDaily);
   /* ตัวกรอง */
   /* ครั้งแรก default เดือนปัจจุบัน — หลังจากนั้นเคารพค่าที่เลือกจริง รวมถึง "ทุกช่วงเวลา" (ค่าว่าง) */
   (function(){ const el=$('#rpMonth'), want=el.value, first=!el.dataset.ready;
@@ -4378,6 +4452,7 @@ function rReport(){
   if(!$('#rpMonth').dataset.init){ $('#rpMonth').dataset.init=1;
     $('#rpMonth').onchange=rReport; $('#rpBranch').onchange=rReport;
     $('#rpDay').onchange=rReport; $('#rpDim').onchange=rReport;
+    $('#rpFilt').onclick=()=>openFilters('report');
     $('#rpCsv').onclick=()=>{ const d=rpBuild(RP_SEL);
       csvMoney('รายงาน'+RP_TABS.find(t=>t.k===RP_SEL).n.replace(/\s/g,''),
         d.head.map(h=>h.t), d.rows, d.head.map((h,i)=>h.money?i:-1).filter(i=>i>=0)); };
@@ -4403,6 +4478,7 @@ function rReport(){
     'ไม่มีข้อมูลตามเงื่อนไข',
     rpCards(d, cell));
   $('#rpNote').innerHTML=d.note? '<p class="foot">'+d.note+'</p>' : '';
+  fsSync('report');
 }
 /* รายงานบนมือถือ = การ์ด ไม่ใช่ตารางที่ต้องปัดข้าง
    แต่ละแท็บบอกได้ว่าคอลัมน์ไหนเป็นหัวการ์ด/ตัวเลขใหญ่ผ่าน d.card ถ้าไม่บอกใช้กฎกลาง */
@@ -4553,12 +4629,13 @@ $('#lgGo').onclick=doLogin;
 $('#lgPw').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
 $('#btnOut').onclick=doLogout;
 $('#burger').onclick=()=> $('#side').classList.toggle('open');
-$('#drwX').onclick=closeDrawer; $('#ov').onclick=()=>{ closeDrawer(); closeMore(); };
+$('#drwX').onclick=closeDrawer; $('#ov').onclick=()=>{ closeDrawer(); closeMore(); closeFilters(); };
+$('#fsX').onclick=closeFilters; $('#fsDone').onclick=closeFilters;
 $('#mdX').onclick=closeModal;
 $('#gsInput').onclick=gsOpen; $('#gsBtn').onclick=gsOpen; $('#gsQ').oninput=gsSearch;
 $('#gs').onclick=e=>{ if(e.target.id==='gs') closeGs(); };
 document.addEventListener('keydown', e=>{
-  if(e.key==='Escape'){ closeDrawer(); closeModal(); closeGs(); closeMore(); }
+  if(e.key==='Escape'){ closeDrawer(); closeModal(); closeGs(); closeMore(); closeFilters(); }
   if(e.key==='/' && ME && ['INPUT','TEXTAREA','SELECT'].indexOf(document.activeElement.tagName)<0){ e.preventDefault(); gsOpen(); }
 });
 </script>
