@@ -196,6 +196,50 @@ a.nb{ text-decoration:none; box-sizing:border-box; }
 .g2e{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s3); align-items:start; }
 .g3{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s3); align-items:start; }
 .g2>*,.g2e>*,.g3>*,.kpis>*{ min-width:0; }
+/* ---------- ภาพรวมการเข้างาน ----------
+   รูปแบบสากล: แถบเลือกวันแบบลูกศรซ้าย-ขวา · ตัวนับหัวคนที่แตะเพื่อกรอง · รายการคนพร้อมสถานะ
+   อ่านออกจากระยะหนึ่งเมตร ไม่ต้องมีใครสอน */
+.abnav{ display:flex; align-items:center; gap:var(--s1); }
+.abarr{ width:44px; height:44px; flex:0 0 44px; border-radius:var(--r-input);
+  border:1px solid var(--hairline); background:var(--card); color:var(--ink);
+  display:inline-flex; align-items:center; justify-content:center; }
+.abarr:disabled{ opacity:.3; }
+@media (hover:hover){ .abarr:hover:not(:disabled){ background:var(--hairline-2); } }
+.abday{ flex:1 1 auto; min-height:44px; border-radius:var(--r-input); background:transparent;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.25; }
+.abday b{ font-size:var(--t-h2); font-weight:600; letter-spacing:-.01em; }
+.abday span{ font-size:var(--t-label); color:var(--muted); }
+.abhide{ position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+.abcount{ display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s1); margin-top:var(--s2); }
+.abc{ border:1.5px solid var(--hairline); border-radius:var(--r-input); padding:var(--s2) var(--s1);
+  text-align:center; background:var(--card); min-height:64px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
+.abc b{ font-size:22px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; }
+.abc span{ font-size:var(--t-label); color:var(--muted); line-height:1.2; }
+.abc.on{ border-color:var(--ink); background:var(--paper-2); }
+.abc.on span{ color:var(--ink); }
+.abc.k-late b{ color:var(--attn); } .abc.k-none b{ color:var(--neg); }
+.abc.k-in b{ color:var(--pos); }
+/* แถวคน — รูปแบบเดียวกับรายชื่อผู้ติดต่อที่ทุกคนเคยเห็น */
+.abr{ display:flex; align-items:flex-start; gap:var(--s2); padding:var(--s2);
+  border-bottom:1px solid var(--hairline); width:100%; text-align:left; }
+.abr:last-child{ border-bottom:0; }
+@media (hover:hover){ .abr:hover{ background:var(--paper-2); } }
+.abav{ flex:0 0 40px; width:40px; height:40px; border-radius:50%; background:var(--paper-2);
+  display:grid; place-items:center; font-size:var(--t-label); font-weight:700; color:var(--ink-soft);
+  position:relative; }
+.abav i{ position:absolute; right:-1px; bottom:-1px; width:13px; height:13px; border-radius:50%;
+  border:2px solid var(--card); background:var(--muted); }
+.abav i.in{ background:var(--pos); } .abav i.late{ background:var(--attn); }
+.abav i.leave{ background:var(--accent-2,#5B8DEF); } .abav i.none{ background:var(--neg); }
+.abb{ flex:1 1 auto; min-width:0; }
+.abb .n{ font-weight:600; font-size:var(--t-table); }
+.abb .r{ font-size:var(--t-label); color:var(--muted); }
+.abb .t{ font-size:var(--t-table); margin-top:2px; }
+.abb .t .mono{ font-weight:600; }
+.abb .f{ margin-top:var(--s-half); display:flex; flex-wrap:wrap; gap:4px; }
+.abth{ flex:0 0 40px; width:40px; height:40px; border-radius:var(--r-input); object-fit:cover;
+  background:var(--paper-2); }
 /* ---------- การ์ดลงเวลาเข้า-ออก บนสุดของหน้าแรก ---------- */
 .pc{ margin-bottom:var(--s3); }
 .pc>.bd{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; }
@@ -1204,6 +1248,28 @@ body.lock{ overflow:hidden; }
         </div>
       </section>
 
+      <!-- ============ 16b. ภาพรวมการเข้างาน ============ -->
+      <section class="screen" id="s-attend">
+        <div class="card ab"><div class="bd">
+          <!-- แถบเลือกวัน: ‹ วันที่ › — รูปแบบสากล กดปุ่มลูกศรเลื่อนวัน แตะกลางเลือกวันเอง -->
+          <div class="abnav">
+            <button class="abarr" id="abPrev" aria-label="วันก่อนหน้า"><svg class="i"><use href="#i-left"/></svg></button>
+            <button class="abday" id="abDay"><b id="abDayT">—</b><span id="abDayS"></span></button>
+            <button class="abarr" id="abNext" aria-label="วันถัดไป"><svg class="i"><use href="#i-right"/></svg></button>
+            <input type="date" id="abDate" class="abhide">
+          </div>
+          <!-- นับหัวคน 4 ช่อง แตะเพื่อกรอง -->
+          <div class="abcount" id="abCount"></div>
+        </div></div>
+        <div class="card"><div class="hd"><h3 id="abListT">พนักงาน</h3><div class="d" id="abListS"></div><div class="sp"></div>
+          <select class="inp ct" id="abBranch"></select>
+          <button class="btn sec sm fbtn noprint" id="abFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> ตัวกรอง</button>
+          <button class="lnk noprint" id="abCsv"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button>
+          <div class="fsum" id="abFsum"></div>
+        </div><div class="bd flush"><div id="abList"></div></div>
+        <div class="bd" id="abNote" style="padding-top:0"></div></div>
+      </section>
+
       <!-- ============ 17. ลงเวลาและลา ============ -->
       <section class="screen" id="s-hr">
         <div class="tabs" id="hrTabs"><button class="on" data-p="h1">ลงเวลา</button><button data-p="h2">ใบลา</button>
@@ -1780,6 +1846,7 @@ const MENU = [
   {k:'gift',     t:'ของแถม',           s:'สต๊อกของแถมแยกสาขา',          ic:'gift', r:['admin','manager','stock','sales']},
   {g:'บัญชีและพนักงาน'},
   {k:'expense',  t:'ค่าใช้จ่าย',        s:'บันทึกรายจ่ายพร้อมใบเสร็จ',    ic:'files', r:['admin','manager','acct']},
+  {k:'attend',   t:'ภาพรวมการเข้างาน',  s:'ใครมาแล้ว ใครสาย ใครยังไม่มา',   ic:'users', r:['admin','manager','hr']},
   {k:'hr',       t:'ลงเวลาและลา',      s:'เวลาเข้าออกและใบลา',           ic:'clock', r:['admin','manager','hr','sales','stock','tech','acct']},
   {k:'payroll',  t:'เงินเดือนและ OT',   s:'เงินเดือน คอมมิชชั่น สลิป',     ic:'card', r:['admin','manager','hr','acct']},
   {k:'users',    t:'บัญชีผู้ใช้',       s:'ผู้ใช้ บทบาท และสิทธิ์',        ic:'key', r:['admin']},
@@ -1923,7 +1990,7 @@ const BTABS = {
   acct:   {tabs:['dash','ar','fin','report'],  fab:null},
   stock:  {tabs:['dash','stock','parts'],      fab:'recv'},
   tech:   {tabs:['dash','service','parts'],    fab:'service'},
-  hr:     {tabs:['dash','cal','hr','payroll'], fab:null}
+  hr:     {tabs:['dash','attend','hr','payroll'], fab:null}
 };
 function buildTabs(){
   const cfg = BTABS[ME.role] || {tabs:['dash'], fab:null};
@@ -1979,7 +2046,8 @@ const FILTERS = {
   finpp :{ t:'ตัวกรองติดตามรายคน', sum:'fpFsum',
     f:[['fpStatus','สถานะ'],['fpSales','เซลล์'],['fpBranch','สาขา'],['fpQ','ค้นหาชื่อลูกค้า']] },
   hrday :{ t:'เลือกวันลงเวลา', sum:'attFsum', f:[['attDay','วันที่']] },
-  payrol:{ t:'เลือกงวดเงินเดือน', sum:'prFsum', f:[['prMonth','งวดเดือน']] }
+  payrol:{ t:'เลือกงวดเงินเดือน', sum:'prFsum', f:[['prMonth','งวดเดือน']] },
+  attend:{ t:'ตัวกรองการเข้างาน', sum:'abFsum', f:[['abBranch','สาขา']] }
 };
 let FS_OPEN=null, FS_HOME=[];
 function fsSummary(key){
@@ -2020,8 +2088,9 @@ function openMore(){ $('#more').classList.add('on'); $('#ov').classList.add('on'
 function closeMore(){ $('#more').classList.remove('on');
   if(!$('#drw').classList.contains('on')) $('#ov').classList.remove('on'); syncLock(); }
 function doLogout(){
-  if(LIVE){ SB_TOKEN=null; LIVE=false; location.reload(); return; }   /* ข้อมูลจริงถูกโหลดทับไว้ — เริ่มใหม่ให้สะอาด */
-  closeMore(); $('#app').classList.add('off'); $('#login').classList.remove('off'); ME=null;
+  /* โหลดใหม่ทุกครั้ง — ถ้าแค่ซ่อนหน้าจอ ตารางที่คนก่อนหน้าวาดไว้ (เงินเดือน เลขบัญชี คิวตรวจ)
+     ยังค้างอยู่ใน DOM และเปิดดูได้ ทั้งที่ go() บล็อกการเข้าหน้าไว้แล้ว */
+  SB_TOKEN=null; LIVE=false; location.reload();
 }
 
 /* ============================= NAV ============================= */
@@ -2044,7 +2113,7 @@ function refreshAll(){ render(); badges(); promoBar(); }
 function render(){
   const f={dash:rDash,cal:rCal,report:rReport,recv:rRecv,stock:rStock,sell:rSell,transfer:rTransfer,quote:rQuote,
     cust:rCust,follow:rFollow,reg:rReg,fin:rFin,ar:rAr,service:rService,parts:rParts,partsale:rPartSale,gift:rGift,
-    expense:rExpense,hr:rHr,payroll:rPayroll,users:rUsers,imp:rImp,settings:rSettings,flow:rFlow}[CUR];
+    expense:rExpense,attend:rAttend,hr:rHr,payroll:rPayroll,users:rUsers,imp:rImp,settings:rSettings,flow:rFlow}[CUR];
   if(f) f();
   badges();
 }
@@ -2297,7 +2366,14 @@ function calEvents(){
     ev.push({d:t.due,k:'task',t:'ติดตาม '+(c?c.name:'')}); });
   REGS.filter(r=>inScope(r.branch)&&r.stage!=='ส่งมอบแล้ว').forEach(r=>{ const s=SALES.find(x=>x.id===r.saleId);
     const c=s&&CUSTOMERS.find(x=>x.id===s.custId); ev.push({d:r.due,k:'reg',t:'ทะเบียน '+(c?c.name:'')}); });
-  LEAVES.filter(l=>l.status!=='ไม่อนุมัติ').forEach(l=>{ const st=STAFF.find(s=>s.id===l.staffId);
+  /* วันลาของคนอื่นเป็นข้อมูลส่วนตัว — คนทั่วไปเห็นเฉพาะวันลาของตัวเองบนปฏิทิน
+     (บรรทัดนี้เดิมไม่กรองอะไรเลย ทั้งที่อีเวนต์อื่นในฟังก์ชันเดียวกันกรอง inScope ทุกตัว) */
+  LEAVES.filter(l=>{
+      if(l.status==='ไม่อนุมัติ') return false;
+      if(l.staffId===ME.id) return true;
+      if(!(canFixAtt()||rolePerm().approve)) return false;
+      const st=STAFF.find(s=>s.id===l.staffId); return st && inScope(st.branch);
+    }).forEach(l=>{ const st=STAFF.find(s=>s.id===l.staffId);
     let d=l.from, n=0; while(d<=l.to && n<40){ ev.push({d,k:'leave',t:'ลา '+(st?st.nick:'')}); d=addDays(d,1); n++; } });
   return ev;
 }
@@ -4131,9 +4207,12 @@ function attBadges(a, side){
   if(!a[side==='out'?'out':'in']) return '';
   const b=[];
   b.push(p.by? '<span title="ลงเวลาจากบัญชีที่ล็อกอิน">'+ic('key','i i-sm')+'</span>' : '');
+  /* รูปกับพิกัดเป็นข้อมูลอ่อนไหว — เปิดดูได้เฉพาะรูปของตัวเอง หรือคนที่มีหน้าที่ตรวจ */
+  const mayView = a.staffId===ME.id || canFixAtt();
   b.push(p.pending ? '<span class="tsub" title="กำลังถ่ายรูปยืนยัน — เวลาที่กดบันทึกไว้แล้ว">'+ic('clock','i i-sm')+'</span>'
-      : (p.photoId||p.photo) ? '<button class="lnk" data-attph="'+a.staffId+'|'+a.date+'|'+side+'" title="ดูรูปถ่ายตอนลงเวลา">'+ic('eye','i i-sm')+'</button>'
-      : '<span class="tsub" title="ไม่มีรูป — ไม่มีกล้องหรือไม่อนุญาต">'+ic('alert','i i-sm')+'</span>');
+      : !(p.photoId||p.photo) ? '<span class="tsub" title="ไม่มีรูป — ไม่มีกล้องหรือไม่อนุญาต">'+ic('alert','i i-sm')+'</span>'
+      : mayView ? '<button class="lnk" data-attph="'+a.staffId+'|'+a.date+'|'+side+'" title="ดูรูปถ่ายตอนลงเวลา">'+ic('eye','i i-sm')+'</button>'
+      : '<span class="tsub" title="มีรูปยืนยัน — ดูได้เฉพาะเจ้าตัวและผู้มีหน้าที่ตรวจ">'+ic('lock','i i-sm')+'</span>');
   b.push(p.geo? '<span title="พิกัด '+p.geo.lat+','+p.geo.lng+' (±'+p.geo.acc+' ม.)">'+ic('route','i i-sm')+'</span>' : '');
   return '<span style="display:inline-flex;gap:4px;align-items:center;vertical-align:middle">'+b.join('')+'</span>';
 }
@@ -4160,7 +4239,11 @@ function attFixModal(s, date, after){
 /* แผ่นตรวจรายคน — รูปใหญ่ พิกัด อุปกรณ์ ประวัติการแก้ แล้วยืนยัน/ติดปัญหา/แก้เวลา */
 async function attReviewSheet(staffId, date){
   const s=STAFF.find(x=>x.id===staffId), a=attOf(staffId,date);
-  if(!s||!a) return;
+  /* ด่านอยู่ในฟังก์ชัน ไม่ใช่ที่ปุ่ม — ดูของคนอื่นได้เฉพาะคนที่มีหน้าที่ตรวจ และเฉพาะในสาขาที่เห็นได้ */
+  if(staffId!==ME.id && !canFixAtt()){ toast('ไม่มีสิทธิ์ดูการลงเวลาของคนอื่น','',1); return; }
+  if(s && !inScope(s.branch) && staffId!==ME.id){ toast('ไม่มีสิทธิ์ดูข้ามสาขา','',1); return; }
+  if(!s) return;
+  if(!a){ toast('ไม่มีบันทึกลงเวลาวันนี้', s.nick+' · '+thDate(date)); attFixModal(s, date, ()=>{ rHr(); refreshAll(); }); return; }
   const c=attCalc(a), f=attFlags(a), self=staffId===ME.id;
   const shot=async side=>{ const p=(side==='out'? a.outProof : a.inProof)||{};
     const rec=p.photoId? await idbGet(p.photoId) : null;
@@ -4250,18 +4333,128 @@ function rPunch(){
   if($('#pcIn'))  $('#pcIn').onclick =e=> go('in',  e.currentTarget);
   if($('#pcOut')) $('#pcOut').onclick=e=> go('out', e.currentTarget);
 }
+/* ============================= 16b. ภาพรวมการเข้างาน =============================
+   หน้านี้เห็นเฉพาะ แอดมิน · ผู้บริหาร · ฝ่ายบุคคล (คุมด้วย MENU.r และด่านซ้ำใน rAttend)
+   พนักงานด้วยกันดูของกันและกันไม่ได้ — ทั้งหน้านี้และตารางในหน้าลงเวลา
+   สิ่งที่แสดง: ชื่อ ตำแหน่ง สาขา เวลาเข้า-ออก และสรุปเดือนของคนนั้น
+   สิ่งที่ไม่แสดงที่นี่: เงินเดือน เลขบัญชี เลขประกันสังคม — อยู่หน้าเงินเดือนตามสิทธิ์เดิม */
+let AB_DAY=null, AB_FILTER='', AB_BRANCH='';
+const AB_KEYS=[
+  {k:'in',    t:'มาแล้ว',   cls:'k-in'},
+  {k:'late',  t:'มาสาย',    cls:'k-late'},
+  {k:'leave', t:'ลา',       cls:'k-leave'},
+  {k:'none',  t:'ยังไม่มา', cls:'k-none'}
+];
+/* จัดกลุ่มสถานะของคนหนึ่งคนในวันหนึ่ง — ใช้ทั้งตัวนับ ตัวกรอง และจุดสีบนรูปประจำตัว */
+function abState(s, day){
+  const a=attOf(s.id,day), c=attCalc(a||{});
+  if(isLeaveDay(a,s.id,day)) return {k:'leave', a, c};
+  if(!a || !a.in)            return {k:'none',  a, c};
+  return {k: c.late? 'late':'in', a, c};
+}
+/* อักษรย่อบนรูปประจำตัว — ต้องตัดเป็น "พยางค์" ไม่ใช่ตัดตามจำนวนตัวอักษร
+   ไม่งั้นสระกับวรรณยุกต์ไทยจะขาดครึ่ง เช่น "เซลล์บิว" กลายเป็น "ปิ" */
+function abInit(nick){
+  const t=String(nick||'').replace(/^(คุณ|เซลล์|สต๊อก|บัญชี|ช่าง|HR)\s*/,'').trim() || String(nick||'');
+  try{ const seg=new Intl.Segmenter('th',{granularity:'grapheme'});
+    return [...seg.segment(t)].slice(0,2).map(x=>x.segment).join(''); }
+  catch(_){ return t.slice(0,2); }
+}
+function abRows(day){
+  const inB = x => !AB_BRANCH || x.branch===AB_BRANCH;
+  return attStaffScope().filter(inB).map(s=>{
+    const st=abState(s,day);
+    return {s, ...st, f:st.a? attFlags(st.a):[], m:attMonth(s.id, day.slice(0,7))};
+  });
+}
+function rAttend(){
+  if(!canFixAtt()){ $('#abList').innerHTML=''; $('#abCount').innerHTML='';
+    $('#abNote').innerHTML='<div class="note w">'+ic('lock','i i-sm')+'<span>หน้านี้เปิดให้เฉพาะผู้บริหาร ฝ่ายบุคคล และผู้ดูแลระบบ</span></div>'; return; }
+  if(!AB_DAY) AB_DAY=curDate();
+  if(!$('#abDate').dataset.ready){ $('#abDate').dataset.ready=1;
+    $('#abBranch').innerHTML='<option value="">ทุกสาขาที่เห็นได้</option>'+
+      BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+    $('#abBranch').onchange=()=>{ AB_BRANCH=$('#abBranch').value; rAttend(); fsSync('attend'); };
+    $('#abDate').onchange=()=>{ AB_DAY=$('#abDate').value||curDate(); rAttend(); };
+    $('#abDay').onclick=()=>{ const el=$('#abDate'); if(el.showPicker) el.showPicker(); else el.click(); };
+    $('#abPrev').onclick=()=>{ AB_DAY=addDays(AB_DAY,-1); rAttend(); };
+    $('#abNext').onclick=()=>{ AB_DAY=addDays(AB_DAY, 1); rAttend(); };
+    $('#abFilt').onclick=()=>openFilters('attend');
+    $('#abCsv').onclick=()=>{ const r=abRows(AB_DAY);
+      csv('การเข้างาน '+AB_DAY, ['พนักงาน','ตำแหน่ง','สาขา','สถานะ','เข้า','ออก','ชั่วโมง','OT','นาทีสาย','ธง'],
+        r.map(x=>[x.s.name, ROLES[x.s.role].name, bName(x.s.branch),
+          (AB_KEYS.find(k=>k.k===x.k)||{}).t, x.a&&x.a.in||'', x.a&&x.a.out||'',
+          x.c.hrs?hm1(x.c.hrs):'', x.c.otH?hm1(x.c.otH):'', Math.round(x.c.lateMin)||'',
+          x.f.map(y=>y.t).join(' · ')])); };
+  }
+  const day=AB_DAY, isToday=day===curDate();
+  $('#abDate').value=day; $('#abBranch').value=AB_BRANCH; fsSync('attend');
+  $('#abDayT').textContent = isToday? 'วันนี้' : thDate(day);
+  $('#abDayS').textContent = 'วัน'+TH_DOW[new Date(day+'T00:00:00').getDay()]+' '+thDate(day)
+    + (isWorkDay(day)? '' : ' · ร้านปิด');
+  $('#abNext').disabled = day>=curDate();
+
+  const rows=abRows(day);
+  const n=k=>rows.filter(r=>r.k===k).length;
+  $('#abCount').innerHTML=AB_KEYS.map(k=>'<button class="abc '+k.cls+(AB_FILTER===k.k?' on':'')
+    +'" data-abf="'+k.k+'"><b>'+n(k.k)+'</b><span>'+k.t+'</span></button>').join('');
+  $$('[data-abf]').forEach(b=> b.onclick=()=>{
+    AB_FILTER = AB_FILTER===b.dataset.abf? '' : b.dataset.abf; rAttend(); });
+
+  /* เรียงคนที่ต้องดูก่อน: ยังไม่มา → สาย → ลา → ปกติ  ผู้จัดการจึงไม่ต้องไล่หาเอง */
+  const order={none:0, late:1, leave:2, in:3};
+  const shown=rows.filter(r=>!AB_FILTER || r.k===AB_FILTER)
+    .sort((a,b)=> order[a.k]-order[b.k] || (a.a&&a.a.in||'99').localeCompare(b.a&&b.a.in||'99'));
+  $('#abListT').textContent = AB_FILTER? (AB_KEYS.find(k=>k.k===AB_FILTER)||{}).t : 'พนักงาน';
+  $('#abListS').textContent = shown.length+' คน'+(AB_FILTER? ' (กรองอยู่ — แตะตัวเลขซ้ำเพื่อยกเลิก)':'');
+  $('#abList').innerHTML = shown.length? shown.map(r=>{
+    const stt={in:'ปกติ', late:'มาสาย', leave:'ลา', none: isToday?'ยังไม่มา':'ไม่มีบันทึก'}[r.k];
+    const tone={in:'good', late:'warn', leave:'info', none:'mut'}[r.k];
+    return '<button class="abr" data-abr="'+r.s.id+'">'
+      +'<span class="abav">'+esc(abInit(r.s.nick))+'<i class="'+r.k+'"></i></span>'
+      +'<span class="abb"><span class="n">'+esc(r.s.nick)+'</span> '+pill(stt,tone)
+        +'<div class="r">'+esc(ROLES[r.s.role].name)+' · '+esc(bName(r.s.branch))+'</div>'
+        +'<div class="t">เข้า <span class="mono">'+esc(r.a&&r.a.in||'—')+'</span>'
+          +'  ออก <span class="mono">'+esc(r.a&&r.a.out||'—')+'</span>'
+          +(r.c.hrs? ' · '+hm1(r.c.hrs)+' ชม.':'')+(r.c.otH? ' · OT '+hm1(r.c.otH):'')+'</div>'
+        +(r.f.length? '<div class="f">'+r.f.map(y=>pill(y.t,y.tone)).join('')+'</div>':'')
+        +'<div class="r" style="margin-top:2px">เดือนนี้ '+esc(attMonthText(r.m))+'</div>'
+      +'</span>'
+      +(r.a&&r.a.review? '<span class="pill p-'+(r.a.review.status==='ok'?'good':'bad')+'" style="align-self:center">'
+        +(r.a.review.status==='ok'?'ตรวจแล้ว':'ติดปัญหา')+'</span>' : '')+'</button>';
+  }).join('') : '<div class="empty">ไม่มีพนักงานตามเงื่อนไขที่เลือก</div>';
+  $$('[data-abr]').forEach(b=> b.onclick=()=>attReviewSheet(b.dataset.abr, day));
+
+  const need=rows.filter(r=>r.a && rvNeeds(r.f) && !r.a.review).length;
+  const miss=rows.filter(r=>r.k==='none' && !isToday && isWorkDay(day)).length;
+  $('#abNote').innerHTML =
+    (miss? '<div class="note w">'+ic('alert','i i-sm')+'<span><b>'+miss+' คนไม่มีบันทึกลงเวลา</b>ในวันทำงานนี้ '
+      +'— แตะที่ชื่อเพื่อเติมเวลาพร้อมเหตุผล ระบบจะบันทึกว่าใครแก้</span></div>' : '')
+    +(need? '<div class="note b">'+ic('info','i i-sm')+'<span>มี <b>'+need+' รายการรอตรวจ</b>ในวันนี้ '
+      +'แตะที่ชื่อเพื่อดูรูป พิกัด และอุปกรณ์ แล้วยืนยันหรือติดปัญหา</span></div>'
+     : (rows.length? '<div class="note g">'+ic('check-circle','i i-sm')+'<span>ไม่มีรายการที่ต้องตรวจในวันนี้</span></div>':''));
+}
 let hrClockTimer=null;
 let ATT_DAY=null;                       /* วันที่กำลังดูในหน้าลงเวลา */
 function rHr(){
   if(!$('#lvSave').dataset.init){ $('#lvSave').dataset.init=1;
     $$('#hrTabs button').forEach(b=> b.onclick=()=>{ $$('#hrTabs button').forEach(x=>x.classList.remove('on'));
       b.classList.add('on'); $$('#s-hr .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p)); });
-    $('#lvWho').innerHTML=STAFF.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('');
     $('#lvFrom').value=TODAY; $('#lvTo').value=TODAY;
-    $('#lvSave').onclick=()=>{ LEAVES.push({id:nid('LV'),staffId:$('#lvWho').value,type:$('#lvType').value,
-      from:$('#lvFrom').value,to:$('#lvTo').value,status:'รออนุมัติ'});
-      toast('ยื่นใบลาแล้ว','รอผู้มีสิทธิ์อนุมัติ'); refreshAll(); };
+    /* ยื่นใบลาแทนคนอื่นได้เฉพาะคนที่มีหน้าที่ดูแล — ใบลาที่อนุมัติแล้วไปลดวันขาดบันทึกของคนนั้น
+       ถ้าใครยื่นแทนใครก็ได้ ก็เท่ากับแก้ฐานคำนวณเงินเดือนของคนอื่นได้ */
+    $('#lvSave').onclick=()=>{
+      const who = canFixAtt()? $('#lvWho').value : ME.id;
+      const s=STAFF.find(x=>x.id===who);
+      if(!s || (who!==ME.id && !canFixAtt())){ toast('ยื่นใบลาแทนคนอื่นไม่ได้','',1); return; }
+      LEAVES.push({id:nid('LV'),staffId:who,type:$('#lvType').value,
+        from:$('#lvFrom').value,to:$('#lvTo').value,status:'รออนุมัติ'});
+      toast('ยื่นใบลาแล้ว', esc(s.nick)+' · รอผู้มีสิทธิ์อนุมัติ'); refreshAll(); };
   }
+  /* ช่องเลือกพนักงาน: คนทั่วไปเห็นชื่อตัวเองอย่างเดียว ผู้ดูแลเห็นทีมในสาขาที่ตัวเองเห็นได้ */
+  const lvOpts = canFixAtt()? attStaffScope() : STAFF.filter(s=>s.id===ME.id);
+  $('#lvWho').innerHTML=lvOpts.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('');
+  $('#lvWho').disabled = lvOpts.length<2;
   /* นาฬิกาสดหน่วยวินาที — เดินเฉพาะตอนอยู่หน้านี้ */
   if(hrClockTimer) clearInterval(hrClockTimer);
   const tick=()=>{ const el=$('#hrClock'); if(!el || CUR!=='hr'){ clearInterval(hrClockTimer); hrClockTimer=null; return; }
@@ -4279,8 +4472,10 @@ function rHr(){
   fsSync('hrday');
   $('#hrDate').textContent='วัน'+TH_DOW[new Date(day+'T00:00:00').getDay()]+' '+thDate(day)
     +(isToday?' (วันนี้)':'')+(isWorkDay(day)?'':' · ร้านปิด');
-  const mine = rolePerm().allBranch ? STAFF : STAFF.filter(s=>s.branch===ME.branch || s.id===ME.id);
+  /* พนักงานด้วยกันดูของกันและกันไม่ได้ — ตารางนี้เหลือแถวตัวเองสำหรับคนที่ไม่มีสิทธิ์ตรวจ
+     ภาพรวมทั้งสาขาอยู่ที่หน้า "ภาพรวมการเข้างาน" ซึ่งเปิดให้เฉพาะแอดมิน ผู้บริหาร และ HR */
   const canFix = canFixAtt();
+  const mine = canFix ? attStaffScope() : STAFF.filter(s=>s.id===ME.id);
   /* ปุ่มลงเวลาเฉพาะแถวตัวเองและเฉพาะวันนี้ — คนอื่นลงแทนไม่ได้ ย้อนหลังต้องผ่านการแก้ที่มีบันทึก */
   const actOf=(s,a,self)=>
       isToday && self && !a.in && a.status!=='ลา' ? '<button class="lnk" data-in="'+s.id+'">ลงเวลาเข้า</button>'
@@ -4322,6 +4517,7 @@ function rHr(){
     attFixModal(STAFF.find(x=>x.id===b.dataset.fix), day); });
   /* ดูรูปถ่ายตอนลงเวลา */
   $$('[data-attph]').forEach(b=> b.onclick=async ()=>{ const [sid,dt,side]=b.dataset.attph.split('|');
+    if(sid!==ME.id && !canFixAtt()){ toast('ไม่มีสิทธิ์ดูรูปของคนอื่น','',1); return; }
     const a=attOf(sid,dt); if(!a) return;
     const p=(side==='out'? a.outProof : a.inProof)||{};
     const s=STAFF.find(x=>x.id===sid);
@@ -4340,13 +4536,17 @@ function rHr(){
   const leaveN=data.filter(d=>d.a.status==='ลา').length;
   const missTot=data.reduce((n,d)=>n+d.m.missDays,0);
   const openTot=data.reduce((n,d)=>n+d.m.openDays,0);
+  /* คนทั่วไปเห็นแต่ของตัวเอง — สรุปจึงต้องไม่พูดถึง "กี่คน" ซึ่งเป็นข้อมูลของทีม */
   $('#attSum').innerHTML='<div style="font-size:var(--t-table);line-height:2.1">'
     +'<b>'+thDate(day)+'</b><br>'
-    +'• '+(isToday?'เข้างานแล้ว':'มาทำงาน')+' <b>'+present+'</b> จาก '+data.length+' คน<br>'
-    +'• มาสาย <b style="color:var(--attn)">'+lateN+'</b> คน (เกิน '+CFG.workIn+' + ผ่อนผัน '+(+CFG.lateGrace||0)+' นาที)<br>'
-    +'• ลา <b>'+leaveN+'</b> คน<br>'
+    +(canFix
+      ? '• '+(isToday?'เข้างานแล้ว':'มาทำงาน')+' <b>'+present+'</b> จาก '+data.length+' คน<br>'
+        +'• มาสาย <b style="color:var(--attn)">'+lateN+'</b> คน (เกิน '+CFG.workIn+' + ผ่อนผัน '+(+CFG.lateGrace||0)+' นาที)<br>'
+        +'• ลา <b>'+leaveN+'</b> คน<br>'
+      : '• สถานะวันนี้: <b>'+(leaveN?'ลา':(present? (lateN?'มาสาย':'มาปกติ') : (isToday?'ยังไม่ได้ลงเวลา':'ไม่มีบันทึก')))+'</b><br>'
+        +'• เกณฑ์สาย: เข้าหลัง '+CFG.workIn+' + ผ่อนผัน '+(+CFG.lateGrace||0)+' นาที<br>')
     +'<b style="display:inline-block;margin-top:var(--s1)">ทั้งเดือน '+rpMonthTh(ym)+'</b><br>'
-    +'• ชั่วโมงรวมทุกคน <b>'+hm1(data.reduce((n,d)=>n+d.m.hrs,0))+'</b> ชม. · OT <b>'+hm1(data.reduce((n,d)=>n+d.m.otH,0))+'</b> ชม.<br>'
+    +'• ชั่วโมงรวม'+(canFix?'ทุกคน':'ของคุณ')+' <b>'+hm1(data.reduce((n,d)=>n+d.m.hrs,0))+'</b> ชม. · OT <b>'+hm1(data.reduce((n,d)=>n+d.m.otH,0))+'</b> ชม.<br>'
     +'• วันที่<b style="color:var(--attn)">ไม่มีบันทึก '+missTot+'</b> วัน'+(openTot?' · ลืมลงเวลาออก '+openTot+' วัน':'')
     +(missTot||openTot?' — เงินเดือนจ่ายตามที่บันทึกไว้ ผู้จัดการต้องตามแก้ก่อนปิดงวด':'')+'<br>'
     +'• เวลาทำงานมาตรฐาน '+CFG.workIn+' – '+CFG.workOut+' · OT คิด '+CFG.otRate+' เท่า<br>'
@@ -4359,21 +4559,29 @@ function rHr(){
     el.innerHTML='• รูปลงเวลาเก็บอยู่ <b>'+st.n+'</b> รูป รวม <b>'+mb+' MB</b>'+(parts.length?' ('+parts.join(' · ')+')':'')
       +'<br>• เกิน 30 วันย่อเหลือ 384×288 · เกิน 1 ปีลบรูปทิ้ง เหลือแต่เวลา — เครื่องจึงไม่บวม'
       +(st.mem? '<br>• <b style="color:var(--attn)">เบราว์เซอร์นี้เก็บรูปถาวรไม่ได้</b> รูปจะหายเมื่อปิดแอป':''); });
+  /* ใบลาของคนอื่นเป็นข้อมูลส่วนตัว (ลาป่วย = ข้อมูลสุขภาพ) — คนทั่วไปเห็นเฉพาะของตัวเอง
+     ผู้มีสิทธิ์อนุมัติเห็นเฉพาะสาขาที่ตัวเองเห็นได้ ของเดิมโชว์ทุกคนทุกสาขาให้ทุกบทบาท */
+  const lvSee = (canFixAtt()||rolePerm().approve)
+    ? LEAVES.filter(l=>{ const s=STAFF.find(x=>x.id===l.staffId); return s && inScope(s.branch); })
+    : LEAVES.filter(l=>l.staffId===ME.id);
+  const lvAct = l => (l.status==='รออนุมัติ' && rolePerm().approve && l.staffId!==ME.id);
   tbl($('#lvTable'), ['พนักงาน','ประเภท','ตั้งแต่','ถึง','สถานะ',''],
-    LEAVES.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId);
+    lvSee.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId);
       return '<tr><td><b>'+esc(s?s.nick:'—')+'</b></td><td>'+esc(l.type)+'</td><td>'+thDate(l.from)+'</td><td>'+thDate(l.to)+'</td>'
         +'<td>'+pill(l.status, l.status==='อนุมัติแล้ว'?'good':(l.status==='ไม่อนุมัติ'?'bad':'warn'))+'</td>'
-        +'<td>'+(l.status==='รออนุมัติ'&&rolePerm().approve?
+        +'<td>'+(lvAct(l)?
           '<button class="lnk" data-lv="'+l.id+'" data-ok="1">อนุมัติ</button> · <button class="lnk" data-lv="'+l.id+'" data-ok="0">ไม่อนุมัติ</button>':'')+'</td></tr>'; }),
-    'ไม่มีใบลา',
-    LEAVES.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId);
+    canFixAtt()? 'ไม่มีใบลา' : 'คุณยังไม่มีใบลา',
+    lvSee.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId);
       return crow('', esc(s?s.nick:'—'),
         pill(l.status, l.status==='อนุมัติแล้ว'?'good':(l.status==='ไม่อนุมัติ'?'bad':'warn')),
         esc(l.type)+' · '+thDate(l.from)+' – '+thDate(l.to),
-        (l.status==='รออนุมัติ'&&rolePerm().approve?
+        (lvAct(l)?
           '<button class="lnk" data-lv="'+l.id+'" data-ok="1">อนุมัติ</button>'
           +'<button class="lnk q" data-lv="'+l.id+'" data-ok="0">ไม่อนุมัติ</button>':'')); }));
   $$('[data-lv]').forEach(b=> b.onclick=()=>{ const l=LEAVES.find(x=>x.id===b.dataset.lv);
+    /* อนุมัติใบลาของตัวเองไม่ได้ — ใบลาที่อนุมัติแล้วลดวันขาดบันทึก จึงกระทบเงินโดยตรง */
+    if(!l || !lvAct(l)){ toast('อนุมัติใบลาของตัวเองไม่ได้','ต้องให้ผู้มีสิทธิ์คนอื่นอนุมัติ',1); return; }
     l.status = b.dataset.ok==='1'?'อนุมัติแล้ว':'ไม่อนุมัติ'; toast('บันทึกแล้ว',l.status); refreshAll(); });
   rReview(ym);
 }
@@ -4381,7 +4589,11 @@ function rHr(){
 function rReview(ym){
   const on=canFixAtt();
   $('#hrTabRv').style.display = on? '' : 'none';
-  if(!on){ if($('#hrTabRv').classList.contains('on')) $$('#hrTabs button')[0].click(); return; }
+  if(!on){ /* ซ่อนอย่างเดียวไม่พอ ต้องล้างของที่บทบาทก่อนหน้าวาดค้างไว้ใน DOM ด้วย */
+    ['#rvTable','#rvDone','#rvNote'].forEach(s=>{ const e=$(s); if(e) e.innerHTML=''; });
+    $('#rvSub').textContent='';
+    if($('#hrTabRv').classList.contains('on')) $$('#hrTabs button')[0].click();
+    return; }
   const q=attQueue(ym), miss=attMissing(ym), done=attQueue(ym,1);
   $('#rvSub').textContent=rpMonthTh(ym)+' · '+q.length+' รายการ';
   tbl($('#rvTable'), ['พนักงาน','วันที่','เข้า','ออก','ธง',''],
