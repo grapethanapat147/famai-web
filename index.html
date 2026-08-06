@@ -593,9 +593,11 @@ body.lock{ overflow:hidden; }
     padding-left:var(--s2); padding-right:var(--s2); }
   #toasts{ top:calc(var(--s2) + env(safe-area-inset-top)); bottom:auto;
     left:var(--s2); right:var(--s2); max-width:none; }
-  .kan,.kan.k6{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory;
-    -webkit-overflow-scrolling:touch; padding-bottom:var(--s1); }
-  .kan>.kcol{ flex:0 0 76vw; max-width:300px; scroll-snap-align:start; }
+  /* คัมบังมือถือ = ชิปเลือกขั้นตอน + รายการเต็มความกว้าง (ไม่ปัดข้าง) */
+  .kan,.kan.k6{ display:block; }
+  .kan .kchips{ display:flex; flex-wrap:wrap; gap:var(--s1); margin-bottom:var(--s2); }
+  .kan .kchips .chip b{ font-weight:600; font-variant-numeric:tabular-nums; }
+  .kan .klist .kcard{ margin-bottom:var(--s1); }
 }
 @media (max-width:600px){
   .kpis,.kpis.k3,.kpis.k6{ grid-template-columns:repeat(2,1fr); }
@@ -913,6 +915,7 @@ body.lock{ overflow:hidden; }
             <div><label class="fl">เงินดาวน์ (฿)</label><input class="inp num" id="fDown" value="5000"></div>
             <div><label class="fl">หรือเลือกเป็น % ของราคา</label><div class="chips" id="fDownPct"></div></div>
           </div>
+          <div class="chips" id="fTermChips" style="margin-bottom:var(--s2)"></div>
           <div class="tw"><table id="finCmp"></table></div>
           <div id="fWarn"></div>
         </div></div></div>
@@ -1732,6 +1735,25 @@ function csvMoney(name, head, rows, moneyCols){
 /* จอ ≤600px: ตารางที่ส่ง cards มาด้วยจะแสดงเป็นการ์ดแทนแถว — เปลี่ยนขนาดจอแล้ววาดใหม่ */
 const MQ_CARD = matchMedia('(max-width:600px)');
 MQ_CARD.addEventListener('change', ()=>{ if(ME) refreshAll(); });
+/* คัมบังใช้เส้นแบ่งเดียวกับเปลือกมือถือ (≤900) ไม่ใช่เส้นการ์ดตาราง (≤600) */
+const MQ_KAN = matchMedia('(max-width:900px)');
+MQ_KAN.addEventListener('change', ()=>{ if(ME) refreshAll(); });
+let KAN_REG=null, KAN_FIN=null;   /* ขั้นตอนที่เลือกอยู่ — คงค่าข้ามการวาดใหม่ */
+/* คัมบังบนมือถือ: ชิปเลือกขั้นตอน (บอกจำนวนงาน) + รายการเต็มความกว้าง แทนการปัดข้าง
+   card(item) คืน .kcard ที่มี data-* เดิม → โค้ดผูกคลิกที่มีอยู่จับได้ทันที */
+function kanMobile(el, stages, itemsOf, card, sel, onPick){
+  const cnt={}; stages.forEach(s=>cnt[s]=itemsOf(s).length);
+  if(!sel || stages.indexOf(sel)<0) sel = stages.find(s=>cnt[s]) || stages[0];
+  el.innerHTML='<div class="kchips">'
+    +stages.map(s=>'<button class="chip'+(s===sel?' on':'')+'" data-kst="'+esc(s)+'">'
+      +esc(s)+' <b>'+cnt[s]+'</b></button>').join('')
+    +'</div><div class="klist">'
+    +(cnt[sel]? itemsOf(sel).map(card).join('')
+      : '<div class="empty"><b>ไม่มีรายการในขั้นตอนนี้</b>เลือกขั้นตอนอื่นได้จากชิปด้านบน</div>')
+    +'</div>';
+  el.querySelectorAll('[data-kst]').forEach(b=> b.onclick=()=>onPick(b.dataset.kst));
+  return sel;
+}
 function tbl(el, head, rows, empty, cards){
   if(cards && MQ_CARD.matches){
     /* การ์ดอยู่ใน <td> เดียว — selector เดิมที่ยิงเข้า element ตารางยังใช้ได้ */
@@ -1748,7 +1770,10 @@ function tbl(el, head, rows, empty, cards){
 }
 /* การ์ดหนึ่งใบ: หัวเรื่อง + ตัวเลขขวา + บรรทัดรอง + แถวปุ่มล่าง — attrs ใส่ data-* ให้ wiring เดิมจับได้ */
 function crow(attrs, title, right, sub, foot){
-  return '<div class="crow"'+(attrs?' '+attrs:'')+'>'
+  /* attrs ใส่ class เพิ่มได้ — ต้องรวมเข้ากับ crow ไม่งั้นจะมี class ซ้ำสองตัวแล้วตัวหลังถูกทิ้ง */
+  let cls='crow', a=String(attrs||'');
+  a=a.replace(/\s*class="([^"]*)"/, (m,c)=>{ cls+=' '+c; return ''; }).trim();
+  return '<div class="'+cls+'"'+(a?' '+a:'')+'>'
     +'<div class="cr1"><div class="crt">'+title+'</div>'+(right?'<div class="crr">'+right+'</div>':'')+'</div>'
     +(sub?'<div class="crs">'+sub+'</div>':'')
     +(foot?'<div class="crf">'+foot+'</div>':'')+'</div>';
@@ -2313,7 +2338,24 @@ function rStock(){
         +brs.map(b=>'<td class="n">'+(x.branch===b.code?'●':'')+'</td>').join('')
         +'<td class="n">'+(noMoney()?'—':'ทุน '+fmt(x.cost))+'</td>'
         +'<td>'+(x.status==='available'&&canSee('sell')?'<button class="lnk" data-sell="'+x.id+'">ขาย</button>':statusPill(x.status))+'</td></tr>').join('');
-      return rows; }), 'ไม่พบรถตามเงื่อนไข');
+      return rows; }), 'ไม่พบรถตามเงื่อนไข',
+      /* มือถือ: การ์ดต่อรุ่น-สี · จำนวนแยกสาขาเป็นข้อความ · กางแล้วรายคันเป็นการ์ดพี่น้อง
+         (ไม่ซ้อนใน) เพื่อไม่ให้แตะรายคันไปโดนปุ่มกาง/ยุบของกลุ่ม */
+      keys.map(k=>{ const g=grp[k], u=g.u, open=!!stOpen[k];
+        const byTxt=brs.filter(b=>g.by[b.code]).map(b=>esc(bOf(b.code).prefix)+' '+g.by[b.code]).join(' · ');
+        let h=crow('data-grp="'+esc(k)+'"',
+          '<span class="dot" style="background:'+(COLOR_HEX[u.color]||'#ccc')+'"></span> '+esc(u.model)
+            +' <span class="tsub">'+esc(u.color)+'</span>',
+          '<b>'+g.n+'</b> คัน',
+          esc(u.variant)+' · '+(u.retail==null? 'รอกำหนดราคา' : fmt(u.retail)+' ฿'+(u.clearance?' · เคลียร์':''))
+            +(byTxt? ' · '+byTxt : ''),
+          '<span class="lnk">'+(open?'ซ่อนรายคัน':'ดูรายคัน ('+g.n+')')+'</span>');
+        if(open) h+=g.units.map(x=>crow('data-unit="'+x.id+'" class="sub"',
+          '<span class="mono">'+esc(x.engine)+'</span>', ageTag(age(x)),
+          '<span class="mono">'+esc(x.frame)+'</span> · '+esc(bName(x.branch))+(noMoney()?'':' · ทุน '+fmt(x.cost)),
+          (x.status==='available'&&canSee('sell')
+            ? '<button class="lnk" data-sell="'+x.id+'">ขายคันนี้</button>' : statusPill(x.status)))).join('');
+        return h; }));
     $$('#stGrp [data-grp]').forEach(r=> r.onclick=()=>{ const k=r.dataset.grp;
       stOpen[k]=!stOpen[k]; rStock(); });
     wireUnitRows();
@@ -2353,7 +2395,7 @@ function rStock(){
 }
 
 /* ============================= 5. ขายรถ ============================= */
-let sFree={}, sCustSel='';
+let sFree={}, sCustSel='', FIN_TERM=24;   /* FIN_TERM = จำนวนงวดที่เลือกในมุมมองมือถือของตารางค่างวด */
 function rSell(){
   if(!$('#sUnit').dataset.init){ $('#sUnit').dataset.init=1;
     $('#sSales').innerHTML=SALESPEOPLE.map(s=>'<option>'+esc(s)+'</option>').join('');
@@ -2540,6 +2582,24 @@ function finCompare(){
   if(!act.length){ tbl($('#finCmp'), ['จำนวนงวด'], [], 'ยังไม่มีไฟแนนซ์ที่เปิดใช้งาน — เพิ่มได้ที่แท็บบริษัทไฟแนนซ์'); $('#fWarn').innerHTML=''; return; }
   const blocked=act.filter(f=> f.minDownPct>0 && downPct < f.minDownPct-0.01);
   const okOf=f=> blocked.indexOf(f)<0;
+  /* มือถือ: เลือกจำนวนงวดก่อน แล้วเรียงไฟแนนซ์จากค่างวดถูกสุด — ตารางเทียบเต็มยังอยู่บนเดสก์ท็อป */
+  let mCards=null;
+  if(MQ_CARD.matches){
+    if(FIN_TERMS.indexOf(FIN_TERM)<0) FIN_TERM=FIN_TERMS[0];
+    $('#fTermChips').innerHTML='<span class="tsub" style="align-self:center;margin-right:4px">จำนวนงวด</span>'
+      +FIN_TERMS.map(n=>'<button class="chip'+(n===FIN_TERM?' on':'')+'" data-term="'+n+'">'+n+'</button>').join('');
+    $$('#fTermChips .chip').forEach(b=> b.onclick=()=>{ FIN_TERM=+b.dataset.term; finCompare(); });
+    const nT=FIN_TERM;
+    mCards = act.map(f=>({f, pay: okOf(f)? installment(prin, finRate(f,nT), nT) : null}))
+      .sort((a,b)=> (a.pay==null)-(b.pay==null) || a.pay-b.pay)
+      .map((x,i)=> x.pay==null
+        ? crow('', esc(x.f.name), '—', 'ดาวน์ไม่ถึงขั้นต่ำ '+x.f.minDownPct+'% — เพิ่มเงินดาวน์เพื่อใช้เจ้านี้')
+        : crow('data-pick="'+x.f.id+'|'+nT+'"',
+            esc(x.f.name)+(i===0?' '+pill('ถูกสุด','good'):''),
+            fmt(x.pay)+' ฿/งวด',
+            nT+' งวด · ดอกเบี้ย '+finRate(x.f,nT)+'%/เดือน · ดาวน์ขั้นต่ำ '+x.f.minDownPct+'%',
+            '<span class="lnk">ใช้ตัวเลือกนี้</span>'));
+  } else $('#fTermChips').innerHTML='';
   tbl($('#finCmp'),
     ['จำนวนงวด'].concat(act.map(f=>({t:f.name,n:1}))).concat(act.length>1?['ถูกสุด']:[]),
     FIN_TERMS.map(n=>{
@@ -2552,7 +2612,7 @@ function finCompare(){
             +(finRate(act[i],n)!==act[i].rate?'<div class="tsub">'+finRate(act[i],n)+'%</div>':'')
             +'<div class="tsub" style="color:var(--accent)">ใช้ตัวเลือกนี้</div></td>').join('')
         +(act.length>1?'<td>'+(bi>=0?pill(act[bi].name,'good'):'—')+'</td>':'')+'</tr>';
-    }), 'กรอกราคาสุทธิก่อน');
+    }), 'กรอกราคาสุทธิก่อน', mCards);
   /* แตะค่างวดที่ถูกใจ → เงื่อนไขทั้งชุด (ไฟแนนซ์/งวด/ดาวน์) ไหลกลับเข้าฟอร์มขายให้เอง */
   $$('#finCmp [data-pick]').forEach(td=> td.onclick=()=>{
     const pk=td.dataset.pick.split('|'), f=FIN_CO.find(x=>x.id===pk[0]);
@@ -3014,14 +3074,21 @@ function rReg(){
     ['เลยกำหนด '+CFG.regDays+' วัน', late.length+' <small>คัน</small>', late.length?'ต้องตามด่วน':'ไม่มีค้าง'],
     ['ส่งมอบแล้วเดือนนี้', rs.filter(r=>r.stage==='ส่งมอบแล้ว').length+' <small>คัน</small>','จบกระบวนการ']
   ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
-  $('#regKan').innerHTML=REG_STAGES.map(st=>{ const items=rs.filter(r=>r.stage===st);
-    return '<div class="kcol"><h5>'+esc(st)+'<span>'+items.length+'</span></h5>'
-      +items.slice(0,6).map(r=>{ const s=SALES.find(x=>x.id===r.saleId), u=UNITS.find(x=>x.id===s.unitId),
-          c=CUSTOMERS.find(x=>x.id===s.custId); const d=days(r.due,TODAY);
-        return '<div class="kcard" data-reg="'+r.id+'"><b>'+esc(c?c.name:'—')+'</b><span>'+esc(u.model)+'</span>'
-          +(r.hold?'<div style="margin-top:var(--s-half)">'+pill(r.hold,'bad')+'</div>':'')
-          +(d>0&&st!=='ส่งมอบแล้ว'?'<div style="margin-top:var(--s-half)">'+pill('ค้าง '+d+' วัน','bad')+'</div>':'')+'</div>'; }).join('')
-      +(items.length>6?'<div class="tsub" style="text-align:center">+ อีก '+(items.length-6)+'</div>':'')+'</div>'; }).join('');
+  const regCard = r => { const s=SALES.find(x=>x.id===r.saleId), u=UNITS.find(x=>x.id===s.unitId),
+      c=CUSTOMERS.find(x=>x.id===s.custId); const d=days(r.due,TODAY);
+    return '<div class="kcard" data-reg="'+r.id+'"><b>'+esc(c?c.name:'—')+'</b><span>'+esc(u.model)+'</span>'
+      +(r.hold?'<div style="margin-top:var(--s-half)">'+pill(r.hold,'bad')+'</div>':'')
+      +(d>0&&r.stage!=='ส่งมอบแล้ว'?'<div style="margin-top:var(--s-half)">'+pill('ค้าง '+d+' วัน','bad')+'</div>':'')+'</div>'; };
+  if(MQ_KAN.matches){
+    /* มือถือ: ทีละขั้นตอน แสดงครบทุกใบ (เดสก์ท็อปตัดที่ 6 ใบเพราะคอลัมน์แคบ) */
+    KAN_REG = kanMobile($('#regKan'), REG_STAGES, st=>rs.filter(r=>r.stage===st),
+      regCard, KAN_REG, s=>{ KAN_REG=s; rReg(); });
+  } else {
+    $('#regKan').innerHTML=REG_STAGES.map(st=>{ const items=rs.filter(r=>r.stage===st);
+      return '<div class="kcol"><h5>'+esc(st)+'<span>'+items.length+'</span></h5>'
+        +items.slice(0,6).map(regCard).join('')
+        +(items.length>6?'<div class="tsub" style="text-align:center">+ อีก '+(items.length-6)+'</div>':'')+'</div>'; }).join('');
+  }
   $$('[data-reg]').forEach(k=> k.onclick=()=>regDrawer(k.dataset.reg));
   const rgL=rs.slice().sort((a,b)=>a.due.localeCompare(b.due)).map(r=>{
       const s=SALES.find(x=>x.id===r.saleId), u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
@@ -3100,11 +3167,16 @@ function rFin(){
     ['เคสทั้งหมด', all.length,''],['กำลังดำเนินการ', open.length,'ต้องติดตาม'],
     ['อนุมัติแล้ว', appr.length,''],['อัตราอนุมัติ', all.length?Math.round(appr.length/all.length*100)+'%':'—','จากเคสทั้งหมด']
   ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
-  $('#finKan').innerHTML=FIN_STAGES.map(st=>{ const items=all.filter(c=>c.status===st);
-    return '<div class="kcol"><h5>'+esc(st)+'<span>'+items.length+'</span></h5>'
-      +items.map(c=>{ const cu=CUSTOMERS.find(x=>x.id===c.custId), f=FIN_CO.find(x=>x.id===c.finId);
-        return '<div class="kcard" data-fin="'+c.id+'"><b>'+esc(cu?cu.name:'—')+'</b><span>'+esc(f?f.name:'')+' · '+fmt(c.amount)+' ฿</span></div>'; }).join('')
-      +'</div>'; }).join('');
+  const finCard = c => { const cu=CUSTOMERS.find(x=>x.id===c.custId), f=FIN_CO.find(x=>x.id===c.finId);
+    return '<div class="kcard" data-fin="'+c.id+'"><b>'+esc(cu?cu.name:'—')+'</b><span>'+esc(f?f.name:'')+' · '+fmt(c.amount)+' ฿</span></div>'; };
+  if(MQ_KAN.matches){
+    KAN_FIN = kanMobile($('#finKan'), FIN_STAGES, st=>all.filter(c=>c.status===st),
+      finCard, KAN_FIN, s=>{ KAN_FIN=s; rFin(); });
+  } else {
+    $('#finKan').innerHTML=FIN_STAGES.map(st=>{ const items=all.filter(c=>c.status===st);
+      return '<div class="kcol"><h5>'+esc(st)+'<span>'+items.length+'</span></h5>'
+        +items.map(finCard).join('')+'</div>'; }).join('');
+  }
   $$('[data-fin]').forEach(k=> k.onclick=()=>finDrawer(k.dataset.fin));
   const rate=FIN_CO.map(f=>{ const cs=all.filter(c=>c.finId===f.id);
     const a=cs.filter(c=>c.status==='อนุมัติแล้ว').length, r=cs.filter(c=>c.status==='ปฏิเสธ').length;
