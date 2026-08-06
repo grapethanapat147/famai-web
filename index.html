@@ -128,6 +128,7 @@ h2,h3{ font-size:var(--t-h2); line-height:1.3; letter-spacing:-.01em; }
   font-size:var(--t-table); font-weight:500; position:relative;
   transition:color var(--dur-ui) var(--ease), background var(--dur-ui) var(--ease); }
 .nb .i{ opacity:.7; }
+a.nb{ text-decoration:none; box-sizing:border-box; }
 @media (hover:hover){ .nb:hover{ color:var(--ink); background:var(--hairline-2); } }
 .nb.on{ color:var(--ink); font-weight:600; background:var(--card); box-shadow:var(--sh-sm); }
 .nb.on::before{ content:''; position:absolute; left:0; top:8px; bottom:8px; width:2px;
@@ -700,6 +701,7 @@ body.lock{ overflow:hidden; }
 <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
 <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></symbol>
 <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.7-7 10-7 10 7 10 7-3.7 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
 <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
 <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
@@ -1185,10 +1187,14 @@ body.lock{ overflow:hidden; }
 
       <!-- ============ 17. ลงเวลาและลา ============ -->
       <section class="screen" id="s-hr">
-        <div class="tabs" id="hrTabs"><button class="on" data-p="h1">ลงเวลาวันนี้</button><button data-p="h2">ใบลา</button></div>
+        <div class="tabs" id="hrTabs"><button class="on" data-p="h1">ลงเวลา</button><button data-p="h2">ใบลา</button>
+          <button data-p="h3" id="hrTabRv" style="display:none">ตรวจการลงเวลา</button></div>
         <div class="pane on" id="h1"><div class="g2e">
-          <div class="card"><div class="hd"><h3>ลงเวลาวันนี้</h3><div class="d" id="hrDate"></div><div class="sp"></div>
+          <div class="card"><div class="hd"><h3>ลงเวลา</h3><div class="d" id="hrDate"></div><div class="sp"></div>
             <span class="pill p-mut mono" id="hrClock" style="font-size:var(--t-table)">—:—:—</span>
+            <input class="inp ct" type="date" id="attDay">
+            <button class="btn sec sm fbtn noprint" id="attFilt"><svg class="i i-sm"><use href="#i-calendar"/></svg> เลือกวัน</button>
+            <div class="fsum" id="attFsum"></div>
           </div><div class="bd flush"><div class="tw"><table id="attTable"></table></div></div></div>
           <div class="card"><div class="hd"><h3>สรุปเวลาทำงาน</h3></div><div class="bd" id="attSum"></div></div>
         </div></div>
@@ -1204,15 +1210,26 @@ body.lock{ overflow:hidden; }
             <div class="savebar"><button class="btn" id="lvSave">ยื่นใบลา</button></div>
           </div></div>
         </div></div>
+        <div class="pane" id="h3">
+          <div class="card"><div class="hd"><h3>รอผู้จัดการตรวจ</h3><div class="d" id="rvSub"></div><div class="sp"></div>
+            <button class="btn sec sm" id="rvAllOk">ยืนยันทั้งหมดที่แสดง</button>
+          </div><div class="bd flush"><div class="tw"><table id="rvTable"></table></div></div>
+          <div class="bd" id="rvNote" style="padding-top:0"></div></div>
+          <div class="card"><div class="hd"><h3>ตรวจแล้วในงวดนี้</h3></div><div class="bd flush"><div class="tw"><table id="rvDone"></table></div></div></div>
+        </div>
       </section>
 
       <!-- ============ 18. เงินเดือน ============ -->
       <section class="screen" id="s-payroll">
         <div class="card"><div class="hd"><h3>งวดเงินเดือน</h3><div class="d" id="prPeriod"></div><div class="sp"></div>
+          <select class="inp ct" id="prMonth"></select>
+          <button class="btn sec sm fbtn noprint" id="prFilt"><svg class="i i-sm"><use href="#i-calendar"/></svg> เลือกงวด</button>
           <button class="btn sec sm" id="prSsn">รายงานประกันสังคม</button>
           <button class="btn sec sm" id="prBank">ไฟล์โอนธนาคาร</button>
-          <button class="lnk" id="expPr"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div>
-          <div class="bd flush"><div class="tw"><table id="prTable"></table></div></div></div>
+          <button class="lnk" id="expPr"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button>
+          <div class="fsum" id="prFsum"></div></div>
+          <div class="bd flush"><div class="tw"><table id="prTable"></table></div></div>
+          <div class="bd" id="prNote" style="padding-top:0"></div></div>
         <div class="g2e">
           <div class="card"><div class="hd"><h3>สลิปเงินเดือน</h3><div class="sp"></div>
             <select class="inp ct" id="prWho"></select>
@@ -1268,6 +1285,7 @@ body.lock{ overflow:hidden; }
               <div><label class="fl">รอบเช็กระยะ (กม.)</label><input class="inp" id="cfKm"></div>
               <div><label class="fl">เวลาเข้างาน</label><input class="inp" type="time" id="cfIn"></div>
               <div><label class="fl">เวลาเลิกงาน</label><input class="inp" type="time" id="cfOut"></div>
+              <div><label class="fl">ผ่อนผันสาย (นาที)</label><input class="inp num" id="cfGrace"></div>
               <div><label class="fl">อัตรา OT (เท่า)</label><input class="inp num" id="cfOt"></div>
               <div><label class="fl">ค่าคอมต่อกำไร (%)</label><input class="inp num" id="cfComm"></div>
             </div>
@@ -1343,6 +1361,7 @@ const NOW = new Date();
 const iso = d => d.toISOString().slice(0,10);
 const TODAY = iso(NOW);
 const TH_M = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const TH_DOW = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 const fmt  = n => (Math.round(n||0)).toLocaleString('en-US');
 const baht = n => fmt(n)+' ฿';
 const num  = v => { const n=parseFloat(String(v).replace(/,/g,'')); return isNaN(n)?0:n; };
@@ -1351,6 +1370,11 @@ function thDate(s){ if(!s) return '—'; const d=new Date(s+'T00:00:00'); if(isN
 function thShort(s){ const d=new Date(s+'T00:00:00'); return d.getDate()+' '+TH_M[d.getMonth()]; }
 function days(a,b){ return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/864e5); }
 function addDays(s,n){ const d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return iso(d); }
+/* วันที่ ณ ตอนเรียก — TODAY ถูกคำนวณครั้งเดียวตอนเปิดแอป ถ้าเปิดค้างข้ามเที่ยงคืนจะเพี้ยน */
+const curDate = () => iso(new Date());
+/* เวลาเป็นวินาที — ทุกสูตรชั่วโมงทำงาน/OT/สาย คิดจากค่านี้ วินาทีจึงมีผลกับเงินจริง */
+function toSec(t){ if(!t) return 0; const p=String(t).split(':');
+  return (+p[0]||0)*3600 + (+p[1]||0)*60 + (+p[2]||0); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 let _id=0; const nid = p => p+(++_id);
 function pick(a,i){ return a[i%a.length]; }
@@ -1416,7 +1440,7 @@ const DEFAULTS = {
   taxId:'0 1055 07000 64 5', phone:'02-000-0000',
   aging:90, regDays:30, lowStock:2, vat:7,
   cadence:'7,30,90,365,1095', km:'500,1000,4000,8000',
-  workIn:'08:30', workOut:'17:30', otRate:1.5, commPct:8
+  workIn:'08:30', workOut:'17:30', lateGrace:5, otRate:1.5, commPct:8
 };
 let CFG = Object.assign({}, DEFAULTS);
 
@@ -1638,9 +1662,40 @@ let STAFF = [
   {id:'ST8',name:'ณัฐชภา กิจดี',  nick:'HR กิ๊ฟ',   role:'hr',      branch:'FMG01', salary:20000, bank:'014-3-11086-0', ssn:'1234567890130'},
   {id:'ST9',name:'เอก ช่างดี',    nick:'ช่างเอก',   role:'tech',    branch:'FMG01', salary:16000, bank:'014-3-99097-6', ssn:'1234567890131'}
 ];
-let ATT = STAFF.map((s,i)=>({ staffId:s.id, date:TODAY,
-  in: i===2? '09:14' : (i===5? null : '08:'+(45+i).toString().padStart(2,'0')),
-  out: i===5? null : null, status: i===5?'ลา':'' }));
+/* ---------- ประวัติลงเวลา 45 วันย้อนหลัง ----------
+   สร้างแบบคงที่ ไม่สุ่ม — ตัวเลขเงินเดือนจึงตรวจซ้ำได้ทุกครั้ง
+   ผสมของจริงให้ครบ: มาสาย · อยู่ OT · ลืมลงเวลาออก · ไม่มีบันทึกทั้งวัน · วันลา
+   คีย์ของ ATT คือ staffId + date (หนึ่งแถวต่อคนต่อวัน) — อ่านผ่าน attOf() เท่านั้น */
+const isWorkDay = d => new Date(d+'T00:00:00').getDay()!==0;   /* ร้านปิดวันอาทิตย์ */
+let ATT = (function(){
+  const rows=[], p2=n=>String(n).padStart(2,'0');
+  const hms=s=>p2(Math.floor(s/3600))+':'+p2(Math.floor(s/60)%60)+':'+p2(s%60);
+  const inRef=toSec(DEFAULTS.workIn), outRef=toSec(DEFAULTS.workOut);
+  for(let back=45; back>=0; back--){
+    const date=addDays(TODAY,-back);
+    if(!isWorkDay(date)) continue;
+    STAFF.forEach((s,i)=>{
+      const k=(i*7+back*3)%20;                       /* ตัวแปรคงที่แทนการสุ่ม */
+      if(back===0){                                  /* วันนี้ — ยังไม่มีใครเลิกงาน */
+        if(i===5){ rows.push({staffId:s.id,date,in:null,out:null,status:'ลา'}); return; }
+        rows.push({staffId:s.id,date,status:'',
+          in: i===2? '09:14:22' : hms(inRef-15*60+i*97), out:null});
+        return;
+      }
+      if(k===0) return;                              /* ไม่มีบันทึกทั้งวัน — ให้ผู้จัดการตามแก้ */
+      if(k===13){ rows.push({staffId:s.id,date,in:null,out:null,status:'ลา'}); return; }
+      const late = k<3 ? k*7*60+40 : (k===9? 22*60+15 : (k===5? 3*60 : 0));
+      const inS  = inRef - 12*60 + late;
+      const otS  = (k%6===1)? (55+k*6)*60+20 : (k%9===4? 18*60 : 0);
+      const r={staffId:s.id, date, status:'',
+        in: hms(inS), out: k===7? null : hms(outRef+otS+(k%4)*23)};   /* k===7 ลืมลงเวลาออก */
+      /* เกิน 2 วันถือว่าผู้จัดการตรวจไปแล้ว — คิวจึงเหลือแต่ของใหม่ เหมือนร้านที่ตรวจทุกวัน */
+      if(back>2) r.review={status:'ok', by:'ธนพร วัฒนกุล', at:date+'T18:30:00', note:''};
+      rows.push(r);
+    });
+  }
+  return rows;
+})();
 let LEAVES = [
   {id:'LV1',staffId:'ST6',type:'ลาป่วย',from:TODAY,to:addDays(TODAY,3),status:'รออนุมัติ'},
   {id:'LV2',staffId:'ST7',type:'ลาพักร้อน',from:addDays(TODAY,14),to:addDays(TODAY,17),status:'รออนุมัติ'},
@@ -1877,6 +1932,12 @@ function buildTabs(){
     if(m.r.indexOf(ME.role)<0 || inBar.indexOf(m.k)>=0) return;
     mh+='<button class="nb" data-s="'+m.k+'">'+ic(m.ic)+'<span>'+esc(m.t)+'</span><span class="bdg" id="mb-'+m.k+'" style="display:none"></span></button>';
   });
+  /* คู่มือการใช้งาน — เล่มของบทบาทตัวเอง + เล่ม flow (สร้างด้วย tools/manual/build.js) */
+  mh+='<h6>ช่วยเหลือ</h6>'
+    +'<a class="nb" id="moreMan" href="docs/manual/famai-'+esc(ME.role)+'.pdf" target="_blank" rel="noopener">'
+      +ic('file')+'<span>คู่มือสำหรับ'+esc(ROLES[ME.role]?.name||ME.role)+' (PDF)</span></a>'
+    +'<a class="nb" href="docs/manual/famai-flow.pdf" target="_blank" rel="noopener">'
+      +ic('route')+'<span>คู่มือ flow การใช้งาน (PDF)</span></a>';
   mh+='<div class="sfoot"><div class="me"><div class="av">'+esc(ME.nick.slice(0,2))+'</div>'
     +'<div style="min-width:0"><b>'+esc(ME.name)+'</b><span>'+esc((ROLES[ME.role]?.name||ME.role))+' · '+esc(rolePerm().allBranch?'ทุกสาขา':bName(ME.branch))+'</span></div></div>'
     +'<button class="out" id="moreOut">'+ic('logout','i i-sm')+' ออกจากระบบ</button></div>';
@@ -1884,7 +1945,8 @@ function buildTabs(){
   $$('#moreB h6').forEach(hh=>{ let n=hh.nextElementSibling, has=false;
     while(n && n.tagName!=='H6'){ if(n.classList.contains('nb')) has=true; n=n.nextElementSibling; }
     if(!has) hh.remove(); });
-  $$('#moreB .nb').forEach(b=> b.onclick=()=>{ go(b.dataset.s); closeMore(); });
+  $$('#moreB .nb[data-s]').forEach(b=> b.onclick=()=>{ go(b.dataset.s); closeMore(); });
+  $$('#moreB a.nb').forEach(a=> a.onclick=()=>closeMore());   /* ลิงก์คู่มือเปิดแท็บใหม่ ไม่ต้อง go() */
   $('#moreOut').onclick=doLogout;
 }
 /* ---------- แผ่นตัวกรองบนมือถือ ----------
@@ -1896,7 +1958,9 @@ const FILTERS = {
   follow:{ t:'ตัวกรองลูกค้า × รถ', sum:'fwFsum',
     f:[['fwStage','สถานะลูกค้า'],['fwQ','ค้นหาชื่อ']] },
   finpp :{ t:'ตัวกรองติดตามรายคน', sum:'fpFsum',
-    f:[['fpStatus','สถานะ'],['fpSales','เซลล์'],['fpBranch','สาขา'],['fpQ','ค้นหาชื่อลูกค้า']] }
+    f:[['fpStatus','สถานะ'],['fpSales','เซลล์'],['fpBranch','สาขา'],['fpQ','ค้นหาชื่อลูกค้า']] },
+  hrday :{ t:'เลือกวันลงเวลา', sum:'attFsum', f:[['attDay','วันที่']] },
+  payrol:{ t:'เลือกงวดเงินเดือน', sum:'prFsum', f:[['prMonth','งวดเดือน']] }
 };
 let FS_OPEN=null, FS_HOME=[];
 function fsSummary(key){
@@ -1976,7 +2040,8 @@ function badges(){
   set('fin',  FINCASES.filter(c=>inScope(c.branch) && ['ส่งเรื่อง','ยื่นเอกสาร','รอผล','ติดตามต่อ'].indexOf(c.status)>=0).length);
   set('reg',  REGS.filter(r=>inScope(r.branch) && r.stage!=='ส่งมอบแล้ว').length);
   set('ar',   AR.filter(a=>inScope(a.branch) && a.due-a.paid>0).length);
-  set('hr',   LEAVES.filter(l=>l.status==='รออนุมัติ').length);
+  set('hr',   LEAVES.filter(l=>l.status==='รออนุมัติ').length
+              + (canFixAtt()? attQueue(curDate().slice(0,7)).length : 0));
   set('service',SERVICE.filter(s=>inScope(s.branch) && s.status!=='ส่งมอบแล้ว').length);
   set('gift', GIFTS.filter(g=>inScope(g.branch) && g.qty<g.min).length);
   /* จุดรวมบนแท็บ "อื่น ๆ" — มีงานค้างในเมนูที่ไม่ได้อยู่บนแถบล่าง */
@@ -3783,25 +3848,219 @@ function rExpense(){
 }
 
 /* ============================= 17. ลงเวลาและลา ============================= */
+/* ---------- อ่านและคำนวณบันทึกลงเวลา ----------
+   ATT หนึ่งแถว = พนักงานหนึ่งคนหนึ่งวัน (staffId + date) — ห้ามค้นด้วย staffId เดี่ยว
+   ทุกสูตรคิดจาก "วินาที" ไม่ปัดเป็นนาที เพราะเวลาที่กดจริงถูกเก็บถึงวินาที */
+function attOf(staffId, date){ return ATT.find(x=>x.staffId===staffId && x.date===date) || null; }
+function attEnsure(staffId, date){ let a=attOf(staffId,date);
+  if(!a){ a={staffId, date, in:null, out:null, status:''}; ATT.push(a); } return a; }
+/* ใบลาที่อนุมัติแล้วครอบวันไหน วันนั้นไม่ใช่ "วันไม่มีบันทึก" */
+function onLeave(staffId, date){
+  return LEAVES.some(l=>l.staffId===staffId && l.status==='อนุมัติแล้ว' && l.from<=date && l.to>=date); }
+function isLeaveDay(a, staffId, date){ return (a && a.status==='ลา') || onLeave(staffId, date); }
+/* ตัวเลขของบันทึกวันเดียว — ตาราง สลิป คิวตรวจ และเงินเดือน ใช้ตัวเดียวกันหมด
+   สาย = เข้าหลังเวลาเข้างาน + ผ่อนผัน · OT = อยู่เกินเวลาเลิกงาน (ไม่มีเลข 8.5 ลอย ๆ อีกแล้ว) */
+function attCalc(a){
+  const g=(+CFG.lateGrace||0)*60, inRef=toSec(CFG.workIn), outRef=toSec(CFG.workOut);
+  const inS=a&&a.in? toSec(a.in):0, outS=a&&a.out? toSec(a.out):0;
+  const workSec=(inS&&outS&&outS>inS)? outS-inS : 0;
+  const otSec  = outS? Math.max(0, outS-outRef) : 0;
+  const lateSec= inS?  Math.max(0, inS-inRef-g) : 0;
+  return { inS, outS, workSec, otSec, lateSec, hrs:workSec/3600, otH:otSec/3600,
+    lateMin:lateSec/60, late:lateSec>0, openIn: !!inS && !outS };
+}
+function monthDays(ym, upto){
+  const out=[], last=new Date(+ym.slice(0,4), +ym.slice(5,7), 0).getDate();
+  for(let d=1; d<=last; d++){ const s=ym+'-'+String(d).padStart(2,'0');
+    if(upto && s>upto) break; out.push(s); }
+  return out;
+}
+/* สรุปทั้งเดือนของคนหนึ่งคน — ฐานเดียวของเงินเดือน
+   ไม่มีบันทึก = ไม่มีชั่วโมง (เลิกแถม 8 ชม. ให้คนที่ไม่ตอกบัตร) แต่ขึ้นเป็นวันที่ต้องตามแก้ */
+function attMonth(staffId, ym){
+  const today=curDate();
+  const r={ym, workDays:0, hrs:0, otH:0, lateMin:0, lateDays:0, leaveDays:0, missDays:0, openDays:0, days:[]};
+  /* กวาด ATT รอบเดียวแล้วทำดัชนีตามวัน — ไม่งั้นเป็นการค้นทั้งอาร์เรย์วันละครั้ง */
+  const idx={};
+  ATT.forEach(x=>{ if(x.staffId===staffId && String(x.date).slice(0,7)===ym) idx[x.date]=x; });
+  monthDays(ym, ym===today.slice(0,7)? today : null).forEach(date=>{
+    const a=idx[date]||null;
+    if(isLeaveDay(a,staffId,date)){ if(isWorkDay(date)) r.leaveDays++; return; }
+    if(!a || !a.in){ if(isWorkDay(date) && date!==today) r.missDays++; return; }
+    const c=attCalc(a);
+    r.workDays++; r.hrs+=c.hrs; r.otH+=c.otH; r.lateMin+=c.lateMin;
+    if(c.late) r.lateDays++;
+    if(c.openIn) r.openDays++;
+    r.days.push({date, a, c});
+  });
+  return r;
+}
+const hm1 = n => (Math.round(n*10)/10).toFixed(1);
+/* ---------- คิวตรวจของผู้จัดการ ----------
+   ผู้มีสิทธิ์แก้เวลา = แอดมิน · HR · และ "ผู้จัดการ" ซึ่งเดิมถูกล็อกไว้ทั้งที่มีสิทธิ์อนุมัติ
+   บันทึกที่มีธง (สาย · OT · ลืมลงเวลาออก · ถูกแก้) เข้าคิวรอตรวจจนกว่าจะยืนยันหรือติดปัญหา
+   บันทึกปกติไม่เข้าคิว — ไม่งั้นผู้จัดการจะต้องกดยืนยันวันละ 9 ครั้งโดยไม่ได้อะไรเพิ่ม */
+const canFixAtt = () => ['admin','manager','hr'].indexOf(ME.role)>=0;
+function attFlags(a){
+  const c=attCalc(a), f=[];
+  if(c.late)   f.push({k:'late', t:'มาสาย '+Math.round(c.lateMin)+' นาที', tone:'warn'});
+  if(c.otH>0)  f.push({k:'ot',   t:'OT '+hm1(c.otH)+' ชม.', tone:'info'});
+  if(c.openIn && a.date!==curDate()) f.push({k:'open', t:'ไม่ได้ลงเวลาออก', tone:'bad'});
+  if(a.editLog) f.push({k:'edit', t:'ถูกแก้เวลา '+a.editLog.length+' ครั้ง', tone:'warn'});
+  if(a.in && !(a.inProof&&(a.inProof.photoId||a.inProof.photo))) f.push({k:'nophoto', t:'ไม่มีรูปตอนเข้า', tone:'mut'});
+  return f;
+}
+const rvNeeds = f => f.some(x=>x.k!=='nophoto');   /* ไม่มีรูปอย่างเดียวไม่ต้องเรียกผู้จัดการมาตรวจ */
+function attStaffScope(){
+  return rolePerm().allBranch ? STAFF : STAFF.filter(s=>s.branch===ME.branch);
+}
+function attQueue(ym, done){
+  const ids={}; attStaffScope().forEach(s=>ids[s.id]=s);
+  const today=curDate();
+  return ATT.filter(a=> ids[a.staffId] && String(a.date).slice(0,7)===ym && a.date<=today && a.in
+      && (done? !!a.review : !a.review))
+    .map(a=>({a, s:ids[a.staffId], f:attFlags(a)}))
+    .filter(x=> done? true : rvNeeds(x.f))
+    .sort((x,y)=> x.a.date===y.a.date ? (x.s.id<y.s.id?-1:1) : (x.a.date<y.a.date?1:-1));
+}
+function attMissing(ym){
+  const out=[], today=curDate();
+  const days=monthDays(ym, ym===today.slice(0,7)? today : null).filter(d=>d!==today && isWorkDay(d));
+  const idx={};
+  ATT.forEach(x=>{ if(String(x.date).slice(0,7)===ym) idx[x.staffId+'|'+x.date]=x; });
+  attStaffScope().forEach(s=> days.forEach(date=>{
+    const a=idx[s.id+'|'+date]||null;
+    if(isLeaveDay(a,s.id,date)) return;
+    if(!a || !a.in) out.push({s, date}); }));
+  return out;
+}
+function attReview(a, status, note){
+  a.review={ status, by:ME.name, at:new Date().toISOString(), note:note||'' };
+}
+function attMonthText(m){
+  return 'ทำงาน '+m.workDays+' วัน · '+hm1(m.hrs)+' ชม.'
+    + (m.otH? ' · OT '+hm1(m.otH)+' ชม.':'')
+    + (m.lateDays? ' · สาย '+m.lateDays+' วัน ('+Math.round(m.lateMin)+' นาที)':'')
+    + (m.leaveDays? ' · ลา '+m.leaveDays+' วัน':'')
+    + (m.missDays? ' · ไม่มีบันทึก '+m.missDays+' วัน':'')
+    + (m.openDays? ' · ลืมลงเวลาออก '+m.openDays+' วัน':'');
+}
+/* ---------- ที่เก็บรูปถาวร ----------
+   รูปลงเวลาอยู่ใน IndexedDB · ATT เก็บแค่ photoId — อาร์เรย์จึงเบา และรีเฟรชแล้วรูปไม่หาย
+   เบราว์เซอร์ที่ใช้ IndexedDB ไม่ได้ (โหมดส่วนตัวบางตัว) จะถอยไปเก็บในหน่วยความจำ
+   และแจ้งผู้ใช้ตรง ๆ ว่ารูปจะหายเมื่อปิดแอป */
+const IDB_NAME='famai', IDB_STORE='attphoto';
+let IDB=null, IDB_OK=null, PHOTO_MEM={};
+function idbOpen(){
+  if(IDB) return Promise.resolve(IDB);
+  return new Promise(res=>{
+    if(!window.indexedDB){ IDB_OK=false; res(null); return; }
+    let rq; try{ rq=indexedDB.open(IDB_NAME,1); }catch(_){ IDB_OK=false; res(null); return; }
+    rq.onupgradeneeded=()=>{ const db=rq.result;
+      if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE,{keyPath:'id'}); };
+    rq.onsuccess=()=>{ IDB=rq.result; IDB_OK=true; res(IDB); };
+    rq.onerror=rq.onblocked=()=>{ IDB_OK=false; res(null); };
+  });
+}
+/* เปิด transaction แล้วใช้ให้จบในจังหวะเดียว — กัน transaction ปิดตัวก่อนได้ใช้ */
+function idbDo(mode, run){
+  return idbOpen().then(db=> new Promise(res=>{
+    if(!db){ res(null); return; }
+    let tx; try{ tx=db.transaction(IDB_STORE,mode); }catch(_){ res(null); return; }
+    let out=null;
+    try{ run(tx.objectStore(IDB_STORE), v=>{ out=v; }); }catch(_){ res(null); return; }
+    tx.oncomplete=()=>res(out);
+    tx.onerror=tx.onabort=()=>res(null);
+  }));
+}
+const idbPut = rec => idbDo('readwrite',(st,set)=>{ const q=st.put(rec); q.onsuccess=()=>set(1); })
+  .then(ok=>{ if(!ok) PHOTO_MEM[rec.id]=rec; return rec; });
+const idbGet = id => idbDo('readonly',(st,set)=>{ const q=st.get(id); q.onsuccess=()=>set(q.result||null); })
+  .then(r=> r || PHOTO_MEM[id] || null);
+const idbDel = id => idbDo('readwrite',(st,set)=>{ const q=st.delete(id); q.onsuccess=()=>set(1); })
+  .then(()=>{ delete PHOTO_MEM[id]; return 1; });
+const idbAll = () => idbDo('readonly',(st,set)=>{ const q=st.getAll(); q.onsuccess=()=>set(q.result||[]); })
+  .then(r=> (r&&r.length)? r : Object.keys(PHOTO_MEM).map(k=>PHOTO_MEM[k]));
+
 /* ---------- ยืนยันตัวตนตอนลงเวลา ----------
    3 ชั้น: (1) ผูกบัญชี — ปุ่มลงเวลากดได้เฉพาะแถวของคนที่ล็อกอินอยู่
-   (2) ถ่ายภาพจากกล้อง ณ วินาทีที่กด (3) พิกัด GPS — สองอย่างหลังมีเท่าไหร่เก็บเท่านั้น
+   (2) ถ่ายภาพจากกล้อง (3) พิกัด GPS — สองอย่างหลังมีเท่าไหร่เก็บเท่านั้น
    ไม่มีกล้อง/ไม่อนุญาต/เปิดแบบ file:// ก็ยังลงเวลาได้ แต่ธงหลักฐานจะบอกว่าขาดอะไร */
 const hhmmss = d => [d.getHours(),d.getMinutes(),d.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+/* กล้อง — getUserMedia มีเฉพาะ HTTPS/localhost */
+async function camShot(w,h,q){
+  if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return null;
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:w,height:h}});
+    const v=document.createElement('video'); v.srcObject=stream; v.muted=true; v.playsInline=true;
+    await v.play(); await new Promise(r=>setTimeout(r,350));   /* รอกล้องปรับแสง */
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    cv.getContext('2d').drawImage(v,0,0,w,h);
+    stream.getTracks().forEach(t=>t.stop());
+    return cv.toDataURL('image/jpeg',q);
+  }catch(_){ return null; }   /* ไม่มีกล้อง/ไม่อนุญาต — บันทึกต่อโดยไม่มีรูป */
+}
+const dataBytes = s => Math.round((String(s).split(',')[1]||'').length*3/4);
+async function photoSave(data,w,h,tier,at){
+  const rec={ id:nid('PH'), data, w, h, bytes:dataBytes(data), at:at||new Date().toISOString(), tier:tier||'fresh' };
+  await idbPut(rec); return rec.id;
+}
+/* ---------- ย่อรูปอัตโนมัติตามอายุ ----------
+   สด 640×480 q0.7 (~40KB) → เกิน 30 วัน 384×288 q0.5 (~12–15KB ยังเห็นฉากหลังข้าง ๆ ได้)
+   → เกิน 1 ปี ลบไฟล์รูป เหลือแต่บันทึกเวลา ผู้จัดการยังตรวจย้อนหลังได้จากเวลา พิกัด และอุปกรณ์
+   ทำทีละไม่กี่รูปตอนเครื่องว่าง จอจึงไม่กระตุก · เรียก agePhotos(now, all) ตรง ๆ เพื่อทดสอบได้ */
+const PH_TIERS=[
+  {k:'fresh', days:0,   w:640, h:480, q:0.70},
+  {k:'small', days:30,  w:384, h:288, q:0.50},
+  {k:'gone',  days:365, w:0,   h:0,   q:0}
+];
+const phTier = ageDays => PH_TIERS.reduce((t,x)=> ageDays>=x.days? x : t, PH_TIERS[0]);
+function shrinkData(data, w, h, q){
+  return new Promise(res=>{
+    const im=new Image();
+    im.onload=()=>{ const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      cv.getContext('2d').drawImage(im,0,0,w,h); res(cv.toDataURL('image/jpeg',q)); };
+    im.onerror=()=>res(null);
+    im.src=data;
+  });
+}
+async function agePhotos(now, limit){
+  const t0=now? new Date(now) : new Date();
+  const all=await idbAll();
+  const out={shrunk:0, deleted:0, checked:all.length, freed:0};
+  let n=0;
+  for(const rec of all){
+    if(limit && n>=limit) break;
+    const age=Math.floor((t0-new Date(rec.at))/864e5);
+    const want=phTier(age);
+    if(want.k===rec.tier) continue;
+    if(PH_TIERS.findIndex(x=>x.k===want.k) <= PH_TIERS.findIndex(x=>x.k===rec.tier)) continue;  /* ย่อแล้วไม่ย้อนกลับ */
+    n++;
+    if(want.k==='gone'){ out.freed+=rec.bytes||0; await idbDel(rec.id); out.deleted++; continue; }
+    const small=await shrinkData(rec.data, want.w, want.h, want.q);
+    if(!small) continue;
+    out.freed += (rec.bytes||0) - dataBytes(small);
+    await idbPut({ id:rec.id, data:small, w:want.w, h:want.h, bytes:dataBytes(small), at:rec.at, tier:want.k });
+    out.shrunk++;
+  }
+  return out;
+}
+/* เดินเก็บกวาดตอนเครื่องว่าง ครั้งละไม่เกิน 5 รูป */
+function agePhotosIdle(){
+  const run=()=>agePhotos(null,5).then(r=>{ if(r.shrunk+r.deleted>=5) agePhotosIdle(); });
+  if(window.requestIdleCallback) requestIdleCallback(()=>run(),{timeout:4000}); else setTimeout(run,1500);
+}
+async function photoStats(){
+  const all=await idbAll();
+  const by={};
+  all.forEach(r=>{ by[r.tier]=by[r.tier]||{n:0,b:0}; by[r.tier].n++; by[r.tier].b+=r.bytes||0; });
+  return { n:all.length, bytes:all.reduce((s,r)=>s+(r.bytes||0),0), by, mem: IDB_OK===false };
+}
 async function attProof(){
   const proof={ by:ME.id, byName:ME.name, device:navigator.userAgent.slice(0,80) };
-  /* กล้อง — getUserMedia มีเฉพาะ HTTPS/localhost */
-  if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
-    try{
-      const stream=await navigator.mediaDevices.getUserMedia({video:{width:320,height:240}});
-      const v=document.createElement('video'); v.srcObject=stream; v.muted=true;
-      await v.play(); await new Promise(r=>setTimeout(r,350));   /* รอกล้องปรับแสง */
-      const cv=document.createElement('canvas'); cv.width=320; cv.height=240;
-      cv.getContext('2d').drawImage(v,0,0,320,240);
-      proof.photo=cv.toDataURL('image/jpeg',0.7);
-      stream.getTracks().forEach(t=>t.stop());
-    }catch(_){ /* ไม่มีกล้อง/ไม่อนุญาต — บันทึกต่อโดยไม่มีรูป */ }
-  }
+  const t0=PH_TIERS[0];
+  const shot=await camShot(t0.w,t0.h,t0.q);
+  if(shot) proof.photoId=await photoSave(shot,t0.w,t0.h,t0.k);
   if(navigator.geolocation){
     try{
       const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:4000,maximumAge:60000}));
@@ -3810,17 +4069,89 @@ async function attProof(){
   }
   return proof;
 }
+/* กด → บันทึกเวลาทันทีแบบไม่รออะไรเลย → รูปกับพิกัดตามมาแนบทีหลัง
+   ของเดิมจับเวลา "หลัง" รอกล้อง+GPS ทำให้เวลาที่บันทึกช้ากว่าวินาทีที่กดจริงได้ถึง ~4 วินาที */
+function punch(staffId, side){
+  const t=hhmmss(new Date());
+  const a=attEnsure(staffId, curDate());
+  a[side]=t;
+  a[side+'Proof']={ by:ME.id, byName:ME.name, device:navigator.userAgent.slice(0,80), pending:1 };
+  toast((side==='in'?'ลงเวลาเข้าแล้ว ':'ลงเวลาออกแล้ว ')+t, 'บันทึกวินาทีที่กดไว้แล้ว · กำลังแนบรูปยืนยัน…');
+  if(CUR==='hr') rHr();
+  attProof().then(p=>{
+    a[side+'Proof']=p;
+    if(IDB_OK===false && p.photoId) toast('เก็บรูปถาวรไม่ได้','เบราว์เซอร์นี้ใช้ IndexedDB ไม่ได้ — รูปจะหายเมื่อปิดแอป',1);
+    if(CUR==='hr') rHr();
+  });
+  return t;
+}
 function attBadges(a, side){
   const p=side==='out'? (a.outProof||{}) : (a.inProof||{});
   if(!a[side==='out'?'out':'in']) return '';
   const b=[];
   b.push(p.by? '<span title="ลงเวลาจากบัญชีที่ล็อกอิน">'+ic('key','i i-sm')+'</span>' : '');
-  b.push(p.photo? '<button class="lnk" data-attph="'+a.staffId+'|'+side+'" title="ดูรูปถ่ายตอนลงเวลา">'+ic('eye','i i-sm')+'</button>'
-                : '<span class="tsub" title="ไม่มีรูป — ไม่มีกล้องหรือไม่อนุญาต">'+ic('alert','i i-sm')+'</span>');
+  b.push(p.pending ? '<span class="tsub" title="กำลังถ่ายรูปยืนยัน — เวลาที่กดบันทึกไว้แล้ว">'+ic('clock','i i-sm')+'</span>'
+      : (p.photoId||p.photo) ? '<button class="lnk" data-attph="'+a.staffId+'|'+a.date+'|'+side+'" title="ดูรูปถ่ายตอนลงเวลา">'+ic('eye','i i-sm')+'</button>'
+      : '<span class="tsub" title="ไม่มีรูป — ไม่มีกล้องหรือไม่อนุญาต">'+ic('alert','i i-sm')+'</span>');
   b.push(p.geo? '<span title="พิกัด '+p.geo.lat+','+p.geo.lng+' (±'+p.geo.acc+' ม.)">'+ic('route','i i-sm')+'</span>' : '');
   return '<span style="display:inline-flex;gap:4px;align-items:center;vertical-align:middle">'+b.join('')+'</span>';
 }
+/* แก้เวลาย้อนหลัง — ใช้ร่วมกันทั้งตารางลงเวลาและแผ่นตรวจของผู้จัดการ */
+function attFixModal(s, date, after){
+  const a=attEnsure(s.id, date);
+  openModal('แก้เวลา '+thDate(date)+' — '+s.nick,
+    '<div class="note w">'+ic('alert','i i-sm')+'<span>การแก้จะถูกบันทึกว่าใครแก้ เวลาไหน เหตุผลอะไร</span></div>'
+    +(a.editLog? '<dl class="kv" style="margin-bottom:var(--s2)">'+a.editLog.map(e=>
+        '<dt>'+esc(e.by)+'</dt><dd>'+esc(e.why)+' <span class="tsub">('+esc(e.from.in||'—')+' → '+esc(e.from.out||'—')+')</span></dd>').join('')+'</dl>' : '')
+    +'<div class="f"><div class="f2">'
+    +'<div><label class="fl">เวลาเข้า</label><input class="inp mono" id="fxIn" value="'+esc(a.in||'')+'" placeholder="08:30:00"></div>'
+    +'<div><label class="fl">เวลาออก</label><input class="inp mono" id="fxOut" value="'+esc(a.out||'')+'" placeholder="17:30:00"></div></div>'
+    +'<div><label class="fl">เหตุผล (จำเป็น)</label><input class="inp" id="fxWhy" placeholder="เช่น ลืมลงเวลา ระบบล่ม"></div></div>'
+    +'<div class="savebar"><button class="btn" id="fxGo">บันทึก<svg class="i"><use href="#i-check"/></svg></button></div>');
+  $('#fxGo').onclick=()=>{ const why=$('#fxWhy').value.trim();
+    if(!why){ toast('ต้องระบุเหตุผล','การแก้เวลาย้อนหลังต้องมีบันทึก',1); return; }
+    (a.editLog=a.editLog||[]).push({by:ME.name, at:new Date().toISOString(), why,
+      from:{in:a.in||null,out:a.out||null}});
+    a.in=$('#fxIn').value.trim()||null; a.out=$('#fxOut').value.trim()||null;
+    closeModal(); toast('แก้เวลาแล้ว', s.nick+' · '+why);
+    if(after) after(a); else rHr(); refreshAll(); };
+}
+/* แผ่นตรวจรายคน — รูปใหญ่ พิกัด อุปกรณ์ ประวัติการแก้ แล้วยืนยัน/ติดปัญหา/แก้เวลา */
+async function attReviewSheet(staffId, date){
+  const s=STAFF.find(x=>x.id===staffId), a=attOf(staffId,date);
+  if(!s||!a) return;
+  const c=attCalc(a), f=attFlags(a);
+  const shot=async side=>{ const p=(side==='out'? a.outProof : a.inProof)||{};
+    const rec=p.photoId? await idbGet(p.photoId) : null;
+    const src=rec? rec.data : p.photo;
+    return '<div><div class="fl">'+(side==='out'?'ออก':'เข้า')+' <span class="mono">'+esc(a[side]||'—')+'</span></div>'
+      +(src? '<img src="'+src+'" style="width:100%;border-radius:var(--r-input)" alt="">'
+           : '<div class="note w" style="margin:0">'+ic('alert','i i-sm')+'<span>ไม่มีรูป</span></div>')
+      +(p.geo? '<div class="tsub mono">'+p.geo.lat+', '+p.geo.lng+' (±'+p.geo.acc+' ม.)</div>':'')
+      +(p.device? '<div class="tsub" style="overflow-wrap:anywhere">'+esc(p.device)+'</div>':'')+'</div>'; };
+  openModal('ตรวจการลงเวลา — '+s.nick+' · '+thDate(date),
+    '<div class="f2">'+(await shot('in'))+(await shot('out'))+'</div>'
+    +'<dl class="kv" style="margin-top:var(--s2)">'
+    +'<dt>ชั่วโมง</dt><dd>'+(c.hrs?hm1(c.hrs)+' ชม.':'—')+(c.otH?' · OT '+hm1(c.otH)+' ชม.':'')+'</dd>'
+    +'<dt>ธง</dt><dd>'+(f.length? f.map(x=>pill(x.t,x.tone)).join(' ') : pill('ปกติ','good'))+'</dd>'
+    +'<dt>บัญชีที่กด</dt><dd>'+esc((a.inProof&&a.inProof.byName)||'—')+'</dd>'
+    +(a.editLog? '<dt>ประวัติการแก้</dt><dd>'+a.editLog.map(e=>esc(e.by)+' — '+esc(e.why)).join('<br>')+'</dd>':'')
+    +(a.review? '<dt>ตรวจแล้ว</dt><dd>'+esc(a.review.by)+' · '+(a.review.status==='ok'?'ยืนยัน':'ติดปัญหา')
+        +(a.review.note?' · '+esc(a.review.note):'')+'</dd>':'')
+    +'</dl>'
+    +'<div><label class="fl">หมายเหตุ (จำเป็นเมื่อติดปัญหา)</label><input class="inp" id="rvNoteIn" value="'+esc(a.review?a.review.note:'')+'" placeholder="เช่น มาสายเพราะส่งของก่อนเข้างาน"></div>'
+    +'<div class="savebar"><button class="btn" id="rvOk">ยืนยัน<svg class="i"><use href="#i-check"/></svg></button>'
+    +'<button class="btn sec" id="rvFlag">ติดปัญหา</button>'
+    +(canFixAtt()? '<button class="btn sec" id="rvFix">แก้เวลา</button>':'')+'</div>');
+  $('#rvOk').onclick=()=>{ attReview(a,'ok',$('#rvNoteIn').value.trim());
+    closeModal(); toast('ยืนยันแล้ว', s.nick+' · '+thDate(date)); rHr(); refreshAll(); };
+  $('#rvFlag').onclick=()=>{ const n=$('#rvNoteIn').value.trim();
+    if(!n){ toast('ต้องระบุเหตุผล','การติดปัญหาต้องบอกว่าติดตรงไหน',1); return; }
+    attReview(a,'flag',n); closeModal(); toast('ติดปัญหาแล้ว', s.nick+' · '+n); rHr(); refreshAll(); };
+  if($('#rvFix')) $('#rvFix').onclick=()=> attFixModal(s, date, ()=>{ rHr(); refreshAll(); });
+}
 let hrClockTimer=null;
+let ATT_DAY=null;                       /* วันที่กำลังดูในหน้าลงเวลา */
 function rHr(){
   if(!$('#lvSave').dataset.init){ $('#lvSave').dataset.init=1;
     $$('#hrTabs button').forEach(b=> b.onclick=()=>{ $$('#hrTabs button').forEach(x=>x.classList.remove('on'));
@@ -3836,96 +4167,98 @@ function rHr(){
   const tick=()=>{ const el=$('#hrClock'); if(!el || CUR!=='hr'){ clearInterval(hrClockTimer); hrClockTimer=null; return; }
     el.textContent=hhmmss(new Date()); };
   tick(); hrClockTimer=setInterval(tick,1000);
-  $('#hrDate').textContent=thDate(TODAY);
+  /* วันที่กำลังดู — ค่าเริ่มต้นคือวันนี้ ย้อนดูวันไหนก็ได้ */
+  if(!ATT_DAY) ATT_DAY=curDate();
+  if(!$('#attDay').dataset.ready){ $('#attDay').dataset.ready=1;
+    $('#attDay').value=ATT_DAY;
+    $('#attDay').onchange=()=>{ ATT_DAY=$('#attDay').value||curDate(); rHr(); fsSync('hrday'); };
+    $('#attFilt').onclick=()=>openFilters('hrday');
+  }
+  const day=ATT_DAY, ym=day.slice(0,7), isToday=day===curDate();
+  $('#attDay').value=day;
+  fsSync('hrday');
+  $('#hrDate').textContent='วัน'+TH_DOW[new Date(day+'T00:00:00').getDay()]+' '+thDate(day)
+    +(isToday?' (วันนี้)':'')+(isWorkDay(day)?'':' · ร้านปิด');
   const mine = rolePerm().allBranch ? STAFF : STAFF.filter(s=>s.branch===ME.branch || s.id===ME.id);
-  const canFix = ['admin','hr'].indexOf(ME.role)>=0;
-  const attRow=s=>{ const a=ATT.find(x=>x.staffId===s.id)||{};
-      const hrs=(a.in&&a.out)? ((toMin(a.out)-toMin(a.in))/60) : 0;
-      const ot = hrs>8.5? (hrs-8.5) : 0;
-      const late = a.in && toMin(a.in)>toMin(CFG.workIn);
-      const self = s.id===ME.id;
-      const act = self && !a.in && a.status!=='ลา' ? '<button class="lnk" data-in="'+s.id+'">ลงเวลาเข้า</button>'
-                : self && a.in && !a.out           ? '<button class="lnk" data-out="'+s.id+'">ลงเวลาออก</button>'
-                : canFix && !self                  ? '<button class="lnk" data-fix="'+s.id+'">แก้ไข</button>'
-                : '';
-      return crow(self?'class="self"':'',
-        esc(s.nick)+(self?' '+pill('คุณ','brand'):''),
-        (a.status==='ลา'?pill('ลา','info'):(late?pill('สาย','warn'):(a.in?pill('ปกติ','good'):pill('ยังไม่เข้า','mut')))),
-        esc(ROLES[s.role].name)+' · '+esc(bName(s.branch))
-          +' · เข้า <span class="mono">'+esc(a.in||'—')+'</span> ออก <span class="mono">'+esc(a.out||'—')+'</span>'
-          +(hrs?' · '+hrs.toFixed(1)+' ชม.':'')+(ot?' · OT '+ot.toFixed(1):''),
-        act); };
-  tbl($('#attTable'), ['พนักงาน','สาขา','เข้า','ออก',{t:'ชั่วโมง',n:1},{t:'OT',n:1},'สถานะ',''],
-    mine.map(s=>{ const a=ATT.find(x=>x.staffId===s.id)||{};
-      const hrs=(a.in&&a.out)? ((toMin(a.out)-toMin(a.in))/60) : 0;
-      const ot = hrs>8.5? (hrs-8.5) : 0;
-      const late = a.in && toMin(a.in)>toMin(CFG.workIn);
-      const self = s.id===ME.id;
-      /* ปุ่มลงเวลาเฉพาะแถวตัวเอง — คนอื่นลงแทนไม่ได้ · HR/แอดมินแก้ย้อนหลังได้แบบมีบันทึก */
-      const act = self && !a.in && a.status!=='ลา' ? '<button class="lnk" data-in="'+s.id+'">ลงเวลาเข้า</button>'
-                : self && a.in && !a.out           ? '<button class="lnk" data-out="'+s.id+'">ลงเวลาออก</button>'
-                : canFix && !self                  ? '<button class="lnk" data-fix="'+s.id+'">แก้ไข</button>'
-                : '';
-      return '<tr'+(self?' style="background:var(--paper-2)"':'')+'><td><b>'+esc(s.nick)+'</b>'+(self?' '+pill('คุณ','brand'):'')
+  const canFix = canFixAtt();
+  /* ปุ่มลงเวลาเฉพาะแถวตัวเองและเฉพาะวันนี้ — คนอื่นลงแทนไม่ได้ ย้อนหลังต้องผ่านการแก้ที่มีบันทึก */
+  const actOf=(s,a,self)=>
+      isToday && self && !a.in && a.status!=='ลา' ? '<button class="lnk" data-in="'+s.id+'">ลงเวลาเข้า</button>'
+    : isToday && self && a.in && !a.out           ? '<button class="lnk" data-out="'+s.id+'">ลงเวลาออก</button>'
+    : canFix && !self                             ? '<button class="lnk" data-fix="'+s.id+'">แก้ไข</button>'
+    : '';
+  const stOf=(a,c)=> a.status==='ลา'? pill('ลา','info')
+    : (c.late? pill('สาย','warn') : (a.in? (c.openIn&&!isToday? pill('ไม่ได้ลงออก','warn') : pill('ปกติ','good'))
+                                          : pill(isToday?'ยังไม่เข้า':'ไม่มีบันทึก','mut')));
+  const rowsOf = s => { const a=attOf(s.id,day)||{staffId:s.id,date:day,status:onLeave(s.id,day)?'ลา':''};
+    return {s, a, c:attCalc(a), m:attMonth(s.id,ym), self:s.id===ME.id}; };
+  const data = mine.map(rowsOf);
+  tbl($('#attTable'), ['พนักงาน','สาขา','เข้า','ออก',{t:'ชั่วโมง',n:1},{t:'OT',n:1},'สถานะ','เดือนนี้',''],
+    data.map(({s,a,c,m,self})=>
+      '<tr'+(self?' style="background:var(--paper-2)"':'')+'><td><b>'+esc(s.nick)+'</b>'+(self?' '+pill('คุณ','brand'):'')
         +'<div class="tsub">'+esc(ROLES[s.role].name)+'</div></td>'
         +'<td>'+esc(bName(s.branch))+'</td>'
         +'<td class="mono">'+esc(a.in||'—')+' '+attBadges(a,'in')+(a.editLog?' <span title="'+esc(a.editLog[a.editLog.length-1].why)+'">'+pill('แก้ไขแล้ว','warn')+'</span>':'')+'</td>'
         +'<td class="mono">'+esc(a.out||'—')+' '+attBadges(a,'out')+'</td>'
-        +'<td class="n">'+(hrs?hrs.toFixed(1):'—')+'</td><td class="n">'+(ot?ot.toFixed(1):'—')+'</td>'
-        +'<td>'+(a.status==='ลา'?pill('ลา','info'):(late?pill('สาย','warn'):(a.in?pill('ปกติ','good'):pill('ยังไม่เข้า','mut'))))+'</td>'
-        +'<td>'+act+'</td></tr>'; }),
+        +'<td class="n">'+(c.hrs?hm1(c.hrs):'—')+'</td><td class="n">'+(c.otH?hm1(c.otH):'—')+'</td>'
+        +'<td>'+stOf(a,c)+'</td>'
+        +'<td class="tsub">'+m.workDays+' วัน · '+hm1(m.hrs)+' ชม.'
+          +(m.lateDays?'<br>สาย '+m.lateDays+' วัน':'')+(m.missDays?'<br><span style="color:var(--attn)">ไม่มีบันทึก '+m.missDays+' วัน</span>':'')+'</td>'
+        +'<td>'+actOf(s,a,self)+'</td></tr>'),
     'ไม่มีพนักงาน',
-    mine.map(attRow));
-  /* จับเวลา ณ วินาทีที่กด ไม่ใช่ตอนวาดหน้าจอ */
-  $$('[data-in]').forEach(b=> b.onclick=async ()=>{
-    b.disabled=true; b.textContent='กำลังบันทึก…';
-    const proof=await attProof(); const t=hhmmss(new Date());
-    let a=ATT.find(x=>x.staffId===b.dataset.in);
-    if(!a){ a={staffId:b.dataset.in,date:TODAY}; ATT.push(a); }
-    a.in=t; a.inProof=proof;
-    toast('ลงเวลาเข้าแล้ว '+t, proof.photo? 'พร้อมรูปถ่ายยืนยันตัวตน'+(proof.geo?' และพิกัด GPS':'')
-      : 'ไม่มีรูปยืนยัน (ไม่มีกล้องหรือไม่อนุญาต) — บันทึกบัญชีผู้กดไว้แล้ว');
-    rHr(); });
-  $$('[data-out]').forEach(b=> b.onclick=async ()=>{
-    b.disabled=true; b.textContent='กำลังบันทึก…';
-    const proof=await attProof(); const t=hhmmss(new Date());
-    const a=ATT.find(x=>x.staffId===b.dataset.out); a.out=t; a.outProof=proof;
-    toast('ลงเวลาออกแล้ว '+t); rHr(); });
-  /* HR/แอดมิน แก้ย้อนหลังพร้อมเหตุผล — เก็บว่าใครแก้ อะไร ทำไม */
-  $$('[data-fix]').forEach(b=> b.onclick=()=>{ const s=STAFF.find(x=>x.id===b.dataset.fix);
-    let a=ATT.find(x=>x.staffId===s.id); if(!a){ a={staffId:s.id,date:TODAY}; ATT.push(a); }
-    openModal('แก้เวลาย้อนหลัง — '+s.nick,
-      '<div class="note w">'+ic('alert','i i-sm')+'<span>การแก้จะถูกบันทึกว่าใครแก้ เวลาไหน เหตุผลอะไร</span></div>'
-      +'<div class="f"><div class="f2">'
-      +'<div><label class="fl">เวลาเข้า</label><input class="inp mono" id="fxIn" value="'+esc(a.in||'')+'" placeholder="08:30:00"></div>'
-      +'<div><label class="fl">เวลาออก</label><input class="inp mono" id="fxOut" value="'+esc(a.out||'')+'" placeholder="17:30:00"></div></div>'
-      +'<div><label class="fl">เหตุผล (จำเป็น)</label><input class="inp" id="fxWhy" placeholder="เช่น ลืมลงเวลา ระบบล่ม"></div></div>'
-      +'<div class="savebar"><button class="btn" id="fxGo">บันทึก<svg class="i"><use href="#i-check"/></svg></button></div>');
-    $('#fxGo').onclick=()=>{ const why=$('#fxWhy').value.trim();
-      if(!why){ toast('ต้องระบุเหตุผล','การแก้เวลาย้อนหลังต้องมีบันทึก',1); return; }
-      (a.editLog=a.editLog||[]).push({by:ME.name, at:hhmmss(new Date()), why,
-        from:{in:a.in||null,out:a.out||null}});
-      a.in=$('#fxIn').value.trim()||null; a.out=$('#fxOut').value.trim()||null;
-      closeModal(); toast('แก้เวลาแล้ว', s.nick+' · '+why); rHr(); }; });
+    data.map(({s,a,c,m,self})=> crow(self?'class="self"':'',
+      esc(s.nick)+(self?' '+pill('คุณ','brand'):''), stOf(a,c),
+      esc(ROLES[s.role].name)+' · '+esc(bName(s.branch))
+        +' · เข้า <span class="mono">'+esc(a.in||'—')+'</span> '+attBadges(a,'in')
+        +' ออก <span class="mono">'+esc(a.out||'—')+'</span> '+attBadges(a,'out')
+        +(c.hrs?' · '+hm1(c.hrs)+' ชม.':'')+(c.otH?' · OT '+hm1(c.otH):'')
+        +'<br><span class="tsub">เดือนนี้ '+esc(attMonthText(m))+'</span>',
+      actOf(s,a,self))));
+  /* บันทึกเวลา ณ วินาทีที่กด — ปุ่มไม่รอกล้อง รูปตามมาแนบเอง */
+  $$('[data-in]').forEach(b=> b.onclick=()=>{ b.disabled=true; punch(b.dataset.in,'in'); });
+  $$('[data-out]').forEach(b=> b.onclick=()=>{ b.disabled=true; punch(b.dataset.out,'out'); });
+  /* ผู้จัดการ/HR/แอดมิน แก้ย้อนหลังพร้อมเหตุผล — เก็บว่าใครแก้ อะไร ทำไม */
+  $$('[data-fix]').forEach(b=> b.onclick=()=>{
+    attFixModal(STAFF.find(x=>x.id===b.dataset.fix), day); });
   /* ดูรูปถ่ายตอนลงเวลา */
-  $$('[data-attph]').forEach(b=> b.onclick=()=>{ const [sid,side]=b.dataset.attph.split('|');
-    const a=ATT.find(x=>x.staffId===sid); const p=side==='out'? a.outProof : a.inProof;
+  $$('[data-attph]').forEach(b=> b.onclick=async ()=>{ const [sid,dt,side]=b.dataset.attph.split('|');
+    const a=attOf(sid,dt); if(!a) return;
+    const p=(side==='out'? a.outProof : a.inProof)||{};
     const s=STAFF.find(x=>x.id===sid);
+    const rec=p.photoId? await idbGet(p.photoId) : null;
+    const src=rec? rec.data : p.photo;
     openModal('รูปยืนยันตัวตน — '+(s?s.nick:''),
-      '<img src="'+p.photo+'" style="width:100%;border-radius:var(--r-input)" alt="">'
-      +'<dl class="kv" style="margin-top:var(--s2)"><dt>เวลา</dt><dd class="mono">'+esc(side==='out'?a.out:a.in)+'</dd>'
+      (src? '<img src="'+src+'" style="width:100%;border-radius:var(--r-input)" alt="">'
+          : '<div class="note w">'+ic('alert','i i-sm')+'<span>ไม่มีไฟล์รูปแล้ว — อาจถูกลบตามอายุ (เกิน 1 ปี) แต่เวลาที่บันทึกยังอยู่ครบ</span></div>')
+      +'<dl class="kv" style="margin-top:var(--s2)"><dt>วันที่</dt><dd>'+thDate(a.date)+'</dd>'
+      +'<dt>เวลา</dt><dd class="mono">'+esc(side==='out'?a.out:a.in)+'</dd>'
       +'<dt>บัญชีที่กด</dt><dd>'+esc(p.byName||'—')+'</dd>'
       +(p.geo?'<dt>พิกัด</dt><dd class="mono">'+p.geo.lat+', '+p.geo.lng+' (±'+p.geo.acc+' ม.)</dd>':'')
       +'<dt>อุปกรณ์</dt><dd style="font-size:var(--t-label)">'+esc(p.device||'—')+'</dd></dl>'); });
-  const present=mine.filter(s=>{const a=ATT.find(x=>x.staffId===s.id)||{}; return a.in;}).length;
-  const lateN=mine.filter(s=>{const a=ATT.find(x=>x.staffId===s.id)||{}; return a.in&&toMin(a.in)>toMin(CFG.workIn);}).length;
+  const present=data.filter(d=>d.a.in).length;
+  const lateN=data.filter(d=>d.c.late).length;
+  const leaveN=data.filter(d=>d.a.status==='ลา').length;
+  const missTot=data.reduce((n,d)=>n+d.m.missDays,0);
+  const openTot=data.reduce((n,d)=>n+d.m.openDays,0);
   $('#attSum').innerHTML='<div style="font-size:var(--t-table);line-height:2.1">'
-    +'• เข้างานแล้ว <b>'+present+'</b> จาก '+mine.length+' คน<br>'
-    +'• มาสาย <b style="color:var(--attn)">'+lateN+'</b> คน (เกิน '+CFG.workIn+')<br>'
-    +'• ลา <b>'+mine.filter(s=>{const a=ATT.find(x=>x.staffId===s.id)||{}; return a.status==='ลา';}).length+'</b> คน<br>'
+    +'<b>'+thDate(day)+'</b><br>'
+    +'• '+(isToday?'เข้างานแล้ว':'มาทำงาน')+' <b>'+present+'</b> จาก '+data.length+' คน<br>'
+    +'• มาสาย <b style="color:var(--attn)">'+lateN+'</b> คน (เกิน '+CFG.workIn+' + ผ่อนผัน '+(+CFG.lateGrace||0)+' นาที)<br>'
+    +'• ลา <b>'+leaveN+'</b> คน<br>'
+    +'<b style="display:inline-block;margin-top:var(--s1)">ทั้งเดือน '+rpMonthTh(ym)+'</b><br>'
+    +'• ชั่วโมงรวมทุกคน <b>'+hm1(data.reduce((n,d)=>n+d.m.hrs,0))+'</b> ชม. · OT <b>'+hm1(data.reduce((n,d)=>n+d.m.otH,0))+'</b> ชม.<br>'
+    +'• วันที่<b style="color:var(--attn)">ไม่มีบันทึก '+missTot+'</b> วัน'+(openTot?' · ลืมลงเวลาออก '+openTot+' วัน':'')
+    +(missTot||openTot?' — เงินเดือนจ่ายตามที่บันทึกไว้ ผู้จัดการต้องตามแก้ก่อนปิดงวด':'')+'<br>'
     +'• เวลาทำงานมาตรฐาน '+CFG.workIn+' – '+CFG.workOut+' · OT คิด '+CFG.otRate+' เท่า<br>'
-    +'• เวลาเก็บละเอียดถึง<b>วินาที</b> · ลงเวลาแทนกันไม่ได้ — ปุ่มขึ้นเฉพาะแถวของคนที่ล็อกอิน<br>'
-    +'• กดแล้วระบบถ่ายรูป + เก็บพิกัด (ถ้าเครื่องมีและอนุญาต) ดูได้จากไอคอนหลังเวลา</div>';
+    +'• เวลาเก็บละเอียดถึง<b>วินาที</b>และมีผลกับเงินจริง · ลงเวลาแทนกันไม่ได้ — ปุ่มขึ้นเฉพาะแถวของคนที่ล็อกอิน<br>'
+    +'• กดแล้วระบบถ่ายรูป + เก็บพิกัด (ถ้าเครื่องมีและอนุญาต) ดูได้จากไอคอนหลังเวลา<br>'
+    +'<span id="attStore">• กำลังอ่านพื้นที่เก็บรูป…</span></div>';
+  photoStats().then(st=>{ const el=$('#attStore'); if(!el) return;
+    const mb=(st.bytes/1048576).toFixed(2);
+    const parts=PH_TIERS.filter(t=>st.by[t.k]).map(t=>st.by[t.k].n+' รูป'+(t.k==='fresh'?' ขนาดเต็ม':' ย่อแล้ว')+' '+t.w+'×'+t.h);
+    el.innerHTML='• รูปลงเวลาเก็บอยู่ <b>'+st.n+'</b> รูป รวม <b>'+mb+' MB</b>'+(parts.length?' ('+parts.join(' · ')+')':'')
+      +'<br>• เกิน 30 วันย่อเหลือ 384×288 · เกิน 1 ปีลบรูปทิ้ง เหลือแต่เวลา — เครื่องจึงไม่บวม'
+      +(st.mem? '<br>• <b style="color:var(--attn)">เบราว์เซอร์นี้เก็บรูปถาวรไม่ได้</b> รูปจะหายเมื่อปิดแอป':''); });
   tbl($('#lvTable'), ['พนักงาน','ประเภท','ตั้งแต่','ถึง','สถานะ',''],
     LEAVES.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId);
       return '<tr><td><b>'+esc(s?s.nick:'—')+'</b></td><td>'+esc(l.type)+'</td><td>'+thDate(l.from)+'</td><td>'+thDate(l.to)+'</td>'
@@ -3942,16 +4275,64 @@ function rHr(){
           +'<button class="lnk q" data-lv="'+l.id+'" data-ok="0">ไม่อนุมัติ</button>':'')); }));
   $$('[data-lv]').forEach(b=> b.onclick=()=>{ const l=LEAVES.find(x=>x.id===b.dataset.lv);
     l.status = b.dataset.ok==='1'?'อนุมัติแล้ว':'ไม่อนุมัติ'; toast('บันทึกแล้ว',l.status); refreshAll(); });
+  rReview(ym);
 }
-function toMin(t){ if(!t) return 0; const p=String(t).split(':'); return (+p[0])*60+(+p[1]||0); }
+/* ---------- แท็บตรวจการลงเวลา (แอดมิน · ผู้จัดการ · HR) ---------- */
+function rReview(ym){
+  const on=canFixAtt();
+  $('#hrTabRv').style.display = on? '' : 'none';
+  if(!on){ if($('#hrTabRv').classList.contains('on')) $$('#hrTabs button')[0].click(); return; }
+  const q=attQueue(ym), miss=attMissing(ym), done=attQueue(ym,1);
+  $('#rvSub').textContent=rpMonthTh(ym)+' · '+q.length+' รายการ';
+  tbl($('#rvTable'), ['พนักงาน','วันที่','เข้า','ออก','ธง',''],
+    q.map(x=>'<tr><td><b>'+esc(x.s.nick)+'</b><div class="tsub">'+esc(bName(x.s.branch))+'</div></td>'
+      +'<td>'+thShort(x.a.date)+'</td><td class="mono">'+esc(x.a.in||'—')+' '+attBadges(x.a,'in')+'</td>'
+      +'<td class="mono">'+esc(x.a.out||'—')+' '+attBadges(x.a,'out')+'</td>'
+      +'<td>'+x.f.map(y=>pill(y.t,y.tone)).join(' ')+'</td>'
+      +'<td><button class="lnk" data-rv="'+x.s.id+'|'+x.a.date+'">ตรวจ</button></td></tr>'),
+    'ไม่มีรายการรอตรวจในงวดนี้',
+    q.map(x=>crow('data-rv="'+x.s.id+'|'+x.a.date+'"', esc(x.s.nick), thShort(x.a.date),
+      'เข้า <span class="mono">'+esc(x.a.in||'—')+'</span> ออก <span class="mono">'+esc(x.a.out||'—')+'</span> · '+esc(bName(x.s.branch))
+        +'<br>'+x.f.map(y=>pill(y.t,y.tone)).join(' '),
+      '<button class="lnk" data-rv="'+x.s.id+'|'+x.a.date+'">ตรวจ</button>')));
+  $$('[data-rv]').forEach(b=> b.onclick=e=>{ e.stopPropagation();
+    const [sid,dt]=b.dataset.rv.split('|'); attReviewSheet(sid,dt); });
+  $('#rvNote').innerHTML = miss.length
+    ? '<div class="note w">'+ic('alert','i i-sm')+'<span><b>ไม่มีบันทึกลงเวลา '+miss.length+' วัน-คน</b>ในงวดนี้ '
+      +'('+esc([...new Set(miss.map(m=>m.s.nick))].slice(0,4).join(' · '))+(new Set(miss.map(m=>m.s.nick)).size>4?' และอื่น ๆ':'')+') '
+      +'— เปิดแท็บลงเวลา เลือกวันนั้น แล้วกดแก้ไขเพื่อเติมเวลาพร้อมเหตุผล</span></div>'
+    : '<div class="note g">'+ic('check-circle','i i-sm')+'<span>ทุกคนมีบันทึกครบทุกวันทำงานในงวดนี้</span></div>';
+  $('#rvAllOk').disabled = !q.length;
+  $('#rvAllOk').onclick=()=>{ if(!q.length) return;
+    q.forEach(x=>attReview(x.a,'ok',''));
+    toast('ยืนยันแล้ว '+q.length+' รายการ','บันทึกว่าใครตรวจและตรวจเมื่อไหร่'); rHr(); refreshAll(); };
+  tbl($('#rvDone'), ['พนักงาน','วันที่','ผล','ผู้ตรวจ','หมายเหตุ'],
+    done.slice(0,30).map(x=>'<tr><td><b>'+esc(x.s.nick)+'</b></td><td>'+thShort(x.a.date)+'</td>'
+      +'<td>'+pill(x.a.review.status==='ok'?'ยืนยัน':'ติดปัญหา', x.a.review.status==='ok'?'good':'bad')+'</td>'
+      +'<td>'+esc(x.a.review.by)+'</td><td class="tsub">'+esc(x.a.review.note||'—')+'</td></tr>'),
+    'ยังไม่มีรายการที่ตรวจแล้ว',
+    done.slice(0,30).map(x=>crow('', esc(x.s.nick),
+      pill(x.a.review.status==='ok'?'ยืนยัน':'ติดปัญหา', x.a.review.status==='ok'?'good':'bad'),
+      thShort(x.a.date)+' · ตรวจโดย '+esc(x.a.review.by)+(x.a.review.note?' · '+esc(x.a.review.note):''))));
+}
 
 /* ============================= 18. เงินเดือน ============================= */
+let PR_MONTH=null;                      /* งวดเงินเดือนที่กำลังดู */
 function rPayroll(){
   if(!$('#prWho').dataset.init){ $('#prWho').dataset.init=1;
     $('#prWho').innerHTML=STAFF.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('');
     $('#prWho').onchange=prSlip;
     $('#prPrint').onclick=()=>printHTML($('#prSlip').innerHTML);
-    $('#prSsn').onclick=()=>{ const rows=prCalc();
+    /* งวดย้อนหลังดูได้ — ประวัติลงเวลาเก็บรายวัน จึงคิดเงินเดือนเดือนไหนก็ได้ */
+    const m0=curDate().slice(0,7);
+    $('#prMonth').innerHTML=[0,1,2,3].map(i=>{
+      const d=new Date(+m0.slice(0,4), +m0.slice(5,7)-1-i, 1);
+      const v=iso(new Date(d.getFullYear(), d.getMonth(), 2)).slice(0,7);
+      return '<option value="'+v+'">'+rpMonthTh(v)+'</option>'; }).join('');
+    $('#prMonth').value=m0;
+    $('#prMonth').onchange=()=>{ PR_MONTH=$('#prMonth').value; rPayroll(); fsSync('payrol'); };
+    $('#prFilt').onclick=()=>openFilters('payrol');
+    $('#prSsn').onclick=()=>{ const rows=prCalc(PR_MONTH);
       openModal('รายงานนำส่งเงินสมทบประกันสังคม',
         '<p class="foot" style="padding-top:0;padding-bottom:var(--s2)">อัตรา 5% เพดาน 750 บาท/เดือน · นำส่งรวม = ลูกจ้าง + นายจ้าง</p>'
         +'<div class="tw"><table><thead><tr><th>ชื่อ</th><th>เลขประกันสังคม</th><th class="n">ค่าจ้าง</th><th class="n">ลูกจ้าง</th><th class="n">นายจ้าง</th><th class="n">รวม</th></tr></thead><tbody>'
@@ -3959,27 +4340,44 @@ function rPayroll(){
           +'<td class="n">'+fmt(r.ssn)+'</td><td class="n">'+fmt(r.ssn)+'</td><td class="n">'+fmt(r.ssn*2)+'</td></tr>').join('')
         +'</tbody><tfoot><tr><th colspan="3">รวมนำส่ง</th><th class="n">'+fmt(rows.reduce((s,r)=>s+r.ssn,0))
         +'</th><th class="n">'+fmt(rows.reduce((s,r)=>s+r.ssn,0))+'</th><th class="n">'+fmt(rows.reduce((s,r)=>s+r.ssn*2,0))+'</th></tr></tfoot></table></div>'); };
-    $('#prBank').onclick=()=>{ if(noMoney()){ toast('ไม่มีสิทธิ์ส่งออกข้อมูลเงินเดือน','',1); return; } const rows=prCalc();
+    $('#prBank').onclick=()=>{ if(noMoney()){ toast('ไม่มีสิทธิ์ส่งออกข้อมูลเงินเดือน','',1); return; } const rows=prCalc(PR_MONTH);
       csv('ไฟล์โอนเงินเดือน',['เลขที่บัญชี','ชื่อบัญชี','จำนวนเงิน','อ้างอิง'],
-        rows.map(r=>[r.s.bank, r.s.name, r.net.toFixed(2), 'เงินเดือน '+(NOW.getMonth()+1)+'/'+(NOW.getFullYear()+543)])); };
-    $('#expPr').onclick=()=>{ if(noMoney()){ toast('ไม่มีสิทธิ์ส่งออกข้อมูลเงินเดือน','',1); return; } const rows=prCalc();
-      csv('เงินเดือน',['ชื่อ','ตำแหน่ง','เงินเดือน','OT','คอมมิชชั่น','หักสาย','ประกันสังคม','สุทธิ'],
-        rows.map(r=>[r.s.name,ROLES[r.s.role].name,r.base,r.ot,r.comm,r.lateD,r.ssn,r.net])); };
+        rows.map(r=>[r.s.bank, r.s.name, r.net.toFixed(2), 'เงินเดือน '+(+PR_MONTH.slice(5,7))+'/'+(+PR_MONTH.slice(0,4)+543)])); };
+    $('#expPr').onclick=()=>{ if(noMoney()){ toast('ไม่มีสิทธิ์ส่งออกข้อมูลเงินเดือน','',1); return; } const rows=prCalc(PR_MONTH);
+      csv('เงินเดือน',['ชื่อ','ตำแหน่ง','วันทำงาน','ชั่วโมงรวม','OT (ชม.)','นาทีสาย','วันไม่มีบันทึก','เงินเดือน','OT','คอมมิชชั่น','หักสาย','ประกันสังคม','สุทธิ'],
+        rows.map(r=>[r.s.name,ROLES[r.s.role].name,r.att.workDays,hm1(r.att.hrs),hm1(r.att.otH),Math.round(r.att.lateMin),
+          r.att.missDays,r.base,r.ot,r.comm,r.lateD,r.ssn,r.net])); };
   }
-  $('#prPeriod').textContent='งวด 1 – '+new Date(NOW.getFullYear(),NOW.getMonth()+1,0).getDate()+' '+TH_M[NOW.getMonth()]+' '+(NOW.getFullYear()+543);
-  const rows=prCalc();
-  tbl($('#prTable'), ['พนักงาน','ตำแหน่ง',{t:'เงินเดือน',n:1},{t:'OT',n:1},{t:'คอมมิชชั่น',n:1},{t:'หักสาย',n:1},{t:'ประกันสังคม',n:1},{t:'สุทธิ',n:1}],
+  if(!PR_MONTH) PR_MONTH=curDate().slice(0,7);
+  $('#prMonth').value=PR_MONTH; fsSync('payrol');
+  const lastD=new Date(+PR_MONTH.slice(0,4), +PR_MONTH.slice(5,7), 0).getDate();
+  const partial = PR_MONTH===curDate().slice(0,7);
+  $('#prPeriod').textContent='งวด 1 – '+lastD+' '+rpMonthTh(PR_MONTH)
+    + (partial? ' · คิดถึงวันที่ '+(+curDate().slice(8,10))+' (งวดยังไม่ปิด)' : '');
+  const rows=prCalc(PR_MONTH);
+  const warn=rows.reduce((n,r)=>n+r.att.missDays,0);
+  tbl($('#prTable'), ['พนักงาน','ตำแหน่ง','มาทำงาน',{t:'เงินเดือน',n:1},{t:'OT',n:1},{t:'คอมมิชชั่น',n:1},{t:'หักสาย',n:1},{t:'ประกันสังคม',n:1},{t:'สุทธิ',n:1}],
     rows.map(r=>'<tr><td><b>'+esc(r.s.name)+'</b><div class="tsub">'+esc(bName(r.s.branch))+'</div></td>'
-      +'<td>'+esc(ROLES[r.s.role].name)+'</td><td class="n">'+money(r.base)+'</td><td class="n">'+money(r.ot)+'</td>'
+      +'<td>'+esc(ROLES[r.s.role].name)+'</td>'
+      +'<td class="tsub">'+r.att.workDays+' วัน · '+hm1(r.att.hrs)+' ชม.'
+        +(r.att.otH?'<br>OT '+hm1(r.att.otH)+' ชม.':'')
+        +(r.att.lateMin?'<br>สาย '+Math.round(r.att.lateMin)+' นาที':'')
+        +(r.att.missDays?'<br><span style="color:var(--attn)">ไม่มีบันทึก '+r.att.missDays+' วัน</span>':'')+'</td>'
+      +'<td class="n">'+money(r.base)+'</td><td class="n">'+money(r.ot)+'</td>'
       +'<td class="n">'+money(r.comm)+'</td><td class="n">'+(r.lateD?'-'+fmt(r.lateD):'—')+'</td>'
       +'<td class="n">-'+fmt(r.ssn)+'</td><td class="n"><b>'+money(r.net)+'</b></td></tr>'),
     'ไม่มีพนักงาน',
     rows.map(r=>crow('', esc(r.s.name), money(r.net),
       esc(ROLES[r.s.role].name)+' · '+esc(bName(r.s.branch))
         +' · เงินเดือน '+money(r.base)+' · OT '+money(r.ot)+' · คอม '+money(r.comm)
-        +(r.lateD?' · หักสาย -'+fmt(r.lateD):'')+' · ปกส. -'+fmt(r.ssn))));
+        +(r.lateD?' · หักสาย -'+fmt(r.lateD):'')+' · ปกส. -'+fmt(r.ssn)
+        +'<br><span class="tsub">'+esc(attMonthText(r.att))+'</span>')));
+  $('#prNote').innerHTML = warn
+    ? '<div class="note w">'+ic('alert','i i-sm')+'<span>มีวันที่<b>ไม่มีบันทึกลงเวลารวม '+warn+' วัน</b>ในงวดนี้ — ระบบ<b>ไม่หักเงินอัตโนมัติ</b> '
+      +'จ่ายตามเวลาที่บันทึกไว้ ผู้จัดการควรตามแก้ที่หน้าลงเวลาก่อนปิดงวด</span></div>'
+    : '<div class="note g">'+ic('check-circle','i i-sm')+'<span>ทุกคนมีบันทึกลงเวลาครบทุกวันทำงานในงวดนี้</span></div>';
   const comm={};
-  sScoped().filter(s=>days(s.soldAt,TODAY)<=31).forEach(s=>{ comm[s.sales]=comm[s.sales]||{n:0,gp:0}; comm[s.sales].n++; comm[s.sales].gp+=s.gp; });
+  sScoped().filter(s=>String(s.soldAt).slice(0,7)===PR_MONTH).forEach(s=>{ comm[s.sales]=comm[s.sales]||{n:0,gp:0}; comm[s.sales].n++; comm[s.sales].gp+=s.gp; });
   tbl($('#prComm'), ['พนักงานขาย',{t:'ขายได้',n:1},{t:'กำไรรวม',n:1},{t:'ค่าคอม '+CFG.commPct+'%',n:1}],
     Object.keys(comm).map(k=>'<tr><td><b>'+esc(k)+'</b></td><td class="n">'+comm[k].n+'</td>'
       +'<td class="n">'+money(comm[k].gp)+'</td><td class="n"><b>'+money(comm[k].gp*CFG.commPct/100)+'</b></td></tr>'),
@@ -3988,40 +4386,48 @@ function rPayroll(){
       'ขายได้ '+comm[k].n+' คัน · กำไรรวม '+money(comm[k].gp)+' · ค่าคอม '+CFG.commPct+'%')));
   prSlip();
 }
-function prCalc(){
+/* ---------- เงินเดือนคิดจากบันทึกลงเวลาจริงทั้งเดือน ----------
+   OT = ชั่วโมงที่อยู่เกินเวลาเลิกงาน รวมทั้งเดือน · หักสาย = นาทีสายรวม (หักผ่อนผันรายวันแล้ว)
+   วันที่ไม่มีบันทึกไม่ถูกหักเงินอัตโนมัติ แต่ขึ้นเป็นคำเตือนให้ผู้จัดการตามแก้ก่อนปิดงวด
+   — ตรงกับที่ตกลงกันไว้ว่า "จ่ายตามที่บันทึก ผู้จัดการแก้ได้" */
+function prCalc(ym){
+  ym = ym || curDate().slice(0,7);
   const commByName={};
-  sScoped().filter(s=>days(s.soldAt,TODAY)<=31).forEach(s=>{ commByName[s.sales]=(commByName[s.sales]||0)+s.gp*CFG.commPct/100; });
+  sScoped().filter(s=>String(s.soldAt).slice(0,7)===ym)
+    .forEach(s=>{ commByName[s.sales]=(commByName[s.sales]||0)+s.gp*CFG.commPct/100; });
   return STAFF.map(s=>{
-    const a=ATT.find(x=>x.staffId===s.id)||{};
-    const hrs=(a.in&&a.out)? (toMin(a.out)-toMin(a.in))/60 : 8;
-    const otH=Math.max(0,hrs-8.5);
-    const ot=Math.round(otH*(s.salary/30/8)*CFG.otRate);
-    const lateMin=a.in? Math.max(0,toMin(a.in)-toMin(CFG.workIn)) : 0;
-    const lateD=Math.round(lateMin*(s.salary/30/8/60));
+    const m=attMonth(s.id, ym);
+    const hourly=s.salary/30/8;
+    const ot=Math.round(m.otH*hourly*CFG.otRate);
+    const lateD=Math.round(m.lateMin*(hourly/60));
     const comm=Math.round(commByName[s.nick]||0);
     const base=s.salary;
     const ssn=Math.min(750, Math.round(base*0.05));
-    return {s, base, ot, comm, lateD, ssn, net: base+ot+comm-lateD-ssn};
+    return {s, ym, att:m, base, ot, comm, lateD, ssn, net: base+ot+comm-lateD-ssn};
   });
 }
 function prSlip(){
-  const r=prCalc().find(x=>x.s.id===$('#prWho').value)||prCalc()[0];
+  const all=prCalc(PR_MONTH);
+  const r=all.find(x=>x.s.id===$('#prWho').value)||all[0];
   if(!r){ $('#prSlip').innerHTML=''; return; }
   $('#prSlip').innerHTML='<div class="doc"><h2>'+esc(CFG.company)+'</h2>'
     +'<div class="dsub">'+esc(CFG.address)+'</div><h2 style="margin-top:var(--s2)">สลิปเงินเดือน</h2>'
-    +'<div class="dsub">งวดเดือน '+TH_M[NOW.getMonth()]+' '+(NOW.getFullYear()+543)+'</div>'
+    +'<div class="dsub">งวดเดือน '+rpMonthTh(r.ym)+'</div>'
     +'<div class="co"><div><b>'+esc(r.s.name)+'</b><br>'+esc(ROLES[r.s.role].name)+' · '+esc(bName(r.s.branch))+'</div>'
     +'<div style="text-align:right">เลขที่บัญชี<br><span class="mono">'+esc(r.s.bank)+'</span></div></div>'
     +'<table><thead><tr><th>รายการ</th><th class="n">รายได้ (฿)</th><th class="n">รายหัก (฿)</th></tr></thead><tbody>'
     +'<tr><td>เงินเดือน</td><td class="n">'+fmt(r.base)+'</td><td class="n">—</td></tr>'
-    +'<tr><td>ค่าล่วงเวลา (OT '+CFG.otRate+'x)</td><td class="n">'+fmt(r.ot)+'</td><td class="n">—</td></tr>'
+    +'<tr><td>ค่าล่วงเวลา (OT '+CFG.otRate+'x · '+hm1(r.att.otH)+' ชม.)</td><td class="n">'+fmt(r.ot)+'</td><td class="n">—</td></tr>'
     +'<tr><td>ค่าคอมมิชชั่น</td><td class="n">'+fmt(r.comm)+'</td><td class="n">—</td></tr>'
-    +'<tr><td>หักมาสาย</td><td class="n">—</td><td class="n">'+fmt(r.lateD)+'</td></tr>'
+    +'<tr><td>หักมาสาย ('+Math.round(r.att.lateMin)+' นาที · ผ่อนผันวันละ '+(+CFG.lateGrace||0)+' นาที)</td><td class="n">—</td><td class="n">'+fmt(r.lateD)+'</td></tr>'
     +'<tr><td>ประกันสังคม 5%</td><td class="n">—</td><td class="n">'+fmt(r.ssn)+'</td></tr>'
     +'</tbody></table>'
     +'<div class="tot"><div><span>รวมรายได้</span><span>'+fmt(r.base+r.ot+r.comm)+'</span></div>'
     +'<div><span>รวมรายหัก</span><span>'+fmt(r.lateD+r.ssn)+'</span></div>'
     +'<div class="g"><span>เงินได้สุทธิ</span><span>'+fmt(r.net)+' ฿</span></div></div>'
+    +'<div class="foot" style="padding:var(--s2) 0 0">สรุปการมาทำงาน: '+esc(attMonthText(r.att))
+    +' · เวลามาตรฐาน '+CFG.workIn+'–'+CFG.workOut
+    +(r.att.missDays?' · <b>วันที่ไม่มีบันทึกไม่ถูกหักเงิน</b> รอผู้จัดการตรวจ':'')+'</div>'
     +'<div class="sig"><div>ผู้จ่ายเงิน</div><div>ผู้รับเงิน</div></div></div>';
 }
 
@@ -4116,7 +4522,8 @@ function impCheck(){
 
 /* ============================= 21. ตั้งค่า ============================= */
 const CFMAP={cfCo:'company',cfAddr:'address',cfTax:'taxId',cfPhone:'phone',cfAging:'aging',cfReg:'regDays',
-  cfLow:'lowStock',cfVat:'vat',cfCad:'cadence',cfKm:'km',cfIn:'workIn',cfOut:'workOut',cfOt:'otRate',cfComm:'commPct'};
+  cfLow:'lowStock',cfVat:'vat',cfCad:'cadence',cfKm:'km',cfIn:'workIn',cfOut:'workOut',cfGrace:'lateGrace',
+  cfOt:'otRate',cfComm:'commPct'};
 function rSettings(){
   Object.keys(CFMAP).forEach(k=> $('#'+k).value = CFG[CFMAP[k]]);
   tbl($('#cfFin'), ['บริษัทไฟแนนซ์',{t:'ดอกเบี้ย (%/เดือน)',n:1},{t:'ดาวน์ขั้นต่ำ',n:1},'สถานะ'],
@@ -4131,7 +4538,7 @@ function rSettings(){
       b.classList.add('on'); $$('#s-settings .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p)); });
     $('#vmAdd').onclick=()=>modelModal();
     $('#cfSave').onclick=()=>{ Object.keys(CFMAP).forEach(k=>{ const v=$('#'+k).value;
-      CFG[CFMAP[k]] = ['aging','regDays','lowStock','vat','otRate','commPct'].indexOf(CFMAP[k])>=0 ? num(v) : v; });
+      CFG[CFMAP[k]] = ['aging','regDays','lowStock','vat','lateGrace','otRate','commPct'].indexOf(CFMAP[k])>=0 ? num(v) : v; });
       toast('บันทึกการตั้งค่าแล้ว','ทุกหน้าจะใช้เกณฑ์ใหม่ทันที'); refreshAll(); };
     $('#cfReset').onclick=()=>{ CFG=Object.assign({},DEFAULTS); rSettings(); toast('คืนค่าเริ่มต้นแล้ว'); refreshAll(); };
   }
@@ -4420,13 +4827,19 @@ function rpBuild(tab){
       rows, note:'ภาษีซื้อเป็น<b>ประมาณการ</b>จากรายจ่ายที่มีเลขใบกำกับ (คิด '+CFG.vat+'/107) — ตัวจริงต้องดูใบกำกับภาษีซื้อทีละใบ' };
   }
   if(tab==='payroll'){
-    const rows=prCalc().filter(r=>sc.inB(r.s.branch));
-    return { card:{title:0,right:8}, kpi:[['จ่ายสุทธิรวม', money(rows.reduce((s,r)=>s+r.net,0)), 'งวดเดือนนี้ '+rows.length+' คน'],
+    const ym=sc.m||curDate().slice(0,7);
+    const rows=prCalc(ym).filter(r=>sc.inB(r.s.branch));
+    const miss=rows.reduce((n,r)=>n+r.att.missDays,0);
+    return { card:{title:0,right:12}, kpi:[['จ่ายสุทธิรวม', money(rows.reduce((s,r)=>s+r.net,0)), rpMonthTh(ym)+' · '+rows.length+' คน'],
         ['ค่าคอมรวม', money(rows.reduce((s,r)=>s+r.comm,0)), CFG.commPct+'% ของกำไร'],
-        ['OT รวม', money(rows.reduce((s,r)=>s+r.ot,0)),'']],
-      head:[{t:'พนักงาน'},{t:'ตำแหน่ง'},{t:'สาขา'},{t:'เงินเดือน',n:1,money:1},{t:'OT',n:1,money:1},{t:'ค่าคอม',n:1,money:1},{t:'หักสาย',n:1,money:1},{t:'ปกส.',n:1,money:1},{t:'สุทธิ',n:1,money:1}],
-      rows: rows.map(r=>[r.s.name, ROLES[r.s.role].name, bName(r.s.branch), r.base, r.ot, r.comm, r.lateD, r.ssn, r.net]),
-      note:'ใช้สูตรเดียวกับหน้าเงินเดือน — เดือนปัจจุบันเท่านั้น (ต้นแบบยังไม่เก็บงวดย้อนหลัง)' };
+        ['OT รวม', money(rows.reduce((s,r)=>s+r.ot,0)), hm1(rows.reduce((s,r)=>s+r.att.otH,0))+' ชม.']],
+      head:[{t:'พนักงาน'},{t:'ตำแหน่ง'},{t:'สาขา'},{t:'วันทำงาน',n:1},{t:'ชม.รวม',n:1},{t:'OT (ชม.)',n:1},{t:'นาทีสาย',n:1},
+        {t:'เงินเดือน',n:1,money:1},{t:'OT',n:1,money:1},{t:'ค่าคอม',n:1,money:1},{t:'หักสาย',n:1,money:1},{t:'ปกส.',n:1,money:1},{t:'สุทธิ',n:1,money:1}],
+      rows: rows.map(r=>[r.s.name, ROLES[r.s.role].name, bName(r.s.branch),
+        r.att.workDays, +hm1(r.att.hrs), +hm1(r.att.otH), Math.round(r.att.lateMin),
+        r.base, r.ot, r.comm, r.lateD, r.ssn, r.net]),
+      note:'ใช้สูตรเดียวกับหน้าเงินเดือน — ชั่วโมง OT และนาทีสายมาจากบันทึกลงเวลาจริงทั้งเดือน'
+        +(miss? ' · <b style="color:var(--attn)">มีวันไม่มีบันทึกลงเวลารวม '+miss+' วัน</b> ระบบไม่หักเงินอัตโนมัติ ต้องให้ผู้จัดการตรวจก่อนปิดงวด':'') };
   }
 }
 function rReport(){
@@ -4555,6 +4968,14 @@ function sbSelect(table, params){
   const q = new URLSearchParams(params).toString();
   return sbFetch('/rest/v1/'+table+(q?'?'+q:''));
 }
+/* ---------- ที่ต้องต่อเพิ่มเมื่อย้ายลงเวลาไปโหมดข้อมูลจริง (รอบถัดไป) ----------
+   1) โหลด STAFF จาก app_user ด้วย — ตอนนี้โหมดข้อมูลจริงไม่โหลด ปุ่มลงเวลาจึงไม่โผล่
+   2) รูปต้องขึ้น Storage bucket `attendance/<employee>/<date>/<in|out>.jpg` แล้วเก็บ URL ลง
+      คอลัมน์ check_in_photo_url / check_out_photo_url ที่ migration 10 เตรียมไว้แล้ว
+      — sbFetch ส่งได้แต่ JSON การอัปโหลดไฟล์ต้องเพิ่มทางแยกที่ไม่ตั้ง Content-Type เป็น json
+   3) schema ยังขาด check_out_lat/lng/device (มีแต่ฝั่ง check-in) และยังไม่มีคอลัมน์สถานะการตรวจ
+      ของผู้จัดการ (review_status/review_by/review_at/review_note) ต้องเพิ่มใน migration ถัดไป
+   4) การย่อรูปตามอายุ (agePhotos) ฝั่งจริงควรทำเป็นงานตามกำหนดเวลาที่หลังบ้าน ไม่ใช่ที่เครื่องลูกค้า */
 async function liveLogin(){
   const email=$('#lgEmail').value.trim(), pw=$('#lgPw2').value;
   if(!email||!pw){ toast('กรอกอีเมลและรหัสผ่าน','',1); return; }
@@ -4625,6 +5046,7 @@ $('#lgSwap').onclick=()=>{
 };
 $('#lgGo2').onclick=liveLogin;
 $('#lgPw2').onkeydown=e=>{ if(e.key==='Enter') liveLogin(); };
+agePhotosIdle();          /* เก็บกวาดรูปเก่าตอนเครื่องว่าง ไม่หน่วงตอนเปิดแอป */
 $('#lgGo').onclick=doLogin;
 $('#lgPw').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
 $('#btnOut').onclick=doLogout;
