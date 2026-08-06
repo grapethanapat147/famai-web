@@ -596,7 +596,7 @@ body.lock{ overflow:hidden; }
 }
 @media (max-width:600px){
   .kpis,.kpis.k3,.kpis.k6{ grid-template-columns:repeat(2,1fr); }
-  .kpi .v{ font-size:24px; }
+  .kpi .v{ font-size:clamp(18px,5.2vw,24px); white-space:nowrap; }
   .f2,.f3{ grid-template-columns:1fr; }
   .top .sub{ display:none; }
   .top h1{ font-size:var(--t-h2); overflow-wrap:anywhere; }
@@ -606,15 +606,22 @@ body.lock{ overflow:hidden; }
   #gsBtn{ display:inline-flex; }
   .doc{ padding:var(--s2); }
   .cal .cd{ min-height:56px; padding:var(--s-half); }
-  .tw table{ min-width:560px; }
-  thead th, tbody td{ white-space:nowrap; }
-  tbody td b{ white-space:normal; }
-  .tw table.cards{ min-width:0; }
+  /* ห้ามปัดซ้าย-ขวา: เลิกบังคับความกว้างตาราง ตัวที่ยังเป็นตารางจริงให้บีบคอลัมน์แล้วตัดคำแทน
+     คง .tw{overflow-x:auto} ไว้เป็นกับดัก — ถ้ามีตารางไหนหลุด จะเห็นที่กล่องนั้นแทนที่จะดันทั้งหน้า */
+  table{ table-layout:fixed; }
+  thead th, tbody td{ white-space:normal; overflow-wrap:anywhere; }
+  .tw table.cards{ table-layout:auto; }
   .tw td.cwrap{ white-space:normal; padding:0; border:0; }
-  /* แท็บรายงาน 9 ตัว — แถวเดียวเลื่อนแนวนอนแทนการพันบรรทัด */
-  #rpTabs{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
-  #rpTabs::-webkit-scrollbar{ display:none; }
-  #rpTabs button{ flex:0 0 auto; white-space:nowrap; }
+  .doc table{ table-layout:auto; }        /* กระดาษ A4 คิดความกว้างเองเหมือนเดิม */
+  .doc{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  /* แท็บทุกแถบ = ชิปพับหลายบรรทัด เห็นครบไม่ต้องเลื่อน */
+  .tabs{ flex-wrap:wrap; gap:var(--s1); border-bottom:0; padding-bottom:var(--s1); }
+  .tabs .sp{ flex:0 0 100%; height:0; }
+  .tabs button{ padding:0 var(--s2); min-height:44px; border:1px solid var(--hairline);
+    border-radius:var(--r-pill); background:var(--card); color:var(--ink-soft);
+    font-size:var(--t-label); line-height:1.25; white-space:normal; }
+  .tabs button.on{ border-color:var(--ink); background:var(--ink); color:var(--paper); }
+  .tabs button.on::after{ display:none; }
   .card>.hd,.card>.bd{ padding-left:var(--s2); padding-right:var(--s2); }
   .kpi{ padding:var(--s2); }
   .kv{ grid-template-columns:96px 1fr; }
@@ -4019,7 +4026,7 @@ function rpBuild(tab){
     const rows=Object.values(grp).sort((a,b)=>b.n-a.n).map(g=>[
       g.u.model, g.u.variant, g.u.color, g.n, g.cost, g.u.retail==null?'รอกำหนดราคา':g.u.retail*g.n,
       Math.round(g.age/g.n), g.old||'', g.np?g.np+' คัน':'' ]);
-    return { kpi:[['คงเหลือ',av.length+' <small>คัน</small>',''],
+    return { card:{title:0,right:3}, kpi:[['คงเหลือ',av.length+' <small>คัน</small>',''],
         ['ทุนจมรวม', money(av.reduce((s,u)=>s+u.cost,0)),''],
         ['ค้างเกิน '+CFG.aging+' วัน', av.filter(u=>age(u)>CFG.aging).length+' <small>คัน</small>','ต้องเร่งระบาย']],
       head:[{t:'รุ่น'},{t:'รหัส'},{t:'สี'},{t:'คงเหลือ',n:1},{t:'มูลค่าทุน',n:1,money:1},{t:'มูลค่าขาย',n:1},{t:'อายุเฉลี่ย (วัน)',n:1},{t:'ค้างเกินเกณฑ์',n:1},{t:'รอราคา'}],
@@ -4028,7 +4035,7 @@ function rpBuild(tab){
   if(tab==='pstock'){
     const ps=PARTS.filter(p=>sc.inB(p.branch));
     const mv=PMOVES.filter(x=>sc.inB(x.branch)&&sc.inM(x.at)&&x.qty<0).reduce((s,x)=>s-x.qty,0);
-    return { kpi:[['รายการอะไหล่',ps.length,''],
+    return { card:{title:1,right:3}, kpi:[['รายการอะไหล่',ps.length,''],
         ['ต่ำกว่าจุดสั่งซื้อ',ps.filter(p=>p.qty<p.min).length,'ต้องสั่งเพิ่ม'],
         ['มูลค่าสต๊อก (ทุน)', money(ps.reduce((s,p)=>s+p.cost*p.qty,0)),'']],
       head:[{t:'รหัส'},{t:'ชื่อ'},{t:'สาขา'},{t:'คงเหลือ',n:1},{t:'จุดสั่งซื้อ',n:1},{t:'ทุน/ชิ้น',n:1,money:1},{t:'มูลค่าทุนรวม',n:1,money:1},{t:'สถานะ'}],
@@ -4038,7 +4045,7 @@ function rpBuild(tab){
   }
   if(tab==='sales'){
     const ss=SALES.filter(s=>!s.void&&sc.inB(s.branch)&&sc.inM(s.soldAt)).sort((a,b)=>a.soldAt.localeCompare(b.soldAt));
-    return { kpi:[['ขายได้',ss.length+' <small>คัน</small>',rpMonthTh(sc.m)],
+    return { card:{title:1,right:8}, kpi:[['ขายได้',ss.length+' <small>คัน</small>',rpMonthTh(sc.m)],
         ['ยอดขายรวม', money(ss.reduce((s,x)=>s+x.net,0)),''],
         ['กำไรขั้นต้นรวม', money(ss.reduce((s,x)=>s+x.gp,0)),'หลังหักของแถม']],
       head:[{t:'วันที่'},{t:'ลูกค้า'},{t:'รุ่น'},{t:'สาขา'},{t:'เซลล์'},{t:'ชำระ'},{t:'ก่อน VAT',n:1},{t:'VAT',n:1},{t:'สุทธิ',n:1},{t:'ทุน',n:1,money:1},{t:'กำไร',n:1,money:1}],
@@ -4064,7 +4071,7 @@ function rpBuild(tab){
     const rows=recv.concat(svc, pts, exp);
     const rin=recv.concat(svc,pts).reduce((s,r)=>s+r[5],0), rout=-exp.reduce((s,r)=>s+r[5],0);
     const owe=AR.filter(a=>sc.inB(a.branch)).reduce((s,a)=>s+(a.due-a.paid),0);
-    return { kpi:[['รับเงินจริง', money(rin), rpMonthTh(sc.m)],
+    return { card:{title:2,right:5}, kpi:[['รับเงินจริง', money(rin), rpMonthTh(sc.m)],
         ['จ่ายออก', money(rout),''],
         ['ค้างรับคงเหลือ', money(owe),'ทุกงวดรวมกัน']],
       head:[{t:'วันที่'},{t:'ประเภท'},{t:'รายการ'},{t:'สาขา'},{t:'อ้างอิง/วิธี'},{t:'จำนวน (฿)',n:1,money:1}],
@@ -4096,7 +4103,7 @@ function rpBuild(tab){
       rows.push(['จ่ายออก', e.cat+' — '+e.vendor, bName(e.branch), e.inv||'', -e.amt]));
     const inn=rows.slice(0,nIn).reduce((s,r)=>s+r[4],0);
     const out=-rows.slice(nIn).reduce((s,r)=>s+r[4],0);
-    return { kpi:[['รับเข้ารวม', money(inn), thDate(day)],
+    return { card:{title:1,right:4}, kpi:[['รับเข้ารวม', money(inn), thDate(day)],
         ['จ่ายออกรวม', money(out), (rows.length-nIn)+' รายการ'],
         ['เงินสุทธิของวัน', money(inn-out), 'รับเข้า − จ่ายออก']],
       head:[{t:'ประเภท'},{t:'รายการ'},{t:'สาขา'},{t:'อ้างอิง/วิธี'},{t:'จำนวน (฿)',n:1,money:1}],
@@ -4116,7 +4123,7 @@ function rpBuild(tab){
     const keys=Object.keys(grp).sort((a,b)=>grp[b].net-grp[a].net);
     const tot=ss.reduce((s,x)=>s+x.net,0);
     const dimTh={model:'รุ่น',sales:'เซลล์',branch:'สาขา'}[sc.dim];
-    return { kpi:[['ขายได้', ss.length+' <small>คัน</small>', rpMonthTh(sc.m)],
+    return { card:{title:0,right:2}, kpi:[['ขายได้', ss.length+' <small>คัน</small>', rpMonthTh(sc.m)],
         ['ยอดขายรวม', money(tot), keys.length+' '+dimTh],
         ['อันดับ 1', keys.length?esc(keys[0]):'—', keys.length&&tot? Math.round(grp[keys[0]].net/tot*100)+'% ของยอดขาย':'']],
       head:[{t:dimTh},{t:'ขายได้ (คัน)',n:1},{t:'ยอดขายรวม',n:1,money:1},{t:'สัดส่วน',n:1},
@@ -4142,7 +4149,7 @@ function rpBuild(tab){
     }).filter(r=>r[1]>0 || !sc.m);                      /* เดือนที่เลือกไม่มีเคสของเจ้าไหน ตัดแถวนั้นออก */
     const aAll=cs.filter(c=>c.status==='อนุมัติแล้ว').length;
     const totComm=rows.reduce((s,r)=>s+r[8],0);
-    return { kpi:[['เคสยื่นในงวด', cs.length+' <small>เคส</small>', rpMonthTh(sc.m)],
+    return { card:{title:0,right:5}, kpi:[['เคสยื่นในงวด', cs.length+' <small>เคส</small>', rpMonthTh(sc.m)],
         ['อัตราอนุมัติรวม', cs.length?Math.round(aAll/cs.length*100)+'%':'—', 'อนุมัติ '+aAll+' จาก '+cs.length+' เคส'],
         ['ค่าคอมคาดรับ', money(totComm), 'เคสอนุมัติ × เรตต่อสัญญา']],
       head:[{t:'ไฟแนนซ์'},{t:'ยื่น',n:1},{t:'อนุมัติ',n:1},{t:'ปฏิเสธ',n:1},{t:'รอผล',n:1},
@@ -4159,7 +4166,7 @@ function rpBuild(tab){
     const outVat=ss.reduce((s,x)=>s+(x.net-Math.round(x.net/(1+CFG.vat/100))),0);
     const expInv=EXPENSES.filter(e=>sc.inB(e.branch)&&sc.inM(e.at)&&e.inv);
     const inVat=Math.round(expInv.reduce((s,e)=>s+e.amt,0)*CFG.vat/(100+CFG.vat));
-    return { kpi:[['ภาษีขาย', money(outVat), ss.length+' ใบ · '+rpMonthTh(sc.m)],
+    return { card:{title:2,right:6}, kpi:[['ภาษีขาย', money(outVat), ss.length+' ใบ · '+rpMonthTh(sc.m)],
         ['ภาษีซื้อ (ประมาณ)', money(inVat), 'จากรายจ่ายที่มีเลขใบกำกับ '+expInv.length+' ใบ'],
         ['ต้องนำส่ง (ประมาณ)', money(outVat-inVat),'ภาษีขาย − ภาษีซื้อ']],
       head:[{t:'วันที่'},{t:'เลขที่ใบกำกับ'},{t:'ลูกค้า'},{t:'รายการ'},{t:'ก่อนภาษี',n:1,money:1},{t:'VAT '+CFG.vat+'%',n:1,money:1},{t:'รวม',n:1,money:1}],
@@ -4167,7 +4174,7 @@ function rpBuild(tab){
   }
   if(tab==='payroll'){
     const rows=prCalc().filter(r=>sc.inB(r.s.branch));
-    return { kpi:[['จ่ายสุทธิรวม', money(rows.reduce((s,r)=>s+r.net,0)), 'งวดเดือนนี้ '+rows.length+' คน'],
+    return { card:{title:0,right:8}, kpi:[['จ่ายสุทธิรวม', money(rows.reduce((s,r)=>s+r.net,0)), 'งวดเดือนนี้ '+rows.length+' คน'],
         ['ค่าคอมรวม', money(rows.reduce((s,r)=>s+r.comm,0)), CFG.commPct+'% ของกำไร'],
         ['OT รวม', money(rows.reduce((s,r)=>s+r.ot,0)),'']],
       head:[{t:'พนักงาน'},{t:'ตำแหน่ง'},{t:'สาขา'},{t:'เงินเดือน',n:1,money:1},{t:'OT',n:1,money:1},{t:'ค่าคอม',n:1,money:1},{t:'หักสาย',n:1,money:1},{t:'ปกส.',n:1,money:1},{t:'สุทธิ',n:1,money:1}],
@@ -4217,12 +4224,27 @@ function rReport(){
   const d=rpBuild(RP_SEL);
   $('#rpTitle').textContent='รายงาน'+RP_TABS.find(t=>t.k===RP_SEL).n;
   $('#rpKpi').innerHTML=d.kpi.map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
+  const cell=(v,h)=> h.money&&noMoney()? '—' : (typeof v==='number'? fmt(v) : esc(v==null||v===''?'—':v));
   tbl($('#rpTable'), d.head.map(h=>h.n?{t:h.t,n:1}:h.t),
-    d.rows.map(r=>'<tr>'+r.map((v,i)=>{ const h=d.head[i];
-      const cell = h.money&&noMoney()? '—' : (typeof v==='number'? fmt(v) : esc(v==null||v===''?'—':v));
-      return '<td'+(h.n?' class="n"':'')+'>'+cell+'</td>'; }).join('')+'</tr>'),
-    'ไม่มีข้อมูลตามเงื่อนไข');
+    d.rows.map(r=>'<tr>'+r.map((v,i)=>'<td'+(d.head[i].n?' class="n"':'')+'>'+cell(v,d.head[i])+'</td>').join('')+'</tr>'),
+    'ไม่มีข้อมูลตามเงื่อนไข',
+    rpCards(d, cell));
   $('#rpNote').innerHTML=d.note? '<p class="foot">'+d.note+'</p>' : '';
+}
+/* รายงานบนมือถือ = การ์ด ไม่ใช่ตารางที่ต้องปัดข้าง
+   แต่ละแท็บบอกได้ว่าคอลัมน์ไหนเป็นหัวการ์ด/ตัวเลขใหญ่ผ่าน d.card ถ้าไม่บอกใช้กฎกลาง */
+function rpCards(d, cell){
+  const H=d.head;
+  const c=d.card||{};
+  let ti = c.title!=null? c.title : H.findIndex(h=>!h.n);
+  if(ti<0) ti=0;
+  let ri = c.right;
+  if(ri==null){ const nums=H.map((h,i)=>h.n||h.money?i:-1).filter(i=>i>=0&&i!==ti); ri=nums.length?nums[nums.length-1]:-1; }
+  const subs = c.sub || H.map((h,i)=>i).filter(i=>i!==ti&&i!==ri);
+  return d.rows.map(r=>crow('',
+    cell(r[ti],H[ti]),
+    ri>=0? cell(r[ri],H[ri]) : '',
+    subs.map(i=>{ const v=cell(r[i],H[i]); return v==='—'? '' : H[i].t+' '+v; }).filter(Boolean).join(' · ')));
 }
 
 /* ============================= ค้นหารวม ============================= */
