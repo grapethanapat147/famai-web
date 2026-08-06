@@ -231,7 +231,10 @@ tfoot th.n{ text-align:right; }
 /* การ์ดแทนแถวตารางบนจอแคบ — สร้างโดย tbl(...,cards) */
 .crow{ background:var(--paper); border-radius:var(--r-input); padding:var(--s2);
   margin:0 var(--s2) var(--s1); font-size:var(--t-table); }
-.crow[data-unit],.crow[data-cust],.crow[data-reg2],.crow[data-fin2],.crow[data-sdet],.crow[data-dsale],.crow.clk{ cursor:pointer; }
+.crow[data-unit],.crow[data-cust],.crow[data-reg2],.crow[data-fin2],.crow[data-sdet],
+.crow[data-dsale],.crow[data-grp],.crow[data-pick],.crow.clk{ cursor:pointer; }
+.crow.self{ background:var(--paper-2); }
+.crow.sub{ background:var(--paper-2); margin-left:var(--s4); }
 .crow .cr1{ display:flex; justify-content:space-between; gap:var(--s2); align-items:baseline; }
 .crow .crt{ font-weight:600; min-width:0; }
 .crow .crr{ font-variant-numeric:tabular-nums; flex:0 0 auto; }
@@ -1984,7 +1987,9 @@ function rDash(){
   const spk=Object.keys(sp).sort((a,b)=>sp[b].n-sp[a].n);
   tbl($('#chStaff'), ['พนักงานขาย',{t:'คัน',n:1},{t:'ยอดขาย',n:1},{t:'กำไร',n:1}],
     spk.map((k,i)=>'<tr><td><b>'+esc(k)+'</b> '+(i===0?'<span class="pill p-good">อันดับ 1</span>':'')+'</td><td class="n">'+sp[k].n+'</td><td class="n">'+fmt(sp[k].rev)+'</td><td class="n">'+(noMoney()?'—':fmt(sp[k].gp))+'</td></tr>'),
-    'ยังไม่มียอดขายในช่วงนี้');
+    'ยังไม่มียอดขายในช่วงนี้',
+    spk.map((k,i)=>crow('', esc(k)+(i===0?' '+pill('อันดับ 1','good'):''), fmt(sp[k].rev),
+      'ขายได้ '+sp[k].n+' คัน'+(noMoney()?'':' · กำไร '+fmt(sp[k].gp)))));
 
   /* สต๊อกใกล้หมด */
   const cnt={}; su.forEach(u=>cnt[u.model]=(cnt[u.model]||0)+1);
@@ -2231,7 +2236,10 @@ function rRecent(){
     UNITS.filter(u=>inScope(u.branch)).slice().sort((a,b)=>b.received.localeCompare(a.received)).slice(0,8)
     .map(u=>'<tr class="clk" data-unit="'+u.id+'"><td><b>'+esc(u.model)+'</b><div class="tsub">'+esc(u.color)+'</div></td>'
       +'<td class="mono">'+esc(u.engine)+'</td><td>'+esc(bName(u.branch))+'</td><td class="n">'+ageTag(age(u))+'</td></tr>'),
-    'ยังไม่มีรถในสาขาที่คุณดูแล');
+    'ยังไม่มีรถในสาขาที่คุณดูแล',
+    UNITS.filter(u=>inScope(u.branch)).slice().sort((a,b)=>b.received.localeCompare(a.received)).slice(0,8)
+    .map(u=>crow('data-unit="'+u.id+'"', esc(u.model), ageTag(age(u)),
+      esc(u.color)+' · <span class="mono">'+esc(u.engine)+'</span> · '+esc(bName(u.branch)))));
   wireUnitRows();
 }
 function saveRecv(){
@@ -2686,13 +2694,18 @@ function rTransfer(){
     || '<option value="">ไม่มีรถ</option>';
   $('#tTo').innerHTML=BRANCHES.map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
   const u0=UNITS.find(x=>x.id===$('#tUnit').value); $('#tFrom').value=u0?bName(u0.branch):'';
+  const trL=TRANSFERS.map(t=>({t, u:UNITS.find(x=>x.id===t.unitId)}));
   tbl($('#tList'), ['วันที่','รุ่น','จาก','ไป','สถานะ',''],
-    TRANSFERS.map(t=>{ const u=UNITS.find(x=>x.id===t.unitId);
-      return '<tr><td>'+thDate(t.at)+'</td><td><b>'+esc(u?u.model:'—')+'</b><div class="tsub mono">'+esc(u?u.engine:'')+'</div></td>'
+    trL.map(({t,u})=>'<tr><td>'+thDate(t.at)+'</td><td><b>'+esc(u?u.model:'—')+'</b><div class="tsub mono">'+esc(u?u.engine:'')+'</div></td>'
         +'<td>'+esc(bName(t.from))+'</td><td>'+esc(bName(t.to))+'</td>'
         +'<td>'+(t.status==='รับแล้ว'?pill('รับแล้ว','good'):pill('กำลังโอนย้าย','info'))+'</td>'
-        +'<td>'+(t.status!=='รับแล้ว'?'<button class="lnk" data-tr="'+t.id+'">ยืนยันรับ</button>':'')+'</td></tr>'; }),
-    'ยังไม่มีการโอนย้าย');
+        +'<td>'+(t.status!=='รับแล้ว'?'<button class="lnk" data-tr="'+t.id+'">ยืนยันรับ</button>':'')+'</td></tr>'),
+    'ยังไม่มีการโอนย้าย',
+    trL.map(({t,u})=>crow('',
+      esc(u?u.model:'—'),
+      (t.status==='รับแล้ว'?pill('รับแล้ว','good'):pill('กำลังโอนย้าย','info')),
+      '<span class="mono">'+esc(u?u.engine:'')+'</span> · '+esc(bName(t.from))+' → '+esc(bName(t.to))+' · '+thDate(t.at),
+      (t.status!=='รับแล้ว'?'<button class="lnk" data-tr="'+t.id+'">ยืนยันรับ</button>':''))));
   $$('[data-tr]').forEach(b=> b.onclick=()=>{ const t=TRANSFERS.find(x=>x.id===b.dataset.tr);
     const u=UNITS.find(x=>x.id===t.unitId); t.status='รับแล้ว'; if(u){ u.branch=t.to; u.status='available'; }
     toast('รับรถเข้าสาขาแล้ว', bName(t.to)); refreshAll(); });
@@ -3098,7 +3111,13 @@ function rFin(){
     return '<tr><td><b>'+esc(f.name)+'</b><div class="tsub">ดอกเบี้ย '+f.rate+'%/เดือน</div></td>'
       +'<td class="n">'+cs.length+'</td><td class="n">'+a+'</td><td class="n">'+r+'</td>'
       +'<td class="n">'+(cs.length? pill(Math.round(a/cs.length*100)+'%', a/cs.length>=.7?'good':'warn') :'—')+'</td></tr>'; });
-  tbl($('#finRate'), ['ไฟแนนซ์',{t:'ยื่น',n:1},{t:'อนุมัติ',n:1},{t:'ปฏิเสธ',n:1},{t:'อัตราอนุมัติ',n:1}], rate, 'ยังไม่มีเคส');
+  const rateCards=FIN_CO.map(f=>{ const cs=all.filter(c=>c.finId===f.id);
+    const a=cs.filter(c=>c.status==='อนุมัติแล้ว').length, r=cs.filter(c=>c.status==='ปฏิเสธ').length;
+    return crow('', esc(f.name),
+      (cs.length? pill(Math.round(a/cs.length*100)+'%', a/cs.length>=.7?'good':'warn') :'—'),
+      'ยื่น '+cs.length+' · อนุมัติ '+a+' · ปฏิเสธ '+r+' · ดอกเบี้ย '+f.rate+'%/เดือน'); });
+  tbl($('#finRate'), ['ไฟแนนซ์',{t:'ยื่น',n:1},{t:'อนุมัติ',n:1},{t:'ปฏิเสธ',n:1},{t:'อัตราอนุมัติ',n:1}],
+    rate, 'ยังไม่มีเคส', rateCards);
   rFinPeople();
 }
 /* ---------- ติดตามสถานะไฟแนนซ์รายคน — progress bar + ตัวกรอง ---------- */
@@ -3184,7 +3203,18 @@ function rFinCo(){
       +(edit? '<td style="white-space:nowrap"><button class="lnk" data-fce="'+f.id+'">แก้ไข</button>'
         +' <button class="lnk" data-fct="'+f.id+'">'+(f.active?'ปิด':'เปิด')+'</button>'
         +' <button class="lnk" data-fcd="'+f.id+'">ลบ</button></td>' : '')
-      +'</tr>'; }), 'ยังไม่มีบริษัทไฟแนนซ์');
+      +'</tr>'; }), 'ยังไม่มีบริษัทไฟแนนซ์',
+    FIN_CO.map(f=>{
+      const n=finRefs(f.id);
+      const sub=['ดอกเบี้ย '+f.rate+'%/เดือน','ดาวน์ขั้นต่ำ '+f.minDownPct+'%']
+        .concat(noMoney()? [] : ['ค่าคอม '+fmt(f.commission)+' ฿'])
+        .concat(n? ['ใช้อยู่ '+n+' รายการ'] : []).join(' · ');
+      const tiers=f.rates? FIN_TERMS.filter(t=>f.rates[t]!=null).map(t=>t+' งวด '+f.rates[t]+'%').join(' · ') : '';
+      return crow('', esc(f.name), (f.active? pill('ใช้งาน','good') : pill('ปิดใช้งาน','mut')),
+        esc(sub)+(tiers? '<br>เรตเฉพาะงวด: '+esc(tiers):'')+(f.note? '<br>'+esc(f.note):''),
+        (edit? '<button class="lnk" data-fce="'+f.id+'">แก้ไข</button>'
+          +'<button class="lnk q" data-fct="'+f.id+'">'+(f.active?'ปิด':'เปิด')+'</button>'
+          +'<button class="lnk q" data-fcd="'+f.id+'">ลบ</button>' : '')); }));
   if(!edit) return;
   $$('[data-fct]').forEach(b=> b.onclick=()=>{ const f=finById(b.dataset.fct); f.active=!f.active;
     toast(f.active?'เปิดใช้งานแล้ว':'ปิดใช้งานแล้ว', f.name); refreshAll(); });
@@ -3475,7 +3505,11 @@ function rParts(){
     ps.map(p=>'<tr><td class="mono">'+esc(p.code)+'</td><td><b>'+esc(p.name)+'</b></td><td>'+esc(bName(p.branch))+'</td>'
       +'<td class="n">'+p.qty+'</td><td class="n">'+money(p.cost)+'</td><td class="n">'+fmt(p.price)+'</td>'
       +'<td>'+(p.qty===0?pill('หมด','bad'):(p.qty<p.min?pill('ใกล้หมด','warn'):pill('ปกติ','good')))+'</td></tr>'),
-    'ยังไม่มีอะไหล่');
+    'ยังไม่มีอะไหล่',
+    ps.map(p=>crow('', esc(p.name), 'เหลือ '+p.qty,
+      '<span class="mono">'+esc(p.code)+'</span> · '+esc(bName(p.branch))+' · ทุน '+money(p.cost)+' · ขาย '+fmt(p.price)+' ฿',
+      (p.qty===0?pill('หมด','bad'):(p.qty<p.min?pill('ใกล้หมด','warn'):pill('ปกติ','good')))
+        +' <span class="tsub">จุดสั่งซื้อ '+p.min+'</span>')));
 }
 function rPartSale(){
   if(!$('#msSave').dataset.init){ $('#msSave').dataset.init=1;
@@ -3489,12 +3523,17 @@ function rPartSale(){
   }
   $('#msPart').innerHTML=PARTS.filter(p=>inScope(p.branch)).map(p=>'<option value="'+p.id+'">'+esc(p.name)+' (เหลือ '+p.qty+')</option>').join('');
   msPrev();
+  const msL=PMOVES.filter(m=>inScope(m.branch)).slice().reverse().slice(0,15);
   tbl($('#msTable'), ['วันที่','อะไหล่','ประเภท',{t:'จำนวน',n:1},'สาขา'],
-    PMOVES.filter(m=>inScope(m.branch)).slice().reverse().slice(0,15).map(m=>{ const p=PARTS.find(x=>x.id===m.partId);
+    msL.map(m=>{ const p=PARTS.find(x=>x.id===m.partId);
       return '<tr><td>'+thDate(m.at)+'</td><td>'+esc(p?p.name:'—')+'</td>'
         +'<td>'+(m.type==='job'?pill('เข้าใบงาน','info'):pill('ขายหน้าร้าน','mut'))+'</td>'
         +'<td class="n">'+m.qty+'</td><td>'+esc(bName(m.branch))+'</td></tr>'; }),
-    'ยังไม่มีการเคลื่อนไหว');
+    'ยังไม่มีการเคลื่อนไหว',
+    msL.map(m=>{ const p=PARTS.find(x=>x.id===m.partId);
+      return crow('', esc(p?p.name:'—'), m.qty+' ชิ้น',
+        thDate(m.at)+' · '+esc(bName(m.branch)),
+        (m.type==='job'?pill('เข้าใบงาน','info'):pill('ขายหน้าร้าน','mut'))); }));
 }
 function msPrev(){ const p=PARTS.find(x=>x.id===$('#msPart').value); const q=num($('#msQty').value);
   $('#msPrev').innerHTML = !p? '' : '<div class="note'+(p.qty<q?' b':'')+'">'+ic(p.qty<q?'alert':'check','i i-sm')+'<span>'
@@ -3512,11 +3551,15 @@ function rGift(){
         min:num($('#gMin').value),branch:$('#gBranch').value}); toast('เพิ่มของแถมแล้ว',n); }
       $('#gName').value=''; refreshAll(); };
   }
+  const gL=GIFTS.filter(g=>inScope(g.branch));
   tbl($('#gTable'), ['ของแถม','สาขา',{t:'ต้นทุน/ชิ้น',n:1},{t:'คงเหลือ',n:1},{t:'จุดสั่งซื้อ',n:1},'สถานะ'],
-    GIFTS.filter(g=>inScope(g.branch)).map(g=>'<tr><td><b>'+esc(g.name)+'</b></td><td>'+esc(bName(g.branch))+'</td>'
+    gL.map(g=>'<tr><td><b>'+esc(g.name)+'</b></td><td>'+esc(bName(g.branch))+'</td>'
       +'<td class="n">'+money(g.cost)+'</td><td class="n">'+g.qty+'</td><td class="n">'+g.min+'</td>'
       +'<td>'+(g.qty===0?pill('หมด','bad'):(g.qty<g.min?pill('ใกล้หมด','warn'):pill('ปกติ','good')))+'</td></tr>'),
-    'ยังไม่มีของแถม');
+    'ยังไม่มีของแถม',
+    gL.map(g=>crow('', esc(g.name), 'เหลือ '+g.qty,
+      esc(bName(g.branch))+' · ทุน/ชิ้น '+money(g.cost)+' · จุดสั่งซื้อ '+g.min,
+      (g.qty===0?pill('หมด','bad'):(g.qty<g.min?pill('ใกล้หมด','warn'):pill('ปกติ','good'))))));
 }
 
 /* ============================= 16. ค่าใช้จ่าย ============================= */
@@ -3582,11 +3625,15 @@ function rExpense(){
     ['ใบเสร็จหาย', noRcpt.length, noRcpt.length?'ต้องตามเก็บ':'ครบทุกรายการ'],
     ['หมวดที่ใช้มากสุด', esc(top||'—'), top?baht(byCat[top]):'']]
     .map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v" style="font-size:'+(String(k[1]).length>10?'20px':'27px')+'">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
+  const eL=es.slice().sort((a,b)=>b.at.localeCompare(a.at));
   tbl($('#eTable'), ['วันที่','หมวดหมู่','สาขา','ผู้ขาย',{t:'จำนวน',n:1},'ใบเสร็จ'],
-    es.slice().sort((a,b)=>b.at.localeCompare(a.at)).map(e=>'<tr><td>'+thDate(e.at)+'</td><td>'+esc(e.cat)+'</td>'
+    eL.map(e=>'<tr><td>'+thDate(e.at)+'</td><td>'+esc(e.cat)+'</td>'
       +'<td>'+esc(bName(e.branch))+'</td><td>'+esc(e.vendor||'—')+'</td><td class="n">'+fmt(e.amt)+'</td>'
       +'<td>'+(e.files.length?pill('แนบแล้ว ('+e.files.length+')','good'):pill('ใบเสร็จหาย','warn'))+'</td></tr>'),
-    'ยังไม่มีค่าใช้จ่าย');
+    'ยังไม่มีค่าใช้จ่าย',
+    eL.map(e=>crow('', esc(e.cat), fmt(e.amt)+' ฿',
+      thDate(e.at)+' · '+esc(bName(e.branch))+' · '+esc(e.vendor||'—')+(e.inv?' · '+esc(e.inv):''),
+      (e.files.length?pill('แนบแล้ว ('+e.files.length+')','good'):pill('ใบเสร็จหาย','warn')))));
 }
 
 /* ============================= 17. ลงเวลาและลา ============================= */
@@ -3646,6 +3693,22 @@ function rHr(){
   $('#hrDate').textContent=thDate(TODAY);
   const mine = rolePerm().allBranch ? STAFF : STAFF.filter(s=>s.branch===ME.branch || s.id===ME.id);
   const canFix = ['admin','hr'].indexOf(ME.role)>=0;
+  const attRow=s=>{ const a=ATT.find(x=>x.staffId===s.id)||{};
+      const hrs=(a.in&&a.out)? ((toMin(a.out)-toMin(a.in))/60) : 0;
+      const ot = hrs>8.5? (hrs-8.5) : 0;
+      const late = a.in && toMin(a.in)>toMin(CFG.workIn);
+      const self = s.id===ME.id;
+      const act = self && !a.in && a.status!=='ลา' ? '<button class="lnk" data-in="'+s.id+'">ลงเวลาเข้า</button>'
+                : self && a.in && !a.out           ? '<button class="lnk" data-out="'+s.id+'">ลงเวลาออก</button>'
+                : canFix && !self                  ? '<button class="lnk" data-fix="'+s.id+'">แก้ไข</button>'
+                : '';
+      return crow(self?'class="self"':'',
+        esc(s.nick)+(self?' '+pill('คุณ','brand'):''),
+        (a.status==='ลา'?pill('ลา','info'):(late?pill('สาย','warn'):(a.in?pill('ปกติ','good'):pill('ยังไม่เข้า','mut')))),
+        esc(ROLES[s.role].name)+' · '+esc(bName(s.branch))
+          +' · เข้า <span class="mono">'+esc(a.in||'—')+'</span> ออก <span class="mono">'+esc(a.out||'—')+'</span>'
+          +(hrs?' · '+hrs.toFixed(1)+' ชม.':'')+(ot?' · OT '+ot.toFixed(1):''),
+        act); };
   tbl($('#attTable'), ['พนักงาน','สาขา','เข้า','ออก',{t:'ชั่วโมง',n:1},{t:'OT',n:1},'สถานะ',''],
     mine.map(s=>{ const a=ATT.find(x=>x.staffId===s.id)||{};
       const hrs=(a.in&&a.out)? ((toMin(a.out)-toMin(a.in))/60) : 0;
@@ -3665,7 +3728,8 @@ function rHr(){
         +'<td class="n">'+(hrs?hrs.toFixed(1):'—')+'</td><td class="n">'+(ot?ot.toFixed(1):'—')+'</td>'
         +'<td>'+(a.status==='ลา'?pill('ลา','info'):(late?pill('สาย','warn'):(a.in?pill('ปกติ','good'):pill('ยังไม่เข้า','mut'))))+'</td>'
         +'<td>'+act+'</td></tr>'; }),
-    'ไม่มีพนักงาน');
+    'ไม่มีพนักงาน',
+    mine.map(attRow));
   /* จับเวลา ณ วินาทีที่กด ไม่ใช่ตอนวาดหน้าจอ */
   $$('[data-in]').forEach(b=> b.onclick=async ()=>{
     b.disabled=true; b.textContent='กำลังบันทึก…';
@@ -3722,7 +3786,14 @@ function rHr(){
         +'<td>'+pill(l.status, l.status==='อนุมัติแล้ว'?'good':(l.status==='ไม่อนุมัติ'?'bad':'warn'))+'</td>'
         +'<td>'+(l.status==='รออนุมัติ'&&rolePerm().approve?
           '<button class="lnk" data-lv="'+l.id+'" data-ok="1">อนุมัติ</button> · <button class="lnk" data-lv="'+l.id+'" data-ok="0">ไม่อนุมัติ</button>':'')+'</td></tr>'; }),
-    'ไม่มีใบลา');
+    'ไม่มีใบลา',
+    LEAVES.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId);
+      return crow('', esc(s?s.nick:'—'),
+        pill(l.status, l.status==='อนุมัติแล้ว'?'good':(l.status==='ไม่อนุมัติ'?'bad':'warn')),
+        esc(l.type)+' · '+thDate(l.from)+' – '+thDate(l.to),
+        (l.status==='รออนุมัติ'&&rolePerm().approve?
+          '<button class="lnk" data-lv="'+l.id+'" data-ok="1">อนุมัติ</button>'
+          +'<button class="lnk q" data-lv="'+l.id+'" data-ok="0">ไม่อนุมัติ</button>':'')); }));
   $$('[data-lv]').forEach(b=> b.onclick=()=>{ const l=LEAVES.find(x=>x.id===b.dataset.lv);
     l.status = b.dataset.ok==='1'?'อนุมัติแล้ว':'ไม่อนุมัติ'; toast('บันทึกแล้ว',l.status); refreshAll(); });
 }
@@ -3756,13 +3827,19 @@ function rPayroll(){
       +'<td>'+esc(ROLES[r.s.role].name)+'</td><td class="n">'+money(r.base)+'</td><td class="n">'+money(r.ot)+'</td>'
       +'<td class="n">'+money(r.comm)+'</td><td class="n">'+(r.lateD?'-'+fmt(r.lateD):'—')+'</td>'
       +'<td class="n">-'+fmt(r.ssn)+'</td><td class="n"><b>'+money(r.net)+'</b></td></tr>'),
-    'ไม่มีพนักงาน');
+    'ไม่มีพนักงาน',
+    rows.map(r=>crow('', esc(r.s.name), money(r.net),
+      esc(ROLES[r.s.role].name)+' · '+esc(bName(r.s.branch))
+        +' · เงินเดือน '+money(r.base)+' · OT '+money(r.ot)+' · คอม '+money(r.comm)
+        +(r.lateD?' · หักสาย -'+fmt(r.lateD):'')+' · ปกส. -'+fmt(r.ssn))));
   const comm={};
   sScoped().filter(s=>days(s.soldAt,TODAY)<=31).forEach(s=>{ comm[s.sales]=comm[s.sales]||{n:0,gp:0}; comm[s.sales].n++; comm[s.sales].gp+=s.gp; });
   tbl($('#prComm'), ['พนักงานขาย',{t:'ขายได้',n:1},{t:'กำไรรวม',n:1},{t:'ค่าคอม '+CFG.commPct+'%',n:1}],
     Object.keys(comm).map(k=>'<tr><td><b>'+esc(k)+'</b></td><td class="n">'+comm[k].n+'</td>'
       +'<td class="n">'+money(comm[k].gp)+'</td><td class="n"><b>'+money(comm[k].gp*CFG.commPct/100)+'</b></td></tr>'),
-    'ยังไม่มียอดขายเดือนนี้');
+    'ยังไม่มียอดขายเดือนนี้',
+    Object.keys(comm).map(k=>crow('', esc(k), money(comm[k].gp*CFG.commPct/100),
+      'ขายได้ '+comm[k].n+' คัน · กำไรรวม '+money(comm[k].gp)+' · ค่าคอม '+CFG.commPct+'%')));
   prSlip();
 }
 function prCalc(){
@@ -3811,14 +3888,26 @@ function rUsers(){
         +'<td>'+(p.allBranch?pill('ใช่','good'):pill('เฉพาะสาขาตัวเอง','mut'))+'</td>'
         +'<td>'+(p.money?pill('เห็น','good'):pill('ซ่อน','mut'))+'</td>'
         +'<td>'+(p.approve?pill('ได้','good'):pill('ไม่ได้','mut'))+'</td></tr>'; }),
-    'ไม่มีผู้ใช้');
+    'ไม่มีผู้ใช้',
+    STAFF.map(s=>{ const p=ROLES[s.role];
+      return crow('', esc(s.name), pill(p.name,'info'),
+        esc(s.nick)+' · '+esc(bName(s.branch)),
+        (p.allBranch?pill('ทุกสาขา','good'):pill('เฉพาะสาขาตัวเอง','mut'))+' '
+        +(p.money?pill('เห็นตัวเงิน','good'):pill('ซ่อนตัวเงิน','mut'))+' '
+        +(p.approve?pill('อนุมัติได้','good'):'')); }));
   const keys=Object.keys(ROLES);
   tbl($('#roleTable'), ['บทบาท','เห็นตัวเงิน','เห็นทุกสาขา','อนุมัติ','จัดการระบบ','เมนูที่เข้าถึงได้'],
     keys.map(k=>{ const p=ROLES[k]; const menus=MENU.filter(m=>m.k&&m.r.indexOf(k)>=0);
       return '<tr><td><b>'+esc(p.name)+'</b></td>'
         +['money','allBranch','approve','admin'].map(x=>'<td>'+(p[x]?ic('check','i i-sm'):'<span class="tsub">—</span>')+'</td>').join('')
         +'<td><span class="tsub">'+menus.map(m=>esc(m.t)).join(' · ')+'</span></td></tr>'; }),
-    '');
+    '',
+    keys.map(k=>{ const p=ROLES[k]; const menus=MENU.filter(m=>m.k&&m.r.indexOf(k)>=0);
+      const flags=[['money','เห็นตัวเงิน'],['allBranch','เห็นทุกสาขา'],['approve','อนุมัติ'],['admin','จัดการระบบ']]
+        .filter(x=>p[x[0]]).map(x=>x[1]);
+      return crow('', esc(p.name), menus.length+' เมนู',
+        (flags.length? 'สิทธิ์: '+flags.join(' · ') : 'ไม่มีสิทธิ์พิเศษ')
+        +'<br>เข้าถึงได้: '+menus.map(m=>esc(m.t)).join(' · ')); }));
 }
 
 /* ============================= 20. นำเข้า ============================= */
@@ -3853,7 +3942,9 @@ function rImp(){
   tbl($('#impLog'), ['ไฟล์','แถวทั้งหมด','เข้าใหม่','ซ้ำ','ผู้นำเข้า','เมื่อไหร่'],
     IMPLOG.map(l=>'<tr><td class="mono">'+esc(l.file)+'</td><td class="n">'+l.rows+'</td>'
       +'<td class="n">'+l.ok+'</td><td class="n">'+l.dup+'</td><td>'+esc(l.by)+'</td><td>'+thDate(l.at)+'</td></tr>'),
-    'ยังไม่เคยนำเข้าในเซสชันนี้');
+    'ยังไม่เคยนำเข้าในเซสชันนี้',
+    IMPLOG.map(l=>crow('', '<span class="mono">'+esc(l.file)+'</span>', 'เข้าใหม่ '+l.ok,
+      'ทั้งหมด '+l.rows+' แถว · ซ้ำ '+l.dup+' · '+esc(l.by)+' · '+thDate(l.at))));
 }
 function impCheck(){
   const f=$('#impPick').value;
@@ -3885,7 +3976,9 @@ function rSettings(){
   tbl($('#cfFin'), ['บริษัทไฟแนนซ์',{t:'ดอกเบี้ย (%/เดือน)',n:1},{t:'ดาวน์ขั้นต่ำ',n:1},'สถานะ'],
     FIN_CO.map(f=>'<tr><td><b>'+esc(f.name)+'</b></td><td class="n">'+f.rate+'</td>'
       +'<td class="n">'+f.minDownPct+'%</td>'
-      +'<td>'+(f.active? pill('ใช้งาน','good') : pill('ปิดใช้งาน','mut'))+'</td></tr>'),'');
+      +'<td>'+(f.active? pill('ใช้งาน','good') : pill('ปิดใช้งาน','mut'))+'</td></tr>'),'',
+    FIN_CO.map(f=>crow('', esc(f.name), (f.active? pill('ใช้งาน','good') : pill('ปิดใช้งาน','mut')),
+      'ดอกเบี้ย '+f.rate+'%/เดือน · ดาวน์ขั้นต่ำ '+f.minDownPct+'%')));
   $('#cfFinGo').onclick=()=>go('fin');
   if(!$('#cfSave').dataset.init){ $('#cfSave').dataset.init=1;
     $$('#cfTabs button').forEach(b=> b.onclick=()=>{ $$('#cfTabs button').forEach(x=>x.classList.remove('on'));
@@ -3911,7 +4004,15 @@ function rModels(){
         +'<td class="n">'+(n||'—')+'</td>'
         +'<td style="white-space:nowrap"><button class="lnk" data-vme="'+esc(v)+'">แก้ไข</button>'
         +' <button class="lnk" data-vmd="'+esc(v)+'">ลบ</button></td></tr>'; }),
-    'ยังไม่มีรุ่นรถ');
+    'ยังไม่มีรุ่นรถ',
+    Object.keys(PRICE).map(v=>{ const p=PRICE[v]; const n=vmRefs(v);
+      return crow('', esc(p.m), fmt(p.retail)+' ฿',
+        '<span class="mono">'+esc(v)+'</span> · '+esc(p.th||'')+' · '+(p.cc||'—')+' cc · ปี '+(p.yr||'—')
+          +' · ทุน '+money(p.cost)+(n?' · ในสต๊อก '+n+' คัน':'')
+          +'<div class="cs" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">'
+          +Object.keys(p.c).map(cc=>'<span class="pill p-mut"><span class="dot" style="background:'+(COLOR_HEX[p.c[cc]]||'#ccc')+'"></span>'+esc(p.c[cc])+'</span>').join('')+'</div>',
+        '<button class="lnk" data-vme="'+esc(v)+'">แก้ไข</button>'
+        +'<button class="lnk q" data-vmd="'+esc(v)+'">ลบ</button>'); }));
   $$('#vmTable [data-vme]').forEach(b=> b.onclick=()=>modelModal(b.dataset.vme));
   $$('#vmTable [data-vmd]').forEach(b=> b.onclick=()=>{ const v=b.dataset.vmd, n=vmRefs(v);
     if(n){ toast('ลบไม่ได้ — มีรถในสต๊อก '+n+' คันใช้รหัสรุ่นนี้', 'รุ่นที่เลิกขายให้ปล่อยไว้ ไม่กระทบข้อมูลเก่า',1); return; }
