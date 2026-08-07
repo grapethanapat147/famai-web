@@ -233,7 +233,9 @@ ${app.lanes.map(l => `<tr><td><b>${esc(l.n)}</b></td><td>${l.s.map(s => {
   const browser = await chromium.launch({ executablePath: CHROME });
   const built = [];
   try {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 900 }, deviceScaleFactor: 2 });
+    /* ตรึงเขตเวลาไทย — วันที่ในภาพต้องตรงกับที่ผู้ใช้จริงเห็น ไม่ใช่วันที่ของเครื่องที่สร้างคู่มือ */
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 900 }, deviceScaleFactor: 2,
+      timezoneId: 'Asia/Bangkok' });
     const page = await ctx.newPage();
     await page.goto(`http://127.0.0.1:${PORT}/index.html`);
     await page.click('#lgGo');
