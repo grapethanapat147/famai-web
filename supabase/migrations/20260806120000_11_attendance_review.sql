@@ -54,3 +54,26 @@ insert into app_setting (key,value) values ('late_grace_min','5')
 
 -- หมายเหตุ: attendance มี unique (employee_id, work_date) อยู่แล้วตั้งแต่ migration 03
 -- ตรงกับกุญแจ staffId + date ที่ต้นแบบใช้ — ย้ายข้อมูลได้ตรง ๆ ไม่ต้องแปลง
+
+-- ── หลักฐานตอนลงเวลา ต้องครบก่อนถึงบันทึกได้ (v1.8) ─────────────────────
+-- ต้นแบบเปลี่ยนกติกาแล้ว: ลงเวลาไม่ได้ถ้าไม่มีทั้งรูปและพิกัด
+-- และเวลาที่บันทึกคือวินาทีที่กดปุ่มยืนยัน ไม่ใช่วินาทีที่กดเปิดหน้าจอ
+-- จึงต้องเก็บ 3 เวลาแยกกันเพื่อให้ผู้จัดการตรวจย้อนกลับได้ว่าอะไรเกิดตอนไหน
+alter table attendance
+  add column if not exists check_in_opened_at  timestamptz,
+  add column if not exists check_in_photo_at   timestamptz,
+  add column if not exists check_in_geo_at     timestamptz,
+  add column if not exists check_out_opened_at timestamptz,
+  add column if not exists check_out_photo_at  timestamptz,
+  add column if not exists check_out_geo_at    timestamptz;
+
+comment on column attendance.check_in_opened_at is
+  'วินาทีที่กดปุ่มลงเวลาเปิดหน้าจอ — เทียบกับ check_in เพื่อดูว่าเสียเวลาไปกับการถ่ายรูปนานแค่ไหน';
+comment on column attendance.check_in_photo_at is
+  'วินาทีที่กดชัตเตอร์ — ต้องห่างจาก check_in ไม่เกิน 120 วินาที ตามกติกา proofStale()';
+comment on column attendance.check_in_geo_at is
+  'วินาทีที่ได้พิกัดมา — ต้องห่างจาก check_in ไม่เกิน 120 วินาที';
+
+-- หมายเหตุสำหรับตอนต่อของจริง: ด่าน "ต้องมีหลักฐานครบ" ต้องบังคับที่หลังบ้านด้วย
+-- ไม่ใช่เชื่อฝั่งเบราว์เซอร์อย่างเดียว เพราะฝั่งหน้าเป็นแค่ UX ไม่ใช่การกัน
+-- ทำเป็น constraint หรือ trigger เมื่อคอลัมน์รูป/พิกัดพร้อมใช้งานจริงแล้ว
