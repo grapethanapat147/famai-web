@@ -31,6 +31,8 @@
 
   /* -- สถานะ -- ข้อความกับจุด ไม่มีพื้นสี -- */
   --pos:#1F7A4D;  --attn:#A96410;
+  /* -- สถานะการเข้างาน 4 แบบ ใช้ทั้งกระดานและปฏิทินรายคน -- */
+  --st-in:#1F7A4D; --st-late:#A96410; --st-leave:#3A6EA5; --st-none:#C0242E;
 
   /* -- Spacing -- 8-point (--s-half ใช้เฉพาะช่องไฟในคอนโทรลเล็ก) -- */
   --s-half:4px; --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px;
@@ -197,49 +199,77 @@ a.nb{ text-decoration:none; box-sizing:border-box; }
 .g3{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s3); align-items:start; }
 .g2>*,.g2e>*,.g3>*,.kpis>*{ min-width:0; }
 /* ---------- ภาพรวมการเข้างาน ----------
-   รูปแบบสากล: แถบเลือกวันแบบลูกศรซ้าย-ขวา · ตัวนับหัวคนที่แตะเพื่อกรอง · รายการคนพร้อมสถานะ
-   อ่านออกจากระยะหนึ่งเมตร ไม่ต้องมีใครสอน */
-.abnav{ display:flex; align-items:center; gap:var(--s1); }
-.abarr{ width:44px; height:44px; flex:0 0 44px; border-radius:var(--r-input);
+   ยึดรูปแบบ "กระดานเวลา" แบบป้ายบอกเวลาที่สนามบิน — เวลาเป็นตัวเอกอยู่ซ้ายสุด ตัวใหญ่
+   แถบสีข้างซ้ายบอกสถานะโดยไม่ต้องอ่านตัวหนังสือ อ่านออกจากระยะหนึ่งเมตร ไม่ต้องมีใครสอน */
+.abbar{ display:flex; align-items:center; gap:var(--s1); padding-bottom:var(--s2);
+  border-bottom:1px solid var(--hairline); }
+.abarr{ width:44px; height:44px; flex:0 0 44px; border-radius:var(--r-pill);
   border:1px solid var(--hairline); background:var(--card); color:var(--ink);
   display:inline-flex; align-items:center; justify-content:center; }
-.abarr:disabled{ opacity:.3; }
-@media (hover:hover){ .abarr:hover:not(:disabled){ background:var(--hairline-2); } }
+.abarr:disabled{ opacity:.25; }
+@media (hover:hover){ .abarr:hover:not(:disabled){ background:var(--paper-2); } }
 .abday{ flex:1 1 auto; min-height:44px; border-radius:var(--r-input); background:transparent;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.25; }
-.abday b{ font-size:var(--t-h2); font-weight:600; letter-spacing:-.01em; }
-.abday span{ font-size:var(--t-label); color:var(--muted); }
+  display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.2; }
+.abday b{ font-size:20px; font-weight:700; letter-spacing:-.01em; }
+.abday span{ font-size:var(--t-label); color:var(--muted); margin-top:1px; }
 .abhide{ position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
-.abcount{ display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s1); margin-top:var(--s2); }
-.abc{ border:1.5px solid var(--hairline); border-radius:var(--r-input); padding:var(--s2) var(--s1);
-  text-align:center; background:var(--card); min-height:64px;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
-.abc b{ font-size:22px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; }
-.abc span{ font-size:var(--t-label); color:var(--muted); line-height:1.2; }
-.abc.on{ border-color:var(--ink); background:var(--paper-2); }
-.abc.on span{ color:var(--ink); }
-.abc.k-late b{ color:var(--attn); } .abc.k-none b{ color:var(--neg); }
-.abc.k-in b{ color:var(--pos); }
-/* แถวคน — รูปแบบเดียวกับรายชื่อผู้ติดต่อที่ทุกคนเคยเห็น */
-.abr{ display:flex; align-items:flex-start; gap:var(--s2); padding:var(--s2);
-  border-bottom:1px solid var(--hairline); width:100%; text-align:left; }
-.abr:last-child{ border-bottom:0; }
+/* ตัวนับแบบแถบเดียว ตัวเลขใหญ่ ขีดใต้บอกว่ากำลังกรองอะไรอยู่ */
+.abseg{ display:grid; grid-template-columns:repeat(4,1fr); }
+.abs{ padding:var(--s2) 2px var(--s1); text-align:center; background:transparent;
+  border-bottom:3px solid transparent; min-height:64px; }
+.abs b{ display:block; font-size:26px; font-weight:700; line-height:1.05;
+  font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+.abs span{ display:block; font-size:var(--t-label); color:var(--muted); margin-top:2px; }
+.abs.on{ border-bottom-color:currentColor; }
+.abs.on span{ color:inherit; font-weight:600; }
+.abs.k-in{ color:var(--st-in); } .abs.k-late{ color:var(--st-late); }
+.abs.k-leave{ color:var(--st-leave); } .abs.k-none{ color:var(--st-none); }
+.abs.z b, .abs.z span{ color:var(--muted); }
+.absec{ padding:var(--s2) var(--s2) var(--s1); font-size:var(--t-label); font-weight:600;
+  color:var(--muted); letter-spacing:.02em; }
+.absec.urg{ color:var(--st-none); }
+.abr{ display:flex; align-items:center; gap:var(--s2); width:100%; text-align:left;
+  padding:var(--s2) var(--s2) var(--s2) 0; border-top:1px solid var(--hairline-2);
+  border-left:4px solid var(--bd,var(--hairline)); }
 @media (hover:hover){ .abr:hover{ background:var(--paper-2); } }
-.abav{ flex:0 0 40px; width:40px; height:40px; border-radius:50%; background:var(--paper-2);
-  display:grid; place-items:center; font-size:var(--t-label); font-weight:700; color:var(--ink-soft);
-  position:relative; }
-.abav i{ position:absolute; right:-1px; bottom:-1px; width:13px; height:13px; border-radius:50%;
-  border:2px solid var(--card); background:var(--muted); }
-.abav i.in{ background:var(--pos); } .abav i.late{ background:var(--attn); }
-.abav i.leave{ background:var(--accent-2,#5B8DEF); } .abav i.none{ background:var(--neg); }
+.abr.s-in{ --bd:var(--st-in); } .abr.s-late{ --bd:var(--st-late); }
+.abr.s-leave{ --bd:var(--st-leave); } .abr.s-none{ --bd:var(--st-none); }
+.abt{ flex:0 0 78px; text-align:center; padding-left:var(--s2); }
+.abt b{ display:block; font-size:19px; font-weight:700; font-variant-numeric:tabular-nums;
+  letter-spacing:-.01em; line-height:1.1; }
+.abt span{ display:block; font-size:11px; color:var(--muted); margin-top:1px; }
+.abt.q b{ color:var(--muted); font-weight:600; font-size:17px; }
 .abb{ flex:1 1 auto; min-width:0; }
-.abb .n{ font-weight:600; font-size:var(--t-table); }
+.abb .n{ font-weight:600; font-size:var(--t-table); line-height:1.3; }
 .abb .r{ font-size:var(--t-label); color:var(--muted); }
-.abb .t{ font-size:var(--t-table); margin-top:2px; }
-.abb .t .mono{ font-weight:600; }
-.abb .f{ margin-top:var(--s-half); display:flex; flex-wrap:wrap; gap:4px; }
-.abth{ flex:0 0 40px; width:40px; height:40px; border-radius:var(--r-input); object-fit:cover;
-  background:var(--paper-2); }
+.abb .f{ margin-top:3px; font-size:var(--t-label); color:var(--st-late); }
+.abb .f.bad{ color:var(--st-none); }
+.abgo{ flex:0 0 auto; color:var(--muted); display:flex; align-items:center; }
+.abgo .i{ width:18px; height:18px; }
+/* ---------- ปฏิทินทั้งเดือนของคนเดียว ---------- */
+.calm{ display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+.calm .hh{ text-align:center; font-size:11px; color:var(--muted); padding:2px 0 4px; }
+.cday{ aspect-ratio:1; border-radius:var(--r-input); border:1px solid var(--hairline-2);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+  background:var(--card); font-size:12px; line-height:1; min-height:38px; }
+.cday b{ font-weight:600; font-variant-numeric:tabular-nums; }
+.cday em{ font-style:normal; font-size:9px; opacity:.85; }
+.cday.off{ background:var(--paper-2); color:var(--muted); border-color:transparent; }
+.cday.pad{ border-color:transparent; background:transparent; }
+.cday.s-in{ background:rgba(31,122,77,.10); border-color:rgba(31,122,77,.30); color:var(--st-in); }
+.cday.s-late{ background:rgba(169,100,16,.12); border-color:rgba(169,100,16,.35); color:var(--st-late); }
+.cday.s-leave{ background:rgba(58,110,165,.10); border-color:rgba(58,110,165,.30); color:var(--st-leave); }
+.cday.s-none{ background:rgba(192,36,46,.10); border-color:rgba(192,36,46,.35); color:var(--st-none); }
+.cday.sel{ outline:2px solid var(--ink); outline-offset:1px; }
+.callg{ display:flex; flex-wrap:wrap; gap:var(--s1) var(--s2); margin-top:var(--s2);
+  font-size:var(--t-label); color:var(--muted); }
+.callg i{ width:10px; height:10px; border-radius:3px; display:inline-block; margin-right:5px;
+  vertical-align:-1px; }
+.calsum{ display:grid; grid-template-columns:repeat(auto-fit,minmax(70px,1fr)); gap:var(--s1);
+  margin-top:var(--s2); }
+.calsum>div{ background:var(--paper-2); border-radius:var(--r-input); padding:var(--s1); text-align:center; }
+.calsum b{ display:block; font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; }
+.calsum span{ display:block; font-size:11px; color:var(--muted); margin-top:1px; }
 /* ---------- การ์ดลงเวลาเข้า-ออก บนสุดของหน้าแรก ---------- */
 .pc{ margin-bottom:var(--s3); }
 .pc>.bd{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; }
@@ -1250,24 +1280,24 @@ body.lock{ overflow:hidden; }
 
       <!-- ============ 16b. ภาพรวมการเข้างาน ============ -->
       <section class="screen" id="s-attend">
-        <div class="card ab"><div class="bd">
-          <!-- แถบเลือกวัน: ‹ วันที่ › — รูปแบบสากล กดปุ่มลูกศรเลื่อนวัน แตะกลางเลือกวันเอง -->
-          <div class="abnav">
+        <!-- กระดานเดียว: แถบวัน → ตัวนับที่กดกรองได้ → รายชื่อเรียงตามความเร่งด่วน -->
+        <div class="card"><div class="bd" style="padding-bottom:0">
+          <div class="abbar">
             <button class="abarr" id="abPrev" aria-label="วันก่อนหน้า"><svg class="i"><use href="#i-left"/></svg></button>
             <button class="abday" id="abDay"><b id="abDayT">—</b><span id="abDayS"></span></button>
             <button class="abarr" id="abNext" aria-label="วันถัดไป"><svg class="i"><use href="#i-right"/></svg></button>
             <input type="date" id="abDate" class="abhide">
           </div>
-          <!-- นับหัวคน 4 ช่อง แตะเพื่อกรอง -->
-          <div class="abcount" id="abCount"></div>
-        </div></div>
-        <div class="card"><div class="hd"><h3 id="abListT">พนักงาน</h3><div class="d" id="abListS"></div><div class="sp"></div>
+          <div class="abseg" id="abCount"></div>
+        </div>
+        <div class="bd flush"><div id="abList"></div></div>
+        <div class="bd" id="abNote"></div>
+        <div class="hd" style="border-top:1px solid var(--hairline)"><div class="d" id="abListS"></div><div class="sp"></div>
           <select class="inp ct" id="abBranch"></select>
-          <button class="btn sec sm fbtn noprint" id="abFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> ตัวกรอง</button>
+          <button class="btn sec sm fbtn noprint" id="abFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> สาขา</button>
           <button class="lnk noprint" id="abCsv"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button>
           <div class="fsum" id="abFsum"></div>
-        </div><div class="bd flush"><div id="abList"></div></div>
-        <div class="bd" id="abNote" style="padding-top:0"></div></div>
+        </div></div>
       </section>
 
       <!-- ============ 17. ลงเวลาและลา ============ -->
@@ -4236,56 +4266,6 @@ function attFixModal(s, date, after){
     closeModal(); toast('แก้เวลาแล้ว', s.nick+' · '+why);
     if(after) after(a); else rHr(); refreshAll(); };
 }
-/* แผ่นตรวจรายคน — รูปใหญ่ พิกัด อุปกรณ์ ประวัติการแก้ แล้วยืนยัน/ติดปัญหา/แก้เวลา */
-async function attReviewSheet(staffId, date){
-  const s=STAFF.find(x=>x.id===staffId), a=attOf(staffId,date);
-  /* ด่านอยู่ในฟังก์ชัน ไม่ใช่ที่ปุ่ม — ดูของคนอื่นได้เฉพาะคนที่มีหน้าที่ตรวจ และเฉพาะในสาขาที่เห็นได้ */
-  if(staffId!==ME.id && !canFixAtt()){ toast('ไม่มีสิทธิ์ดูการลงเวลาของคนอื่น','',1); return; }
-  if(s && !inScope(s.branch) && staffId!==ME.id){ toast('ไม่มีสิทธิ์ดูข้ามสาขา','',1); return; }
-  if(!s) return;
-  if(!a){ toast('ไม่มีบันทึกลงเวลาวันนี้', s.nick+' · '+thDate(date)); attFixModal(s, date, ()=>{ rHr(); refreshAll(); }); return; }
-  const c=attCalc(a), f=attFlags(a), self=staffId===ME.id;
-  const shot=async side=>{ const p=(side==='out'? a.outProof : a.inProof)||{};
-    const rec=p.photoId? await idbGet(p.photoId) : null;
-    const src=rec? rec.data : p.photo;
-    /* เวลาที่ถ่ายรูปจริง — ถ้าเวลาถูกแก้ทีหลัง สองค่านี้จะไม่ตรงกัน ผู้ตรวจต้องเห็น */
-    const shotAt=rec&&rec.at? hhmmss(new Date(rec.at)) : null;
-    const drift=shotAt && a[side] && Math.abs(toSec(shotAt)-toSec(a[side]))>120;
-    return '<div><div class="fl">'+(side==='out'?'ออก':'เข้า')+' <span class="mono">'+esc(a[side]||'—')+'</span></div>'
-      +(src? '<img src="'+src+'" style="width:100%;border-radius:var(--r-input)" alt="">'
-           : '<div class="note w" style="margin:0">'+ic('alert','i i-sm')+'<span>ไม่มีรูป</span></div>')
-      +(drift? '<div class="tsub" style="color:var(--attn)">รูปถ่ายตอน '+esc(shotAt)+' ไม่ตรงกับเวลาที่บันทึก — เวลาถูกแก้ทีหลัง</div>'
-             : (shotAt? '<div class="tsub mono">ถ่ายตอน '+esc(shotAt)+'</div>':''))
-      +(p.geo? '<div class="tsub mono">'+p.geo.lat+', '+p.geo.lng+' (±'+p.geo.acc+' ม.)</div>':'')
-      +(p.device? '<div class="tsub" style="overflow-wrap:anywhere">'+esc(p.device)+'</div>':'')+'</div>'; };
-  openModal('ตรวจการลงเวลา — '+s.nick+' · '+thDate(date),
-    '<div class="f2">'+(await shot('in'))+(await shot('out'))+'</div>'
-    +'<dl class="kv" style="margin-top:var(--s2)">'
-    +'<dt>ชั่วโมง</dt><dd>'+(c.hrs?hm1(c.hrs)+' ชม.':'—')+(c.otH?' · OT '+hm1(c.otH)+' ชม.':'')+'</dd>'
-    +'<dt>ธง</dt><dd>'+(f.length? f.map(x=>pill(x.t,x.tone)).join(' ') : pill('ปกติ','good'))+'</dd>'
-    +'<dt>บัญชีที่กด</dt><dd>'+esc((a.inProof&&a.inProof.byName)||'—')+'</dd>'
-    +(a.editLog? '<dt>ประวัติการแก้</dt><dd>'+a.editLog.map(e=>esc(e.by)+' — '+esc(e.why)).join('<br>')+'</dd>':'')
-    +(a.review? '<dt>ตรวจแล้ว</dt><dd>'+esc(a.review.by)+' · '+(a.review.status==='ok'?'ยืนยัน':'ติดปัญหา')
-        +(a.review.note?' · '+esc(a.review.note):'')+'</dd>':'')
-    +'</dl>'
-    /* ตรวจบันทึกของตัวเองไม่ได้ — คนแก้กับคนตรวจต้องไม่ใช่คนเดียวกัน
-       ร้านมีคนตรวจได้ 3 คน (แอดมิน ผู้จัดการ HR) จึงตรวจไขว้กันได้เสมอ */
-    +(self
-      ? '<div class="note w">'+ic('alert','i i-sm')+'<span>นี่คือบันทึกของคุณเอง — ตรวจหรือแก้เองไม่ได้ '
-        +'ต้องให้แอดมิน ผู้จัดการ หรือ HR คนอื่นเป็นคนตรวจ</span></div>'
-      : '<div><label class="fl">หมายเหตุ (จำเป็นเมื่อติดปัญหา)</label><input class="inp" id="rvNoteIn" value="'+esc(a.review?a.review.note:'')+'" placeholder="เช่น มาสายเพราะส่งของก่อนเข้างาน"></div>'
-        +'<div class="savebar"><button class="btn" id="rvOk">ยืนยัน<svg class="i"><use href="#i-check"/></svg></button>'
-        +'<button class="btn sec" id="rvFlag">ติดปัญหา</button>'
-        +(canFixAtt()? '<button class="btn sec" id="rvFix">แก้เวลา</button>':'')+'</div>'));
-  if(!self){
-    $('#rvOk').onclick=()=>{ attReview(a,'ok',$('#rvNoteIn').value.trim());
-      closeModal(); toast('ยืนยันแล้ว', s.nick+' · '+thDate(date)); rHr(); refreshAll(); };
-    $('#rvFlag').onclick=()=>{ const n=$('#rvNoteIn').value.trim();
-      if(!n){ toast('ต้องระบุเหตุผล','การติดปัญหาต้องบอกว่าติดตรงไหน',1); return; }
-      attReview(a,'flag',n); closeModal(); toast('ติดปัญหาแล้ว', s.nick+' · '+n); rHr(); refreshAll(); };
-    if($('#rvFix')) $('#rvFix').onclick=()=> attFixModal(s, date, ()=>{ rHr(); refreshAll(); });
-  }
-}
 /* ---------- การ์ดลงเวลาบนหน้าแรก ----------
    ปุ่มลงเวลาเดิมอยู่ในหน้า "ลงเวลาและลา" ซึ่งบางบทบาทต้องกดผ่านแผ่น "อื่น ๆ" ก่อน
    ย้ายมาไว้บนสุดของหน้าแรกด้วย เห็นทันทีที่เปิดแอปและกดครั้งเดียวจบ
@@ -4352,14 +4332,6 @@ function abState(s, day){
   if(!a || !a.in)            return {k:'none',  a, c};
   return {k: c.late? 'late':'in', a, c};
 }
-/* อักษรย่อบนรูปประจำตัว — ต้องตัดเป็น "พยางค์" ไม่ใช่ตัดตามจำนวนตัวอักษร
-   ไม่งั้นสระกับวรรณยุกต์ไทยจะขาดครึ่ง เช่น "เซลล์บิว" กลายเป็น "ปิ" */
-function abInit(nick){
-  const t=String(nick||'').replace(/^(คุณ|เซลล์|สต๊อก|บัญชี|ช่าง|HR)\s*/,'').trim() || String(nick||'');
-  try{ const seg=new Intl.Segmenter('th',{granularity:'grapheme'});
-    return [...seg.segment(t)].slice(0,2).map(x=>x.segment).join(''); }
-  catch(_){ return t.slice(0,2); }
-}
 function abRows(day){
   const inB = x => !AB_BRANCH || x.branch===AB_BRANCH;
   return attStaffScope().filter(inB).map(s=>{
@@ -4396,34 +4368,48 @@ function rAttend(){
 
   const rows=abRows(day);
   const n=k=>rows.filter(r=>r.k===k).length;
-  $('#abCount').innerHTML=AB_KEYS.map(k=>'<button class="abc '+k.cls+(AB_FILTER===k.k?' on':'')
-    +'" data-abf="'+k.k+'"><b>'+n(k.k)+'</b><span>'+k.t+'</span></button>').join('');
+  $('#abCount').innerHTML=AB_KEYS.map(k=>{ const c=n(k.k);
+    return '<button class="abs '+k.cls+(c?'':' z')+(AB_FILTER===k.k?' on':'')
+      +'" data-abf="'+k.k+'"><b>'+c+'</b><span>'+k.t+'</span></button>'; }).join('');
   $$('[data-abf]').forEach(b=> b.onclick=()=>{
     AB_FILTER = AB_FILTER===b.dataset.abf? '' : b.dataset.abf; rAttend(); });
 
-  /* เรียงคนที่ต้องดูก่อน: ยังไม่มา → สาย → ลา → ปกติ  ผู้จัดการจึงไม่ต้องไล่หาเอง */
+  /* เรียงคนที่ต้องดูก่อน แล้วแบ่ง 2 กลุ่ม — ผู้จัดการไม่ต้องไล่หาเอง */
   const order={none:0, late:1, leave:2, in:3};
   const shown=rows.filter(r=>!AB_FILTER || r.k===AB_FILTER)
     .sort((a,b)=> order[a.k]-order[b.k] || (a.a&&a.a.in||'99').localeCompare(b.a&&b.a.in||'99'));
-  $('#abListT').textContent = AB_FILTER? (AB_KEYS.find(k=>k.k===AB_FILTER)||{}).t : 'พนักงาน';
-  $('#abListS').textContent = shown.length+' คน'+(AB_FILTER? ' (กรองอยู่ — แตะตัวเลขซ้ำเพื่อยกเลิก)':'');
-  $('#abList').innerHTML = shown.length? shown.map(r=>{
-    const stt={in:'ปกติ', late:'มาสาย', leave:'ลา', none: isToday?'ยังไม่มา':'ไม่มีบันทึก'}[r.k];
-    const tone={in:'good', late:'warn', leave:'info', none:'mut'}[r.k];
-    return '<button class="abr" data-abr="'+r.s.id+'">'
-      +'<span class="abav">'+esc(abInit(r.s.nick))+'<i class="'+r.k+'"></i></span>'
-      +'<span class="abb"><span class="n">'+esc(r.s.nick)+'</span> '+pill(stt,tone)
-        +'<div class="r">'+esc(ROLES[r.s.role].name)+' · '+esc(bName(r.s.branch))+'</div>'
-        +'<div class="t">เข้า <span class="mono">'+esc(r.a&&r.a.in||'—')+'</span>'
-          +'  ออก <span class="mono">'+esc(r.a&&r.a.out||'—')+'</span>'
+  $('#abListS').textContent = shown.length+' คน'
+    +(AB_BRANCH? ' · '+bName(AB_BRANCH) : '')+(AB_FILTER? ' · แตะตัวเลขซ้ำเพื่อเลิกกรอง':'');
+  const lateNow = !isToday || toSec(hhmmss(new Date()))>toSec(CFG.workOut);
+  const row=r=>{
+    const bad = r.f.filter(x=>x.k==='notme'||x.k==='open'||x.k==='edit');
+    const sub = bad.length? bad.map(x=>x.t).join(' · ')
+              : (r.k==='none'? (isToday? 'ยังไม่ได้ลงเวลาเข้า':'ไม่มีบันทึกของวันนี้')
+              : (r.k==='leave'? 'ลาทั้งวัน'
+              : (r.k==='late'? 'สาย '+Math.round(r.c.lateMin)+' นาที' : '')));
+    return '<button class="abr s-'+r.k+'" data-abr="'+r.s.id+'">'
+      +'<span class="abt'+(r.a&&r.a.in?'':' q')+'">'
+        +'<b>'+esc(r.a&&r.a.in? r.a.in.slice(0,5) : (r.k==='leave'?'ลา':'—'))+'</b>'
+        /* "ยังไม่ออก" ขึ้นเฉพาะตอนที่ผิดปกติจริง — วันเก่า หรือเลยเวลาเลิกงานแล้ว
+           ระหว่างวันที่ยังทำงานอยู่ถือเป็นเรื่องปกติ ไม่ต้องขึ้นให้รก */
+        +'<span>'+(r.a&&r.a.out? 'ออก '+esc(r.a.out.slice(0,5))
+          : (r.a&&r.a.in&&lateNow? 'ยังไม่ออก' : '&nbsp;'))+'</span></span>'
+      +'<span class="abb"><span class="n">'+esc(r.s.nick)+'</span>'
+        +'<div class="r">'+esc(ROLES[r.s.role].name)+' · '+esc(bName(r.s.branch))
           +(r.c.hrs? ' · '+hm1(r.c.hrs)+' ชม.':'')+(r.c.otH? ' · OT '+hm1(r.c.otH):'')+'</div>'
-        +(r.f.length? '<div class="f">'+r.f.map(y=>pill(y.t,y.tone)).join('')+'</div>':'')
-        +'<div class="r" style="margin-top:2px">เดือนนี้ '+esc(attMonthText(r.m))+'</div>'
+        +(sub? '<div class="f'+(bad.length||r.k==='none'?' bad':'')+'">'+esc(sub)+'</div>':'')
       +'</span>'
-      +(r.a&&r.a.review? '<span class="pill p-'+(r.a.review.status==='ok'?'good':'bad')+'" style="align-self:center">'
-        +(r.a.review.status==='ok'?'ตรวจแล้ว':'ติดปัญหา')+'</span>' : '')+'</button>';
-  }).join('') : '<div class="empty">ไม่มีพนักงานตามเงื่อนไขที่เลือก</div>';
-  $$('[data-abr]').forEach(b=> b.onclick=()=>attReviewSheet(b.dataset.abr, day));
+      +'<span class="abgo">'+(r.a&&r.a.review
+        ? '<svg class="i i-sm" style="color:var(--'+(r.a.review.status==='ok'?'st-in':'st-none')+')"><use href="#i-check-circle"/></svg>'
+        : ic('right','i i-sm'))+'</span></button>';
+  };
+  const urgent=shown.filter(r=>r.k==='none'||r.k==='late');
+  const rest=shown.filter(r=>r.k!=='none'&&r.k!=='late');
+  $('#abList').innerHTML = shown.length
+    ? (urgent.length? '<div class="absec urg">ต้องดูก่อน · '+urgent.length+' คน</div>'+urgent.map(row).join('') : '')
+      +(rest.length? '<div class="absec">'+(urgent.length?'ที่เหลือ':'ทั้งหมด')+' · '+rest.length+' คน</div>'+rest.map(row).join('') : '')
+    : '<div class="empty">ไม่มีพนักงานตามเงื่อนไขที่เลือก</div>';
+  $$('[data-abr]').forEach(b=> b.onclick=()=>attPersonSheet(b.dataset.abr, day));
 
   const need=rows.filter(r=>r.a && rvNeeds(r.f) && !r.a.review).length;
   const miss=rows.filter(r=>r.k==='none' && !isToday && isWorkDay(day)).length;
@@ -4433,6 +4419,118 @@ function rAttend(){
     +(need? '<div class="note b">'+ic('info','i i-sm')+'<span>มี <b>'+need+' รายการรอตรวจ</b>ในวันนี้ '
       +'แตะที่ชื่อเพื่อดูรูป พิกัด และอุปกรณ์ แล้วยืนยันหรือติดปัญหา</span></div>'
      : (rows.length? '<div class="note g">'+ic('check-circle','i i-sm')+'<span>ไม่มีรายการที่ต้องตรวจในวันนี้</span></div>':''));
+}
+/* ---------- แผ่นรายคน: ปฏิทินทั้งเดือน + รายละเอียดวันที่เลือก ----------
+   ตอบสองคำถามในที่เดียว "คนนี้ทั้งเดือนเป็นยังไง" และ "วันนั้นเกิดอะไรขึ้น"
+   ปฏิทินอ่านออกจากสีโดยไม่ต้องอ่านตัวเลข — แตะวันไหนก็เห็นหลักฐานของวันนั้นทันที */
+let PS_ID=null, PS_DAY=null;
+function attPersonSheet(staffId, date){
+  const s=STAFF.find(x=>x.id===staffId);
+  if(!s) return;
+  if(staffId!==ME.id && !canFixAtt()){ toast('ไม่มีสิทธิ์ดูการลงเวลาของคนอื่น','',1); return; }
+  if(!inScope(s.branch) && staffId!==ME.id){ toast('ไม่มีสิทธิ์ดูข้ามสาขา','',1); return; }
+  PS_ID=staffId; PS_DAY=date||curDate();
+  openDrawer(s.nick+' · '+ROLES[s.role].name, '<div id="psBody"></div>');
+  psRender();
+}
+function psMonthGrid(staffId, ym, sel){
+  const today=curDate(), last=new Date(+ym.slice(0,4), +ym.slice(5,7), 0).getDate();
+  const pad=(new Date(ym+'-01T00:00:00').getDay()+6)%7;      /* เริ่มสัปดาห์วันจันทร์ */
+  let h=['จ','อ','พ','พฤ','ศ','ส','อา'].map(d=>'<div class="hh">'+d+'</div>').join('');
+  for(let i=0;i<pad;i++) h+='<div class="cday pad"></div>';
+  for(let d=1; d<=last; d++){
+    const ds=ym+'-'+String(d).padStart(2,'0');
+    if(ds>today){ h+='<div class="cday off"><b>'+d+'</b></div>'; continue; }
+    if(!isWorkDay(ds)){ h+='<div class="cday off" title="ร้านปิด"><b>'+d+'</b></div>'; continue; }
+    const st=abState({id:staffId}, ds), c=st.c;
+    /* attCalc คืนวินาทีในชื่อ inS ไม่ใช่ in — ใช้ผิดชื่อแล้วเวลาบนปฏิทินจะหายเงียบ ๆ */
+    const mark = st.k==='leave'? 'ลา' : (st.k==='none'? '—' : (c.inS? hhmm(c.inS):''));
+    h+='<button class="cday s-'+st.k+(ds===sel?' sel':'')+'" data-psd="'+ds+'">'
+      +'<b>'+d+'</b><em>'+esc(mark)+'</em></button>';
+  }
+  return '<div class="calm">'+h+'</div>';
+}
+const hhmm = sec => String(Math.floor(sec/3600)).padStart(2,'0')+':'+String(Math.floor(sec/60)%60).padStart(2,'0');
+async function psRender(){
+  const el=$('#psBody'); if(!el || !PS_ID) return;
+  const s=STAFF.find(x=>x.id===PS_ID), ym=PS_DAY.slice(0,7);
+  const m=attMonth(PS_ID, ym), a=attOf(PS_ID, PS_DAY), c=attCalc(a||{});
+  const st=abState({id:PS_ID}, PS_DAY), f=a? attFlags(a):[];
+  const self=PS_ID===ME.id;
+  const prevM=iso(new Date(+ym.slice(0,4), +ym.slice(5,7)-2, 2)).slice(0,7);
+  const nextM=iso(new Date(+ym.slice(0,4), +ym.slice(5,7), 2)).slice(0,7);
+  const shot=async side=>{ const p=(a&&(side==='out'? a.outProof : a.inProof))||{};
+    const rec=p.photoId? await idbGet(p.photoId) : null;
+    const src=rec? rec.data : p.photo;
+    const shotAt=rec&&rec.at? hhmmss(new Date(rec.at)) : null;
+    const drift=shotAt && a && a[side] && Math.abs(toSec(shotAt)-toSec(a[side]))>120;
+    return '<div><div class="fl">'+(side==='out'?'ออก':'เข้า')+' <span class="mono">'+esc(a&&a[side]||'—')+'</span></div>'
+      +(src? '<img src="'+src+'" style="width:100%;border-radius:var(--r-input)" alt="">'
+           : '<div class="note w" style="margin:0">'+ic('alert','i i-sm')+'<span>ไม่มีรูป</span></div>')
+      +(drift? '<div class="tsub" style="color:var(--st-none)">รูปถ่ายตอน '+esc(shotAt)+' ไม่ตรงกับเวลาที่บันทึก</div>'
+             : (shotAt? '<div class="tsub mono">ถ่ายตอน '+esc(shotAt)+'</div>':''))
+      +(p.geo? '<div class="tsub mono">'+p.geo.lat+', '+p.geo.lng+' (±'+p.geo.acc+' ม.)</div>':'')
+      +(p.device? '<div class="tsub" style="overflow-wrap:anywhere">'+esc(p.device)+'</div>':'')+'</div>'; };
+
+  el.innerHTML=
+    '<div class="tsub" style="margin-bottom:var(--s2)">'+esc(bName(s.branch))+'</div>'
+    /* ---- ปฏิทินทั้งเดือน ---- */
+    +'<div class="abbar" style="padding-bottom:var(--s1);border:0">'
+      +'<button class="abarr" id="psPrev"><svg class="i"><use href="#i-left"/></svg></button>'
+      +'<span class="abday"><b>'+rpMonthTh(ym)+'</b><span>แตะที่วันเพื่อดูหลักฐานของวันนั้น</span></span>'
+      +'<button class="abarr" id="psNext"'+(nextM>curDate().slice(0,7)?' disabled':'')+'><svg class="i"><use href="#i-right"/></svg></button></div>'
+    +psMonthGrid(PS_ID, ym, PS_DAY)
+    +'<div class="callg">'
+      +'<span><i style="background:var(--st-in)"></i>ปกติ</span>'
+      +'<span><i style="background:var(--st-late)"></i>สาย</span>'
+      +'<span><i style="background:var(--st-leave)"></i>ลา</span>'
+      +'<span><i style="background:var(--st-none)"></i>ไม่มีบันทึก</span>'
+      +'<span><i style="background:var(--paper-2)"></i>ร้านปิด</span></div>'
+    /* ---- สรุปทั้งเดือน ---- */
+    +'<div class="calsum">'
+      +'<div><b>'+m.workDays+'</b><span>วันทำงาน</span></div>'
+      +'<div><b>'+hm1(m.hrs)+'</b><span>ชั่วโมงรวม</span></div>'
+      +'<div><b'+(m.otH?'':' style="color:var(--muted)"')+'>'+hm1(m.otH)+'</b><span>OT (ชม.)</span></div>'
+      +'<div><b'+(m.lateDays?' style="color:var(--st-late)"':'')+'>'+m.lateDays+'</b><span>วันสาย</span></div>'
+      +'<div><b'+(m.leaveDays?'':' style="color:var(--muted)"')+'>'+m.leaveDays+'</b><span>วันลา</span></div>'
+      +'<div><b'+(m.missDays?' style="color:var(--st-none)"':'')+'>'+m.missDays+'</b><span>ไม่มีบันทึก</span></div>'
+    +'</div>'
+    /* ---- วันที่เลือก ---- */
+    +'<h6 style="margin:var(--s3) 0 var(--s1)">'+thDate(PS_DAY)+'</h6>'
+    +(a? '<div class="f2">'+(await shot('in'))+(await shot('out'))+'</div>'
+        +'<dl class="kv" style="margin-top:var(--s2)">'
+        +'<dt>ชั่วโมง</dt><dd>'+(c.hrs?hm1(c.hrs)+' ชม.':'—')+(c.otH?' · OT '+hm1(c.otH)+' ชม.':'')+'</dd>'
+        +'<dt>ธง</dt><dd>'+(f.length? f.map(x=>pill(x.t,x.tone)).join(' ') : pill('ปกติ','good'))+'</dd>'
+        +'<dt>บัญชีที่กด</dt><dd>'+esc((a.inProof&&a.inProof.byName)||'—')+'</dd>'
+        +(a.editLog? '<dt>ประวัติการแก้</dt><dd>'+a.editLog.map(e=>esc(e.by)+' — '+esc(e.why)).join('<br>')+'</dd>':'')
+        +(a.review? '<dt>ตรวจแล้ว</dt><dd>'+esc(a.review.by)+' · '+(a.review.status==='ok'?'ยืนยัน':'ติดปัญหา')
+            +(a.review.note?' · '+esc(a.review.note):'')+'</dd>':'')
+        +'</dl>'
+      : '<div class="note '+(st.k==='leave'?'b':'w')+'">'+ic(st.k==='leave'?'info':'alert','i i-sm')
+        +'<span>'+(st.k==='leave'? 'วันนี้ลา ไม่ต้องลงเวลา' : 'ไม่มีบันทึกลงเวลาของวันนี้')+'</span></div>')
+    /* ---- ปุ่มจัดการ ---- */
+    +(self
+      ? '<div class="note w" style="margin-top:var(--s2)">'+ic('alert','i i-sm')
+        +'<span>นี่คือบันทึกของคุณเอง — ตรวจหรือแก้เองไม่ได้ ต้องให้คนอื่นที่มีสิทธิ์เป็นคนตรวจ</span></div>'
+      : (canFixAtt()
+        ? '<div><label class="fl" style="margin-top:var(--s2)">หมายเหตุ (จำเป็นเมื่อติดปัญหา)</label>'
+          +'<input class="inp" id="psNote" value="'+esc(a&&a.review?a.review.note:'')+'" placeholder="เช่น มาสายเพราะไปส่งของก่อนเข้างาน"></div>'
+          +'<div class="savebar">'
+          +(a? '<button class="btn" id="psOk">ยืนยัน<svg class="i"><use href="#i-check"/></svg></button>'
+              +'<button class="btn sec" id="psFlag">ติดปัญหา</button>':'')
+          +'<button class="btn sec" id="psFix">'+(a?'แก้เวลา':'เติมเวลา')+'</button></div>'
+        : ''));
+
+  $$('[data-psd]').forEach(b=> b.onclick=()=>{ PS_DAY=b.dataset.psd; psRender(); });
+  $('#psPrev').onclick=()=>{ PS_DAY=prevM+'-01'; psRender(); };
+  $('#psNext').onclick=()=>{ if(nextM<=curDate().slice(0,7)){ PS_DAY=nextM+'-01'; psRender(); } };
+  const done=()=>{ psRender(); if(CUR==='attend') rAttend(); else rHr(); badges(); };
+  if($('#psOk'))   $('#psOk').onclick  =()=>{ attReview(a,'ok',$('#psNote').value.trim());
+    toast('ยืนยันแล้ว', s.nick+' · '+thDate(PS_DAY)); done(); };
+  if($('#psFlag')) $('#psFlag').onclick=()=>{ const nt=$('#psNote').value.trim();
+    if(!nt){ toast('ต้องระบุเหตุผล','การติดปัญหาต้องบอกว่าติดตรงไหน',1); return; }
+    attReview(a,'flag',nt); toast('ติดปัญหาแล้ว', s.nick+' · '+nt); done(); };
+  if($('#psFix'))  $('#psFix').onclick =()=> attFixModal(s, PS_DAY, ()=>{ closeModal(); done(); });
 }
 let hrClockTimer=null;
 let ATT_DAY=null;                       /* วันที่กำลังดูในหน้าลงเวลา */
@@ -4608,7 +4706,7 @@ function rReview(ym){
         +'<br>'+x.f.map(y=>pill(y.t,y.tone)).join(' '),
       '<button class="lnk" data-rv="'+x.s.id+'|'+x.a.date+'">ตรวจ</button>')));
   $$('[data-rv]').forEach(b=> b.onclick=e=>{ e.stopPropagation();
-    const [sid,dt]=b.dataset.rv.split('|'); attReviewSheet(sid,dt); });
+    const [sid,dt]=b.dataset.rv.split('|'); attPersonSheet(sid,dt); });
   $('#rvNote').innerHTML = miss.length
     ? '<div class="note w">'+ic('alert','i i-sm')+'<span><b>ไม่มีบันทึกลงเวลา '+miss.length+' วัน-คน</b>ในงวดนี้ '
       +'('+esc([...new Set(miss.map(m=>m.s.nick))].slice(0,4).join(' · '))+(new Set(miss.map(m=>m.s.nick)).size>4?' และอื่น ๆ':'')+') '

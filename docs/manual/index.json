@@ -1,46 +1,46 @@
 {
-  "built": "2026-08-06T22:55:47.626Z",
+  "built": "2026-08-07T00:10:13.351Z",
   "masked": true,
   "files": [
     {
       "file": "famai-admin.pdf",
       "title": "ผู้ดูแลระบบ",
-      "bytes": 598723
+      "bytes": 598165
     },
     {
       "file": "famai-manager.pdf",
       "title": "ผู้บริหาร",
-      "bytes": 599602
+      "bytes": 599170
     },
     {
       "file": "famai-sales.pdf",
       "title": "เซลล์",
-      "bytes": 587958
+      "bytes": 587404
     },
     {
       "file": "famai-stock.pdf",
       "title": "สต๊อก",
-      "bytes": 553934
+      "bytes": 554005
     },
     {
       "file": "famai-acct.pdf",
       "title": "บัญชี",
-      "bytes": 612194
+      "bytes": 611677
     },
     {
       "file": "famai-hr.pdf",
       "title": "ฝ่ายบุคคล",
-      "bytes": 566599
+      "bytes": 569730
     },
     {
       "file": "famai-tech.pdf",
       "title": "ช่าง",
-      "bytes": 508706
+      "bytes": 507947
     },
     {
       "file": "famai-flow.pdf",
       "title": "flow การใช้งาน",
-      "bytes": 1346697
+      "bytes": 1346995
     }
   ]
 }
