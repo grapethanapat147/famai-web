@@ -466,7 +466,8 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 /* แกลเลอรี — ตัวรูปคือกล่องเดียวที่มี ตัวหนังสือใต้รูปไม่ต้องมีกรอบซ้อนอีกชั้น */
 .gcard{ background:none; box-shadow:none; border:0; border-radius:0; padding:0;
   font:inherit; color:inherit; text-align:left; width:100%; display:block; }
-.gcard .ph{ height:96px; background:var(--paper-2); border-radius:var(--r-card);
+/* รูปรถเป็นสี่เหลี่ยมจัตุรัส — รูปถ่ายจริงจากร้านครอปพอดีกรอบ ไม่ต้องกะความสูงเอง */
+.gcard .ph{ aspect-ratio:1; background:var(--paper-2); border-radius:var(--r-card);
   display:grid; place-items:center; overflow:hidden;
   color:var(--muted); position:relative; transition:box-shadow var(--dur-ui) var(--ease); }
 @media (hover:hover){ .gcard:hover .ph{ box-shadow:var(--sh-md); } }
@@ -757,9 +758,8 @@ body.lock{ overflow:hidden; }
   .stbl th:nth-child(4),.stbl td:nth-child(4){ width:22% }
   .stbl .mono{ font-size:12px; letter-spacing:-.02em; }
   tbody td.nw{ overflow-wrap:normal; word-break:keep-all; }   /* ห้ามตัดกลางตัวเลขเงิน */
-  /* แกลเลอรี 184px ได้คอลัมน์เดียวที่ 390px — ย่อลงให้เห็นสองรุ่นพร้อมกัน */
-  .gal{ grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:var(--s2); }
-  .gcard .ph{ height:78px; }
+  /* มือถือ: แถวละ 2 ใบเป๊ะ ไม่ปล่อยให้ auto-fill คิดเอง (จอใหญ่ยังใส่ได้มากกว่า 2) */
+  .gal{ grid-template-columns:repeat(2,1fr); gap:var(--s2); }
   .tw table.cards{ table-layout:auto; }
   .tw td.cwrap{ white-space:normal; padding:0; border:0; }
   .doc table{ table-layout:auto; }        /* กระดาษ A4 คิดความกว้างเองเหมือนเดิม */
