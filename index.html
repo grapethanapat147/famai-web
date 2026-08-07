@@ -454,6 +454,7 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 /* -------------------- GALLERY -------------------- */
 .gal{ display:grid; grid-template-columns:repeat(auto-fill,minmax(184px,1fr)); gap:var(--s3); }
 .gcard{ background:var(--card); border-radius:var(--r-card); overflow:hidden; box-shadow:var(--sh-sm);
+  border:0; padding:0; font:inherit; color:inherit; text-align:left; width:100%; display:block;
   transition:box-shadow var(--dur-ui) var(--ease); }
 @media (hover:hover){ .gcard:hover{ box-shadow:var(--sh-md); } }
 .gcard .ph{ height:96px; background:var(--paper-2); display:grid; place-items:center;
@@ -713,6 +714,21 @@ body.lock{ overflow:hidden; }
      คง .tw{overflow-x:auto} ไว้เป็นกับดัก — ถ้ามีตารางไหนหลุด จะเห็นที่กล่องนั้นแทนที่จะดันทั้งหน้า */
   table{ table-layout:fixed; }
   thead th, tbody td{ white-space:normal; overflow-wrap:anywhere; }
+  /* ตารางที่ยังเป็นตารางจริงบนมือถือ: ช่องไฟด้านข้าง 24px ต่อคอลัมน์กินที่มากเกินไป
+     390px มีเนื้อที่ 342px ถ้าไม่ลดเหลือ 4 คอลัมน์จะเหลือข้อความแค่ 150px */
+  thead th{ padding:0 var(--s1) var(--s1); }
+  tbody td{ padding:var(--s2) var(--s1); }
+  .tw table.cards td.cwrap{ padding:0; }
+  /* สต๊อกรถแท็บตาราง — 4 คอลัมน์พอดีจอ ไม่ต้องปัดซ้าย-ขวา */
+  .stbl th:nth-child(1),.stbl td:nth-child(1){ width:27% }
+  .stbl th:nth-child(2),.stbl td:nth-child(2){ width:31% }
+  .stbl th:nth-child(3),.stbl td:nth-child(3){ width:20% }
+  .stbl th:nth-child(4),.stbl td:nth-child(4){ width:22% }
+  .stbl .mono{ font-size:12px; letter-spacing:-.02em; }
+  tbody td.nw{ overflow-wrap:normal; word-break:keep-all; }   /* ห้ามตัดกลางตัวเลขเงิน */
+  /* แกลเลอรี 184px ได้คอลัมน์เดียวที่ 390px — ย่อลงให้เห็นสองรุ่นพร้อมกัน */
+  .gal{ grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:var(--s2); }
+  .gcard .ph{ height:78px; }
   .tw table.cards{ table-layout:auto; }
   .tw td.cwrap{ white-space:normal; padding:0; border:0; }
   .doc table{ table-layout:auto; }        /* กระดาษ A4 คิดความกว้างเองเหมือนเดิม */
@@ -956,23 +972,27 @@ body.lock{ overflow:hidden; }
 
       <!-- ============ 4. สต๊อกรถ ============ -->
       <section class="screen" id="s-stock">
-        <div class="card"><div class="bd">
-          <div class="f3" style="margin-bottom:var(--s2)">
-            <div><label class="fl">สาขา</label><select class="inp" id="stBranch"></select></div>
-            <div><label class="fl">รุ่น</label><select class="inp" id="stModel"></select></div>
-            <div><label class="fl">สถานะ</label><select class="inp" id="stStatus">
-              <option value="">ทุกสถานะ</option><option value="available">พร้อมขาย</option>
-              <option value="reserved">จองแล้ว</option><option value="in_transfer">กำลังโอนย้าย</option>
-              <option value="sold">ขายแล้ว</option></select></div>
-          </div>
-          <input class="inp" id="stQ" placeholder="ค้นหา เลขเครื่อง / เลขถัง / รุ่น / รหัสรุ่น…">
-          <div class="tabs" style="margin-top:var(--s2)"><button class="on" data-v="grp">คงเหลือ</button><button data-v="table">ตาราง</button><button data-v="gal">แกลเลอรี</button>
-            <div class="sp"></div><button class="lnk" id="expStock"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div>
+        <div class="card">
+        <div class="hd"><h3>สต๊อกรถ</h3><div class="sp"></div>
+          <select class="inp ct" id="stBranch"></select>
+          <select class="inp ct" id="stModel"></select>
+          <select class="inp ct" id="stStatus">
+            <option value="">ทุกสถานะ</option><option value="available">พร้อมขาย</option>
+            <option value="reserved">จองแล้ว</option><option value="in_transfer">กำลังโอนย้าย</option>
+            <option value="sold">ขายแล้ว</option></select>
+          <input class="inp ct" id="stQ" placeholder="ค้นหา เลขเครื่อง / เลขถัง / รุ่น">
+          <button class="btn sec sm fbtn noprint" id="stFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> ตัวกรอง</button>
+          <button class="btn sm" id="stAdd"><svg class="i i-sm"><use href="#i-inbox"/></svg> เพิ่มรถเข้าสต๊อก</button>
+          <button class="lnk noprint" id="expStock"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button>
+          <div class="fsum" id="stFsum"></div>
+        </div>
+        <div class="bd" style="padding-bottom:0">
+          <div class="tabs"><button class="on" data-v="gal">แกลเลอรี</button><button data-v="table">ตาราง</button><button data-v="grp">คงเหลือ</button></div>
           <div id="stSum" style="font-size:var(--t-label);color:var(--ink-soft);margin-bottom:var(--s2)"></div>
         </div>
-        <div class="bd flush" id="stGrpWrap"><div class="tw"><table id="stGrp"></table></div></div>
+        <div class="bd flush" id="stGrpWrap" style="display:none"><div class="tw"><table id="stGrp"></table></div></div>
         <div class="bd flush" id="stTableWrap" style="display:none"><div class="tw"><table id="stTable"></table></div></div>
-        <div class="bd" id="stGalWrap" style="display:none"><div class="gal" id="stGal"></div></div>
+        <div class="bd" id="stGalWrap"><div class="gal" id="stGal"></div></div>
         </div>
       </section>
 
@@ -2081,7 +2101,9 @@ const FILTERS = {
     f:[['fpStatus','สถานะ'],['fpSales','เซลล์'],['fpBranch','สาขา'],['fpQ','ค้นหาชื่อลูกค้า']] },
   hrday :{ t:'เลือกวันลงเวลา', sum:'attFsum', f:[['attDay','วันที่']] },
   payrol:{ t:'เลือกงวดเงินเดือน', sum:'prFsum', f:[['prMonth','งวดเดือน']] },
-  attend:{ t:'ตัวกรองการเข้างาน', sum:'abFsum', f:[['abBranch','สาขา']] }
+  attend:{ t:'ตัวกรองการเข้างาน', sum:'abFsum', f:[['abBranch','สาขา']] },
+  stock :{ t:'ตัวกรองสต๊อกรถ', sum:'stFsum',
+    f:[['stBranch','สาขา'],['stModel','รุ่น'],['stStatus','สถานะ'],['stQ','ค้นหา เลขเครื่อง / เลขถัง / รุ่น']] }
 };
 let FS_OPEN=null, FS_HOME=[];
 function fsSummary(key){
@@ -2330,12 +2352,17 @@ function unitDrawer(id){
     +'<dt>กำไรถ้าขายเต็ม</dt><dd>'+(u.retail==null?'—':money(gpOf(u)))+'</dd>'
     +(u.priceNote? '<dt>หมายเหตุราคา</dt><dd>'+esc(u.priceNote)+'</dd>':'')
     +'<dt>สถานะ</dt><dd>'+statusPill(u.status)+'</dd></dl>';
+  /* ปุ่มจัดการรวมแถบเดียว — ตารางสต๊อกบนมือถือเหลือ 4 คอลัมน์ ปุ่ม "ขายคันนี้" จึงย้ายมาอยู่ที่นี่ */
+  const acts=[];
   if(u.retail==null){
     h+='<div class="note w">'+ic('alert','i i-sm')+'<span>รหัสรุ่น '+esc(u.variant)+' ไม่มีในตารางราคา — ต้องกำหนดราคาก่อนขาย</span></div>';
-    if(canEditFin()) h+='<div class="savebar"><button class="btn" data-clr="'+u.id+'">ตั้งราคาเคลียร์<svg class="i"><use href="#i-tag"/></svg></button></div>';
+    if(canEditFin()) acts.push('<button class="btn" data-clr="'+u.id+'">ตั้งราคาเคลียร์<svg class="i"><use href="#i-tag"/></svg></button>');
   } else if(u.clearance && canEditFin()){
-    h+='<div class="savebar"><button class="btn sec" data-clr="'+u.id+'">แก้ราคาเคลียร์</button></div>';
+    acts.push('<button class="btn sec" data-clr="'+u.id+'">แก้ราคาเคลียร์</button>');
   }
+  if(u.status==='available' && u.retail!=null && canSee('sell'))
+    acts.unshift('<button class="btn" data-usell="'+u.id+'">ขายคันนี้<svg class="i"><use href="#i-right"/></svg></button>');
+  if(acts.length) h+='<div class="savebar">'+acts.join('')+'</div>';
   h+='<h4 class="sec">ที่มาของข้อมูล</h4><dl class="kv">'
     +'<dt>ไฟล์นำเข้า</dt><dd class="mono">'+esc(u.src)+'</dd>'
     +'<dt>เลขที่รับ</dt><dd class="mono">'+esc(u.recvNo)+'</dd>'
@@ -2354,6 +2381,8 @@ function unitDrawer(id){
   openDrawer(u.model+' · '+u.engine, h);
   wireSaleLinks();
   $$('[data-clr]').forEach(b=> b.onclick=()=>clearanceModal(b.dataset.clr));
+  $$('[data-usell]').forEach(b=> b.onclick=()=>{ closeDrawer(); go('sell');
+    setTimeout(()=>{ $('#sUnit').value=b.dataset.usell; calcSell(); },30); });
 }
 /* ตั้งราคาเคลียร์สต๊อก — ผู้จัดการกรอกเอง ระบบไม่เดาราคาให้ */
 function clearanceModal(id){
@@ -2386,6 +2415,9 @@ function clearanceModal(id){
 }
 function statusPill(s){ return {available:pill('พร้อมขาย','good'),reserved:pill('จองแล้ว','info'),
   in_transfer:pill('กำลังโอนย้าย','info'),sold:pill('ขายแล้ว','mut')}[s]||pill(s,'mut'); }
+/* สีจุดสถานะ — ใช้ในช่องแคบที่ป้ายเต็มใบไม่พอดี */
+const STATUS_DOT={ available:'var(--pos)', reserved:'var(--ink-soft)',
+  in_transfer:'var(--attn)', sold:'var(--muted)' };
 
 /* ============================= 2. ปฏิทิน ============================= */
 let CAL={y:NOW.getFullYear(), m:NOW.getMonth(), sel:TODAY};
@@ -2549,7 +2581,7 @@ function saveRecv(){
 }
 
 /* ============================= 4. สต๊อก ============================= */
-let stView='grp', stOpen={};   /* stOpen = กลุ่มรุ่น+สีที่กางดูรายคันอยู่ */
+let stView='gal', stOpen={};   /* stOpen = กลุ่มรุ่น+สีที่กางดูรายคันอยู่ */
 /* รายการรถตามตัวกรองปัจจุบัน — ใช้ทั้งการแสดงผลและการส่งออก */
 function stList(){
   const q=$('#stQ').value.trim().toLowerCase();
@@ -2559,20 +2591,31 @@ function stList(){
     && (!$('#stStatus').value || u.status===$('#stStatus').value)
     && (!q || (u.engine+u.frame+u.model+u.variant+u.color).toLowerCase().indexOf(q)>=0));
 }
+/* สลับแท็บจากที่ไหนก็ได้ — แกลเลอรีใช้พาไปดูรุ่นที่กดในแท็บตาราง */
+function stTab(v){
+  stView=v;
+  $$('#s-stock .tabs button[data-v]').forEach(x=> x.classList.toggle('on', x.dataset.v===v));
+  rStock();
+}
 function rStock(){
   if(!$('#stBranch').dataset.init){ $('#stBranch').dataset.init=1;
     $('#stBranch').innerHTML='<option value="">ทุกสาขา</option>'+BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
     $('#stModel').innerHTML='<option value="">ทุกรุ่น</option>'+[...new Set(UNITS.map(u=>u.model))].map(m=>'<option>'+esc(m)+'</option>').join('');
     ['stBranch','stModel','stStatus'].forEach(k=> $('#'+k).onchange=rStock);
     $('#stQ').oninput=rStock;
-    $$('#s-stock .tabs button[data-v]').forEach(b=> b.onclick=()=>{ $$('#s-stock .tabs button[data-v]').forEach(x=>x.classList.remove('on'));
-      b.classList.add('on'); stView=b.dataset.v; rStock(); });
+    $('#stFilt').onclick=()=>openFilters('stock');
+    $$('#s-stock .tabs button[data-v]').forEach(b=> b.onclick=()=>{ stTab(b.dataset.v); });
+    /* ปุ่มรับรถ พาไปหน้ารับรถเข้าสต๊อกที่มีอยู่แล้ว ไม่ทำฟอร์มซ้ำ */
+    $('#stAdd').onclick=()=> go('recv');
     $('#expStock').onclick=()=> csvMoney('สต๊อกรถ',
       ['สาขา','รุ่น','แบบรถ','สี','เลขเครื่อง','เลขถัง','รับเข้าเมื่อ','อายุ(วัน)','สถานะ','ต้นทุน','ราคาขาย','กำไร','เคลียร์สต๊อก','หมายเหตุราคา'],
       stList().map(u=>[bName(u.branch),u.model,u.variant,u.color,u.engine,u.frame,u.received,age(u),statusText(u.status),
         u.cost, u.retail==null?'รอกำหนดราคา':u.retail, u.retail==null?'':gpOf(u), u.clearance?'ใช่':'', u.priceNote||'']),
       [9,10,11]);
   }
+  /* ปุ่มรับรถขึ้นเฉพาะคนที่เข้าหน้ารับรถได้จริง (admin / ผู้จัดการ / คลัง) */
+  $('#stAdd').style.display = canSee('recv')? '' : 'none';
+  fsSync('stock');
   const list=stList();
   const av=list.filter(u=>u.status!=='sold');
   $('#stSum').innerHTML='พบ <b>'+list.length+'</b> คัน · พร้อมขาย <b>'+av.length+'</b> · ต้นทุนจม <b>'+money(av.reduce((s,u)=>s+u.cost,0))
@@ -2627,35 +2670,49 @@ function rStock(){
     $$('#stGrp [data-sell]').forEach(b=> b.onclick=e=>{ e.stopPropagation(); go('sell');
       setTimeout(()=>{ $('#sUnit').value=b.dataset.sell; calcSell(); },30); });
   } else if(stView==='table'){
+    /* เจ้าของสั่งว่าแท็บนี้ต้องเป็น "ตารางจริง" ทั้งบนจอเล็ก จึงไม่ส่งการ์ดเข้า tbl()
+       แต่ลดเหลือ 4 คอลัมน์ให้พอดี 390px แทน — คอลัมน์ที่ตัดออกไปอยู่ในบรรทัดรองของช่องแรก */
     const stL=list.slice().sort((a,b)=>age(b)-age(a));
-    tbl($('#stTable'), ['รุ่น / สี','รหัสรุ่น','เลขเครื่อง','สาขา',{t:'ต้นทุน',n:1},{t:'ราคาขาย',n:1},{t:'อายุ',n:1},'สถานะ',''],
-      stL.map(u=>'<tr class="clk" data-unit="'+u.id+'">'
-        +'<td><b>'+esc(u.model)+'</b><div class="tsub"><span class="dot" style="background:'+(COLOR_HEX[u.color]||'#ccc')+'"></span> '+esc(u.color)+'</div></td>'
-        +'<td class="mono">'+esc(u.variant)+'</td><td class="mono">'+esc(u.engine)+'</td>'
-        +'<td>'+esc(bName(u.branch))+'</td><td class="n">'+money(u.cost)+'</td>'
-        +'<td class="n">'+(u.retail==null?pill('รอกำหนดราคา','warn'):fmt(u.retail)+(u.clearance?' '+pill('เคลียร์สต๊อก','warn'):''))+'</td>'
-        +'<td class="n">'+ageTag(age(u))+'</td><td>'+statusPill(u.status)+'</td>'
-        +'<td>'+(u.status==='available'&&canSee('sell')?'<button class="lnk" data-sell="'+u.id+'">ขายคันนี้</button>':'')+'</td></tr>'),
-      'ไม่พบรถตามเงื่อนไข',
-      stL.map(u=>crow('data-unit="'+u.id+'"',
-        esc(u.model)+' <span class="tsub">'+esc(u.color)+'</span>',
-        (u.retail==null?pill('รอกำหนดราคา','warn'):fmt(u.retail)),
-        '<span class="mono">'+esc(u.engine)+'</span> · '+esc(bName(u.branch))+(u.clearance?' · เคลียร์สต๊อก':''),
-        statusPill(u.status)+' '+ageTag(age(u))
-          +(u.status==='available'&&canSee('sell')?'<span style="flex:1"></span><button class="lnk" data-sell="'+u.id+'">ขายคันนี้</button>':''))));
+    const narrow=MQ_CARD.matches;
+    $('#stTable').className = narrow? 'stbl' : '';
+    if(narrow)
+      tbl($('#stTable'), ['รุ่น / สี','เลขเครื่อง',{t:'ราคา',n:1},'สถานะ'],
+        stL.map(u=>'<tr class="clk" data-unit="'+u.id+'">'
+          +'<td><b>'+esc(u.model)+'</b><div class="tsub"><span class="dot" style="background:'+(COLOR_HEX[u.color]||'#ccc')+'"></span> '
+            +esc(u.color)+' · '+esc(bOf(u.branch).prefix)+'</div></td>'
+          +'<td class="mono">'+esc(u.engine)+'</td>'
+          +'<td class="n nw">'+(u.retail==null?'<span class="tsub">รอราคา</span>':fmt(u.retail))
+            +'<div class="tsub">'+(u.clearance?'เคลียร์':age(u)+' ว.')+'</div></td>'
+          /* ช่องแคบ ใช้จุดสี + ตัวหนังสือแทนป้าย — ป้ายมีขอบและห้ามตัดคำ จะดันตารางล้นจอ */
+          +'<td><span class="dot" style="background:'+STATUS_DOT[u.status]+'"></span> '+esc(statusText(u.status))+'</td></tr>'),
+        'ไม่พบรถตามเงื่อนไข');
+    else
+      tbl($('#stTable'), ['รุ่น / สี','รหัสรุ่น','เลขเครื่อง','สาขา',{t:'ต้นทุน',n:1},{t:'ราคาขาย',n:1},{t:'อายุ',n:1},'สถานะ',''],
+        stL.map(u=>'<tr class="clk" data-unit="'+u.id+'">'
+          +'<td><b>'+esc(u.model)+'</b><div class="tsub"><span class="dot" style="background:'+(COLOR_HEX[u.color]||'#ccc')+'"></span> '+esc(u.color)+'</div></td>'
+          +'<td class="mono">'+esc(u.variant)+'</td><td class="mono">'+esc(u.engine)+'</td>'
+          +'<td>'+esc(bName(u.branch))+'</td><td class="n">'+money(u.cost)+'</td>'
+          +'<td class="n">'+(u.retail==null?pill('รอกำหนดราคา','warn'):fmt(u.retail)+(u.clearance?' '+pill('เคลียร์สต๊อก','warn'):''))+'</td>'
+          +'<td class="n">'+ageTag(age(u))+'</td><td>'+statusPill(u.status)+'</td>'
+          +'<td>'+(u.status==='available'&&canSee('sell')?'<button class="lnk" data-sell="'+u.id+'">ขายคันนี้</button>':'')+'</td></tr>'),
+        'ไม่พบรถตามเงื่อนไข');
     wireUnitRows();
-    $$('[data-sell]').forEach(b=> b.onclick=e=>{ e.stopPropagation(); go('sell'); setTimeout(()=>{ $('#sUnit').value=b.dataset.sell; calcSell(); },30); });
+    $$('#stTable [data-sell]').forEach(b=> b.onclick=e=>{ e.stopPropagation(); go('sell'); setTimeout(()=>{ $('#sUnit').value=b.dataset.sell; calcSell(); },30); });
   } else {
+    /* แกลเลอรีเคารพตัวกรองเหมือนอีกสองแท็บ — เดิมใช้ av ทำให้เลือกสถานะ "ขายแล้ว" แล้วหน้าว่าง */
     const grp={};
-    av.forEach(u=>{ const k=u.variant+'|'+u.model; grp[k]=grp[k]||{u:u,n:0,colors:{},age:0};
-      grp[k].n++; grp[k].age+=age(u); grp[k].colors[u.color]=(grp[k].colors[u.color]||0)+1; });
+    list.forEach(u=>{ const k=u.variant+'|'+u.model; grp[k]=grp[k]||{u:u,n:0,colors:{},age:0,sold:0};
+      grp[k].n++; grp[k].age+=age(u); grp[k].colors[u.color]=(grp[k].colors[u.color]||0)+1;
+      if(u.status==='sold') grp[k].sold++; });
     $('#stGal').innerHTML = Object.keys(grp).length? Object.keys(grp).map(k=>{ const g=grp[k];
-      return '<div class="gcard"><div class="ph">'+bikeArt(g.u.variant, g.u.color)+'<span class="qty">'+g.n+'</span></div>'
+      return '<button class="gcard" data-gmodel="'+esc(g.u.model)+'"><div class="ph">'+bikeArt(g.u.variant, g.u.color)+'<span class="qty">'+g.n+'</span></div>'
         +'<div class="gb"><b>'+esc(g.u.model)+'</b><div class="c">'+esc(g.u.variant)+' · '+esc(g.u.modelTh||'—')+'</div>'
         +'<div class="c">'+(g.u.retail==null?'<span style="color:var(--attn)">รอกำหนดราคา</span>':baht(g.u.retail)+(g.u.clearance?' <span style="color:var(--attn)">· เคลียร์</span>':''))+'</div>'
         +'<div class="cs">'+Object.keys(g.colors).map(c=>'<span class="pill p-mut"><span class="dot" style="background:'+(COLOR_HEX[c]||'#ccc')+'"></span>'+esc(c)+' '+g.colors[c]+'</span>').join('')+'</div>'
-        +'<div class="tsub" style="margin-top:var(--s1)">อายุเฉลี่ย '+Math.round(g.age/g.n)+' วัน</div></div></div>';
+        +'<div class="tsub" style="margin-top:var(--s1)">'+(g.sold===g.n? 'ขายแล้วทั้งหมด' : 'อายุเฉลี่ย '+Math.round(g.age/g.n)+' วัน')+'</div></div></button>';
     }).join('') : '<div class="empty"><b>ไม่พบรถ</b>ลองปรับตัวกรอง</div>';
+    /* แตะรุ่นในแกลเลอรี → กรองเป็นรุ่นนั้นแล้วไปดูรายคันในแท็บตาราง */
+    $$('#stGal [data-gmodel]').forEach(c=> c.onclick=()=>{ $('#stModel').value=c.dataset.gmodel; stTab('table'); });
   }
 }
 
