@@ -1473,7 +1473,11 @@ const ic = (n,c)=>'<svg class="'+(c||'i')+'"><use href="#i-'+n+'"/></svg>';
 const $  = (s,r)=> (r||document).querySelector(s);
 const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
 const NOW = new Date();
-const iso = d => d.toISOString().slice(0,10);
+/* วันที่ตามปฏิทินของเครื่อง ห้ามใช้ toISOString() ตรงนี้ — มันคืนค่าเป็น UTC
+   ไทยเป็น UTC+7 ช่วงเที่ยงคืนถึงตี 7 จึงได้วันที่ของเมื่อวาน และ addDays() ที่ส่งค่าผ่านตัวนี้
+   จะถอยไป 1 วันตลอดเวลา (บนเครื่องทดสอบที่ตั้งเป็น UTC จะไม่เห็นอาการเลย) */
+const iso = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')
+                              +'-'+String(d.getDate()).padStart(2,'0');
 const TODAY = iso(NOW);
 const TH_M = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const TH_DOW = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
