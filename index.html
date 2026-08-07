@@ -271,6 +271,32 @@ a.nb{ text-decoration:none; box-sizing:border-box; }
 .calsum>div{ padding:var(--s1) 0; text-align:center; }
 .calsum b{ display:block; font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; }
 .calsum span{ display:block; font-size:11px; color:var(--muted); margin-top:1px; }
+/* ---------- แผ่นลงเวลา (กล้อง + ตำแหน่ง) ----------
+   ทุกส่วนคั่นด้วยเส้น ไม่มีกล่องซ้อน — กรอบเดียวที่มีคือกรอบภาพกล้อง ซึ่งเป็นตัวเนื้อหาเอง */
+.psClk{ display:flex; align-items:baseline; gap:var(--s2); flex-wrap:wrap;
+  padding-bottom:var(--s2); border-bottom:1px solid var(--hairline); }
+.psClk b{ font-size:var(--t-h2); font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
+.psClk span{ font-size:var(--t-label); color:var(--muted); }
+.psSec{ padding:var(--s2) 0; border-bottom:1px solid var(--hairline-2); }
+.psCam{ position:relative; aspect-ratio:4/3; background:var(--ink); border-radius:var(--r-input);
+  overflow:hidden; display:grid; place-items:center; margin-top:var(--s1); }
+.psCam video,.psCam img{ width:100%; height:100%; object-fit:cover; display:block; }
+.psCam .psMsg{ position:absolute; inset:0; display:grid; place-items:center; text-align:center;
+  padding:var(--s3); color:var(--paper); font-size:var(--t-label); background:var(--ink); }
+.psAct{ display:flex; gap:var(--s2); flex-wrap:wrap; margin-top:var(--s2); }
+.psCam{ max-height:38dvh; }
+.psChk{ display:flex; gap:var(--s3); flex-wrap:wrap; font-size:var(--t-label);
+  padding:var(--s2) 0; }
+.psChk div{ display:flex; align-items:center; gap:var(--s-half); color:var(--muted); }
+.psChk div.ok{ color:var(--pos); }
+.psChk div.all{ flex:0 0 100%; color:var(--muted); }
+/* ปุ่มยืนยันกับรายการตรวจติดล่างเสมอ ไม่ต้องเลื่อนหา — แผ่นสูงกว่าจอเมื่อกล้องเปิดอยู่ */
+.psBar{ position:sticky; bottom:0; z-index:1; background:var(--card);
+  border-top:1px solid var(--hairline); padding-bottom:var(--s2); }
+.psBar .btn{ width:100%; }
+.psChk div{ display:flex; align-items:center; gap:var(--s1); color:var(--muted); }
+.psChk div.ok{ color:var(--pos); }
+.psChk div.tsub{ color:var(--muted); margin-top:var(--s-half); }
 /* ---------- การ์ดลงเวลาเข้า-ออก บนสุดของหน้าแรก ---------- */
 .pc{ margin-bottom:var(--s3); }
 .pc>.bd{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; }
@@ -834,6 +860,8 @@ body.lock{ overflow:hidden; }
 <symbol id="i-folder" viewBox="0 0 24 24"><path d="M4 5h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></symbol>
 <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
 <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M6 16V8a3 3 0 0 1 3-3h6M18 8v8a3 3 0 0 1-3 3H9"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 8h3.5l1.5-2h8l1.5 2H21v11H3z"/><circle cx="12" cy="13.5" r="3.5"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-1.2 5M20 5v6h-6"/></symbol>
 <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
 <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
 <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></symbol>
@@ -1956,7 +1984,10 @@ function openDrawer(title, html){ $('#drwT').textContent=title; $('#drwB').inner
   $('#drw').classList.add('on'); $('#ov').classList.add('on'); syncLock(); }
 function closeDrawer(){ $('#drw').classList.remove('on'); $('#ov').classList.remove('on'); syncLock(); }
 function openModal(title, html){ $('#mdT').textContent=title; $('#mdB').innerHTML=html; $('#modal').classList.add('on'); syncLock(); }
-function closeModal(){ $('#modal').classList.remove('on'); syncLock(); }
+/* ปิดกล้องทุกครั้งที่กล่องลอยปิด ไม่ว่าจะปิดด้วยปุ่ม X, ESC หรือกดยืนยัน
+   ถ้าไม่ทำ MediaStream ค้างและไฟกล้องไม่ดับเพราะ closeModal ไม่ล้าง innerHTML */
+function closeModal(){ camStop(); if(psClock){ clearInterval(psClock); psClock=null; }
+  $('#modal').classList.remove('on'); syncLock(); }
 /* ล็อก scroll พื้นหลังเมื่อมี overlay ใดเปิดอยู่ — จำเป็นบนมือถือ */
 function syncLock(){ document.body.classList.toggle('lock',
   ['#drw','#modal','#gs','#more','#fsheet'].some(s=>{ const e=$(s); return e && e.classList.contains('on'); })); }
@@ -4131,7 +4162,11 @@ function attFlags(a){
   if(c.otH>0)  f.push({k:'ot',   t:'OT '+hm1(c.otH)+' ชม.', tone:'info'});
   if(c.openIn && a.date!==curDate()) f.push({k:'open', t:'ไม่ได้ลงเวลาออก', tone:'bad'});
   if(a.editLog) f.push({k:'edit', t:'ถูกแก้เวลา '+a.editLog.length+' ครั้ง', tone:'warn'});
-  if(a.in && !(a.inProof&&(a.inProof.photoId||a.inProof.photo))) f.push({k:'nophoto', t:'ไม่มีรูปตอนเข้า', tone:'mut'});
+  /* ตั้งแต่ v1.8 บันทึกใหม่ต้องมีรูปครบทั้งเข้าและออกเสมอ ธงนี้จึงเหลือไว้สำหรับ
+     ข้อมูลเก่ากับแถวที่ผู้จัดการเติมเวลาให้ — เดิมเช็คแต่ฝั่งเข้าทั้งที่ตอนออกก็ถ่ายเหมือนกัน */
+  ['in','out'].forEach(side=>{ const p=a[side+'Proof'];
+    if(a[side] && !(p&&(p.photoId||p.photo)))
+      f.push({k:'nophoto', t:'ไม่มีรูปตอน'+(side==='in'?'เข้า':'ออก'), tone:'mut'}); });
   /* บัญชีที่กดต้องเป็นเจ้าของแถว — เดิมเก็บ by ไว้แต่ไม่เคยเทียบ */
   ['in','out'].forEach(side=>{ const p=a[side+'Proof'];
     if(p && p.by && p.by!==a.staffId)
@@ -4211,25 +4246,71 @@ const idbAll = () => idbDo('readonly',(st,set)=>{ const q=st.getAll(); q.onsucce
   .then(r=> (r&&r.length)? r : Object.keys(PHOTO_MEM).map(k=>PHOTO_MEM[k]));
 
 /* ---------- ยืนยันตัวตนตอนลงเวลา ----------
-   3 ชั้น: (1) ผูกบัญชี — ปุ่มลงเวลากดได้เฉพาะแถวของคนที่ล็อกอินอยู่
-   (2) ถ่ายภาพจากกล้อง (3) พิกัด GPS — สองอย่างหลังมีเท่าไหร่เก็บเท่านั้น
-   ไม่มีกล้อง/ไม่อนุญาต/เปิดแบบ file:// ก็ยังลงเวลาได้ แต่ธงหลักฐานจะบอกว่าขาดอะไร */
+   3 ชั้น: (1) ผูกบัญชี — ลงเวลาได้เฉพาะบัญชีที่ล็อกอินอยู่
+   (2) ถ่ายภาพจากกล้องโดยผู้ใช้กดชัตเตอร์เอง (3) พิกัด GPS ที่กดอัปเดตเองได้
+   ตั้งแต่ v1.8 สองอย่างหลังเป็น "ต้องมี" ไม่ใช่ "มีเท่าไหร่เก็บเท่านั้น" — ขาดอย่างใดอย่างหนึ่งลงเวลาไม่ได้
+   ถ้าเครื่องให้สิทธิ์ไม่ได้จริง ๆ ผู้จัดการเติมเวลาให้ทีหลังผ่าน attFixModal ซึ่งบังคับให้ระบุเหตุผลและเก็บ log */
 const hhmmss = d => [d.getHours(),d.getMinutes(),d.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
-/* กล้อง — getUserMedia มีเฉพาะ HTTPS/localhost */
-async function camShot(w,h,q){
-  if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return null;
-  try{
-    /* facingMode:'user' = บังคับกล้องหน้า — รูปหลักฐานต้องเป็นหน้าคนที่กด ไม่ใช่พื้นหรือเพดาน
-       ใช้ ideal ไม่ใช่ exact เพื่อให้เครื่องที่มีกล้องเดียว (เช่นโน้ตบุ๊ก) ยังถ่ายได้ */
-    const stream=await navigator.mediaDevices.getUserMedia({video:{width:w,height:h,facingMode:{ideal:'user'}}});
-    const v=document.createElement('video'); v.srcObject=stream; v.muted=true; v.playsInline=true;
-    await v.play(); await new Promise(r=>setTimeout(r,350));   /* รอกล้องปรับแสง */
-    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-    cv.getContext('2d').drawImage(v,0,0,w,h);
-    stream.getTracks().forEach(t=>t.stop());
-    return cv.toDataURL('image/jpeg',q);
-  }catch(_){ return null; }   /* ไม่มีกล้อง/ไม่อนุญาต — บันทึกต่อโดยไม่มีรูป */
+/* หลักฐานต้องสดพอ — ถ่ายรูปที่ร้านแล้วเดินออกไปกดยืนยันที่อื่นต้องไม่ผ่าน
+   120 วินาทีเลือกให้ตรงกับด่านตรวจ drift ใน shot() ที่ผู้จัดการเห็น */
+const PROOF_FRESH_SEC=120;
+const proofStale = p => { const now=Date.now();
+  return !p.photoAt || !p.geoAt
+    || (now-new Date(p.photoAt)) > PROOF_FRESH_SEC*1000
+    || (now-new Date(p.geoAt))   > PROOF_FRESH_SEC*1000; };
+
+/* ---------- กล้องแบบกดชัตเตอร์เอง ----------
+   ของเดิมถ่ายอัตโนมัติหลังเปิดกล้อง 350 มิลลิวินาที ผู้ใช้ไม่เห็นภาพตัวเองก่อนถ่ายและถ่ายใหม่ไม่ได้
+   ตัวนี้ต่อ <video> เข้า DOM จริงให้เห็นภาพสด แล้วรอให้กดเอง
+   getUserMedia มีเฉพาะ HTTPS/localhost */
+let CAM_STREAM=null;
+function camStop(){
+  if(!CAM_STREAM) return;
+  try{ CAM_STREAM.getTracks().forEach(t=>t.stop()); }catch(_){ }
+  CAM_STREAM=null;
 }
+async function camOpen(video){
+  camStop();
+  if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia))
+    throw new Error('nocam');       /* file:// หรือ HTTP ธรรมดา */
+  /* facingMode:'user' = กล้องหน้า — รูปหลักฐานต้องเป็นหน้าคนที่กด ไม่ใช่พื้นหรือเพดาน
+     ใช้ ideal ไม่ใช่ exact เพื่อให้เครื่องที่มีกล้องเดียว (เช่นโน้ตบุ๊ก) ยังถ่ายได้ */
+  const req=navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:{ideal:'user'}}});
+  /* ของเดิมไม่มี timeout เลย ถ้าผู้ใช้เปิดกล่องขอสิทธิ์ค้างไว้ ระบบจะรอตลอดกาล */
+  const stream=await Promise.race([req,
+    new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),10000))]);
+  CAM_STREAM=stream;
+  try{
+    video.srcObject=stream; video.muted=true; video.playsInline=true; video.autoplay=true;
+    await video.play();
+  }catch(e){ camStop(); throw e; }
+  return stream;
+}
+/* วาดเฟรมปัจจุบันลง canvas — เรียกตอนผู้ใช้กดชัตเตอร์เท่านั้น */
+function camSnap(video,w,h,q){
+  if(!video.videoWidth) return null;
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+  cv.getContext('2d').drawImage(video,0,0,w,h);
+  return cv.toDataURL('image/jpeg',q);
+}
+/* พิกัด — maximumAge:0 เพราะปุ่ม "อัปเดตตำแหน่ง" ที่คืนค่าเก่าไม่ตรงกับที่ผู้ใช้คาด */
+function geoGet(){
+  return new Promise((res,rej)=>{
+    if(!navigator.geolocation){ rej({code:0}); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos=>res({lat:+pos.coords.latitude.toFixed(6), lng:+pos.coords.longitude.toFixed(6),
+        acc:Math.round(pos.coords.accuracy)}),
+      err=>rej(err), {enableHighAccuracy:true, timeout:10000, maximumAge:0});
+  });
+}
+const GEO_ERR={ 0:'เครื่องนี้ไม่รองรับการหาตำแหน่ง',
+  1:'ยังไม่ได้อนุญาตให้เข้าถึงตำแหน่ง — เปิดสิทธิ์ในตั้งค่าเบราว์เซอร์แล้วกดอัปเดตอีกครั้ง',
+  2:'หาตำแหน่งไม่ได้ตอนนี้ — ลองออกไปที่โล่งแล้วกดอัปเดตใหม่',
+  3:'หาตำแหน่งนานเกินไป — กดอัปเดตอีกครั้ง' };
+/* ลิงก์เปิดพิกัดใน Google Maps — ใช้ทุกที่ที่แสดงพิกัด */
+const geoLink = g => '<a class="lnk mono" target="_blank" rel="noopener" '
+  +'href="https://www.google.com/maps?q='+g.lat+','+g.lng+'">'+g.lat+', '+g.lng+'</a>'
+  +' <span class="tsub">(±'+g.acc+' ม.)</span>';
 const dataBytes = s => Math.round((String(s).split(',')[1]||'').length*3/4);
 /* รหัสรูปต้องไม่ซ้ำ "ข้ามรอบการเปิดแอป" — nid() เริ่มนับ 1 ใหม่ทุกครั้งที่โหลดหน้า
    แต่ IndexedDB อยู่ข้ามรอบ ถ้าใช้ nid รูปหลักฐานเก่าจะถูกรูปใหม่ทับแบบเงียบ ๆ */
@@ -4295,36 +4376,22 @@ async function photoStats(){
   all.forEach(r=>{ by[r.tier]=by[r.tier]||{n:0,b:0}; by[r.tier].n++; by[r.tier].b+=r.bytes||0; });
   return { n:all.length, bytes:all.reduce((s,r)=>s+(r.bytes||0),0), by, mem: IDB_OK===false };
 }
-async function attProof(){
-  const proof={ by:ME.id, byName:ME.name, device:navigator.userAgent.slice(0,80) };
-  const t0=PH_TIERS[0];
-  const shot=await camShot(t0.w,t0.h,t0.q);
-  if(shot) proof.photoId=await photoSave(shot,t0.w,t0.h,t0.k);
-  if(navigator.geolocation){
-    try{
-      const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:4000,maximumAge:60000}));
-      proof.geo={lat:+pos.coords.latitude.toFixed(6), lng:+pos.coords.longitude.toFixed(6), acc:Math.round(pos.coords.accuracy)};
-    }catch(_){ }
-  }
-  return proof;
-}
-/* กด → บันทึกเวลาทันทีแบบไม่รออะไรเลย → รูปกับพิกัดตามมาแนบทีหลัง
-   ของเดิมจับเวลา "หลัง" รอกล้อง+GPS ทำให้เวลาที่บันทึกช้ากว่าวินาทีที่กดจริงได้ถึง ~4 วินาที */
-function punch(staffId, side){
-  /* ลงเวลาแทนกันไม่ได้ — เดิมด่านเดียวคือการซ่อนปุ่มใน HTML ซึ่งเลี่ยงได้
-     ด่านจริงต้องอยู่ในฟังก์ชันที่เขียนข้อมูล ไม่ใช่ที่ปุ่ม */
-  if(staffId!==ME.id){ toast('ลงเวลาแทนคนอื่นไม่ได้','ปุ่มลงเวลาขึ้นเฉพาะแถวของคนที่ล็อกอินอยู่',1); return null; }
+/* บันทึกเวลา ณ วินาทีที่กดปุ่มยืนยัน โดยต้องมีหลักฐานครบมาแล้ว
+   ด่านทุกชั้นอยู่ในฟังก์ชันนี้ ไม่ใช่ที่ปุ่ม — ซ่อนปุ่มอย่างเดียวเลี่ยงได้ */
+function punch(staffId, side, proof){
+  if(staffId!==ME.id){ toast('ลงเวลาแทนคนอื่นไม่ได้','ลงเวลาได้เฉพาะบัญชีที่ล็อกอินอยู่',1); return null; }
+  if(!proof || !proof.photoId || !proof.geo){
+    toast('ยังลงเวลาไม่ได้','ต้องมีทั้งรูปถ่ายและตำแหน่งก่อน',1); return null; }
+  if(proofStale(proof)){
+    toast('หลักฐานเก่าเกินไป','ถ่ายรูปและอัปเดตตำแหน่งใหม่แล้วกดยืนยันอีกครั้ง',1); return null; }
   const t=hhmmss(new Date());
   const a=attEnsure(staffId, curDate());
   a[side]=t;
-  a[side+'Proof']={ by:ME.id, byName:ME.name, device:navigator.userAgent.slice(0,80), pending:1 };
-  toast((side==='in'?'ลงเวลาเข้าแล้ว ':'ลงเวลาออกแล้ว ')+t, 'บันทึกวินาทีที่กดไว้แล้ว · กำลังแนบรูปยืนยัน…');
+  a[side+'Proof']=Object.assign({ by:ME.id, byName:ME.name,
+    device:navigator.userAgent.slice(0,80) }, proof);
+  toast((side==='in'?'ลงเวลาเข้าแล้ว ':'ลงเวลาออกแล้ว ')+t, 'บันทึกพร้อมรูปและตำแหน่งเรียบร้อย');
+  if(IDB_OK===false) toast('เก็บรูปถาวรไม่ได้','เบราว์เซอร์นี้ใช้ IndexedDB ไม่ได้ — รูปจะหายเมื่อปิดแอป',1);
   if(CUR==='hr') rHr();
-  attProof().then(p=>{
-    a[side+'Proof']=p;
-    if(IDB_OK===false && p.photoId) toast('เก็บรูปถาวรไม่ได้','เบราว์เซอร์นี้ใช้ IndexedDB ไม่ได้ — รูปจะหายเมื่อปิดแอป',1);
-    if(CUR==='hr') rHr();
-  });
   return t;
 }
 function attBadges(a, side){
@@ -4334,11 +4401,15 @@ function attBadges(a, side){
   b.push(p.by? '<span title="ลงเวลาจากบัญชีที่ล็อกอิน">'+ic('key','i i-sm')+'</span>' : '');
   /* รูปกับพิกัดเป็นข้อมูลอ่อนไหว — เปิดดูได้เฉพาะรูปของตัวเอง หรือคนที่มีหน้าที่ตรวจ */
   const mayView = a.staffId===ME.id || canFixAtt();
-  b.push(p.pending ? '<span class="tsub" title="กำลังถ่ายรูปยืนยัน — เวลาที่กดบันทึกไว้แล้ว">'+ic('clock','i i-sm')+'</span>'
-      : !(p.photoId||p.photo) ? '<span class="tsub" title="ไม่มีรูป — ไม่มีกล้องหรือไม่อนุญาต">'+ic('alert','i i-sm')+'</span>'
+  b.push(!(p.photoId||p.photo) ? '<span class="tsub" title="ไม่มีรูป — บันทึกเก่าหรือผู้จัดการเติมเวลาให้">'+ic('alert','i i-sm')+'</span>'
       : mayView ? '<button class="lnk" data-attph="'+a.staffId+'|'+a.date+'|'+side+'" title="ดูรูปถ่ายตอนลงเวลา">'+ic('eye','i i-sm')+'</button>'
       : '<span class="tsub" title="มีรูปยืนยัน — ดูได้เฉพาะเจ้าตัวและผู้มีหน้าที่ตรวจ">'+ic('lock','i i-sm')+'</span>');
-  b.push(p.geo? '<span title="พิกัด '+p.geo.lat+','+p.geo.lng+' (±'+p.geo.acc+' ม.)">'+ic('route','i i-sm')+'</span>' : '');
+  /* พิกัดเป็นข้อมูลอ่อนไหวเท่ากับรูป — เดิมโผล่ใน title ให้ใครก็ได้ที่เห็นแถว ตอนนี้ผ่านด่านเดียวกัน
+     และกดเปิดใน Google Maps ได้ */
+  b.push(!p.geo ? ''
+      : mayView ? '<a class="lnk" target="_blank" rel="noopener" title="เปิดพิกัดใน Google Maps"'
+          +' href="https://www.google.com/maps?q='+p.geo.lat+','+p.geo.lng+'">'+ic('route','i i-sm')+'</a>'
+      : '<span class="tsub" title="มีพิกัดยืนยัน — ดูได้เฉพาะเจ้าตัวและผู้มีหน้าที่ตรวจ">'+ic('route','i i-sm')+'</span>');
   return '<span style="display:inline-flex;gap:4px;align-items:center;vertical-align:middle">'+b.join('')+'</span>';
 }
 /* แก้เวลาย้อนหลัง — ใช้ร่วมกันทั้งตารางลงเวลาและแผ่นตรวจของผู้จัดการ */
@@ -4361,10 +4432,100 @@ function attFixModal(s, date, after){
     closeModal(); toast('แก้เวลาแล้ว', s.nick+' · '+why);
     if(after) after(a); else rHr(); refreshAll(); };
 }
+/* ---------- แผ่นลงเวลา ----------
+   ทุกปุ่มลงเวลาในแอปเปิดแผ่นนี้ตัวเดียว กติกาจึงเหมือนกันทุกทาง
+   ลำดับ: เห็นนาฬิกาเดิน → เปิดกล้องเห็นหน้าตัวเอง → กดชัตเตอร์ (ถ่ายใหม่ได้) →
+          พิกัดขอให้อัตโนมัติครั้งแรก กดอัปเดตซ้ำได้ → ครบทั้งสองอย่างปุ่มยืนยันถึงจะกดได้
+   เวลาที่บันทึกคือวินาทีที่กดยืนยัน จึงมีนาฬิกาเดินอยู่ตลอดให้เห็นว่ากดตอนนี้ได้เวลาอะไร */
+let PS_PROOF=null, psClock=null;
+function punchSheet(staffId, side){
+  if(staffId!==ME.id){ toast('ลงเวลาแทนคนอื่นไม่ได้','ลงเวลาได้เฉพาะบัญชีที่ล็อกอินอยู่',1); return; }
+  const s=STAFF.find(x=>x.id===staffId)||ME;
+  /* openedAt = วินาทีที่กดเปิดแผ่น เก็บไว้ให้ผู้จัดการเทียบกับเวลาที่บันทึกได้
+     ถ้ามีข้อโต้แย้งว่า "มาถึงแล้วแต่กล้องช้า" จะมีหลักฐานให้ดู */
+  PS_PROOF={ openedAt:new Date().toISOString() };
+  openModal((side==='in'?'ลงเวลาเข้างาน':'ลงเวลาออกงาน')+' — '+s.nick,
+     '<div class="psClk"><b id="psNow" class="mono">--:--:--</b><span id="psHint"></span></div>'
+    +'<div class="psSec"><div class="fl">1 · รูปยืนยันตัวตน</div>'
+      +'<div class="psCam"><video id="psVid" playsinline muted></video>'
+      +'<img id="psImg" alt="" style="display:none">'
+      +'<div class="psMsg" id="psCamMsg">กำลังเปิดกล้อง…</div></div>'
+      +'<div class="psAct"><button class="btn sec sm" id="psShot">'+ic('camera','i i-sm')+' ถ่ายรูป</button>'
+      +'<button class="btn sec sm" id="psRe" style="display:none">'+ic('refresh','i i-sm')+' ถ่ายใหม่</button></div></div>'
+    +'<div class="psSec"><div class="fl">2 · ตำแหน่งที่ลงเวลา</div>'
+      +'<div id="psGeo" class="tsub">กำลังหาตำแหน่ง…</div>'
+      +'<div class="psAct"><button class="btn sec sm" id="psGeoGo">'+ic('route','i i-sm')+' อัปเดตตำแหน่ง</button></div></div>'
+    /* รายการตรวจติดอยู่กับปุ่มยืนยัน จะได้เห็นพร้อมกันเสมอว่าทำไมกดไม่ได้ */
+    +'<div class="psBar"><div class="psChk" id="psChk"></div>'
+      +'<button class="btn" id="psGo" disabled>'+ic('check')
+      +' ยืนยัน'+(side==='in'?'ลงเวลาเข้า':'ลงเวลาออก')+'</button></div>');
+
+  const vid=$('#psVid'), img=$('#psImg');
+  const t0=PH_TIERS[0];
+  /* รายการตรวจบอกตรง ๆ ว่าขาดอะไร และคุมปุ่มยืนยันจากที่เดียว */
+  const sync=()=>{
+    const okP=!!PS_PROOF.photoId, okG=!!PS_PROOF.geo;
+    const line=(ok,t)=>'<div class="'+(ok?'ok':'')+'">'+ic(ok?'check-circle':'circle','i i-sm')+' '+t+'</div>';
+    $('#psChk').innerHTML=line(okP,'รูปถ่าย')+line(okG,'ตำแหน่ง')
+      +(okP&&okG? '' : '<div class="all">ต้องครบทั้งสองอย่างถึงจะลงเวลาได้</div>');
+    $('#psGo').disabled=!(okP&&okG);
+  };
+  const camMsg=t=>{ $('#psCamMsg').textContent=t; $('#psCamMsg').style.display=t?'':'none'; };
+  const startCam=async()=>{
+    img.style.display='none'; vid.style.display='';
+    $('#psShot').style.display=''; $('#psRe').style.display='none';
+    $('#psShot').disabled=true; camMsg('กำลังเปิดกล้อง…');
+    try{ await camOpen(vid); camMsg(''); $('#psShot').disabled=false; }
+    catch(e){ camMsg(e && e.message==='nocam'
+        ? 'เครื่องนี้เปิดกล้องไม่ได้ (ต้องเปิดผ่าน https)'
+        : e && e.message==='timeout' ? 'รอสิทธิ์กล้องนานเกินไป — ปิดแผ่นแล้วลองใหม่'
+        : 'ยังไม่ได้อนุญาตให้ใช้กล้อง — เปิดสิทธิ์ในตั้งค่าเบราว์เซอร์แล้วลองใหม่'); }
+  };
+  const askGeo=async()=>{
+    $('#psGeoGo').disabled=true; $('#psGeo').textContent='กำลังหาตำแหน่ง…';
+    try{
+      const g=await geoGet();
+      PS_PROOF.geo=g; PS_PROOF.geoAt=new Date().toISOString();
+      $('#psGeo').innerHTML=geoLink(g);
+    }catch(err){ delete PS_PROOF.geo; delete PS_PROOF.geoAt;
+      $('#psGeo').innerHTML='<span style="color:var(--st-none)">'+esc(GEO_ERR[err&&err.code]||GEO_ERR[2])+'</span>'; }
+    $('#psGeoGo').disabled=false; sync();
+  };
+  $('#psShot').onclick=async()=>{
+    const data=camSnap(vid,t0.w,t0.h,t0.q);
+    if(!data){ camMsg('ภาพยังไม่พร้อม รออีกครู่แล้วกดใหม่'); return; }
+    camStop(); vid.style.display='none';
+    img.src=data; img.style.display='';
+    PS_PROOF.photoId=await photoSave(data,t0.w,t0.h,t0.k);
+    PS_PROOF.photoAt=new Date().toISOString();
+    $('#psShot').style.display='none'; $('#psRe').style.display='';
+    sync();
+  };
+  $('#psRe').onclick=async()=>{
+    /* ทิ้งรูปเก่าออกจาก IndexedDB ด้วย ไม่งั้นกดถ่ายใหม่กี่ครั้งก็เหลือรูปขยะเท่านั้นครั้ง */
+    if(PS_PROOF.photoId) await idbDel(PS_PROOF.photoId);
+    delete PS_PROOF.photoId; delete PS_PROOF.photoAt;
+    sync(); startCam();
+  };
+  $('#psGeoGo').onclick=askGeo;
+  $('#psGo').onclick=()=>{
+    const t=punch(staffId, side, PS_PROOF);
+    if(!t){ sync(); return; }        /* ถูกด่านใน punch() ปฏิเสธ — ให้ผู้ใช้แก้แล้วกดใหม่ */
+    closeModal(); refreshAll();
+  };
+  const tick=()=>{ const el=$('#psNow'); if(!el){ clearInterval(psClock); psClock=null; return; }
+    el.textContent=hhmmss(new Date());
+    $('#psHint').textContent = side==='in'
+      ? 'เวลาเข้างาน '+CFG.workIn+' (ผ่อนผัน '+(+CFG.lateGrace||0)+' นาที)'
+      : 'เวลาเลิกงาน '+CFG.workOut; };
+  tick(); if(psClock) clearInterval(psClock); psClock=setInterval(tick,1000);
+  sync(); startCam(); askGeo();
+}
+
 /* ---------- การ์ดลงเวลาบนหน้าแรก ----------
    ปุ่มลงเวลาเดิมอยู่ในหน้า "ลงเวลาและลา" ซึ่งบางบทบาทต้องกดผ่านแผ่น "อื่น ๆ" ก่อน
-   ย้ายมาไว้บนสุดของหน้าแรกด้วย เห็นทันทีที่เปิดแอปและกดครั้งเดียวจบ
-   ใช้ punch() ตัวเดียวกับหน้าลงเวลา — หลักฐานและกติกาทั้งหมดจึงเหมือนกันเป๊ะ */
+   ย้ายมาไว้บนสุดของหน้าแรกด้วย เห็นทันทีที่เปิดแอป
+   เปิด punchSheet() ตัวเดียวกับหน้าลงเวลา — หลักฐานและกติกาทั้งหมดจึงเหมือนกันเป๊ะ */
 let punchTimer=null;
 const durTh = sec => { const h=Math.floor(sec/3600), m=Math.floor(sec/60)%60;
   return (h? h+' ชม. ':'')+m+' นาที'; };
@@ -4404,9 +4565,9 @@ function rPunch(){
   tick();
   if(punchTimer) clearInterval(punchTimer);
   punchTimer=setInterval(tick,1000);
-  const go=(side,btn)=>{ btn.disabled=true; punch(ME.id, side); refreshAll(); };   /* refreshAll วาด rDash ซึ่งเรียก rPunch ให้เอง */
-  if($('#pcIn'))  $('#pcIn').onclick =e=> go('in',  e.currentTarget);
-  if($('#pcOut')) $('#pcOut').onclick=e=> go('out', e.currentTarget);
+  const go=(side)=> punchSheet(ME.id, side);   /* แผ่นจะ refreshAll ให้เองเมื่อยืนยันสำเร็จ */
+  if($('#pcIn'))  $('#pcIn').onclick =()=> go('in');
+  if($('#pcOut')) $('#pcOut').onclick=()=> go('out');
 }
 /* ============================= 16b. ภาพรวมการเข้างาน =============================
    หน้านี้เห็นเฉพาะ แอดมิน · ผู้บริหาร · ฝ่ายบุคคล (คุมด้วย MENU.r และด่านซ้ำใน rAttend)
@@ -4564,7 +4725,7 @@ async function psRender(){
            : '<div class="note w" style="margin:0">'+ic('alert','i i-sm')+'<span>ไม่มีรูป</span></div>')
       +(drift? '<div class="tsub" style="color:var(--st-none)">รูปถ่ายตอน '+esc(shotAt)+' ไม่ตรงกับเวลาที่บันทึก</div>'
              : (shotAt? '<div class="tsub mono">ถ่ายตอน '+esc(shotAt)+'</div>':''))
-      +(p.geo? '<div class="tsub mono">'+p.geo.lat+', '+p.geo.lng+' (±'+p.geo.acc+' ม.)</div>':'')
+      +(p.geo? '<div class="tsub">'+geoLink(p.geo)+'</div>':'')
       +(p.device? '<div class="tsub" style="overflow-wrap:anywhere">'+esc(p.device)+'</div>':'')+'</div>'; };
 
   el.innerHTML=
@@ -4704,8 +4865,8 @@ function rHr(){
         +'<br><span class="tsub">เดือนนี้ '+esc(attMonthText(m))+'</span>',
       actOf(s,a,self))));
   /* บันทึกเวลา ณ วินาทีที่กด — ปุ่มไม่รอกล้อง รูปตามมาแนบเอง */
-  $$('[data-in]').forEach(b=> b.onclick=()=>{ b.disabled=true; punch(b.dataset.in,'in'); });
-  $$('[data-out]').forEach(b=> b.onclick=()=>{ b.disabled=true; punch(b.dataset.out,'out'); });
+  $$('[data-in]').forEach(b=> b.onclick=()=> punchSheet(b.dataset.in,'in'));
+  $$('[data-out]').forEach(b=> b.onclick=()=> punchSheet(b.dataset.out,'out'));
   /* ผู้จัดการ/HR/แอดมิน แก้ย้อนหลังพร้อมเหตุผล — เก็บว่าใครแก้ อะไร ทำไม */
   $$('[data-fix]').forEach(b=> b.onclick=()=>{
     attFixModal(STAFF.find(x=>x.id===b.dataset.fix), day); });
@@ -4723,7 +4884,7 @@ function rHr(){
       +'<dl class="kv" style="margin-top:var(--s2)"><dt>วันที่</dt><dd>'+thDate(a.date)+'</dd>'
       +'<dt>เวลา</dt><dd class="mono">'+esc(side==='out'?a.out:a.in)+'</dd>'
       +'<dt>บัญชีที่กด</dt><dd>'+esc(p.byName||'—')+'</dd>'
-      +(p.geo?'<dt>พิกัด</dt><dd class="mono">'+p.geo.lat+', '+p.geo.lng+' (±'+p.geo.acc+' ม.)</dd>':'')
+      +(p.geo?'<dt>พิกัด</dt><dd>'+geoLink(p.geo)+'</dd>':'')
       +'<dt>อุปกรณ์</dt><dd style="font-size:var(--t-label)">'+esc(p.device||'—')+'</dd></dl>'); });
   const present=data.filter(d=>d.a.in).length;
   const lateN=data.filter(d=>d.c.late).length;
