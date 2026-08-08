@@ -455,36 +455,50 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .bar .bf.g,.prog .bf.g{ background:var(--pos); } .bar .bf.w{ background:var(--attn); }
 .bar .bf.d,.prog .bf.d{ background:var(--accent); }
 
-/* -------------------- PSTEP — แถบความคืบหน้าเป็นเลขขั้น 1..N --------------------
-   ใช้แทนกระดานคัมบังในงานติดตามลูกค้า บรรทัดเดียวบอกครบว่าอยู่ขั้นไหนและเหลืออีกกี่ขั้น
-   ไม่มีกล่องหุ้มเลย มีแค่ตัวเลข เส้นเชื่อม และสีที่บอกว่าถึงหรือยัง
-   ขั้นที่ผ่านแล้ว = วงหมึกทึบ · ขั้นปัจจุบัน = วงแดงทึบ · ขั้นที่ยังไม่ถึง = วงขอบบาง */
+/* -------------------- PSTEP — แถบความคืบหน้าแบบไอคอน --------------------
+   ใช้แทนกระดานคัมบังในงานติดตามลูกค้า บรรทัดเดียวบอกครบว่าอยู่ขั้นไหน เหลืออีกกี่ขั้น
+   ไม่มีกล่องหุ้มเลย มีแค่วงไอคอน เส้นเชื่อม และสี
+   ขั้นที่ผ่านแล้ว = วงหมึกทึบ + เครื่องหมายถูก (อ่านออกทันที ไม่ต้องเทียบสี)
+   ขั้นปัจจุบัน    = วงแดงทึบ + วงแหวนจาง สายตาไปลงตรงนั้นก่อน
+   ขั้นที่ยังไม่ถึง = วงขอบบาง ไอคอนของขั้นนั้นเอง บอกล่วงหน้าว่าจะเจออะไร */
 .pstep{ display:flex; align-items:center; min-width:0; }
 .pstep .pst{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:var(--s-half); }
-.pstep .pn{ width:22px; height:22px; border-radius:var(--r-pill); position:relative;
+.pstep .pn{ width:28px; height:28px; border-radius:var(--r-pill); position:relative;
   border:1px solid var(--hairline); background:var(--card); color:var(--muted);
-  font-size:11px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1;
   display:flex; align-items:center; justify-content:center;
-  transition:background var(--dur-ui) var(--ease), color var(--dur-ui) var(--ease); }
-/* วงกลม 22px เล็กเกินกว่าจะกดถูกด้วยนิ้ว — ขยายพื้นที่กดเป็น 44px โดยไม่ขยับ layout
+  transition:background var(--dur-ui) var(--ease), color var(--dur-ui) var(--ease),
+             box-shadow var(--dur-ui) var(--ease); }
+.pstep .pn .i{ color:currentColor; }
+/* วง 28px ยังเล็กเกินกว่าจะกดถูกด้วยนิ้ว — ขยายพื้นที่กดเป็น 44px โดยไม่ขยับ layout
    หัวและท้ายไม่ยื่นออกข้าง ไม่งั้นแถบล้นกรอบตัวเองไปฝั่งละ 6px */
-.pstep button.pn::after{ content:''; position:absolute; inset:-11px -6px; }
+.pstep button.pn::after{ content:''; position:absolute; inset:-8px -6px; }
 .pstep .pst:first-child button.pn::after{ left:0; }
 .pstep .pst:last-child  button.pn::after{ right:0; }
 .pstep button.pn:active{ transform:scale(.92); }
 .pstep .pn.done{ background:var(--ink); border-color:var(--ink); color:var(--card); }
-.pstep .pn.now{ background:var(--accent); border-color:var(--accent); color:var(--paper); }
+.pstep .pn.now{ background:var(--accent); border-color:var(--accent); color:var(--paper);
+  box-shadow:0 0 0 4px var(--accent-wash); }
 /* ตกราง (เช่นไฟแนนซ์ไม่ผ่าน) — วงแดงกลวง บอกว่าหยุดอยู่ตรงนี้ ไม่ได้เดินต่อ */
 .pstep.off .pn.now{ background:var(--card); border-color:var(--accent); color:var(--accent); }
-.pstep .pl{ flex:1 1 auto; min-width:10px; height:2px; background:var(--hairline-2); }
+.pstep .pl{ flex:1 1 auto; min-width:10px; height:3px; border-radius:2px; background:var(--hairline-2); }
 .pstep .pl.on{ background:var(--ink); }
-/* แบบมีชื่อขั้นใต้ตัวเลข ใช้ในแผ่นรายละเอียดที่มีที่ว่างพอ */
+/* เส้นที่วิ่งเข้าขั้นปัจจุบันไล่สีหมึก→แดง บอกว่า "กำลังอยู่ระหว่างทาง" ไม่ใช่จบแล้ว */
+.pstep .pl.on.cur{ background:linear-gradient(90deg, var(--ink), var(--accent)); }
+/* แบบมีชื่อขั้นใต้ไอคอน ใช้ตอนมีที่ว่างพอ */
 .pstep.lab{ align-items:flex-start; }
-.pstep.lab .pst{ flex:1 1 0; min-width:0; }
-.pstep.lab .pl{ flex:0 0 var(--s1); margin-top:11px; }
+/* ชื่อขั้นกินความกว้างเท่าที่ต้องใช้ (ไม่เกิน 88px) ที่เหลือยกให้เส้นเชื่อม
+   ถ้าให้ช่องเท่ากันหมด เส้นจะเหลือแค่ 8px กลายเป็นขีดสั้น ๆ ไม่ต่อเนื่องเหมือนแถบจริง */
+.pstep.lab .pst{ flex:0 1 auto; min-width:0; max-width:88px; }
+.pstep.lab .pl{ flex:1 1 auto; min-width:10px; margin-top:13px; }
 .pstep.lab em{ font-style:normal; font-size:11px; line-height:1.25; color:var(--muted);
   text-align:center; overflow-wrap:anywhere; }
 .pstep.lab .pst.at em{ color:var(--ink); font-weight:600; }
+/* สองบรรทัดเหนือแถบ — หัวเรื่องบอกว่าต้องทำอะไรต่อ บรรทัดรองบอกขั้นและเวลาที่ค้าง */
+.phead{ margin-bottom:var(--s2); }
+.phead b{ display:block; font-family:var(--f-display); font-size:var(--t-lead);
+  font-weight:600; letter-spacing:-.01em; line-height:1.3; }
+.phead.off b{ color:var(--accent); }
+.phead span{ display:block; font-size:var(--t-label); color:var(--muted); margin-top:2px; }
 .pslab{ font-size:var(--t-label); color:var(--muted); white-space:nowrap; }
 .pslab.off{ color:var(--accent); }
 .vbars{ display:flex; align-items:flex-end; gap:var(--s2); height:160px; padding-top:var(--s3); }
@@ -2098,24 +2112,33 @@ function crow(attrs, title, right, sub, foot){
     +(foot?'<div class="crf">'+foot+'</div>':'')+'</div>';
 }
 function pill(txt, kind){ return '<span class="pill p-'+kind+'">'+esc(txt)+'</span>'; }
-/* แถบความคืบหน้าเป็นเลขขั้น 1..N — ใช้แทนกระดานคัมบัง เห็นในบรรทัดเดียวว่าอยู่ขั้นไหน เหลืออีกกี่ขั้น
-   track = ชื่อขั้นเรียงตามลำดับจริง (ต้องเป็นเส้นตรง ไม่มีทางแยก)
+/* แถบความคืบหน้าแบบไอคอน — ใช้แทนกระดานคัมบัง เห็นในบรรทัดเดียวว่าอยู่ขั้นไหน เหลืออีกกี่ขั้น
+   track = [{t:'ชื่อขั้น', ic:'ชื่อไอคอนใน sprite'}] เรียงตามลำดับจริง ต้องเป็นเส้นตรงไม่มีทางแยก
    i     = ดัชนีขั้นปัจจุบัน นับจาก 0
    o.off = ตกราง เช่นลูกค้าที่ไฟแนนซ์ไม่ผ่าน — ขั้นปัจจุบันเป็นวงแดงกลวง ไม่นับว่าเดินต่อ
    o.act = ฟังก์ชันคืน attribute ให้ปุ่มขั้นนั้น ใส่แล้วกดเลื่อนขั้นได้ ไม่ใส่คือแสดงอย่างเดียว
            กดได้เฉพาะขั้นที่ติดกับขั้นปัจจุบัน ±1 — ข้ามขั้นแล้วประวัติการติดตามขาดช่วง
-   o.lab = โชว์ชื่อขั้นใต้ตัวเลข ใช้ในแผ่นรายละเอียดที่มีที่ว่างพอ */
+   o.lab = โชว์ชื่อขั้นใต้ไอคอน ใช้ตอนมีที่ว่างพอ
+   ขั้นที่ผ่านแล้วเปลี่ยนไอคอนเป็นเครื่องหมายถูกเสมอ — บอกว่า "จบแล้ว" โดยไม่ต้องเทียบสี */
 function steps(track, i, o){
   o=o||{};
   return '<div class="pstep'+(o.off?' off':'')+(o.lab?' lab':'')+'">'
-    +track.map((t,ix)=>{
-      const cls='pn'+(ix<i?' done':'')+(ix===i?' now':'');
+    +track.map((st,ix)=>{
+      const done=ix<i, now=ix===i;
+      const cls='pn'+(done?' done':'')+(now?' now':'');
+      const body=ic(done?'check':(st.ic||'circle'),'i i-sm');
       const node=(o.act && Math.abs(ix-i)===1)
-        ? '<button class="'+cls+'" '+o.act(ix)+' title="ย้ายไป '+esc(t)+'">'+(ix+1)+'</button>'
-        : '<span class="'+cls+'" title="'+esc(t)+'">'+(ix+1)+'</span>';
-      return (ix? '<i class="pl'+(ix<=i?' on':'')+'"></i>' : '')
-        +'<div class="pst'+(ix===i?' at':'')+'">'+node+(o.lab?'<em>'+esc(t)+'</em>':'')+'</div>';
+        ? '<button class="'+cls+'" '+o.act(ix)+' aria-label="ย้ายไป '+esc(st.t)+'" title="ย้ายไป '+esc(st.t)+'">'+body+'</button>'
+        : '<span class="'+cls+'" title="'+esc(st.t)+'">'+body+'</span>';
+      /* เส้นที่ ix เชื่อมขั้น ix-1 กับ ix — เส้นที่เข้าขั้นปัจจุบันได้คลาส cur ไว้ไล่สี */
+      return (ix? '<i class="pl'+(ix<=i?' on':'')+(now?' cur':'')+'"></i>' : '')
+        +'<div class="pst'+(now?' at':'')+'">'+node+(o.lab?'<em>'+esc(st.t)+'</em>':'')+'</div>';
     }).join('')+'</div>';
+}
+/* สองบรรทัดเหนือแถบ — แบบเดียวกับที่แอปส่งของใช้ ("กำลังไปหาคุณ / ถึงแล้ว")
+   head = สิ่งที่ต้องทำต่อ · sub = ขั้นที่เท่าไหร่ + ค้างมานานแค่ไหน (เป็น HTML ได้ ผู้เรียก esc เอง) */
+function stepHead(head, sub, off){
+  return '<div class="phead'+(off?' off':'')+'"><b>'+esc(head)+'</b>'+(sub?'<span>'+sub+'</span>':'')+'</div>';
 }
 function ageTag(d){ const a=CFG.aging; if(d<=a*0.34) return pill(d+' วัน','good');
   if(d<=a) return pill(d+' วัน','warn'); return pill(d+' วัน','bad'); }
@@ -3328,20 +3351,22 @@ function qDraw(no){
    ของเดิมเก็บ "ไม่ผ่าน" ไว้กลางลิสต์เดียวกัน ปุ่ม "ขั้นถัดไป" จาก "ผ่าน" จึงเด้งไป "ไม่ผ่าน"
    และจาก "ไม่ผ่าน" เด้งไป "รับรถสำเร็จ" ได้ ทั้งที่ทั้งสองทางไม่มีอยู่จริงในธุรกิจ */
 const CUST_STAGES=['เข้ามาดูรถ','สนใจ','ทำสัญญา','ผ่าน','ไม่ผ่าน','รับรถสำเร็จ'];
-const CUST_TRACK =['เข้ามาดูรถ','สนใจ','ทำสัญญา','ผ่าน','รับรถสำเร็จ'];
+const CUST_TRACK =[{t:'เข้ามาดูรถ',ic:'user'},{t:'สนใจ',ic:'eye'},{t:'ทำสัญญา',ic:'file'},
+                   {t:'ผ่าน',ic:'bank'},{t:'รับรถสำเร็จ',ic:'bike'}];
+const CUST_TRACK_N = CUST_TRACK.map(s=>s.t);   /* ชื่อขั้นล้วน ๆ ไว้คิดดัชนี */
 const CUST_OFF='ไม่ผ่าน';
 const custStep = stage => stage===CUST_OFF
-  ? { i:CUST_TRACK.indexOf('ทำสัญญา'), off:true }
-  : { i:Math.max(0, CUST_TRACK.indexOf(stage)), off:false };
+  ? { i:CUST_TRACK_N.indexOf('ทำสัญญา'), off:true }
+  : { i:Math.max(0, CUST_TRACK_N.indexOf(stage)), off:false };
 /* เลื่อนขั้นลูกค้า — ด่านอยู่ในฟังก์ชัน ไม่ใช่ที่ปุ่ม เพราะปุ่มที่ไม่ได้วาดยังถูกเรียกจากที่อื่นได้
    1) ขยับได้ทีละขั้นจากขั้นปัจจุบันเท่านั้น
    2) "รับรถสำเร็จ" ตั้งเองไม่ได้ — ขั้นนี้แปลว่ารถถึงมือลูกค้าแล้ว ต้องมาจากการกดส่งมอบในงานทะเบียน
       (ทุกการขายสร้างงานทะเบียนให้อัตโนมัติตอน saveSale จึงไม่มีใครค้างอยู่ขั้น 4 ตลอดไป) */
 function custMove(id, ix){
   const c=CUSTOMERS.find(x=>x.id===id); if(!c) return false;
-  const st=custStep(c.stage), to=CUST_TRACK[ix];
+  const st=custStep(c.stage), to=CUST_TRACK_N[ix];
   if(!to) return false;
-  if(Math.abs(ix-st.i)!==1){ toast('เลื่อนได้ทีละขั้น','กดเลขที่อยู่ติดกับขั้นปัจจุบัน',1); return false; }
+  if(Math.abs(ix-st.i)!==1){ toast('เลื่อนได้ทีละขั้น','กดขั้นที่อยู่ติดกับขั้นปัจจุบัน',1); return false; }
   if(to==='รับรถสำเร็จ'){ toast('ตั้ง "รับรถสำเร็จ" เองไม่ได้','ขั้นนี้ขยับให้เองตอนกดส่งมอบในหน้าทะเบียน',1); return false; }
   c.stage=to;
   toast('อัปเดตสถานะแล้ว', c.name+' → ขั้น '+(ix+1)+' '+to);
@@ -3438,10 +3463,10 @@ function rFollow(){
   const cs=CUSTOMERS.filter(c=>inScope(c.branch));
   /* เรียงตามเส้นทางจริง 5 ขั้น แล้วต่อท้ายด้วย "ไม่ผ่าน" ซึ่งเป็นการตกราง ไม่ใช่ปลายทาง
      เลขหน้าชื่อขั้นตรงกับเลขบนแถบความคืบหน้าของแต่ละคน จะได้อ่านคู่กันได้ */
-  $('#funnel').innerHTML=CUST_TRACK.concat([CUST_OFF]).map((s,ix)=>{
+  $('#funnel').innerHTML=CUST_TRACK_N.concat([CUST_OFF]).map((s,ix)=>{
     const n=cs.filter(c=>c.stage===s).length;
-    const mx=Math.max(1,...CUST_TRACK.concat([CUST_OFF]).map(x=>cs.filter(c=>c.stage===x).length));
-    return '<div class="bar"><div class="bl"><span>'+(ix<CUST_TRACK.length?(ix+1)+' · ':'')+esc(s)+'</span><b>'+n+'</b></div>'
+    const mx=Math.max(1,...CUST_TRACK_N.concat([CUST_OFF]).map(x=>cs.filter(c=>c.stage===x).length));
+    return '<div class="bar"><div class="bl"><span>'+(ix<CUST_TRACK_N.length?(ix+1)+' · ':'')+esc(s)+'</span><b>'+n+'</b></div>'
       +'<div class="bt"><div class="bf '+(s===CUST_OFF?'d':(s==='รับรถสำเร็จ'?'g':''))+'" style="width:'+(n/mx*100)+'%"></div></div></div>'; }).join('');
   const labels={7:'ถามความรู้สึกหลังออกรถ',30:'เช็กระยะและเรื่องทะเบียน',90:'เช็กระยะครั้งถัดไป',365:'ต่อ พ.ร.บ. / เสนอเปลี่ยนรถ',1095:'เสนอเปลี่ยนรถใหม่'};
   $('#cadence').innerHTML=String(CFG.cadence).split(',').map(d=>'<div style="display:flex;gap:var(--s2);padding:var(--s1) 0;border-bottom:1px solid var(--hairline-2);font-size:var(--t-table)">'
@@ -3459,7 +3484,7 @@ function rFollow(){
   /* ข้อความกำกับ — คนที่ไม่ได้มองแถบยังรู้ว่าอยู่ขั้นไหน และคนตาบอดสีอ่านได้ */
   const fwNow = x => x.s.off
     ? '<span class="pslab off">ไม่ผ่าน — หยุดที่ขั้น '+(x.s.i+1)+'</span>'
-    : '<span class="pslab">ขั้น '+(x.s.i+1)+'/'+CUST_TRACK.length+' · '+esc(CUST_TRACK[x.s.i])+'</span>';
+    : '<span class="pslab">ขั้น '+(x.s.i+1)+'/'+CUST_TRACK_N.length+' · '+esc(CUST_TRACK_N[x.s.i])+'</span>';
   tbl($('#fwTable'), ['ลูกค้า','รถที่สนใจ/ซื้อ','เซลล์','ความคืบหน้า',{t:'งานค้าง',n:1}],
     fwL.map(x=>'<tr class="clk" data-cust="'+x.c.id+'"><td><b>'+esc(x.c.name)+'</b><div class="tsub">'+esc(x.c.phone||'')+'</div></td>'
         +'<td>'+x.veh+'</td><td>'+esc(x.c.owner||'—')+'</td>'
@@ -3468,7 +3493,7 @@ function rFollow(){
     'ไม่พบลูกค้าตามเงื่อนไข',
     fwL.map(x=>crow('data-cust="'+x.c.id+'"',
       esc(x.c.name),
-      x.s.off? '<span class="pslab off">ไม่ผ่าน</span>' : '<span class="pslab">'+(x.s.i+1)+'/'+CUST_TRACK.length+'</span>',
+      x.s.off? '<span class="pslab off">ไม่ผ่าน</span>' : '<span class="pslab">'+(x.s.i+1)+'/'+CUST_TRACK_N.length+'</span>',
       x.veh+' · '+esc(x.c.owner||'—')+(x.open?' · ค้าง '+x.open+' งาน':''),
       fwBar(x)+fwNow(x))));
   $$('#fwTable [data-cust]').forEach(r=> r.onclick=()=>custDrawer(r.dataset.cust));
@@ -3497,10 +3522,10 @@ function custDrawer(id){
   h+='<h4 class="sec">ความคืบหน้า</h4>'
     +steps(CUST_TRACK, cst.i, { off:cst.off, lab:1, act: ix => 'data-fwst="'+c.id+'|'+ix+'"' })
     +'<div style="margin-top:var(--s2);display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap">'
-    +(cst.off? '<span class="pslab off">ไฟแนนซ์ไม่ผ่าน — หยุดที่ขั้น '+(cst.i+1)+' '+esc(CUST_TRACK[cst.i])+'</span>'
-             : '<span class="pslab">ขั้น '+(cst.i+1)+'/'+CUST_TRACK.length+' · '+esc(CUST_TRACK[cst.i])+'</span>')
+    +(cst.off? '<span class="pslab off">ไฟแนนซ์ไม่ผ่าน — หยุดที่ขั้น '+(cst.i+1)+' '+esc(CUST_TRACK_N[cst.i])+'</span>'
+             : '<span class="pslab">ขั้น '+(cst.i+1)+'/'+CUST_TRACK_N.length+' · '+esc(CUST_TRACK_N[cst.i])+'</span>')
     +(cst.off? '<button class="lnk" data-fwrej="'+c.id+'|0">เอาเครื่องหมายไม่ผ่านออก</button>'
-       : (cst.i>=CUST_TRACK.indexOf('ทำสัญญา') && c.stage!=='รับรถสำเร็จ'
+       : (cst.i>=CUST_TRACK_N.indexOf('ทำสัญญา') && c.stage!=='รับรถสำเร็จ'
           ? '<button class="lnk" data-fwrej="'+c.id+'|1">ทำเครื่องหมายว่าไม่ผ่าน</button>' : ''))
     +'</div>';
   h+='<h4 class="sec">ประวัติการซื้อ ('+ss.length+')</h4>';
