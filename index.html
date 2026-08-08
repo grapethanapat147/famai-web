@@ -493,6 +493,8 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   font-weight:600; letter-spacing:-.01em; line-height:1.3; }
 .phead.off b{ color:var(--accent); }
 .phead span{ display:block; font-size:var(--t-label); color:var(--muted); margin-top:2px; }
+.dper{ font-size:var(--t-label); color:var(--muted); margin-bottom:var(--s2); }
+.dper b{ color:var(--ink); font-weight:600; }
 .pslab{ font-size:var(--t-label); color:var(--muted); white-space:nowrap; }
 .pslab.off{ color:var(--accent); }
 
@@ -974,6 +976,7 @@ body.lock{ overflow:hidden; }
       <section class="screen on" id="s-dash">
         <!-- ลงเวลาเข้า-ออก อยู่บนสุดของหน้าแรก เห็นทันทีที่เปิดแอป ไม่ต้องเดินเมนู -->
         <div class="card pc" id="punchCard"><div class="bd" id="punchBody"></div></div>
+        <!-- ปุ่มลัดกับช่วงเวลาที่เลือกเอง ทำงานเป็นตัวเดียวกัน — เลือกวันเองแล้วปุ่มลัดจะคลายออก -->
         <div class="chips" style="margin-bottom:var(--s2)">
           <span style="font-size:var(--t-label);color:var(--muted);align-self:center;margin-right:4px">ช่วงเวลา</span>
           <button class="chip" data-r="1">วันนี้</button>
@@ -981,9 +984,18 @@ body.lock{ overflow:hidden; }
           <button class="chip" data-r="30">30 วัน</button>
           <button class="chip" data-r="90">90 วัน</button>
           <button class="chip" data-r="365">1 ปี</button>
+          <button class="chip" id="dCustom">กำหนดเอง</button>
           <span style="flex:1"></span>
           <select class="inp ct" id="dBranch"></select>
         </div>
+        <div class="chips" id="dRangeBox" style="margin-bottom:var(--s2);display:none">
+          <label class="fl" style="margin:0;align-self:center">ตั้งแต่</label>
+          <input class="inp ct" type="date" id="dFrom">
+          <label class="fl" style="margin:0;align-self:center">ถึง</label>
+          <input class="inp ct" type="date" id="dTo">
+          <button class="btn sec sm" id="dRangeClr">ล้าง</button>
+        </div>
+        <div class="dper" id="dPeriod"></div>
         <div class="kpis k6" id="dKpis"></div>
         <div class="g2">
           <div>
@@ -1001,7 +1013,9 @@ body.lock{ overflow:hidden; }
             <div class="card"><div class="hd"><h3>เตือนสต๊อกใกล้หมด</h3></div><div class="bd" id="dAlert"></div></div>
           </div>
         </div>
-        <div class="card"><div class="hd"><h3>รายการขายล่าสุด</h3><div class="sp"></div><button class="lnk q" id="expSales"><svg class="i i-sm"><use href="#i-download"/></svg></button></div><div class="bd flush"><div class="tw"><table id="recentSales"></table></div></div></div>
+        <div class="card"><div class="hd"><h3>รายการขายในช่วงที่เลือก</h3><div class="sp"></div>
+          <button class="btn sec sm noprint" id="dPrint"><svg class="i i-sm"><use href="#i-print"/></svg> พิมพ์สรุป</button>
+          <button class="lnk noprint" id="expSales"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="recentSales"></table></div></div></div>
         <p class="foot">รถ 50 คันเป็นข้อมูลจริงจากไฟล์ยามาฮ่า · การขาย ลูกค้า พนักงาน และอะไหล่ เป็นข้อมูลสมมุติสำหรับสาธิต</p>
       </section>
 
@@ -1066,11 +1080,12 @@ body.lock{ overflow:hidden; }
         <div class="hd"><h3>สต๊อกรถ</h3><div class="sp"></div>
           <select class="inp ct" id="stBranch"></select>
           <select class="inp ct" id="stModel"></select>
+          <select class="inp ct" id="stColor"></select>
           <select class="inp ct" id="stStatus">
             <option value="">ทุกสถานะ</option><option value="available">พร้อมขาย</option>
             <option value="reserved">จองแล้ว</option><option value="in_transfer">กำลังโอนย้าย</option>
             <option value="sold">ขายแล้ว</option></select>
-          <input class="inp ct" id="stQ" placeholder="ค้นหา เลขเครื่อง / เลขถัง / รุ่น">
+          <input class="inp ct" id="stQ" placeholder="ค้นหา เลขเครื่อง / เลขถัง / รุ่น / สี">
           <button class="btn sec sm fbtn noprint" id="stFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> ตัวกรอง</button>
           <button class="btn sm" id="stAdd"><svg class="i i-sm"><use href="#i-inbox"/></svg> เพิ่มรถเข้าสต๊อก</button>
           <button class="lnk noprint" id="expStock"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button>
@@ -1309,16 +1324,25 @@ body.lock{ overflow:hidden; }
           <div class="card"><div class="hd"><h3>บันทึกค่าใช้จ่าย</h3></div><div class="bd">
             <div class="f">
               <div class="f2">
-                <div><label class="fl">หมวดหมู่</label><select class="inp" id="eCat"></select></div>
+                <!-- หมวดหมู่กับผู้ขายเป็นช่องพิมพ์ที่มีรายการแนะนำ (datalist)
+                     พิมพ์ของใหม่ได้ และครั้งหน้าของที่เคยพิมพ์จะขึ้นมาให้เลือกเอง -->
+                <div><label class="fl">หมวดหมู่</label>
+                  <input class="inp" id="eCat" list="eCatList" placeholder="เลือกหรือพิมพ์หมวดใหม่">
+                  <datalist id="eCatList"></datalist></div>
                 <div><label class="fl">สาขา</label><select class="inp" id="eBranch"></select></div>
               </div>
               <div class="f2">
-                <div><label class="fl">จำนวนเงิน (฿)</label><input class="inp num" id="eAmt" value="0"></div>
+                <div><label class="fl">พนักงานที่เบิก</label><select class="inp" id="eStaff"></select></div>
                 <div><label class="fl">วันที่</label><input class="inp" type="date" id="eDate"></div>
               </div>
               <div class="f2">
-                <div><label class="fl">ผู้ขาย / ผู้รับเงิน</label><input class="inp" id="eVendor"></div>
+                <div><label class="fl">จำนวนเงิน (฿)</label><input class="inp num" id="eAmt" value="0"></div>
                 <div><label class="fl">เลขที่ใบกำกับภาษี</label><input class="inp" id="eInv"></div>
+              </div>
+              <div>
+                <label class="fl">ผู้ขาย / ผู้รับเงิน</label>
+                <input class="inp" id="eVendor" list="eVenList" placeholder="เลือกหรือพิมพ์ชื่อใหม่">
+                <datalist id="eVenList"></datalist>
               </div>
               <div>
                 <label class="fl">แนบใบเสร็จ</label>
@@ -1739,9 +1763,12 @@ function seedDemo(){
       /* log จำลองไล่ขั้นถึงสถานะปัจจุบัน — ให้ progress bar รายคนมีวันที่จริงใช้ */
       const flog = FIN_STAGES.slice(0, Math.max(1, FIN_STAGES.indexOf(st)+1))
         .map((x,xi)=>({to:x, at:addDays(soldAt, xi*4)}));
-      if(i===11) flog.push({to:'ปฏิเสธ', at:addDays(soldAt,8)});
-      FINCASES.push({id:nid('FC'), saleId:s.id, custId:cust.id, branch:s.branch, finId,
-        status: fst, amount:net-s.down, at:soldAt, log:flog, demo:true});
+      if(i===11) flog.push({to:'ปฏิเสธ · ติดไฟแนนซ์เจ้าอื่น (SCB)', at:addDays(soldAt,8)});
+      FINCASES.push(Object.assign({id:nid('FC'), saleId:s.id, custId:cust.id, branch:s.branch, finId,
+        status: fst, amount:net-s.down, at:soldAt, log:flog, demo:true},
+        /* ข้อมูลตัวอย่างมีเหตุผลจริงติดมาด้วย จะได้เห็นว่าหน้าจอบอกอะไรตั้งแต่เปิดแอป */
+        fst==='ปฏิเสธ'? {rejectReason:'ติดไฟแนนซ์เจ้าอื่น', rejectWith:'SCB',
+          rejectNote:'ลูกค้าแจ้งว่าจะไปปิดบัญชีเดือนหน้า', rejectAt:addDays(soldAt,8)} : {}));
       /* เคสที่ถูกปฏิเสธ: ทะเบียนต้องพักรอ ไม่ใช่วิ่งถึงส่งมอบ */
       if(fst==='ปฏิเสธ'){ rgSeed.stage='ส่งไฟแนนซ์'; rgSeed.hold='ไฟแนนซ์ปฏิเสธ'; rgSeed.plate='';
         delete rgSeed.deliveredAt; delete s.deliveredAt; }
@@ -1825,12 +1852,22 @@ let GIFTS = [
   {id:'G4',name:'น้ำมันเครื่อง',cost:180,qty:35,min:12,branch:'FCG01'}
 ];
 const EXP_CATS = ['ออกบูธ','เงินเดือน','ค่าน้ำไฟ','ค่าอาหารเลี้ยงแขก','ค่าขนส่ง','ค่าเช่า','อื่นๆ'];
+/* ---------- จำหมวดหมู่และผู้ขายที่เคยใช้ (ข้อ 4 ของบรีฟ) ----------
+   เจ้าของสั่งว่า "ใน field category และ vendor เมื่อกรอกแล้วจะจำข้อมูลไว้ เพื่อใช้ในครั้งต่อไป"
+   ไม่เก็บลิสต์แยกต่างหาก แต่อ่านจาก EXPENSES ที่บันทึกไว้แล้วทุกครั้ง
+   ทำแบบนี้ลบรายการเก่าทิ้งแล้วตัวเลือกหายตามเอง ไม่มีขยะค้าง และไม่มีสองแหล่งที่ต้อง sync */
+const expCats = () => [...new Set(EXP_CATS.concat(EXPENSES.map(e=>e.cat)))].filter(Boolean)
+  .sort((a,b)=>a.localeCompare(b,'th'));
+const expVendors = () => [...new Set(EXPENSES.map(e=>e.vendor))].filter(Boolean)
+  .sort((a,b)=>a.localeCompare(b,'th'));
+/* by/byName = พนักงานที่เบิก (ข้อ 4) — เก็บทั้ง id และชื่อ ณ ตอนบันทึก
+   ชื่อที่เก็บไว้คือชื่อ ณ วันเบิก ต่อให้ภายหลังพนักงานเปลี่ยนชื่อหรือลาออก เอกสารย้อนหลังก็ยังอ่านได้ */
 let EXPENSES = [
-  {id:'EX1',cat:'ออกบูธ',branch:'FMG01',amt:5000,at:addDays(TODAY,-4),vendor:'Event Co., Ltd.',inv:'INV-88231',files:['booth_receipt.pdf'],demo:true},
-  {id:'EX2',cat:'ค่าขนส่ง',branch:'FMM01',amt:1000,at:addDays(TODAY,-6),vendor:'ขนส่งไทย',inv:'INV-88240',files:['transport.pdf'],demo:true},
-  {id:'EX3',cat:'เงินเดือน',branch:'FMG01',amt:12000,at:addDays(TODAY,-8),vendor:'พนักงาน',inv:'',files:[],demo:true},
-  {id:'EX4',cat:'ค่าน้ำไฟ',branch:'FCG01',amt:7500,at:addDays(TODAY,-11),vendor:'กฟภ.',inv:'INV-77120',files:['bill.pdf'],demo:true},
-  {id:'EX5',cat:'ค่าน้ำไฟ',branch:'FMG01',amt:1200,at:TODAY,vendor:'กฟภ.',inv:'INV-90001',files:[],demo:true}   /* จ่ายออกวันนี้ — สาธิตปิดยอดรายวัน */
+  {id:'EX1',cat:'ออกบูธ',branch:'FMG01',amt:5000,at:addDays(TODAY,-4),by:'ST3',byName:'บิว สุขใจ',vendor:'Event Co., Ltd.',inv:'INV-88231',files:['booth_receipt.pdf'],demo:true},
+  {id:'EX2',cat:'ค่าขนส่ง',branch:'FMM01',amt:1000,at:addDays(TODAY,-6),by:'ST6',byName:'ใหญ่ คงทน',vendor:'ขนส่งไทย',inv:'INV-88240',files:['transport.pdf'],demo:true},
+  {id:'EX3',cat:'เงินเดือน',branch:'FMG01',amt:12000,at:addDays(TODAY,-8),by:'ST7',byName:'นุช บัญชี',vendor:'พนักงาน',inv:'',files:[],demo:true},
+  {id:'EX4',cat:'ค่าน้ำไฟ',branch:'FCG01',amt:7500,at:addDays(TODAY,-11),by:'ST5',byName:'หมูแดง ศรีทอง',vendor:'กฟภ.',inv:'INV-77120',files:['bill.pdf'],demo:true},
+  {id:'EX5',cat:'ค่าน้ำไฟ',branch:'FMG01',amt:1200,at:TODAY,by:'ST7',byName:'นุช บัญชี',vendor:'กฟภ.',inv:'INV-90001',files:[],demo:true}   /* จ่ายออกวันนี้ — สาธิตปิดยอดรายวัน */
 ];
 
 /* ---------- พนักงาน / บทบาท / ผู้ใช้ ---------- */
@@ -2164,7 +2201,8 @@ const FILTERS = {
   payrol:{ t:'เลือกงวดเงินเดือน', sum:'prFsum', f:[['prMonth','งวดเดือน']] },
   attend:{ t:'ตัวกรองการเข้างาน', sum:'abFsum', f:[['abBranch','สาขา']] },
   stock :{ t:'ตัวกรองสต๊อกรถ', sum:'stFsum',
-    f:[['stBranch','สาขา'],['stModel','รุ่น'],['stStatus','สถานะ'],['stQ','ค้นหา เลขเครื่อง / เลขถัง / รุ่น']] },
+    f:[['stBranch','สาขา'],['stModel','รุ่น'],['stColor','สี'],['stStatus','สถานะ'],
+       ['stQ','ค้นหา เลขเครื่อง / เลขถัง / รุ่น / สี']] },
   deal  :{ t:'ตัวกรองลูกค้าและดีล', sum:'dlFsum',
     f:[['dlStage','ขั้นตอน'],['dlSales','เซลล์'],['dlBranch','สาขา'],['dlQ','ค้นหา ชื่อ / เบอร์ / เลขเครื่อง']] }
 };
@@ -2277,8 +2315,23 @@ const uAvail = () => UNITS.filter(u=>u.status!=='sold' && inScope(u.branch));
 const sScoped = () => SALES.filter(s=>!s.void && inScope(s.branch));   /* การขายที่ยกเลิกไม่นับทุกยอด */
 
 /* ============================= 1. DASHBOARD ============================= */
-let dRange=7, dBranch='';
-function dSales(){ return sScoped().filter(s=>(!dBranch||s.branch===dBranch) && days(s.soldAt,TODAY)<=dRange); }
+/* ---------- ช่วงเวลาของหน้าแรก (ข้อ 2 ของบรีฟ) ----------
+   เจ้าของสั่งว่า "เลือกช่วงเวลาได้เหมือน agoda และมี quick button (1D, 7D, 1M) และ export รายงานเอกสารได้"
+   ปุ่มลัดกับการเลือกวันเองเป็นเรื่องเดียวกัน: ปุ่มลัดคือการตั้ง dFrom/dTo ให้เอง
+   ทุกอย่างบนหน้าจึงอ่านจาก dPeriod() ที่เดียว — กราฟ ตัวเลข ส่งออก และการพิมพ์ตรงกันเสมอ */
+let dRange=7, dBranch='', dFrom='', dTo='';
+function dPeriod(){
+  /* เลือกวันเองมาก่อนปุ่มลัด · สลับให้ถ้ากรอกกลับด้าน · กรอกด้านเดียวถือว่าเปิดปลาย */
+  if(dFrom || dTo){
+    const a=dFrom||dTo, b=dTo||dFrom;
+    return a<=b? {from:a, to:b, custom:true} : {from:b, to:a, custom:true};
+  }
+  return {from:addDays(TODAY, -(dRange-1)), to:TODAY, custom:false};
+}
+const dPeriodText = () => { const p=dPeriod();
+  return p.from===p.to? thDate(p.from) : thDate(p.from)+' – '+thDate(p.to); };
+const inPeriod = d => { const p=dPeriod(); return d>=p.from && d<=p.to; };
+function dSales(){ return sScoped().filter(s=>(!dBranch||s.branch===dBranch) && inPeriod(s.soldAt)); }
 function dUnits(){ return uAvail().filter(u=>!dBranch||u.branch===dBranch); }
 function rDash(){
   rPunch();
@@ -2287,31 +2340,60 @@ function rDash(){
     sel.innerHTML='<option value="">ทุกสาขาที่เห็นได้</option>'+BRANCHES.filter(b=>inScope(b.code))
       .map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
     sel.onchange=()=>{ dBranch=sel.value; rDash(); };
-    $$('#s-dash .chip').forEach(c=> c.onclick=()=>{ $$('#s-dash .chip').forEach(x=>x.classList.remove('on'));
-      c.classList.add('on'); dRange=+c.dataset.r; rDash(); });
-    $('#expSales').onclick=()=> csv('รายการขาย', ['วันที่','สาขา','รุ่น','เลขเครื่อง','ลูกค้า','ราคาสุทธิ','กำไร','ชำระ','เซลล์'],
-      sScoped().map(s=>{ const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
-        return [s.soldAt,bName(s.branch),u.model,u.engine,c?c.name:'',s.net,noMoney()?'':s.gp,s.pay==='cash'?'เงินสด':'ผ่อน',s.sales]; }));
+    $$('#s-dash .chips [data-r]').forEach(c=> c.onclick=()=>{
+      dFrom=''; dTo=''; $('#dFrom').value=''; $('#dTo').value='';   /* ปุ่มลัดล้างช่วงที่เลือกเองทิ้ง */
+      dRange=+c.dataset.r; rDash(); });
+    $('#dCustom').onclick=()=>{ const box=$('#dRangeBox'); const open=box.style.display==='none';
+      box.style.display=open? 'flex' : 'none';
+      if(open && !dFrom && !dTo){ const p=dPeriod(); $('#dFrom').value=p.from; $('#dTo').value=p.to; }
+      rDash(); };
+    ['dFrom','dTo'].forEach(k=> $('#'+k).onchange=()=>{ dFrom=$('#dFrom').value; dTo=$('#dTo').value; rDash(); });
+    $('#dRangeClr').onclick=()=>{ dFrom=''; dTo=''; $('#dFrom').value=''; $('#dTo').value=''; rDash(); };
+    /* ส่งออกและพิมพ์ต้องเคารพช่วงเวลาและสาขาที่เลือกอยู่ — ของเดิมส่งออกทั้งหมดเสมอ
+       ซึ่งขัดกับสิ่งที่หน้าจอกำลังแสดง และเป็นกับดักตอนเอาไปทำบัญชี */
+    $('#expSales').onclick=()=> csvMoney('รายการขาย_'+dPeriod().from+'_ถึง_'+dPeriod().to,
+      ['วันที่','สาขา','รุ่น','เลขเครื่อง','ลูกค้า','ราคาสุทธิ','กำไร','ชำระ','เซลล์'],
+      dSales().slice().sort((a,b)=>a.soldAt.localeCompare(b.soldAt)).map(s=>{
+        const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+        return [s.soldAt,bName(s.branch),u.model,u.engine,c?c.name:'',s.net,s.gp,s.pay==='cash'?'เงินสด':'ผ่อน',s.sales]; }),
+      [5,6]);
+    $('#dPrint').onclick=dashPrint;
   }
+  /* ชิปที่ไฮไลต์ต้องตรงกับช่วงที่ใช้จริงเสมอ — เลือกวันเองแล้วปุ่มลัดต้องคลายออกทั้งหมด */
+  const cus=dPeriod().custom;
+  $$('#s-dash .chips [data-r]').forEach(c=> c.classList.toggle('on', !cus && +c.dataset.r===dRange));
+  $('#dCustom').classList.toggle('on', cus);
+  if(cus && $('#dRangeBox').style.display==='none') $('#dRangeBox').style.display='flex';
+  $('#dPeriod').innerHTML='ช่วงที่ดูอยู่ <b>'+esc(dPeriodText())+'</b>'
+    +' · '+esc(dBranch? bName(dBranch) : 'ทุกสาขาที่เห็นได้');
   const su=dUnits(), ss=dSales();
   const stuck=su.filter(u=>age(u)>CFG.aging);
-  const prev=sScoped().filter(s=>{const d=days(s.soldAt,TODAY); return d>dRange && d<=dRange*2;});
+  /* ช่วงก่อนหน้าที่ยาวเท่ากัน ใช้เทียบว่าดีขึ้นหรือแย่ลง — คิดจากช่วงที่เลือกจริง ไม่ใช่จาก dRange
+     ไม่งั้นพอเลือกวันเองแล้วเปอร์เซ็นต์เทียบจะเทียบกับช่วงที่ไม่เกี่ยวกันเลย */
+  const per=dPeriod(), perLen=days(per.from, per.to)+1;
+  const prevTo=addDays(per.from,-1), prevFrom=addDays(prevTo,-(perLen-1));
+  const prev=sScoped().filter(s=>(!dBranch||s.branch===dBranch) && s.soldAt>=prevFrom && s.soldAt<=prevTo);
   const dt=(a,b)=> b===0? '' : '<div class="dt '+(a>=b?'up':'dn')+'">'+ic(a>=b?'up':'down','i i-sm')+' '+Math.abs(Math.round((a-b)/b*100))+'%</div>';
   const rev=ss.reduce((s,x)=>s+x.net,0), gp=ss.reduce((s,x)=>s+x.gp,0);
   const prevRev=prev.reduce((s,x)=>s+x.net,0);
   $('#dKpis').innerHTML=[
     ['สต๊อกคงเหลือ', su.length+' <small>คัน</small>', 'ต้นทุนจม '+money(su.reduce((s,u)=>s+u.cost,0)),''],
-    ['ขายได้ในช่วงนี้', ss.length+' <small>คัน</small>', dRange+' วันล่าสุด', dt(ss.length,prev.length)],
+    ['ขายได้ในช่วงนี้', ss.length+' <small>คัน</small>', perLen+' วัน', dt(ss.length,prev.length)],
     ['ยอดขายรวม', fmt(rev)+' <small>฿</small>', ss.length? 'เฉลี่ย '+baht(rev/ss.length)+'/คัน':'—', dt(rev,prevRev)],
     ['กำไรขั้นต้น', noMoney()?'—':fmt(gp)+' <small>฿</small>', noMoney()?'ซ่อนตามสิทธิ์':(rev?Math.round(gp/rev*100)+'% ของยอดขาย':'—'),''],
     ['รอทะเบียน', REGS.filter(r=>inScope(r.branch)&&['ขายแล้ว','ส่งไฟแนนซ์','อนุมัติ','รอทะเบียน'].indexOf(r.stage)>=0).length+' <small>คัน</small>','ยังไม่ได้ป้าย',''],
     ['ค้างเกิน '+CFG.aging+' วัน', stuck.length+' <small>คัน</small>', 'ต้นทุนจม '+money(stuck.reduce((s,u)=>s+u.cost,0)),'']
   ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div>'+(k[3]||'')+'</div>').join('');
 
-  /* กราฟยอดขาย */
-  const nb=7, buckets=[];
-  for(let i=nb-1;i>=0;i--){ const d=addDays(TODAY,-i*Math.max(1,Math.round(dRange/nb)));
-    buckets.push({l:thShort(d), v:sScoped().filter(s=>s.soldAt===d).length + (i%3===0?1:0)}); }
+  /* กราฟยอดขาย — แบ่งช่วงที่เลือกเป็นช่วงย่อยเท่า ๆ กันแล้วนับของจริง
+     ของเดิมนับเฉพาะวันเดียวต่อแท่งแล้วบวกเลขปลอม (i%3===0?1:0) ให้กราฟดูมีข้อมูล
+     ผลคือกราฟไม่ตรงกับตัวเลข KPI ที่อยู่เหนือมันเอง */
+  const nb=Math.max(1, Math.min(7, perLen)), step=perLen/nb, buckets=[];
+  for(let i=0;i<nb;i++){
+    const a=addDays(per.from, Math.floor(i*step));
+    const z=addDays(per.from, Math.max(Math.floor(i*step), Math.floor((i+1)*step)-1));
+    buckets.push({ l:thShort(a), v: ss.filter(x=>x.soldAt>=a && x.soldAt<=z).length });
+  }
   vbar($('#chTrend'), buckets);
 
   /* สาขา */
@@ -2386,6 +2468,30 @@ function rDash(){
       (s.pay==='cash'?pill('เงินสด','mut'):pill('ผ่อน','info'))
         +'<span style="flex:1"></span><button class="lnk" data-sdet="'+s.id+'">ดูการขาย</button>')));
   wireGo(); wireUnitRows(); wireSaleLinks();
+}
+/* พิมพ์สรุปหน้าแรกเป็นเอกสาร A4 ตามช่วงเวลาและสาขาที่เลือกอยู่ (ข้อ 2: "export รายงานเอกสารได้")
+   ตัวเลขทุกตัวมาจาก dSales()/dUnits() ชุดเดียวกับที่หน้าจอใช้ กระดาษกับจอจึงตรงกันเสมอ
+   คอลัมน์เงินถูกตัดตามสิทธิ์เหมือนบนจอ */
+function dashPrint(){
+  const per=dPeriod(), ss=dSales().slice().sort((a,b)=>a.soldAt.localeCompare(b.soldAt)), su=dUnits();
+  const rev=ss.reduce((n,x)=>n+x.net,0), gp=ss.reduce((n,x)=>n+x.gp,0);
+  const kpi=[['ขายได้', ss.length+' คัน'], ['ยอดขายรวม', money(rev)],
+    ['กำไรขั้นต้น', noMoney()?'—':baht(gp)], ['สต๊อกคงเหลือ', su.length+' คัน'],
+    ['ต้นทุนจมในสต๊อก', money(su.reduce((n,u)=>n+u.cost,0))],
+    ['ค้างเกิน '+CFG.aging+' วัน', su.filter(u=>age(u)>CFG.aging).length+' คัน']];
+  printHTML('<div class="doc"><h2>'+esc(CFG.company)+'</h2>'
+    +'<div class="dsub">สรุปภาพรวม · '+esc(dPeriodText())+' · '
+      +esc(dBranch? bName(dBranch) : 'ทุกสาขาที่เห็นได้')+' · พิมพ์ '+thDate(TODAY)+'</div>'
+    +'<table><tbody>'+kpi.map(k=>'<tr><td>'+esc(k[0])+'</td><td class="n">'+k[1]+'</td></tr>').join('')+'</tbody></table>'
+    +'<h3 style="margin-top:16px">รายการขายในช่วงนี้ ('+ss.length+')</h3>'
+    +'<table><thead><tr><th>วันที่</th><th>สาขา</th><th>รุ่น</th><th>ลูกค้า</th><th>เซลล์</th>'
+      +(noMoney()?'':'<th class="n">สุทธิ</th>')+'</tr></thead><tbody>'
+    +(ss.length? ss.map(x=>{ const u=UNITS.find(y=>y.id===x.unitId), c=CUSTOMERS.find(y=>y.id===x.custId);
+        return '<tr><td>'+thDate(x.soldAt)+'</td><td>'+esc(bName(x.branch))+'</td>'
+          +'<td>'+esc(u?u.model:'—')+'</td><td>'+esc(c?c.name:'—')+'</td><td>'+esc(x.sales)+'</td>'
+          +(noMoney()?'':'<td class="n">'+fmt(x.net)+'</td>')+'</tr>'; }).join('')
+      : '<tr><td colspan="6">ไม่มีการขายในช่วงนี้</td></tr>')
+    +'</tbody></table></div>');
 }
 function vbar(el, data){
   const mx=Math.max(1,...data.map(d=>d.v));
@@ -2654,8 +2760,18 @@ function stList(){
   return UNITS.filter(u=> inScope(u.branch)
     && (!$('#stBranch').value || u.branch===$('#stBranch').value)
     && (!$('#stModel').value  || u.model===$('#stModel').value)
+    && (!$('#stColor').value  || u.color===$('#stColor').value)
     && (!$('#stStatus').value || u.status===$('#stStatus').value)
     && (!q || (u.engine+u.frame+u.model+u.variant+u.color).toLowerCase().indexOf(q)>=0));
+}
+/* ตัวเลือกสีเติมใหม่ทุกครั้ง และผูกกับรุ่นที่เลือกอยู่ — เลือก NMAX แล้วต้องเห็นเฉพาะสีที่ NMAX มีจริง
+   ถ้าสีที่เลือกค้างอยู่ไม่มีในรุ่นใหม่ ให้ล้างทิ้ง ไม่งั้นตารางจะว่างโดยไม่รู้สาเหตุ */
+function stColorOpts(){
+  const el=$('#stColor'), want=el.value, m=$('#stModel').value;
+  const cs=[...new Set(UNITS.filter(u=>inScope(u.branch) && (!m || u.model===m)).map(u=>u.color))]
+    .filter(Boolean).sort((a,b)=>a.localeCompare(b,'th'));
+  el.innerHTML='<option value="">ทุกสี</option>'+cs.map(c=>'<option>'+esc(c)+'</option>').join('');
+  el.value = cs.indexOf(want)>=0 ? want : '';
 }
 /* สลับแท็บจากที่ไหนก็ได้ — แกลเลอรีใช้พาไปดูรุ่นที่กดในแท็บตาราง */
 function stTab(v){
@@ -2667,7 +2783,7 @@ function rStock(){
   if(!$('#stBranch').dataset.init){ $('#stBranch').dataset.init=1;
     $('#stBranch').innerHTML='<option value="">ทุกสาขา</option>'+BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
     $('#stModel').innerHTML='<option value="">ทุกรุ่น</option>'+[...new Set(UNITS.map(u=>u.model))].map(m=>'<option>'+esc(m)+'</option>').join('');
-    ['stBranch','stModel','stStatus'].forEach(k=> $('#'+k).onchange=rStock);
+    ['stBranch','stModel','stColor','stStatus'].forEach(k=> $('#'+k).onchange=rStock);
     $('#stQ').oninput=rStock;
     $('#stFilt').onclick=()=>openFilters('stock');
     $$('#s-stock .tabs button[data-v]').forEach(b=> b.onclick=()=>{ stTab(b.dataset.v); });
@@ -2679,6 +2795,7 @@ function rStock(){
         u.cost, u.retail==null?'รอกำหนดราคา':u.retail, u.retail==null?'':gpOf(u), u.clearance?'ใช่':'', u.priceNote||'']),
       [9,10,11]);
   }
+  stColorOpts();
   /* ปุ่มรับรถขึ้นเฉพาะคนที่เข้าหน้ารับรถได้จริง (admin / ผู้จัดการ / คลัง) */
   $('#stAdd').style.display = canSee('recv')? '' : 'none';
   fsSync('stock');
@@ -3321,7 +3438,11 @@ function dealOf(id){
   else if(rg && rg.stage==='ส่งมอบแล้ว') k='done';
   else if(!cash && (!fc || fc.status!=='อนุมัติแล้ว')){
     k='fin';
-    if(fc && fc.status==='ปฏิเสธ'){ off=true; offWhy='ไฟแนนซ์ไม่ผ่าน'+(fin?' · '+fin.name:''); }
+    if(fc && fc.status==='ปฏิเสธ'){ off=true;
+      /* หัวเรื่องบอกเหตุผลก่อน ชื่อเจ้าที่ยื่นไปเป็นข้อมูลรอง — คนอ่านต้องรู้ว่าทำอะไรต่อ */
+      offWhy = fc.rejectReason
+        ? 'ไม่ผ่าน · '+fc.rejectReason+(fc.rejectWith? ' ('+fc.rejectWith+')' : '')
+        : 'ไฟแนนซ์ไม่ผ่าน'+(fin?' · '+fin.name:''); }
   }
   else k='reg';
   return {c,s,u,fc,rg,fin,ars,owe,tasks,cash,track,k,off,offWhy,
@@ -3336,7 +3457,11 @@ function dealHead(d){
   const no='ขั้น '+(d.i+1)+' จาก '+d.track.length;
   const lateTxt = d.late>0? ' · เลยกำหนด '+d.late+' วัน' : '';
   if(d.off) return {head:d.offWhy,
-    sub:no+' · หยุดอยู่ที่ '+d.track[d.i].t+' — ยื่นใหม่กับเจ้าอื่น หรือยกเลิกการขาย'};
+    /* ติดไฟแนนซ์เจ้าอื่นคือคนละทางกับเหตุผลอื่น — ยื่นเจ้าใหม่ก็ไม่ผ่าน ต้องให้ลูกค้าไปเคลียร์ก่อน */
+    sub:no+' · ยื่นกับ '+(d.fin?d.fin.name:'—')
+      +(d.fc&&d.fc.rejectWith? ' — ต้องให้ลูกค้าเคลียร์กับ '+d.fc.rejectWith+' ก่อน ยื่นเจ้าใหม่ก็ไม่ผ่าน'
+                             : ' — ยื่นใหม่กับเจ้าอื่น หรือยกเลิกการขาย')
+      +(d.fc&&d.fc.rejectNote? ' · '+d.fc.rejectNote : '')};
   if(d.k==='lead') return {head: d.c.stage==='สนใจ'? 'ลูกค้าสนใจแล้ว รอปิดการขาย' : 'ลูกค้าเพิ่งเข้ามาดูรถ',
     sub:no+' · '+(d.tasks.length? 'มีงานติดตามค้าง '+d.tasks.length+' รายการ' : 'ยังไม่มีงานติดตาม')};
   if(d.k==='fin') return {head: d.fc? (FIN_HEAD[d.fc.status]||d.fc.status) : 'ยังไม่ได้เปิดเคสสินเชื่อ',
@@ -3405,7 +3530,10 @@ function dealDetail(d){
       ['บริษัท', esc(d.fin?d.fin.name:'—')],
       ['ยอดจัด', money(d.fc.amount)],
       ['สถานะ', pill(d.fc.status, d.fc.status==='อนุมัติแล้ว'?'good':(d.fc.status==='ปฏิเสธ'?'bad':'info'))],
-      ['ยื่นเมื่อ', thDate(d.fc.at)+' ('+days(d.fc.at,TODAY)+' วันแล้ว)']
+      ['ยื่นเมื่อ', thDate(d.fc.at)+' ('+days(d.fc.at,TODAY)+' วันแล้ว)'],
+      d.fc.rejectReason? ['เหตุผลที่ไม่ผ่าน','<b>'+esc(d.fc.rejectReason)+'</b>'
+        +(d.fc.rejectWith? ' · ติดกับ <b>'+esc(d.fc.rejectWith)+'</b>' : '')] : null,
+      d.fc.rejectNote? ['หมายเหตุ', esc(d.fc.rejectNote)] : null
     ]);
   if(d.rg) h+='<h4 class="sec">งานทะเบียน</h4>'
     +(d.rg.hold?'<div class="note b">'+ic('alert','i i-sm')+'<span>'+esc(d.rg.hold)+' — ยื่นใหม่หรือยกเลิกการขายก่อนถึงจะเดินต่อได้</span></div>':'')
@@ -3461,7 +3589,7 @@ function rDealOne(id){
   on('data-dledit', custModal);
   on('data-dlfnext', finAdvance);
   on('data-dlfback', finBack);
-  on('data-dlfrej',  finReject);
+  on('data-dlfrej',  finRejectModal);
   on('data-dlresub', fid=>finResubmit(fid));
   on('data-dlrback', regBack);
   on('data-dlvoid',  cancelSale);
@@ -3517,9 +3645,11 @@ function rDealList(){
     $('#dlFilt').onclick=()=>openFilters('deal');
     $('#dlAdd').onclick=()=>custModal();
     $('#expDeal').onclick=()=> csv('ลูกค้าและดีล',
-      ['ลูกค้า','เบอร์','สาขา','เซลล์','รถ','เลขเครื่อง','ขั้นตอน','สิ่งที่ต้องทำต่อ','ครบกำหนดทะเบียน','ทะเบียน'],
+      ['ลูกค้า','เบอร์','สาขา','เซลล์','รถ','เลขเครื่อง','ขั้นตอน','สิ่งที่ต้องทำต่อ',
+       'เหตุผลที่ไม่ผ่าน','ติดไฟแนนซ์เจ้าไหน','ครบกำหนดทะเบียน','ทะเบียน'],
       dealRows().map(d=>[d.c.name,d.c.phone||'',bName(d.c.branch),(d.s?d.s.sales:d.c.owner)||'',
         d.u?d.u.model:'', d.u?d.u.engine:'', dealStageName(d), dealHead(d).head,
+        d.fc&&d.fc.rejectReason||'', d.fc&&d.fc.rejectWith||'',
         d.rg?d.rg.due:'', d.rg?d.rg.plate:'']));
   }
   const rows=dealRows();
@@ -3745,12 +3875,48 @@ function finBack(id){
   c.status=FIN_STAGES[i-1]; finLog(c,c.status);
   toast('ถอยกลับแล้ว', c.status); refreshAll(); return true;
 }
-function finReject(id){
+/* ---------- เหตุผลที่ไฟแนนซ์ไม่ผ่าน (ข้อ 9 ของบรีฟ) ----------
+   เจ้าของสั่งว่า "เพิ่ม case status ชื่อว่า ไม่ผ่าน(เช่น ติดไฟแนนซ์ แล้วบอกด้วยว่าติดไฟแนนซ์ของเจ้าไหน)"
+   ของเดิมบันทึกแค่ว่า "ปฏิเสธ" ซึ่งบอกไม่ได้ว่าควรทำอะไรต่อ
+   ติดไฟแนนซ์เจ้าอื่น = ยื่นเจ้าใหม่ก็ไม่ผ่านเหมือนกัน ต้องให้ลูกค้าไปเคลียร์ก่อน
+   ดาวน์ไม่พอ = เพิ่มดาวน์แล้วยื่นใหม่ได้เลย — คนละทางกันสิ้นเชิง */
+const FIN_REJECT=['ติดไฟแนนซ์เจ้าอื่น','เครดิตบูโรไม่ผ่าน','รายได้ไม่พอ','เอกสารไม่ครบ','ดาวน์ไม่พอ','อื่น ๆ'];
+function finReject(id, reason, blocker, note){
   const c=FINCASES.find(x=>x.id===id); if(!c || c.status==='ปฏิเสธ') return false;
-  c.status='ปฏิเสธ'; finLog(c,'ปฏิเสธ'); syncFinToReg(c);
+  c.status='ปฏิเสธ'; c.rejectAt=TODAY;
+  c.rejectReason = reason || 'ไม่ระบุเหตุผล';
+  c.rejectWith   = (reason==='ติดไฟแนนซ์เจ้าอื่น') ? String(blocker||'').trim() : '';
+  c.rejectNote   = String(note||'').trim();
+  finLog(c,'ปฏิเสธ · '+c.rejectReason+(c.rejectWith? ' ('+c.rejectWith+')' : ''));
+  syncFinToReg(c);
   const cu=CUSTOMERS.find(x=>x.id===c.custId); if(cu) cu.stage='ไม่ผ่าน';
-  toast('บันทึกการปฏิเสธแล้ว','งานทะเบียนถูกพักไว้ — เลือกยื่นใหม่หรือยกเลิกการขายได้',1);
+  toast('บันทึกการปฏิเสธแล้ว', c.rejectReason+(c.rejectWith? ' · '+c.rejectWith : ''),1);
   refreshAll(); return true;
+}
+/* ถามเหตุผลก่อนบันทึก — บังคับเลือก และถ้าเลือก "ติดไฟแนนซ์เจ้าอื่น" ต้องบอกว่าเจ้าไหน
+   ชื่อเจ้าที่ติดพิมพ์เองได้ เพราะมักไม่ใช่ไฟแนนซ์ที่ร้านเป็นพาร์ตเนอร์ด้วย */
+function finRejectModal(id){
+  const c=FINCASES.find(x=>x.id===id); if(!c) return false;
+  const cu=CUSTOMERS.find(x=>x.id===c.custId);
+  openModal('ไฟแนนซ์ไม่ผ่าน — '+(cu?cu.name:''),
+    '<div class="f">'
+    +'<div><label class="fl">เพราะอะไร</label><select class="inp" id="rjWhy">'
+      +'<option value="">— เลือกเหตุผล —</option>'
+      +FIN_REJECT.map(r=>'<option>'+esc(r)+'</option>').join('')+'</select></div>'
+    +'<div id="rjWithBox" style="display:none"><label class="fl">ติดไฟแนนซ์ของเจ้าไหน</label>'
+      +'<input class="inp" id="rjWith" list="rjFinList" placeholder="พิมพ์ชื่อบริษัทได้เลย">'
+      +'<datalist id="rjFinList">'+FIN_CO.map(f=>'<option value="'+esc(f.name)+'">').join('')+'</datalist></div>'
+    +'<div><label class="fl">หมายเหตุ (ไม่บังคับ)</label><input class="inp" id="rjNote" placeholder="เช่น ลูกค้าจะไปปิดบัญชีเดือนหน้า"></div>'
+    +'</div><div class="savebar"><button class="btn dgr" id="rjGo">บันทึกว่าไม่ผ่าน</button></div>');
+  $('#rjWhy').onchange=()=>{ $('#rjWithBox').style.display = $('#rjWhy').value==='ติดไฟแนนซ์เจ้าอื่น'? '' : 'none'; };
+  $('#rjGo').onclick=()=>{
+    const why=$('#rjWhy').value;
+    if(!why){ toast('เลือกเหตุผลก่อน','ต้องรู้ว่าไม่ผ่านเพราะอะไร ถึงจะรู้ว่าทำอะไรต่อได้',1); return; }
+    const wth=$('#rjWith')? $('#rjWith').value.trim() : '';
+    if(why==='ติดไฟแนนซ์เจ้าอื่น' && !wth){ toast('บอกด้วยว่าติดเจ้าไหน','',1); return; }
+    if(finReject(id, why, wth, $('#rjNote').value)) closeModal();
+  };
+  return true;
 }
 /* ปฏิเสธไม่ใช่ทางตัน — เลือกยื่นเจ้าอื่นได้ after = สิ่งที่ต้องทำต่อหลังยื่นสำเร็จ (เช่นปิดแผ่น) */
 function finResubmit(id, after){
@@ -3764,7 +3930,9 @@ function finResubmit(id, after){
   $('#rsGo').onclick=()=>{
     const nf=$('#rsFin').value;
     const s=SALES.find(x=>x.id===c.saleId), cu=CUSTOMERS.find(x=>x.id===c.custId);
-    c.finId=nf; c.status='ส่งเรื่อง'; c.at=TODAY; finLog(c,'ส่งเรื่อง (ยื่นใหม่)');
+    c.finId=nf; c.status='ส่งเรื่อง'; c.at=TODAY;
+    delete c.rejectReason; delete c.rejectWith; delete c.rejectNote; delete c.rejectAt;
+    finLog(c,'ส่งเรื่อง (ยื่นใหม่)');
     if(s){ s.finId=nf; const a=AR.find(x=>x.saleId===s.id&&x.kind==='finance'); if(a) a.finId=nf; }
     if(cu && cu.stage!=='รับรถสำเร็จ') cu.stage='ทำสัญญา';
     syncFinToReg(c);                         /* ล้าง hold + ดันทะเบียนกลับเข้าราง */
@@ -4081,8 +4249,8 @@ function bookkeeperPack(){
       return [s.soldAt, bName(s.branch), c?c.name:'', c?c.phone:'', u?u.model:'', u?u.engine:'',
         base, vat, s.net, s.pay==='cash'?'เงินสด':'ผ่อน', s.sales]; }));
   const exp=EXPENSES.filter(e=>inScope(e.branch)&&inM(e.at));
-  csv(label+'_ค่าใช้จ่าย',['วันที่','สาขา','หมวดหมู่','ผู้ขาย','เลขที่ใบกำกับ','จำนวนเงิน','มีใบเสร็จ'],
-    exp.map(e=>[e.at,bName(e.branch),e.cat,e.vendor,e.inv,e.amt,e.files.length?'มี':'ไม่มี']));
+  csv(label+'_ค่าใช้จ่าย',['วันที่','สาขา','หมวดหมู่','พนักงานที่เบิก','ผู้ขาย','เลขที่ใบกำกับ','จำนวนเงิน','มีใบเสร็จ'],
+    exp.map(e=>[e.at,bName(e.branch),e.cat,e.byName||'',e.vendor,e.inv,e.amt,e.files.length?'มี':'ไม่มี']));
   const rec=[]; AR.filter(a=>inScope(a.branch)).forEach(a=>{ (a.pays||[]).filter(pp=>inM(pp.at)).forEach(pp=>{
     const s=SALES.find(x=>x.id===a.saleId), c=s&&CUSTOMERS.find(x=>x.id===s.custId);
     rec.push([pp.at,bName(a.branch), a.kind==='finance'?(finById(a.finId)||{}).name||'ไฟแนนซ์':'ลูกค้า', c?c.name:'', pp.amt, pp.way||'']); }); });
@@ -4100,14 +4268,23 @@ function bookkeeperPack(){
 }
 function rExpense(){
   if(!$('#eSave').dataset.init){ $('#eSave').dataset.init=1;
-    $('#eCat').innerHTML=EXP_CATS.map(c=>'<option>'+esc(c)+'</option>').join('');
     $('#eBranch').innerHTML=BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
     $('#eDate').value=TODAY;
     $('#eFile').onchange=ev=>{ eFilesArr=eFilesArr.concat(Array.from(ev.target.files).map(f=>f.name)); eDraw(); };
-    $('#eSave').onclick=()=>{ const a=num($('#eAmt').value); if(a<=0){ toast('กรอกจำนวนเงิน','',1); return; }
-      EXPENSES.push({id:nid('EX'),cat:$('#eCat').value,branch:$('#eBranch').value,amt:a,at:$('#eDate').value||TODAY,
+    /* ด่านอยู่ในตัวบันทึก ไม่ใช่ที่ปุ่ม — ต้องมีจำนวนเงิน หมวดหมู่ และคนเบิกที่อยู่ในสาขาที่ดูแลจริง */
+    $('#eSave').onclick=()=>{
+      const a=num($('#eAmt').value);
+      if(a<=0){ toast('กรอกจำนวนเงิน','',1); return; }
+      const cat=$('#eCat').value.trim();
+      if(!cat){ toast('กรอกหมวดหมู่','พิมพ์หมวดใหม่ได้เลย ครั้งหน้าจะขึ้นมาให้เลือกเอง',1); return; }
+      const who=$('#eStaff').value;
+      const st=STAFF.find(x=>x.id===who);
+      if(!st || !inScope(st.branch)){ toast('เลือกพนักงานที่เบิก','เลือกได้เฉพาะคนในสาขาที่คุณดูแล',1); return; }
+      EXPENSES.push({id:nid('EX'),cat,branch:$('#eBranch').value,amt:a,at:$('#eDate').value||TODAY,
+        by:st.id, byName:st.name,
         vendor:$('#eVendor').value.trim(),inv:$('#eInv').value.trim(),files:eFilesArr.slice()});
-      toast('บันทึกค่าใช้จ่ายแล้ว', baht(a)+(eFilesArr.length?' · แนบ '+eFilesArr.length+' ไฟล์':' · ยังไม่แนบใบเสร็จ'));
+      toast('บันทึกค่าใช้จ่ายแล้ว', baht(a)+' · '+st.nick
+        +(eFilesArr.length?' · แนบ '+eFilesArr.length+' ไฟล์':' · ยังไม่แนบใบเสร็จ'));
       $('#eAmt').value=0; $('#eVendor').value=''; $('#eInv').value=''; eFilesArr=[]; eDraw(); refreshAll(); };
     /* 12 เดือนย้อนหลังให้เลือกงวดส่งบัญชี */
     $('#acMonth').innerHTML=Array.from({length:12},(_,i)=>{
@@ -4115,12 +4292,22 @@ function rExpense(){
       const v=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
       return '<option value="'+v+'">'+TH_M[d.getMonth()]+' '+(d.getFullYear()+543)+'</option>'; }).join('');
     $('#expBook').onclick=bookkeeperPack;
-    $('#expExp').onclick=()=> csvMoney('ค่าใช้จ่าย',['วันที่','สาขา','หมวดหมู่','ผู้ขาย','เลขที่ใบกำกับ','จำนวนเงิน','ใบเสร็จ'],
-      EXPENSES.filter(e=>inScope(e.branch)).map(e=>[e.at,bName(e.branch),e.cat,e.vendor,e.inv,e.amt,e.files.length?'แนบแล้ว':'หาย']), [5]);
+    $('#expExp').onclick=()=> csvMoney('ค่าใช้จ่าย',
+      ['วันที่','สาขา','หมวดหมู่','พนักงานที่เบิก','ผู้ขาย','เลขที่ใบกำกับ','จำนวนเงิน','ใบเสร็จ'],
+      EXPENSES.filter(e=>inScope(e.branch)).map(e=>[e.at,bName(e.branch),e.cat,e.byName||'—',
+        e.vendor,e.inv,e.amt,e.files.length?'แนบแล้ว':'หาย']), [6]);
     function eDraw(){ $('#eFiles').innerHTML=eFilesArr.map((f,i)=>'<div class="frow">'+ic('clip','i i-sm')+'<span>'+esc(f)+'</span><button class="fx" data-i="'+i+'">'+ic('x','i i-sm')+'</button></div>').join('');
       $$('#eFiles .fx').forEach(b=> b.onclick=()=>{ eFilesArr.splice(+b.dataset.i,1); eDraw(); }); }
     window._eDraw=eDraw;
   }
+  /* เติมรายการแนะนำใหม่ทุกครั้งที่วาด — ของที่เพิ่งพิมพ์ครั้งก่อนจึงขึ้นมาให้เลือกทันที */
+  $('#eCatList').innerHTML=expCats().map(c=>'<option value="'+esc(c)+'">').join('');
+  $('#eVenList').innerHTML=expVendors().map(v=>'<option value="'+esc(v)+'">').join('');
+  /* คนเบิกเลือกได้เฉพาะพนักงานในสาขาที่ดูแล ค่าเริ่มต้นคือตัวเอง (บัญชีมักบันทึกแทนทีม) */
+  (function(){ const el=$('#eStaff'), want=el.value;
+    const list=STAFF.filter(x=>inScope(x.branch));
+    el.innerHTML=list.map(x=>'<option value="'+x.id+'">'+esc(x.name)+' · '+esc(ROLES[x.role].name)+'</option>').join('');
+    el.value = list.some(x=>x.id===want)? want : (list.some(x=>x.id===ME.id)? ME.id : (list[0]||{}).id||''); })();
   const es=EXPENSES.filter(e=>inScope(e.branch));
   const mtd=es.filter(e=>e.at>=TODAY.slice(0,8)+'01');
   const noRcpt=es.filter(e=>!e.files.length);
@@ -4131,13 +4318,15 @@ function rExpense(){
     ['หมวดที่ใช้มากสุด', esc(top||'—'), top?baht(byCat[top]):'']]
     .map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v" style="font-size:'+(String(k[1]).length>10?'20px':'27px')+'">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
   const eL=es.slice().sort((a,b)=>b.at.localeCompare(a.at));
-  tbl($('#eTable'), ['วันที่','หมวดหมู่','สาขา','ผู้ขาย',{t:'จำนวน',n:1},'ใบเสร็จ'],
+  tbl($('#eTable'), ['วันที่','หมวดหมู่','ผู้เบิก','สาขา','ผู้ขาย',{t:'จำนวน',n:1},'ใบเสร็จ'],
     eL.map(e=>'<tr><td>'+thDate(e.at)+'</td><td>'+esc(e.cat)+'</td>'
+      +'<td>'+esc(e.byName||'—')+'</td>'
       +'<td>'+esc(bName(e.branch))+'</td><td>'+esc(e.vendor||'—')+'</td><td class="n">'+fmt(e.amt)+'</td>'
       +'<td>'+(e.files.length?pill('แนบแล้ว ('+e.files.length+')','good'):pill('ใบเสร็จหาย','warn'))+'</td></tr>'),
     'ยังไม่มีค่าใช้จ่าย',
     eL.map(e=>crow('', esc(e.cat), fmt(e.amt)+' ฿',
-      thDate(e.at)+' · '+esc(bName(e.branch))+' · '+esc(e.vendor||'—')+(e.inv?' · '+esc(e.inv):''),
+      thDate(e.at)+' · '+esc(e.byName||'ไม่ระบุผู้เบิก')+' · '+esc(bName(e.branch))
+        +' · '+esc(e.vendor||'—')+(e.inv?' · '+esc(e.inv):''),
       (e.files.length?pill('แนบแล้ว ('+e.files.length+')','good'):pill('ใบเสร็จหาย','warn')))));
 }
 
