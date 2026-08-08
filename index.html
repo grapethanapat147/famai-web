@@ -450,10 +450,10 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .bar .bl{ display:flex; justify-content:space-between; align-items:baseline;
   font-size:var(--t-table); margin-bottom:var(--s-half); gap:var(--s2); }
 .bar .bl b{ font-weight:600; font-variant-numeric:tabular-nums; }
-.bar .bt,.prog .bt{ height:6px; border-radius:var(--r-pill); background:var(--hairline-2); overflow:hidden; }
-.bar .bf,.prog .bf{ height:100%; border-radius:var(--r-pill); background:var(--ink); }
-.bar .bf.g,.prog .bf.g{ background:var(--pos); } .bar .bf.w{ background:var(--attn); }
-.bar .bf.d,.prog .bf.d{ background:var(--accent); }
+.bar .bt{ height:6px; border-radius:var(--r-pill); background:var(--hairline-2); overflow:hidden; }
+.bar .bf{ height:100%; border-radius:var(--r-pill); background:var(--ink); }
+.bar .bf.g{ background:var(--pos); } .bar .bf.w{ background:var(--attn); }
+.bar .bf.d{ background:var(--accent); }
 
 /* -------------------- PSTEP — แถบความคืบหน้าแบบไอคอน --------------------
    ใช้แทนกระดานคัมบังในงานติดตามลูกค้า บรรทัดเดียวบอกครบว่าอยู่ขั้นไหน เหลืออีกกี่ขั้น
@@ -469,12 +469,6 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   transition:background var(--dur-ui) var(--ease), color var(--dur-ui) var(--ease),
              box-shadow var(--dur-ui) var(--ease); }
 .pstep .pn .i{ color:currentColor; }
-/* วง 28px ยังเล็กเกินกว่าจะกดถูกด้วยนิ้ว — ขยายพื้นที่กดเป็น 44px โดยไม่ขยับ layout
-   หัวและท้ายไม่ยื่นออกข้าง ไม่งั้นแถบล้นกรอบตัวเองไปฝั่งละ 6px */
-.pstep button.pn::after{ content:''; position:absolute; inset:-8px -6px; }
-.pstep .pst:first-child button.pn::after{ left:0; }
-.pstep .pst:last-child  button.pn::after{ right:0; }
-.pstep button.pn:active{ transform:scale(.92); }
 .pstep .pn.done{ background:var(--ink); border-color:var(--ink); color:var(--card); }
 .pstep .pn.now{ background:var(--accent); border-color:var(--accent); color:var(--paper);
   box-shadow:0 0 0 4px var(--accent-wash); }
@@ -512,6 +506,9 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .dlact{ display:flex; gap:var(--s1); flex-wrap:wrap; align-items:center; }
 .dlplate{ display:flex; gap:var(--s1); align-items:center; flex:1 1 210px; min-width:0; }
 .dlplate .inp{ min-width:0; max-width:170px; }
+/* ทางออกฉุกเฉิน — จางกว่าปุ่มหลัก แต่ยังเป็นสีเตือน */
+.dlact.dlrisk{ margin-top:var(--s1); }
+.dlact.dlrisk .btn{ color:var(--accent); }
 .vbars{ display:flex; align-items:flex-end; gap:var(--s2); height:160px; padding-top:var(--s3); }
 .vb{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; height:100%; }
 .vb .col{ width:100%; max-width:40px; height:100%; background:var(--hairline-2);
@@ -523,21 +520,6 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
   font-size:var(--t-label); font-weight:600; font-variant-numeric:tabular-nums; }
 .vb .cl{ font-size:var(--t-label); color:var(--muted); margin-top:var(--s1); text-align:center; }
 
-/* -------------------- KANBAN / PIPELINE -------------------- */
-.kan{ display:grid; grid-template-columns:repeat(5,1fr); gap:var(--s2); }
-.kan.k6{ grid-template-columns:repeat(6,1fr); }
-.kcol{ min-width:0; }
-.kcol h5{ margin:0 0 var(--s2); font-size:var(--t-label); color:var(--muted);
-  display:flex; justify-content:space-between; align-items:center; font-weight:500;
-  padding-bottom:var(--s1); border-bottom:1px solid var(--hairline); gap:var(--s1); }
-.kcol h5 span{ color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; }
-/* การ์ดในคัมบัง — เส้นคั่นแทนพื้น เหมือน .crow */
-.kcard{ padding:var(--s1) 0; border-bottom:1px solid var(--hairline-2);
-  cursor:pointer; transition:background var(--dur-ui) var(--ease); margin:0; }
-.kcard:last-child{ border-bottom:0; }
-@media (hover:hover){ .kcard:hover{ background:var(--paper); } }
-.kcard b{ display:block; font-size:var(--t-table); font-weight:600; }
-.kcard span{ font-size:var(--t-label); color:var(--muted); }
 .flow{ display:flex; align-items:stretch; gap:var(--s1); flex-wrap:wrap; }
 .fstep{ flex:1; min-width:104px; padding:var(--s2) 0; text-align:center;
   border-top:2px solid var(--hairline); }
@@ -580,7 +562,6 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .frow .fx{ margin-left:auto; color:var(--muted); transition:color var(--dur-ui) var(--ease); }
 /* รายการขั้นตอน — ขั้นที่ผ่านแล้วเป็นหมึกเข้ม ขั้นที่ยังไม่ถึงเป็นสีจาง */
 .frow.on{ color:var(--ink); } .frow.on .i{ color:var(--pos); }
-.stg .frow:not(.on){ color:var(--muted); }
 @media (hover:hover){ .frow .fx:hover{ color:var(--accent); } }
 
 /* -------------------- DRAWER / MODAL / TOAST -------------------- */
@@ -713,14 +694,6 @@ tr.grp-sub td{ background:var(--paper-2); }
 .tiers{ display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s1); }
 .tiers label{ font-size:var(--t-label); color:var(--muted); display:block; margin-bottom:2px; }
 @media (max-width:760px){ .tiers{ grid-template-columns:repeat(2,1fr); } }
-/* แถวติดตามไฟแนนซ์รายคน */
-.fprow{ display:flex; gap:var(--s2); align-items:center; padding:var(--s2) 0;
-  border-bottom:1px solid var(--hairline-2); cursor:pointer; }
-.fprow:last-child{ border-bottom:none; }
-.fprow .who{ flex:0 0 190px; min-width:0; }
-.fprow .prog{ flex:1; min-width:120px; }
-.fprow .amt{ flex:0 0 auto; text-align:right; }
-@media (max-width:760px){ .fprow{ flex-wrap:wrap; } .fprow .who{ flex-basis:100%; } }
 .cal .hh{ min-width:0; text-align:center; font-size:var(--t-label); color:var(--muted);
   padding-bottom:var(--s-half); }
 #printArea{ display:none; }
@@ -770,7 +743,6 @@ body.lock{ overflow:hidden; }
 @media (max-width:1200px){
   .g2,.g2e,.g3{ grid-template-columns:1fr; }
   .kpis,.kpis.k6{ grid-template-columns:repeat(2,1fr); }
-  .kan,.kan.k6{ grid-template-columns:repeat(2,1fr); }
   .f3{ grid-template-columns:1fr 1fr; }
   .top,.wrap{ padding-left:var(--s4); padding-right:var(--s4); }
 }
@@ -799,11 +771,6 @@ body.lock{ overflow:hidden; }
     padding-left:var(--s2); padding-right:var(--s2); }
   #toasts{ top:calc(var(--s2) + env(safe-area-inset-top)); bottom:auto;
     left:var(--s2); right:var(--s2); max-width:none; }
-  /* คัมบังมือถือ = ชิปเลือกขั้นตอน + รายการเต็มความกว้าง (ไม่ปัดข้าง) */
-  .kan,.kan.k6{ display:block; }
-  .kan .kchips{ display:flex; flex-wrap:wrap; gap:var(--s1); margin-bottom:var(--s2); }
-  .kan .kchips .chip b{ font-weight:600; font-variant-numeric:tabular-nums; margin-left:var(--s-half); }
-  .kan .klist .kcard{ margin-bottom:0; }
 }
 @media (max-width:600px){
   /* ตัวเลขสรุป — เลิกใส่กรอบ ใช้เส้นคั่นแทน ช่องละ 159px แทน 127px ตัวเลขเงินจึงไม่ถูกตัดท้าย */
@@ -1029,7 +996,7 @@ body.lock{ overflow:hidden; }
           </div>
           <div>
             <div class="card"><div class="hd"><h3>สิ่งที่ต้องจัดการวันนี้</h3></div><div class="bd" id="todo"></div></div>
-            <div class="card"><div class="hd"><h3>ทะเบียน</h3><div class="sp"></div><button class="lnk" data-go="reg">ดูทั้งหมด</button></div><div class="bd" id="dReg"></div></div>
+            <div class="card"><div class="hd"><h3>ทะเบียน</h3><div class="sp"></div><button class="lnk" data-go="deal">ดูทั้งหมด</button></div><div class="bd" id="dReg"></div></div>
             <div class="card"><div class="hd"><h3>อันดับเซลล์</h3></div><div class="bd flush"><div class="tw"><table id="chStaff"></table></div></div></div>
             <div class="card"><div class="hd"><h3>เตือนสต๊อกใกล้หมด</h3></div><div class="bd" id="dAlert"></div></div>
           </div>
@@ -1221,28 +1188,7 @@ body.lock{ overflow:hidden; }
         <div class="card"><div class="bd docwrap"><div id="qDoc"></div></div></div>
       </section>
 
-      <!-- ============ 8. ลูกค้า ============ -->
-      <section class="screen" id="s-cust">
-        <div class="card"><div class="hd"><h3>ฐานลูกค้า</h3><div class="d">ข้อมูลเบื้องต้น — งานติดตามอยู่หน้า “ติดตามการขาย”</div><div class="sp"></div>
-          <input class="inp ct" id="cQ" placeholder="ค้นหา ชื่อ / เบอร์" style="width:220px;font-size:var(--t-table)">
-          <button class="btn sm" id="cAdd">เพิ่มลูกค้า <svg class="i i-sm"><use href="#i-arrow"/></svg></button>
-        </div><div class="bd flush"><div class="tw"><table id="custTable"></table></div></div></div>
-      </section>
 
-      <!-- ============ 8b. ติดตามการขาย ============ -->
-      <section class="screen" id="s-follow">
-        <div class="g2">
-          <div class="card"><div class="hd"><h3>งานที่ต้องทำ</h3><div class="sp"></div><span id="taskCnt" class="pill p-brand"></span></div><div class="bd flush"><div class="tw"><table id="taskTable"></table></div></div></div>
-          <div><div class="card"><div class="hd"><h3>Pipeline ลูกค้า</h3></div><div class="bd" id="funnel"></div></div>
-          <div class="card"><div class="hd"><h3>รอบการติดตาม</h3></div><div class="bd" id="cadence"></div></div></div>
-        </div>
-        <div class="card"><div class="hd"><h3>ลูกค้า × รถ</h3><div class="d">แตะเลขขั้นที่อยู่ติดกันเพื่อเลื่อน</div><div class="sp"></div>
-          <select class="inp ct" id="fwStage"></select>
-          <input class="inp ct" id="fwQ" placeholder="ค้นหาชื่อ" style="width:180px;font-size:var(--t-table)">
-          <button class="btn sec sm fbtn noprint" id="fwFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> ตัวกรอง</button>
-          <div class="fsum" id="fwFsum"></div>
-        </div><div class="bd flush"><div class="tw"><table id="fwTable"></table></div></div></div>
-      </section>
 
       <!-- ============ 8c. ลูกค้าและดีล — งานลูกค้าทั้งหมดจบในหน้าเดียว ============
            รวมของเดิม 4 หน้า (ลูกค้า · ติดตามการขาย · ทะเบียน · เคสสินเชื่อ)
@@ -1269,53 +1215,7 @@ body.lock{ overflow:hidden; }
         <div id="dlOne" style="display:none"></div>
       </section>
 
-      <!-- ============ 9. ทะเบียน ============ -->
-      <section class="screen" id="s-reg">
-        <div class="kpis k3" id="regKpi"></div>
-        <div class="card"><div class="hd"><h3>สายงานทะเบียน</h3></div><div class="bd">
-          <div class="kan k6" id="regKan"></div>
-        </div></div>
-        <div class="card"><div class="hd"><h3>รายการทั้งหมด</h3><div class="sp"></div><button class="lnk" id="expReg"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="regTable"></table></div></div></div>
-      </section>
 
-      <!-- ============ 10. เคสสินเชื่อ ============ -->
-      <section class="screen" id="s-fin">
-        <div class="tabs" id="finTabs"><button class="on" data-p="n1">เคสสินเชื่อ</button><button data-p="n3">รายคน</button><button data-p="n2">บริษัทไฟแนนซ์</button></div>
-        <div class="pane on" id="n1">
-          <div class="kpis" id="finKpi"></div>
-          <div class="card"><div class="hd"><h3>สถานะเคสสินเชื่อ</h3><div class="sp"></div>
-            <select class="inp ct" id="finCo"></select></div><div class="bd">
-            <div class="kan" id="finKan"></div>
-          </div></div>
-          <div class="card"><div class="hd"><h3>อัตราการอนุมัติแยกตามไฟแนนซ์</h3></div><div class="bd flush"><div class="tw"><table id="finRate"></table></div></div></div>
-        </div>
-        <div class="pane" id="n3">
-          <div class="card"><div class="hd"><h3>ติดตามรายคน</h3><div class="sp"></div>
-            <select class="inp ct" id="fpStatus"></select>
-            <select class="inp ct" id="fpSales"></select>
-            <select class="inp ct" id="fpBranch"></select>
-            <input class="inp ct" id="fpQ" placeholder="ค้นหาชื่อลูกค้า" style="width:170px;font-size:var(--t-table)">
-            <button class="btn sec sm fbtn noprint" id="fpFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> ตัวกรอง</button>
-            <div class="fsum" id="fpFsum"></div>
-          </div><div class="bd" id="fpList"></div></div>
-        </div>
-        <div class="pane" id="n2"><div class="g2">
-          <div class="card"><div class="hd"><h3>บริษัทไฟแนนซ์</h3></div><div class="bd flush"><div class="tw"><table id="fcTable"></table></div></div></div>
-          <div class="card" id="fcFormCard"><div class="hd"><h3>เพิ่มบริษัทไฟแนนซ์</h3></div><div class="bd">
-            <div class="f">
-              <div><label class="fl">ชื่อบริษัท</label><input class="inp" id="fcName" placeholder="ซัมมิท แคปปิตอล"></div>
-              <div class="f3">
-                <div><label class="fl">ดอกเบี้ยฐาน (%/เดือน)</label><input class="inp num" id="fcRate" value="1.40"></div>
-                <div><label class="fl">ดาวน์ขั้นต่ำ (%)</label><input class="inp num" id="fcDown" value="15"></div>
-                <div><label class="fl">ค่าคอม (฿/สัญญา)</label><input class="inp num" id="fcComm" value="0"></div>
-              </div>
-              <div><label class="fl">เรตเฉพาะงวด (%/เดือน — เว้นว่าง = ใช้เรตฐาน)</label><div id="fcTiers"></div></div>
-              <div><label class="fl">หมายเหตุ</label><input class="inp" id="fcNote" placeholder="เงื่อนไขพิเศษ ผู้ติดต่อ"></div>
-            </div>
-            <div class="savebar"><button class="btn" id="fcSave">เพิ่ม<svg class="i"><use href="#i-arrow"/></svg></button></div>
-          </div></div>
-        </div></div>
-      </section>
 
       <!-- ============ 11. เงินค้างรับ ============ -->
       <section class="screen" id="s-ar">
@@ -1547,7 +1447,7 @@ body.lock{ overflow:hidden; }
 
       <!-- ============ 21. ตั้งค่าระบบ ============ -->
       <section class="screen" id="s-settings">
-        <div class="tabs" id="cfTabs"><button class="on" data-p="cf1">เกณฑ์ระบบ</button><button data-p="cf2">รุ่นรถและสี</button></div>
+        <div class="tabs" id="cfTabs"><button class="on" data-p="cf1">เกณฑ์ระบบ</button><button data-p="cf2">รุ่นรถและสี</button><button data-p="cf3">บริษัทไฟแนนซ์</button></div>
         <div class="pane on" id="cf1">
         <div class="g2e">
           <div class="card"><div class="hd"><h3>ข้อมูลบริษัท</h3></div><div class="bd">
@@ -1574,7 +1474,6 @@ body.lock{ overflow:hidden; }
             </div>
           </div></div>
         </div>
-        <div class="card"><div class="hd"><h3>ไฟแนนซ์</h3><div class="sp"></div><button class="lnk" id="cfFinGo">แก้ไขที่หน้าเคสสินเชื่อ<svg class="i i-sm"><use href="#i-right"/></svg></button></div><div class="bd flush"><div class="tw"><table id="cfFin"></table></div></div></div>
         <div class="savebar"><button class="btn" id="cfSave">บันทึกการตั้งค่า</button><button class="btn sec" id="cfReset">คืนค่าเริ่มต้น</button></div>
         </div>
         <div class="pane" id="cf2">
@@ -1582,6 +1481,22 @@ body.lock{ overflow:hidden; }
             <button class="btn sm" id="vmAdd">เพิ่มรุ่น <svg class="i i-sm"><use href="#i-arrow"/></svg></button>
           </div><div class="bd flush"><div class="tw"><table id="vmTable"></table></div></div></div>
         </div>
+        <div class="pane" id="cf3"><div class="g2">
+          <div class="card"><div class="hd"><h3>บริษัทไฟแนนซ์</h3></div><div class="bd flush"><div class="tw"><table id="fcTable"></table></div></div></div>
+          <div class="card" id="fcFormCard"><div class="hd"><h3>เพิ่มบริษัทไฟแนนซ์</h3></div><div class="bd">
+            <div class="f">
+              <div><label class="fl">ชื่อบริษัท</label><input class="inp" id="fcName" placeholder="ซัมมิท แคปปิตอล"></div>
+              <div class="f3">
+                <div><label class="fl">ดอกเบี้ยฐาน (%/เดือน)</label><input class="inp num" id="fcRate" value="1.40"></div>
+                <div><label class="fl">ดาวน์ขั้นต่ำ (%)</label><input class="inp num" id="fcDown" value="15"></div>
+                <div><label class="fl">ค่าคอม (฿/สัญญา)</label><input class="inp num" id="fcComm" value="0"></div>
+              </div>
+              <div><label class="fl">เรตเฉพาะงวด (%/เดือน — เว้นว่าง = ใช้เรตฐาน)</label><div id="fcTiers"></div></div>
+              <div><label class="fl">หมายเหตุ</label><input class="inp" id="fcNote" placeholder="เงื่อนไขพิเศษ ผู้ติดต่อ"></div>
+            </div>
+            <div class="savebar"><button class="btn" id="fcSave">เพิ่ม<svg class="i"><use href="#i-arrow"/></svg></button></div>
+          </div></div>
+        </div></div>
       </section>
 
       <!-- ============ 23. รายงาน ============ -->
@@ -2036,11 +1951,7 @@ const MENU = [
   {k:'transfer', t:'โอนย้ายสาขา',      s:'ย้ายรถระหว่างสาขา',            ic:'repeat', r:['admin','manager','stock']},
   {g:'ลูกค้าและการเงิน'},
   {k:'quote',    t:'ใบเสนอราคา',       s:'เทียบรถและไฟแนนซ์ให้ลูกค้า',    ic:'file', r:['admin','manager','sales']},
-  {k:'cust',     t:'ลูกค้า',           s:'ฐานข้อมูลลูกค้า',              ic:'user', r:['admin','manager','sales']},
-  {k:'follow',   t:'ติดตามการขาย',     s:'จับคู่ลูกค้ากับรถ ตามจนปิดดีล',  ic:'users', r:['admin','manager','sales']},
   {k:'deal',     t:'ลูกค้าและดีล',      s:'ขาย ไฟแนนซ์ ทะเบียน จบในหน้าเดียว', ic:'users', r:['admin','manager','acct','sales']},
-  {k:'reg',      t:'ทะเบียน',          s:'ติดตามงานทะเบียน 6 ขั้น',       ic:'clipboard', r:['admin','manager','acct','sales']},
-  {k:'fin',      t:'เคสสินเชื่อ',       s:'ติดตามเรื่องกับไฟแนนซ์',       ic:'bank', r:['admin','manager','acct','sales']},
   {k:'ar',       t:'เงินค้างรับ',       s:'ยอดที่ยังไม่ได้รับ',           ic:'cash', r:['admin','manager','acct']},
   {g:'บริการและอะไหล่'},
   {k:'service',  t:'ศูนย์ซ่อม',        s:'ใบงานซ่อมและเช็กระยะ',         ic:'wrench', r:['admin','manager','tech','stock']},
@@ -2108,22 +2019,8 @@ MQ_CARD.addEventListener('change', ()=>{ closeFilters(); if(ME) refreshAll(); })
 /* คัมบังใช้เส้นแบ่งเดียวกับเปลือกมือถือ (≤900) ไม่ใช่เส้นการ์ดตาราง (≤600) */
 const MQ_KAN = matchMedia('(max-width:900px)');
 MQ_KAN.addEventListener('change', ()=>{ if(ME) refreshAll(); });
-let KAN_REG=null, KAN_FIN=null;   /* ขั้นตอนที่เลือกอยู่ — คงค่าข้ามการวาดใหม่ */
 /* คัมบังบนมือถือ: ชิปเลือกขั้นตอน (บอกจำนวนงาน) + รายการเต็มความกว้าง แทนการปัดข้าง
    card(item) คืน .kcard ที่มี data-* เดิม → โค้ดผูกคลิกที่มีอยู่จับได้ทันที */
-function kanMobile(el, stages, itemsOf, card, sel, onPick){
-  const cnt={}; stages.forEach(s=>cnt[s]=itemsOf(s).length);
-  if(!sel || stages.indexOf(sel)<0) sel = stages.find(s=>cnt[s]) || stages[0];
-  el.innerHTML='<div class="kchips">'
-    +stages.map(s=>'<button class="chip'+(s===sel?' on':'')+'" data-kst="'+esc(s)+'">'
-      +esc(s)+' <b>'+cnt[s]+'</b></button>').join('')
-    +'</div><div class="klist">'
-    +(cnt[sel]? itemsOf(sel).map(card).join('')
-      : '<div class="empty"><b>ไม่มีรายการในขั้นตอนนี้</b>เลือกขั้นตอนอื่นได้จากชิปด้านบน</div>')
-    +'</div>';
-  el.querySelectorAll('[data-kst]').forEach(b=> b.onclick=()=>onPick(b.dataset.kst));
-  return sel;
-}
 function tbl(el, head, rows, empty, cards){
   if(cards && MQ_CARD.matches){
     /* การ์ดอยู่ใน <td> เดียว — selector เดิมที่ยิงเข้า element ตารางยังใช้ได้ */
@@ -2153,9 +2050,9 @@ function pill(txt, kind){ return '<span class="pill p-'+kind+'">'+esc(txt)+'</sp
    track = [{t:'ชื่อขั้น', ic:'ชื่อไอคอนใน sprite'}] เรียงตามลำดับจริง ต้องเป็นเส้นตรงไม่มีทางแยก
    i     = ดัชนีขั้นปัจจุบัน นับจาก 0
    o.off = ตกราง เช่นลูกค้าที่ไฟแนนซ์ไม่ผ่าน — ขั้นปัจจุบันเป็นวงแดงกลวง ไม่นับว่าเดินต่อ
-   o.act = ฟังก์ชันคืน attribute ให้ปุ่มขั้นนั้น ใส่แล้วกดเลื่อนขั้นได้ ไม่ใส่คือแสดงอย่างเดียว
-           กดได้เฉพาะขั้นที่ติดกับขั้นปัจจุบัน ±1 — ข้ามขั้นแล้วประวัติการติดตามขาดช่วง
    o.lab = โชว์ชื่อขั้นใต้ไอคอน ใช้ตอนมีที่ว่างพอ
+   แถบนี้เป็นตัวบอกสถานะอย่างเดียว กดไม่ได้ — การเลื่อนขั้นใช้ปุ่มในบล็อก "ต้องทำต่อ"
+   ที่เขียนบอกตรง ๆ ว่าจะไปขั้นไหน มีทางเดียวไม่ต้องเดาว่าจะกดตรงไหน
    ขั้นที่ผ่านแล้วเปลี่ยนไอคอนเป็นเครื่องหมายถูกเสมอ — บอกว่า "จบแล้ว" โดยไม่ต้องเทียบสี */
 function steps(track, i, o){
   o=o||{};
@@ -2164,9 +2061,7 @@ function steps(track, i, o){
       const done=ix<i, now=ix===i;
       const cls='pn'+(done?' done':'')+(now?' now':'');
       const body=ic(done?'check':(st.ic||'circle'),'i i-sm');
-      const node=(o.act && Math.abs(ix-i)===1)
-        ? '<button class="'+cls+'" '+o.act(ix)+' aria-label="ย้ายไป '+esc(st.t)+'" title="ย้ายไป '+esc(st.t)+'">'+body+'</button>'
-        : '<span class="'+cls+'" title="'+esc(st.t)+'">'+body+'</span>';
+      const node='<span class="'+cls+'" title="'+esc(st.t)+'">'+body+'</span>';
       /* เส้นที่ ix เชื่อมขั้น ix-1 กับ ix — เส้นที่เข้าขั้นปัจจุบันได้คลาส cur ไว้ไล่สี */
       return (ix? '<i class="pl'+(ix<=i?' on':'')+(now?' cur':'')+'"></i>' : '')
         +'<div class="pst'+(now?' at':'')+'">'+node+(o.lab?'<em>'+esc(st.t)+'</em>':'')+'</div>';
@@ -2218,10 +2113,10 @@ function buildNav(){
 
 /* ---------- Bottom nav (มือถือ ≤900px) — แท็บตามบทบาท + ปุ่มลัดตรงกลาง ---------- */
 const BTABS = {
-  admin:  {tabs:['dash','stock','fin'],        fab:'sell'},
-  manager:{tabs:['dash','stock','fin'],        fab:'sell'},
-  sales:  {tabs:['dash','stock','follow'],     fab:'sell'},
-  acct:   {tabs:['dash','ar','fin','report'],  fab:null},
+  admin:  {tabs:['dash','stock','deal'],       fab:'sell'},
+  manager:{tabs:['dash','stock','deal'],       fab:'sell'},
+  sales:  {tabs:['dash','stock','deal'],       fab:'sell'},
+  acct:   {tabs:['dash','deal','ar','report'], fab:null},
   stock:  {tabs:['dash','stock','parts'],      fab:'recv'},
   tech:   {tabs:['dash','service','parts'],    fab:'service'},
   hr:     {tabs:['dash','attend','hr','payroll'], fab:null}
@@ -2275,10 +2170,6 @@ function buildTabs(){
 const FILTERS = {
   report:{ t:'ตัวกรองรายงาน', sum:'rpFsum',
     f:[['rpDay','วันที่'],['rpDim','แยกตาม'],['rpMonth','งวดเดือน'],['rpBranch','สาขา']] },
-  follow:{ t:'ตัวกรองลูกค้า × รถ', sum:'fwFsum',
-    f:[['fwStage','สถานะลูกค้า'],['fwQ','ค้นหาชื่อ']] },
-  finpp :{ t:'ตัวกรองติดตามรายคน', sum:'fpFsum',
-    f:[['fpStatus','สถานะ'],['fpSales','เซลล์'],['fpBranch','สาขา'],['fpQ','ค้นหาชื่อลูกค้า']] },
   hrday :{ t:'เลือกวันลงเวลา', sum:'attFsum', f:[['attDay','วันที่']] },
   payrol:{ t:'เลือกงวดเงินเดือน', sum:'prFsum', f:[['prMonth','งวดเดือน']] },
   attend:{ t:'ตัวกรองการเข้างาน', sum:'abFsum', f:[['abBranch','สาขา']] },
@@ -2353,7 +2244,7 @@ function go(k){
 function refreshAll(){ render(); badges(); promoBar(); }
 function render(){
   const f={dash:rDash,cal:rCal,report:rReport,recv:rRecv,stock:rStock,sell:rSell,transfer:rTransfer,quote:rQuote,
-    cust:rCust,follow:rFollow,deal:rDeal,reg:rReg,fin:rFin,ar:rAr,service:rService,parts:rParts,partsale:rPartSale,gift:rGift,
+    deal:rDeal,ar:rAr,service:rService,parts:rParts,partsale:rPartSale,gift:rGift,
     expense:rExpense,attend:rAttend,hr:rHr,payroll:rPayroll,users:rUsers,imp:rImp,settings:rSettings,flow:rFlow}[CUR];
   if(f) f();
   badges();
@@ -2363,11 +2254,13 @@ function badges(){
   const set=(k,n)=>{ CNT[k]=n;
     ['#bg-'+k,'#mb-'+k].forEach(sel=>{ const e=$(sel); if(e){ e.style.display=n>0?'grid':'none'; e.textContent=n; } });
     const t=$('#tb-'+k); if(t) t.textContent = n>0 ? (n>99?'99+':String(n)) : ''; };
-  set('follow', TASKS.filter(t=>!t.done && inScope(t.branch) && t.due<=TODAY).length);
+  /* ตัวนับหน้าดีล = งานติดตามที่ถึงกำหนด + เคสสินเชื่อที่ยังไม่จบ + ทะเบียนที่ยังไม่ส่งมอบ
+     ของเดิมเป็นสามตัวนับบนสามเมนู ตอนนี้เมนูเดียวจึงรวมเป็นตัวเดียว */
+  set('deal', TASKS.filter(t=>!t.done && inScope(t.branch) && t.due<=TODAY).length
+            + FINCASES.filter(c=>inScope(c.branch) && ['ส่งเรื่อง','ยื่นเอกสาร','รอผล','ติดตามต่อ'].indexOf(c.status)>=0).length
+            + REGS.filter(r=>inScope(r.branch) && r.stage!=='ส่งมอบแล้ว').length);
   set('stock',UNITS.filter(u=>u.status==='available' && inScope(u.branch) && age(u)>CFG.aging).length);
   set('parts',PARTS.filter(p=>inScope(p.branch) && p.qty<p.min).length);
-  set('fin',  FINCASES.filter(c=>inScope(c.branch) && ['ส่งเรื่อง','ยื่นเอกสาร','รอผล','ติดตามต่อ'].indexOf(c.status)>=0).length);
-  set('reg',  REGS.filter(r=>inScope(r.branch) && r.stage!=='ส่งมอบแล้ว').length);
   set('ar',   AR.filter(a=>inScope(a.branch) && a.due-a.paid>0).length);
   set('hr',   LEAVES.filter(l=>l.status==='รออนุมัติ').length
               + (canFixAtt()? attQueue(curDate().slice(0,7)).length : 0));
@@ -2457,8 +2350,8 @@ function rDash(){
   const npCost=np.reduce((a,u)=>a+u.cost,0);
   $('#todo').innerHTML=[
     ...(np.length? [[np.length,'รอกำหนดราคา'+(noMoney()?'':' — ทุนจม '+fmt(npCost)+' ฿'),'stock','warn']] : []),
-    [od,'งานติดตามที่ถึงกำหนด','follow', od?'bad':'good'],
-    [rw,'ทะเบียนเลยกำหนด '+CFG.regDays+' วัน','reg', rw?'warn':'good'],
+    [od,'งานติดตามที่ถึงกำหนด','deal', od?'bad':'good'],
+    [rw,'ทะเบียนเลยกำหนด '+CFG.regDays+' วัน','deal', rw?'warn':'good'],
     [stuck.length,'รถค้างเกิน '+CFG.aging+' วัน','stock', stuck.length?'warn':'good'],
     [arn,'รายการเงินค้างรับ','ar', arn?'warn':'good'],
     [lp,'อะไหล่ต่ำกว่าจุดสั่งซื้อ','parts', lp?'warn':'good']
@@ -3052,13 +2945,11 @@ function saveSale(force){
     +'<dt>ลูกค้า</dt><dd>'+esc(c.name)+'</dd>'
     +'<dt>ราคาสุทธิ</dt><dd><b>'+baht(net)+'</b>'+(pay==='finance'?' · ดาวน์ '+fmt(s.down)+' ฿':' · เงินสด')+'</dd></dl>'
     +'<div class="f" style="margin-top:var(--s3)">'
-    +(fcCase?'<button class="btn" id="psFin">ไปเคสสินเชื่อ →</button>':'')
-    +'<button class="btn'+(fcCase?' sec':'')+'" id="psReg">ไปงานทะเบียน →</button>'
+    +'<button class="btn" id="psDeal">ไปที่ดีลของลูกค้า →</button>'
     +'<button class="btn sec" id="psDoc">พิมพ์เอกสาร</button>'
     +'<button class="btn sec" id="psSale">ดูการขายนี้</button>'
     +'<button class="btn ghost" id="psNext">ขายคันต่อไป</button></div>');
-  if(fcCase) $('#psFin').onclick=()=>{ closeModal(); go('fin'); setTimeout(()=>finDrawer(fcCase.id),150); };
-  $('#psReg').onclick=()=>{ closeModal(); go('reg'); setTimeout(()=>regDrawer(rg.id),150); };
+  $('#psDeal').onclick=()=>{ closeModal(); dealGo(c.id); };
   $('#psDoc').onclick=()=>{ closeModal(); sellTab('p3'); DOC_SALE=s.id; renderDocs(); };
   $('#psSale').onclick=()=>{ closeModal(); saleDrawer(s.id); };
   $('#psNext').onclick=closeModal;
@@ -3387,43 +3278,7 @@ function qDraw(no){
 }
 
 /* ============================= 8. ลูกค้า (ข้อมูลเบื้องต้น) ============================= */
-/* CUST_STAGES = ค่าที่เก็บได้ทั้งหมด ใช้เป็นตัวเลือกในตัวกรอง
-   CUST_TRACK  = เส้นทางจริงที่ลูกค้าเดิน เป็นเส้นตรง 5 ขั้น ไม่มีทางแยก
-   "ไม่ผ่าน" ไม่ใช่ขั้นที่ 5 แต่คือการตกรางที่ขั้น 3 (ทำสัญญา) — ยื่นแล้วไฟแนนซ์ไม่อนุมัติ
-   ของเดิมเก็บ "ไม่ผ่าน" ไว้กลางลิสต์เดียวกัน ปุ่ม "ขั้นถัดไป" จาก "ผ่าน" จึงเด้งไป "ไม่ผ่าน"
-   และจาก "ไม่ผ่าน" เด้งไป "รับรถสำเร็จ" ได้ ทั้งที่ทั้งสองทางไม่มีอยู่จริงในธุรกิจ */
-const CUST_STAGES=['เข้ามาดูรถ','สนใจ','ทำสัญญา','ผ่าน','ไม่ผ่าน','รับรถสำเร็จ'];
-const CUST_TRACK =[{t:'เข้ามาดูรถ',ic:'user'},{t:'สนใจ',ic:'eye'},{t:'ทำสัญญา',ic:'file'},
-                   {t:'ผ่าน',ic:'bank'},{t:'รับรถสำเร็จ',ic:'bike'}];
-const CUST_TRACK_N = CUST_TRACK.map(s=>s.t);   /* ชื่อขั้นล้วน ๆ ไว้คิดดัชนี */
-const CUST_OFF='ไม่ผ่าน';
-const custStep = stage => stage===CUST_OFF
-  ? { i:CUST_TRACK_N.indexOf('ทำสัญญา'), off:true }
-  : { i:Math.max(0, CUST_TRACK_N.indexOf(stage)), off:false };
-/* เลื่อนขั้นลูกค้า — ด่านอยู่ในฟังก์ชัน ไม่ใช่ที่ปุ่ม เพราะปุ่มที่ไม่ได้วาดยังถูกเรียกจากที่อื่นได้
-   1) ขยับได้ทีละขั้นจากขั้นปัจจุบันเท่านั้น
-   2) "รับรถสำเร็จ" ตั้งเองไม่ได้ — ขั้นนี้แปลว่ารถถึงมือลูกค้าแล้ว ต้องมาจากการกดส่งมอบในงานทะเบียน
-      (ทุกการขายสร้างงานทะเบียนให้อัตโนมัติตอน saveSale จึงไม่มีใครค้างอยู่ขั้น 4 ตลอดไป) */
-function custMove(id, ix){
-  const c=CUSTOMERS.find(x=>x.id===id); if(!c) return false;
-  const st=custStep(c.stage), to=CUST_TRACK_N[ix];
-  if(!to) return false;
-  if(Math.abs(ix-st.i)!==1){ toast('เลื่อนได้ทีละขั้น','กดขั้นที่อยู่ติดกับขั้นปัจจุบัน',1); return false; }
-  if(to==='รับรถสำเร็จ'){ toast('ตั้ง "รับรถสำเร็จ" เองไม่ได้','ขั้นนี้ขยับให้เองตอนกดส่งมอบในหน้าทะเบียน',1); return false; }
-  c.stage=to;
-  toast('อัปเดตสถานะแล้ว', c.name+' → ขั้น '+(ix+1)+' '+to);
-  refreshAll();
-  return true;
-}
-/* ทำเครื่องหมายว่าไฟแนนซ์ไม่ผ่าน — ทางเดียวที่ตั้งค่านี้ด้วยมือได้
-   ปกติมาเองจากเคสสินเชื่อที่ถูกปฏิเสธ (syncFinToReg) ตัวนี้ไว้ให้เซลล์บันทึกกรณีที่รู้ก่อน */
-function custReject(id, on){
-  const c=CUSTOMERS.find(x=>x.id===id); if(!c) return false;
-  if(on){ c.stage=CUST_OFF; toast('ทำเครื่องหมายไม่ผ่านแล้ว', c.name); }
-  else  { c.stage='ทำสัญญา'; toast('เอาเครื่องหมายไม่ผ่านออกแล้ว', c.name+' → ทำสัญญา'); }
-  refreshAll();
-  return true;
-}
+/* ---------- เพิ่ม/แก้ไขลูกค้า — popup ใช้ร่วมกันทั้งปุ่มเพิ่มและปุ่มแก้ในหน้าดีล ---------- */
 function custModal(id){
   const c=id? CUSTOMERS.find(x=>x.id===id) : null;
   const opt=(list,sel)=>list.map(x=>'<option'+(x===sel?' selected':'')+'>'+esc(x)+'</option>').join('');
@@ -3446,112 +3301,13 @@ function custModal(id){
     else { CUSTOMERS.push({id:nid('CU'), name:n, phone:$('#cmPhone').value.trim(), addr:$('#cmAddr').value.trim(),
       src:$('#cmSrc').value, stage:'เข้ามาดูรถ', branch:ME.branch, variant:$('#cmModel').value,
       owner:ME.nick, note:$('#cmNote').value.trim()});
-      toast('เพิ่มลูกค้าแล้ว', n+' · ตามสถานะได้ที่หน้า “ติดตามการขาย”'); }
+      toast('เพิ่มลูกค้าแล้ว', n+' · ตามความคืบหน้าได้ที่หน้า “ลูกค้าและดีล”'); }
     closeModal(); refreshAll(); };
 }
-function rCust(){
-  if(!$('#cAdd').dataset.init){ $('#cAdd').dataset.init=1;
-    $('#cAdd').onclick=()=>custModal();
-    $('#cQ').oninput=rCust;
-  }
-  const q=$('#cQ').value.trim().toLowerCase();
-  const cs=CUSTOMERS.filter(c=>inScope(c.branch));
-  const cL=cs.filter(c=>!q||(c.name+(c.phone||'')).toLowerCase().indexOf(q)>=0);
-  tbl($('#custTable'), ['ลูกค้า','เบอร์','ที่อยู่','รู้จักจาก','รุ่นที่สนใจ/ซื้อ',{t:'ซื้อแล้ว',n:1},''],
-    cL.map(c=>{
-      const bought=SALES.filter(s=>s.custId===c.id).length;
-      return '<tr class="clk" data-cust="'+c.id+'"><td><b>'+esc(c.name)+'</b>'
-        +(c.note?'<div class="tsub">'+esc(c.note)+'</div>':'')+'</td><td>'+esc(c.phone||'—')+'</td>'
-        +'<td>'+esc(c.addr||'—')+'</td><td>'+esc(c.src)+'</td>'
-        +'<td>'+esc(PRICE[c.variant]?PRICE[c.variant].m:c.variant||'—')+'</td>'
-        +'<td class="n">'+(bought||'—')+'</td>'
-        +'<td><button class="lnk" data-cedit="'+c.id+'">แก้ไข</button></td></tr>'; }),
-    'ยังไม่มีลูกค้า — กดปุ่ม “เพิ่มลูกค้า” มุมขวาบน',
-    cL.map(c=>{
-      const bought=SALES.filter(s=>s.custId===c.id).length;
-      return crow('data-cust="'+c.id+'"',
-        esc(c.name), pill(c.stage, c.stage==='รับรถสำเร็จ'?'good':(c.stage==='ไม่ผ่าน'?'bad':'info')),
-        esc(c.phone||'—')+' · '+esc(c.src)+' · '+esc(PRICE[c.variant]?PRICE[c.variant].m:c.variant||'—')+(bought?' · ซื้อแล้ว '+bought:''),
-        '<button class="lnk" data-cedit="'+c.id+'">แก้ไข</button>'); }));
-  $$('#custTable [data-cust]').forEach(r=> r.onclick=()=>custDrawer(r.dataset.cust));
-  $$('#custTable [data-cedit]').forEach(b=> b.onclick=e=>{ e.stopPropagation(); custModal(b.dataset.cedit); });
-}
-
-/* ============================= 8b. ติดตามการขาย (ลูกค้า × รถ) ============================= */
-function rFollow(){
-  if(!$('#fwStage').dataset.init){ $('#fwStage').dataset.init=1;
-    $('#fwStage').innerHTML='<option value="">ทุกสถานะ</option>'+CUST_STAGES.map(s=>'<option>'+esc(s)+'</option>').join('');
-    $('#fwStage').onchange=rFollow; $('#fwQ').oninput=rFollow;
-    $('#fwFilt').onclick=()=>openFilters('follow');
-  }
-  const due=TASKS.filter(t=>!t.done&&inScope(t.branch)).sort((a,b)=>a.due.localeCompare(b.due));
-  $('#taskCnt').textContent=due.filter(t=>t.due<=TODAY).length+' ถึงกำหนดแล้ว';
-  tbl($('#taskTable'), ['ลูกค้า','รอบ','ครบกำหนด','สถานะ',''],
-    due.slice(0,25).map(t=>{ const c=CUSTOMERS.find(x=>x.id===t.custId); const d=days(t.due,TODAY);
-      return '<tr><td><b>'+esc(c?c.name:'—')+'</b><div class="tsub">'+esc(c?c.phone:'')+'</div></td>'
-        +'<td>'+esc(t.kind)+'</td><td>'+thDate(t.due)+'</td>'
-        +'<td>'+(d>0?pill('เลย '+d+' วัน','bad'):(d===0?pill('วันนี้','warn'):pill('อีก '+(-d)+' วัน','mut')))+'</td>'
-        +'<td><button class="lnk" data-task="'+t.id+'">เสร็จแล้ว</button></td></tr>'; }),
-    'ไม่มีงานติดตามค้าง',
-    due.slice(0,25).map(t=>{ const c=CUSTOMERS.find(x=>x.id===t.custId); const d=days(t.due,TODAY);
-      return crow('',
-        esc(c?c.name:'—'),
-        (d>0?pill('เลย '+d+' วัน','bad'):(d===0?pill('วันนี้','warn'):pill('อีก '+(-d)+' วัน','mut'))),
-        esc(c?c.phone:'')+' · '+esc(t.kind)+' · '+thDate(t.due),
-        '<button class="lnk" data-task="'+t.id+'">เสร็จแล้ว</button>'); }));
-  $$('[data-task]').forEach(b=> b.onclick=()=>{ const t=TASKS.find(x=>x.id===b.dataset.task); t.done=true;
-    toast('ปิดงานติดตามแล้ว'); refreshAll(); });
-
-  const cs=CUSTOMERS.filter(c=>inScope(c.branch));
-  /* เรียงตามเส้นทางจริง 5 ขั้น แล้วต่อท้ายด้วย "ไม่ผ่าน" ซึ่งเป็นการตกราง ไม่ใช่ปลายทาง
-     เลขหน้าชื่อขั้นตรงกับเลขบนแถบความคืบหน้าของแต่ละคน จะได้อ่านคู่กันได้ */
-  $('#funnel').innerHTML=CUST_TRACK_N.concat([CUST_OFF]).map((s,ix)=>{
-    const n=cs.filter(c=>c.stage===s).length;
-    const mx=Math.max(1,...CUST_TRACK_N.concat([CUST_OFF]).map(x=>cs.filter(c=>c.stage===x).length));
-    return '<div class="bar"><div class="bl"><span>'+(ix<CUST_TRACK_N.length?(ix+1)+' · ':'')+esc(s)+'</span><b>'+n+'</b></div>'
-      +'<div class="bt"><div class="bf '+(s===CUST_OFF?'d':(s==='รับรถสำเร็จ'?'g':''))+'" style="width:'+(n/mx*100)+'%"></div></div></div>'; }).join('');
-  const labels={7:'ถามความรู้สึกหลังออกรถ',30:'เช็กระยะและเรื่องทะเบียน',90:'เช็กระยะครั้งถัดไป',365:'ต่อ พ.ร.บ. / เสนอเปลี่ยนรถ',1095:'เสนอเปลี่ยนรถใหม่'};
-  $('#cadence').innerHTML=String(CFG.cadence).split(',').map(d=>'<div style="display:flex;gap:var(--s2);padding:var(--s1) 0;border-bottom:1px solid var(--hairline-2);font-size:var(--t-table)">'
-    +pill(d+' วัน','brand')+'<span>'+esc(labels[+d]||'ติดตามลูกค้า')+'</span></div>').join('');
-
-  /* ลูกค้า × รถ — แถวละคน กดเลขขั้นที่อยู่ติดกันเพื่อเลื่อนได้ทันที */
-  const q=$('#fwQ').value.trim().toLowerCase(), st=$('#fwStage').value;
-  const fwL=cs.filter(c=>(!st||c.stage===st)&&(!q||c.name.toLowerCase().indexOf(q)>=0)).map(c=>{
-      const s=SALES.find(x=>x.custId===c.id && !x.void), u=s&&UNITS.find(x=>x.id===s.unitId);
-      const veh = u? u.model+' · '+u.color+' <span class="tsub mono">'+u.engine+'</span>'
-                : esc(PRICE[c.variant]?PRICE[c.variant].m+' (สนใจ)':c.variant||'—');
-      return {c, veh, s:custStep(c.stage), open:TASKS.filter(t=>t.custId===c.id&&!t.done).length}; });
-  const fwBar = x => steps(CUST_TRACK, x.s.i, { off:x.s.off,
-    act: ix => 'data-fwst="'+x.c.id+'|'+ix+'"' });
-  /* ข้อความกำกับ — คนที่ไม่ได้มองแถบยังรู้ว่าอยู่ขั้นไหน และคนตาบอดสีอ่านได้ */
-  const fwNow = x => x.s.off
-    ? '<span class="pslab off">ไม่ผ่าน — หยุดที่ขั้น '+(x.s.i+1)+'</span>'
-    : '<span class="pslab">ขั้น '+(x.s.i+1)+'/'+CUST_TRACK_N.length+' · '+esc(CUST_TRACK_N[x.s.i])+'</span>';
-  tbl($('#fwTable'), ['ลูกค้า','รถที่สนใจ/ซื้อ','เซลล์','ความคืบหน้า',{t:'งานค้าง',n:1}],
-    fwL.map(x=>'<tr class="clk" data-cust="'+x.c.id+'"><td><b>'+esc(x.c.name)+'</b><div class="tsub">'+esc(x.c.phone||'')+'</div></td>'
-        +'<td>'+x.veh+'</td><td>'+esc(x.c.owner||'—')+'</td>'
-        +'<td style="min-width:190px">'+fwBar(x)+'<div style="margin-top:var(--s-half)">'+fwNow(x)+'</div></td>'
-        +'<td class="n">'+(x.open||'—')+'</td></tr>'),
-    'ไม่พบลูกค้าตามเงื่อนไข',
-    fwL.map(x=>crow('data-cust="'+x.c.id+'"',
-      esc(x.c.name),
-      x.s.off? '<span class="pslab off">ไม่ผ่าน</span>' : '<span class="pslab">'+(x.s.i+1)+'/'+CUST_TRACK_N.length+'</span>',
-      x.veh+' · '+esc(x.c.owner||'—')+(x.open?' · ค้าง '+x.open+' งาน':''),
-      fwBar(x)+fwNow(x))));
-  $$('#fwTable [data-cust]').forEach(r=> r.onclick=()=>custDrawer(r.dataset.cust));
-  wireCustSteps('#fwTable');
-  fsSync('follow');
-}
-/* ปุ่มเลขขั้นอยู่ในแถวที่กดแล้วเปิดแผ่นลูกค้า — ต้องหยุด event ไม่ให้ทะลุขึ้นไป
-   ใช้ร่วมกันทั้งในตารางและในแผ่นรายละเอียด จะได้ไม่มีกติกาสองชุด */
-function wireCustSteps(scope, after){
-  $$(scope+' [data-fwst]').forEach(b=> b.onclick=e=>{ e.stopPropagation();
-    const [id,ix]=b.dataset.fwst.split('|');
-    if(custMove(id, +ix) && after) after(id); });
-  $$(scope+' [data-fwrej]').forEach(b=> b.onclick=e=>{ e.stopPropagation();
-    const [id,on]=b.dataset.fwrej.split('|');
-    if(custReject(id, on==='1') && after) after(id); });
-}
+/* ค่าที่เก็บใน c.stage: เข้ามาดูรถ · สนใจ · ทำสัญญา · ผ่าน · ไม่ผ่าน · รับรถสำเร็จ
+   ตั้งแต่ v1.11 ฟิลด์นี้ไม่ได้เป็นตัวขับแถบความคืบหน้าอีกแล้ว — หน้าดีลคำนวณขั้นจากระเบียนจริง
+   เหลือไว้เป็นป้ายกำกับลูกค้าที่ยังไม่ซื้อ และให้ finAdvance/regAdvance อัปเดตตามผลจริง
+   "รับรถสำเร็จ" ตั้งเองไม่ได้ มาจาก regAdvance ตอนกดส่งมอบเท่านั้น */
 
 /* ============================= 8c. ลูกค้าและดีล — หน้าเดียวจบ =============================
    งานลูกค้าหนึ่งรายเคยกระจายอยู่ 4 หน้าที่ต่างคนต่างมี "ขั้นตอน" ของตัวเอง
@@ -3635,7 +3391,7 @@ function dealActions(d){
     } else {
       const i=FIN_STAGES.indexOf(d.fc.status);
       if(i>=0 && i<FIN_STAGES.length-1)
-        b.push('<button class="btn" data-dlfnext="'+d.fc.id+'">'+ic('check')+' ไป: '+esc(FIN_STAGES[i+1])+'</button>');
+        b.push('<button class="btn" data-dlfnext="'+d.fc.id+'">ไป: '+esc(FIN_STAGES[i+1])+ic('arrow')+'</button>');
       if(i>0) b.push('<button class="btn sec" data-dlfback="'+d.fc.id+'">ถอยกลับ</button>');
       b.push('<button class="btn dgr" data-dlfrej="'+d.fc.id+'">ไฟแนนซ์ปฏิเสธ</button>');
     }
@@ -3647,12 +3403,14 @@ function dealActions(d){
       b.push('<span class="dlplate"><input class="inp mono" id="dlPlate" value="'+esc(d.rg.plate||'')
         +'" placeholder="1กก 1234"><button class="btn sec" data-dlplate="'+d.rg.id+'">บันทึกทะเบียน</button></span>');
     if(i>=0 && i<REG_STAGES.length-1)
-      b.push('<button class="btn" data-dlrnext="'+d.rg.id+'">'+ic('check')+' ไป: '+esc(REG_STAGES[i+1])+'</button>');
+      b.push('<button class="btn" data-dlrnext="'+d.rg.id+'">ไป: '+esc(REG_STAGES[i+1])+ic('arrow')+'</button>');
     if(i>0) b.push('<button class="btn sec" data-dlrback="'+d.rg.id+'">ถอยกลับ</button>');
   }
+  let h=b.join('');
   if(d.s && !d.s.void && d.k!=='done' && canVoidSale())
-    b.push('<button class="btn dgr" data-dlvoid="'+d.s.id+'">ยกเลิกการขาย</button>');
-  return b.join('');
+    h+='</div><div class="dlact dlrisk">'
+      +'<button class="btn ghost" data-dlvoid="'+d.s.id+'">ยกเลิกการขายนี้</button>';
+  return h;
 }
 /* รายละเอียดที่อ่านอย่างเดียว — คั่นด้วยหัวข้อกับเส้น ไม่มีกล่องซ้อนตามกฎ 9c */
 function dealDetail(d){
@@ -3853,41 +3611,6 @@ function rDeal(){
 }
 /* เปิดดีลจากหน้าอื่น — ตั้งธงไว้ให้ go() รู้ว่าอย่าล้างตัวที่เลือก */
 function dealGo(id){ DEAL_SEL=id; DEAL_KEEP=true; go('deal'); }
-function custDrawer(id){
-  const c=CUSTOMERS.find(x=>x.id===id); if(!c) return;
-  const ss=SALES.filter(s=>s.custId===id), ts=TASKS.filter(t=>t.custId===id), sv=SERVICE.filter(s=>s.custId===id);
-  const cst=custStep(c.stage);
-  let h='<dl class="kv"><dt>ชื่อ</dt><dd><b>'+esc(c.name)+'</b></dd><dt>เบอร์</dt><dd>'+esc(c.phone||'—')+'</dd>'
-    +'<dt>รู้จักจาก</dt><dd>'+esc(c.src)+'</dd>'
-    +'<dt>เซลล์ที่ดูแล</dt><dd>'+esc(c.owner||'—')+'</dd><dt>สาขา</dt><dd>'+esc(bName(c.branch))+'</dd></dl>';
-  /* แถบความคืบหน้าแบบเต็ม มีชื่อขั้นใต้ตัวเลข — ในแผ่นมีที่ว่างพอ ไม่ต้องย่อเหมือนในตาราง
-     กดเลขที่อยู่ติดกับขั้นปัจจุบันเพื่อเลื่อน ด่านทั้งหมดอยู่ใน custMove() */
-  h+='<h4 class="sec">ความคืบหน้า</h4>'
-    +steps(CUST_TRACK, cst.i, { off:cst.off, lab:1, act: ix => 'data-fwst="'+c.id+'|'+ix+'"' })
-    +'<div style="margin-top:var(--s2);display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap">'
-    +(cst.off? '<span class="pslab off">ไฟแนนซ์ไม่ผ่าน — หยุดที่ขั้น '+(cst.i+1)+' '+esc(CUST_TRACK_N[cst.i])+'</span>'
-             : '<span class="pslab">ขั้น '+(cst.i+1)+'/'+CUST_TRACK_N.length+' · '+esc(CUST_TRACK_N[cst.i])+'</span>')
-    +(cst.off? '<button class="lnk" data-fwrej="'+c.id+'|0">เอาเครื่องหมายไม่ผ่านออก</button>'
-       : (cst.i>=CUST_TRACK_N.indexOf('ทำสัญญา') && c.stage!=='รับรถสำเร็จ'
-          ? '<button class="lnk" data-fwrej="'+c.id+'|1">ทำเครื่องหมายว่าไม่ผ่าน</button>' : ''))
-    +'</div>';
-  h+='<h4 class="sec">ประวัติการซื้อ ('+ss.length+')</h4>';
-  h+= ss.length? ss.map(s=>{ const u=UNITS.find(x=>x.id===s.unitId);
-    return '<div style="padding:var(--s1) 0;border-bottom:1px solid var(--hairline-2);font-size:var(--t-table)"><b>'+esc(u.model)+'</b> · '+esc(u.color)
-      +' <button class="lnk" data-sdet="'+s.id+'">ดูการขาย</button>'
-      +'<div class="tsub mono">'+esc(u.engine)+'</div><div class="tsub">'+thDate(s.soldAt)+' · '+baht(s.net)+' · '+esc(s.sales)+'</div></div>'; }).join('')
-    : '<div class="tsub">ยังไม่เคยซื้อ</div>';
-  h+='<h4 class="sec">ประวัติเข้าศูนย์ ('+sv.length+')</h4>';
-  h+= sv.length? sv.map(v=>'<div style="padding:var(--s1) 0;border-bottom:1px solid var(--hairline-2);font-size:var(--t-table)">'
-      +esc(v.type)+' · '+thDate(v.at)+' · '+fmt(v.km)+' กม.</div>').join('') : '<div class="tsub">ยังไม่เคยเข้าศูนย์</div>';
-  h+='<h4 class="sec">งานติดตาม</h4>';
-  h+= ts.length? ts.map(t=>'<div style="display:flex;gap:var(--s1);padding:var(--s1) 0;font-size:var(--t-table);border-bottom:1px solid var(--hairline-2)">'
-      +(t.done?pill('เสร็จ','good'):pill(t.kind,'brand'))+'<span>'+thDate(t.due)+'</span></div>').join('') : '<div class="tsub">—</div>';
-  openDrawer(c.name, h);
-  wireSaleLinks();
-  /* เลื่อนขั้นจากในแผ่นแล้ววาดแผ่นใหม่ทันที ไม่งั้นแถบยังค้างที่ขั้นเดิมทั้งที่ข้อมูลเปลี่ยนแล้ว */
-  wireCustSteps('#drwB', cid => custDrawer(cid));
-}
 
 /* ---------- มุมมองการขายหนึ่งรายการ — ฮับต่อยอดหลังขาย: สินเชื่อ / ทะเบียน / เอกสาร ---------- */
 function saleDrawer(id){
@@ -3908,12 +3631,13 @@ function saleDrawer(id){
     +(s.deliveredAt?'<dt>ส่งมอบเมื่อ</dt><dd>'+thDate(s.deliveredAt)+'</dd>':'')+'</dl>';
   h+='<h4 class="sec">งานที่เกี่ยวข้อง</h4>';
   if(fc) h+='<div class="frow">'+pill(fc.status, fc.status==='อนุมัติแล้ว'?'good':(fc.status==='ปฏิเสธ'?'bad':'info'))
-    +'<span>เคสสินเชื่อ'+(f?' · '+esc(f.name):'')+'</span>'
-    +(canSee('fin')?'<button class="lnk fx" data-opfin="'+fc.id+'">เปิดเคส →</button>':'')+'</div>';
+    +'<span>เคสสินเชื่อ'+(f?' · '+esc(f.name):'')+'</span></div>';
   if(rg) h+='<div class="frow">'+pill(rg.stage, rg.stage==='ส่งมอบแล้ว'?'good':'info')
-    +'<span>งานทะเบียน'+(rg.plate?' · ป้าย '+esc(rg.plate):'')+'</span>'
-    +(canSee('reg')?'<button class="lnk fx" data-opreg="'+rg.id+'">เปิดงาน →</button>':'')+'</div>';
+    +'<span>งานทะเบียน'+(rg.plate?' · ป้าย '+esc(rg.plate):'')+'</span></div>';
   if(!fc && !rg) h+='<p class="foot">ไม่มีงานค้างที่เกี่ยวข้อง</p>';
+  /* ทางเดียวที่ไปจัดการต่อ — หน้าดีลรวมทั้งไฟแนนซ์และทะเบียนไว้แล้ว */
+  if(c && canSee('deal')) h+='<div style="margin-top:var(--s1)"><button class="lnk" id="sdDeal">'
+    +'จัดการดีลของ '+esc(c.name)+' →</button></div>';
   const dts=Object.keys(s.docs||{});
   h+='<h4 class="sec">เอกสาร</h4>'
     +(dts.length? dts.map(t=>'<div class="frow"><span class="mono">'+esc(s.docs[t])+'</span>'
@@ -3922,8 +3646,7 @@ function saleDrawer(id){
   if(!s.void && (ME.role==='admin'||ME.role==='manager') && typeof cancelSale==='function')
     h+='<div class="savebar"><button class="btn dgr" id="sdVoid">ยกเลิกการขาย</button></div>';
   openDrawer('การขาย · '+(c?c.name:''), h);
-  $$('#drwB [data-opfin]').forEach(b=> b.onclick=()=>{ closeDrawer(); go('fin'); setTimeout(()=>finDrawer(b.dataset.opfin),150); });
-  $$('#drwB [data-opreg]').forEach(b=> b.onclick=()=>{ closeDrawer(); go('reg'); setTimeout(()=>regDrawer(b.dataset.opreg),150); });
+  const sdd=$('#sdDeal'); if(sdd) sdd.onclick=()=>{ closeDrawer(); dealGo(c.id); };
   const sd=$('#sdDocs'); if(sd) sd.onclick=()=>{ closeDrawer(); go('sell');
     setTimeout(()=>{ sellTab('p3'); DOC_SALE=s.id; renderDocs(); },120); };
   const sv=$('#sdVoid'); if(sv) sv.onclick=()=>cancelSale(s.id);
@@ -3934,172 +3657,9 @@ function wireSaleLinks(){
 }
 
 /* ============================= 9. ทะเบียน ============================= */
-function rReg(){
-  if(!$('#expReg').dataset.init){ $('#expReg').dataset.init=1;
-    $('#expReg').onclick=()=> csv('ทะเบียน',['ลูกค้า','รุ่น','เลขเครื่อง','สาขา','ขั้นตอน','ครบกำหนด','ค้าง(วัน)','ป้าย'],
-      REGS.filter(r=>inScope(r.branch)).map(r=>{ const s=SALES.find(x=>x.id===r.saleId), u=UNITS.find(x=>x.id===s.unitId),
-        c=CUSTOMERS.find(x=>x.id===s.custId);
-        return [c?c.name:'',u.model,u.engine,bName(r.branch),r.stage,r.due,Math.max(0,days(r.due,TODAY)),r.plate]; }));
-  }
-  const rs=REGS.filter(r=>inScope(r.branch));
-  const late=rs.filter(r=>r.stage!=='ส่งมอบแล้ว'&&days(r.due,TODAY)>0);
-  $('#regKpi').innerHTML=[
-    ['ยังไม่ส่งมอบ', rs.filter(r=>r.stage!=='ส่งมอบแล้ว').length+' <small>คัน</small>','ทุกขั้นตอนรวมกัน'],
-    ['เลยกำหนด '+CFG.regDays+' วัน', late.length+' <small>คัน</small>', late.length?'ต้องตามด่วน':'ไม่มีค้าง'],
-    ['ส่งมอบแล้วเดือนนี้', rs.filter(r=>r.stage==='ส่งมอบแล้ว').length+' <small>คัน</small>','จบกระบวนการ']
-  ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
-  const regCard = r => { const s=SALES.find(x=>x.id===r.saleId), u=UNITS.find(x=>x.id===s.unitId),
-      c=CUSTOMERS.find(x=>x.id===s.custId); const d=days(r.due,TODAY);
-    return '<div class="kcard" data-reg="'+r.id+'"><b>'+esc(c?c.name:'—')+'</b><span>'+esc(u.model)+'</span>'
-      +(r.hold?'<div style="margin-top:var(--s-half)">'+pill(r.hold,'bad')+'</div>':'')
-      +(d>0&&r.stage!=='ส่งมอบแล้ว'?'<div style="margin-top:var(--s-half)">'+pill('ค้าง '+d+' วัน','bad')+'</div>':'')+'</div>'; };
-  if(MQ_KAN.matches){
-    /* มือถือ: ทีละขั้นตอน แสดงครบทุกใบ (เดสก์ท็อปตัดที่ 6 ใบเพราะคอลัมน์แคบ) */
-    KAN_REG = kanMobile($('#regKan'), REG_STAGES, st=>rs.filter(r=>r.stage===st),
-      regCard, KAN_REG, s=>{ KAN_REG=s; rReg(); });
-  } else {
-    $('#regKan').innerHTML=REG_STAGES.map(st=>{ const items=rs.filter(r=>r.stage===st);
-      return '<div class="kcol"><h5>'+esc(st)+'<span>'+items.length+'</span></h5>'
-        +items.slice(0,6).map(regCard).join('')
-        +(items.length>6?'<div class="tsub" style="text-align:center">+ อีก '+(items.length-6)+'</div>':'')+'</div>'; }).join('');
-  }
-  $$('[data-reg]').forEach(k=> k.onclick=()=>regDrawer(k.dataset.reg));
-  const rgL=rs.slice().sort((a,b)=>a.due.localeCompare(b.due)).map(r=>{
-      const s=SALES.find(x=>x.id===r.saleId), u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
-      return {r, u, c, d:days(r.due,TODAY)}; });
-  tbl($('#regTable'), ['ลูกค้า','รุ่น','เลขเครื่อง','สาขา','ขั้นตอน','ครบกำหนด','ทะเบียน',''],
-    rgL.map(({r,u,c,d})=>'<tr><td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(u.model)+'</td><td class="mono">'+esc(u.engine)+'</td>'
-        +'<td>'+esc(bName(r.branch))+'</td><td>'+pill(r.stage, r.stage==='ส่งมอบแล้ว'?'good':'info')
-        +(r.hold?' '+pill(r.hold,'bad'):'')+'</td>'
-        +'<td>'+thDate(r.due)+(d>0&&r.stage!=='ส่งมอบแล้ว'?' '+pill('ค้าง '+d,'bad'):'')+'</td>'
-        +'<td class="mono">'+esc(r.plate||'—')+'</td>'
-        +'<td><button class="lnk" data-reg2="'+r.id+'">ดู</button></td></tr>'),
-    'ยังไม่มีงานทะเบียน',
-    rgL.map(({r,u,c,d})=>crow('data-reg2="'+r.id+'"',
-      esc(c?c.name:'—'), pill(r.stage, r.stage==='ส่งมอบแล้ว'?'good':'info'),
-      esc(u.model)+' · <span class="mono">'+esc(u.engine)+'</span>'+(r.plate?' · ป้าย '+esc(r.plate):''),
-      'ครบกำหนด '+thDate(r.due)+(r.hold?' '+pill(r.hold,'bad'):'')
-        +(d>0&&r.stage!=='ส่งมอบแล้ว'?' '+pill('ค้าง '+d+' วัน','bad'):''))));
-  $$('[data-reg2]').forEach(b=> b.onclick=()=>regDrawer(b.dataset.reg2));
-}
-function regDrawer(id){
-  const r=REGS.find(x=>x.id===id); const s=SALES.find(x=>x.id===r.saleId);
-  const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
-  const i=REG_STAGES.indexOf(r.stage);
-  let h='';
-  if(r.hold) h+='<div class="note b">'+ic('alert','i i-sm')+'<span><b>'+esc(r.hold)+'</b> — จัดการต่อที่เคสสินเชื่อ (ยื่นใหม่ / ยกเลิกการขาย)</span></div>';
-  h+='<dl class="kv"><dt>ลูกค้า</dt><dd><b>'+esc(c?c.name:'—')+'</b></dd>'
-    +'<dt>รถ</dt><dd>'+esc(u.model)+' · '+esc(u.color)+'</dd>'
-    +'<dt>เลขเครื่อง</dt><dd class="mono">'+esc(u.engine)+'</dd>'
-    +'<dt>วันที่ขาย</dt><dd>'+thDate(s.soldAt)+'</dd>'
-    +'<dt>ครบกำหนด</dt><dd>'+thDate(r.due)+'</dd>'
-    +'<dt>ทะเบียน</dt><dd class="mono">'+esc(r.plate||'—')+'</dd>'
-    +(r.deliveredAt?'<dt>ส่งมอบเมื่อ</dt><dd>'+thDate(r.deliveredAt)+'</dd>':'')+'</dl>';
-  /* ขั้นตอนบอกด้วยไอคอนกับน้ำหนักตัวอักษร ไม่ต้องมีกล่องพื้นสีซ้อนในแผ่น */
-  h+='<h4 class="sec">ขั้นตอน</h4><div class="stg">'
-    +REG_STAGES.map((st,ix)=>'<div class="frow'+(ix<=i?' on':'')+'">'
-      +ic(ix<i?'check-circle':(ix===i?'dot-circle':'circle'),'i i-sm')
-      +'<span style="font-size:var(--t-table);font-weight:'+(ix===i?'600':'400')+'">'+esc(st)+'</span></div>').join('')+'</div>';
-  /* เลขทะเบียนกรอกจากป้ายจริง — ไม่มีการสุ่มอีกต่อไป และออกป้ายขาวไม่ได้ถ้ายังไม่กรอก */
-  if(i>=REG_STAGES.indexOf('รอทะเบียน') && r.stage!=='ส่งมอบแล้ว')
-    h+='<div style="margin-top:var(--s2)"><label class="fl">เลขทะเบียน (ตามป้ายจริงจากขนส่ง)</label>'
-      +'<div style="display:flex;gap:var(--s1)"><input class="inp mono" id="regPlate" value="'+esc(r.plate||'')+'" placeholder="1กก 1234" style="max-width:200px">'
-      +'<button class="btn sec" id="regPlateSave">บันทึก</button></div></div>';
-  if(i<5) h+='<div style="margin-top:var(--s2);display:flex;gap:var(--s1);flex-wrap:wrap"><button class="btn" id="regNext">ไปขั้นถัดไป: '+esc(REG_STAGES[i+1])+'</button>'
-    +(i>0?'<button class="btn sec" id="regBack">ถอยกลับ</button>':'')+'</div>';
-  openDrawer('งานทะเบียน', h);
-  /* ตัวทำงานอยู่ในฟังก์ชันกลาง หน้าดีลเรียกตัวเดียวกัน แผ่นนี้แค่ปิดตัวเองหลังทำสำเร็จ */
-  const plateVal = () => $('#regPlate')? $('#regPlate').value : null;
-  if($('#regPlateSave')) $('#regPlateSave').onclick=()=>regSavePlate(r.id, plateVal());
-  if($('#regNext')) $('#regNext').onclick=()=>{
-    if(regAdvance(r.id, plateVal())) closeDrawer();
-    else if($('#regPlate')) $('#regPlate').focus(); };
-  if($('#regBack')) $('#regBack').onclick=()=>{ if(regBack(r.id)) closeDrawer(); };
-}
 
 /* ============================= 10. เคสสินเชื่อ ============================= */
-function rFin(){
-  if(!$('#finCo').dataset.init){ $('#finCo').dataset.init=1; $('#finCo').onchange=rFin;
-    $$('#finTabs button').forEach(b=> b.onclick=()=>{ $$('#finTabs button').forEach(x=>x.classList.remove('on'));
-      b.classList.add('on'); $$('#s-fin .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p)); }); }
-  /* เติมใหม่ทุกครั้ง — รับการเพิ่ม/ลบไฟแนนซ์ */
-  (function(){ const el=$('#finCo'), want=el.value;
-    el.innerHTML='<option value="">ทุกไฟแนนซ์</option>'+FIN_CO.map(f=>'<option value="'+f.id+'">'+esc(f.name)+'</option>').join('');
-    if(want && FIN_CO.some(f=>f.id===want)) el.value=want; })();
-  rFinCo();
-  const all=FINCASES.filter(c=>inScope(c.branch)&&(!$('#finCo').value||c.finId===$('#finCo').value));
-  const open=all.filter(c=>FIN_STAGES.indexOf(c.status)>=0&&c.status!=='อนุมัติแล้ว');
-  const appr=all.filter(c=>c.status==='อนุมัติแล้ว'), rej=all.filter(c=>c.status==='ปฏิเสธ');
-  $('#finKpi').innerHTML=[
-    ['เคสทั้งหมด', all.length,''],['กำลังดำเนินการ', open.length,'ต้องติดตาม'],
-    ['อนุมัติแล้ว', appr.length,''],['อัตราอนุมัติ', all.length?Math.round(appr.length/all.length*100)+'%':'—','จากเคสทั้งหมด']
-  ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
-  const finCard = c => { const cu=CUSTOMERS.find(x=>x.id===c.custId), f=FIN_CO.find(x=>x.id===c.finId);
-    return '<div class="kcard" data-fin="'+c.id+'"><b>'+esc(cu?cu.name:'—')+'</b><span>'+esc(f?f.name:'')+' · '+fmt(c.amount)+' ฿</span></div>'; };
-  if(MQ_KAN.matches){
-    KAN_FIN = kanMobile($('#finKan'), FIN_STAGES, st=>all.filter(c=>c.status===st),
-      finCard, KAN_FIN, s=>{ KAN_FIN=s; rFin(); });
-  } else {
-    $('#finKan').innerHTML=FIN_STAGES.map(st=>{ const items=all.filter(c=>c.status===st);
-      return '<div class="kcol"><h5>'+esc(st)+'<span>'+items.length+'</span></h5>'
-        +items.map(finCard).join('')+'</div>'; }).join('');
-  }
-  $$('[data-fin]').forEach(k=> k.onclick=()=>finDrawer(k.dataset.fin));
-  const rate=FIN_CO.map(f=>{ const cs=all.filter(c=>c.finId===f.id);
-    const a=cs.filter(c=>c.status==='อนุมัติแล้ว').length, r=cs.filter(c=>c.status==='ปฏิเสธ').length;
-    return '<tr><td><b>'+esc(f.name)+'</b><div class="tsub">ดอกเบี้ย '+f.rate+'%/เดือน</div></td>'
-      +'<td class="n">'+cs.length+'</td><td class="n">'+a+'</td><td class="n">'+r+'</td>'
-      +'<td class="n">'+(cs.length? pill(Math.round(a/cs.length*100)+'%', a/cs.length>=.7?'good':'warn') :'—')+'</td></tr>'; });
-  const rateCards=FIN_CO.map(f=>{ const cs=all.filter(c=>c.finId===f.id);
-    const a=cs.filter(c=>c.status==='อนุมัติแล้ว').length, r=cs.filter(c=>c.status==='ปฏิเสธ').length;
-    return crow('', esc(f.name),
-      (cs.length? pill(Math.round(a/cs.length*100)+'%', a/cs.length>=.7?'good':'warn') :'—'),
-      'ยื่น '+cs.length+' · อนุมัติ '+a+' · ปฏิเสธ '+r+' · ดอกเบี้ย '+f.rate+'%/เดือน'); });
-  tbl($('#finRate'), ['ไฟแนนซ์',{t:'ยื่น',n:1},{t:'อนุมัติ',n:1},{t:'ปฏิเสธ',n:1},{t:'อัตราอนุมัติ',n:1}],
-    rate, 'ยังไม่มีเคส', rateCards);
-  rFinPeople();
-}
 /* ---------- ติดตามสถานะไฟแนนซ์รายคน — progress bar + ตัวกรอง ---------- */
-function rFinPeople(){
-  const fill=(el,opts,label)=>{ const want=el.value;
-    el.innerHTML='<option value="">'+label+'</option>'+opts.map(o=>'<option>'+esc(o)+'</option>').join('');
-    if(want && opts.indexOf(want)>=0) el.value=want; };
-  const scoped=FINCASES.filter(c=>inScope(c.branch));
-  fill($('#fpStatus'), FIN_STAGES.concat(['ปฏิเสธ']), 'ทุกสถานะ');
-  fill($('#fpSales'), [...new Set(scoped.map(c=>{ const s=SALES.find(x=>x.id===c.saleId); return s?s.sales:''; }).filter(Boolean))], 'ทุกเซลล์');
-  (function(){ const el=$('#fpBranch'), want=el.value;
-    el.innerHTML='<option value="">ทุกสาขา</option>'+BRANCHES.filter(b=>inScope(b.code)).map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
-    if(want) el.value=want; })();
-  if(!$('#fpStatus').dataset.init){ $('#fpStatus').dataset.init=1;
-    ['fpStatus','fpSales','fpBranch'].forEach(k=> $('#'+k).onchange=rFinPeople);
-    $('#fpQ').oninput=rFinPeople;
-    $('#fpFilt').onclick=()=>openFilters('finpp');
-  }
-  const q=$('#fpQ').value.trim().toLowerCase();
-  const list=scoped.filter(c=>{
-    const cu=CUSTOMERS.find(x=>x.id===c.custId), s=SALES.find(x=>x.id===c.saleId);
-    return (!$('#fpStatus').value || c.status===$('#fpStatus').value)
-      && (!$('#fpBranch').value || c.branch===$('#fpBranch').value)
-      && (!$('#fpSales').value || (s&&s.sales===$('#fpSales').value))
-      && (!q || (cu&&cu.name.toLowerCase().indexOf(q)>=0));
-  }).sort((a,b)=> (a.status==='ปฏิเสธ'?1:0)-(b.status==='ปฏิเสธ'?1:0) || a.at.localeCompare(b.at));
-  $('#fpList').innerHTML = list.length? list.map(c=>{
-    const cu=CUSTOMERS.find(x=>x.id===c.custId), f=finById(c.finId);
-    const s=SALES.find(x=>x.id===c.saleId), u=s&&UNITS.find(x=>x.id===s.unitId);
-    const rej=c.status==='ปฏิเสธ', i=FIN_STAGES.indexOf(c.status);
-    const pct=rej? 100 : Math.round((i+1)/FIN_STAGES.length*100);
-    const last=(c.log&&c.log.length)? c.log[c.log.length-1].at : c.at;
-    const stay=days(last,TODAY);
-    return '<div class="fprow" data-fin="'+c.id+'">'
-      +'<div class="who"><b>'+esc(cu?cu.name:'—')+'</b><div class="tsub">'+esc(u?u.model:'')+' · '+esc(f?f.name:'')+' · '+esc(s?s.sales:'')+'</div></div>'
-      +'<div class="prog"><div class="bl" style="display:flex;justify-content:space-between;font-size:var(--t-label)">'
-      +'<span>'+esc(c.status)+'</span><span class="tsub">'+(rej?'':'ขั้น '+(i+1)+'/'+FIN_STAGES.length+' · ')+'ค้าง '+stay+' วัน</span></div>'
-      +'<div class="bt"><div class="bf'+(rej?' d':(c.status==='อนุมัติแล้ว'?' g':''))+'" style="width:'+pct+'%"></div></div></div>'
-      +'<div class="amt">'+(noMoney()?'':'<b>'+fmt(c.amount)+'</b> ฿')+'<div class="tsub">ยื่น '+thDate(c.at)+'</div></div></div>';
-  }).join('') : '<div class="empty"><b>ไม่พบเคสตามเงื่อนไข</b>ลองปรับตัวกรอง</div>';
-  $$('#fpList [data-fin]').forEach(r=> r.onclick=()=>finDrawer(r.dataset.fin));
-  fsSync('finpp');
-}
 const canEditFin = () => ['admin','manager'].indexOf(ME.role)>=0;
 /* ช่องกรอกเรตรายช่วงงวด — prefix กันชน id ระหว่างฟอร์มเพิ่มกับ modal แก้ไข */
 function tierInputs(prefix, rates){
@@ -4270,36 +3830,6 @@ function regBack(id){
   const i=REG_STAGES.indexOf(r.stage); if(i<=0) return false;
   r.stage=REG_STAGES[i-1]; r.log.push({to:r.stage, at:TODAY});
   toast('ถอยกลับแล้ว', r.stage); refreshAll(); return true;
-}
-function finDrawer(id){
-  const c=FINCASES.find(x=>x.id===id); const cu=CUSTOMERS.find(x=>x.id===c.custId);
-  const f=FIN_CO.find(x=>x.id===c.finId); const i=FIN_STAGES.indexOf(c.status);
-  const s=SALES.find(x=>x.id===c.saleId), u=s&&UNITS.find(x=>x.id===s.unitId);
-  let h='<dl class="kv"><dt>ลูกค้า</dt><dd><b>'+esc(cu?cu.name:'—')+'</b></dd>'
-    +'<dt>รถ</dt><dd>'+esc(u?u.model:'—')+'</dd><dt>เลขเครื่อง</dt><dd class="mono">'+esc(u?u.engine:'—')+'</dd>'
-    +'<dt>ไฟแนนซ์</dt><dd>'+esc(f?f.name:'—')+'</dd>'
-    +'<dt>ยอดจัด</dt><dd>'+baht(c.amount)+'</dd>'
-    +'<dt>ยื่นเมื่อ</dt><dd>'+thDate(c.at)+' ('+days(c.at,TODAY)+' วันแล้ว)</dd>'
-    +'<dt>สถานะ</dt><dd>'+pill(c.status, c.status==='อนุมัติแล้ว'?'good':(c.status==='ปฏิเสธ'?'bad':'info'))+'</dd></dl>';
-  if(c.status==='ปฏิเสธ'){
-    /* ปฏิเสธไม่ใช่ทางตัน — เลือกยื่นเจ้าอื่น หรือยกเลิกการขายเพื่อคืนรถเข้าสต๊อก */
-    h+='<h4 class="sec">ไปต่ออย่างไร</h4><div style="display:flex;gap:var(--s1);flex-wrap:wrap">'
-      +'<button class="btn" id="fnResub">ยื่นใหม่กับไฟแนนซ์อื่น</button>'
-      +((ME.role==='admin'||ME.role==='manager')?'<button class="btn dgr" id="fnVoid">ยกเลิกการขาย</button>':'')
-      +'</div>';
-  } else {
-    h+='<div style="margin-top:var(--s2);display:flex;gap:var(--s1);flex-wrap:wrap">';
-    if(i>=0&&i<FIN_STAGES.length-1) h+='<button class="btn" id="fnNext">ไป: '+esc(FIN_STAGES[i+1])+'</button>';
-    if(i>0) h+='<button class="btn sec" id="fnBack">ถอยกลับ</button>';
-    h+='<button class="btn dgr" id="fnRej">ปฏิเสธ</button></div>';
-  }
-  openDrawer('เคสสินเชื่อ', h);
-  /* ตัวทำงานอยู่ในฟังก์ชันกลาง หน้าดีลเรียกตัวเดียวกัน แผ่นนี้แค่ปิดตัวเองหลังทำสำเร็จ */
-  if($('#fnNext')) $('#fnNext').onclick=()=>{ if(finAdvance(c.id)) closeDrawer(); };
-  if($('#fnBack')) $('#fnBack').onclick=()=>{ if(finBack(c.id)) closeDrawer(); };
-  if($('#fnRej'))  $('#fnRej').onclick =()=>{ if(finReject(c.id)) finDrawer(c.id); };
-  if($('#fnResub'))$('#fnResub').onclick=()=>finResubmit(c.id, closeDrawer);
-  if($('#fnVoid')) $('#fnVoid').onclick=()=>cancelSale(c.saleId);
 }
 /* ยกเลิกการขาย — ย้อนทุกอย่างที่ saveSale สร้าง ยกเว้นเลขเอกสาร (ต้อง audit ได้)
    มีเงินเข้าแล้วยกเลิกไม่ได้ ต้องทำเรื่องคืนเงินก่อน */
@@ -5748,13 +5278,6 @@ const CFMAP={cfCo:'company',cfAddr:'address',cfTax:'taxId',cfPhone:'phone',cfAgi
   cfOt:'otRate',cfComm:'commPct'};
 function rSettings(){
   Object.keys(CFMAP).forEach(k=> $('#'+k).value = CFG[CFMAP[k]]);
-  tbl($('#cfFin'), ['บริษัทไฟแนนซ์',{t:'ดอกเบี้ย (%/เดือน)',n:1},{t:'ดาวน์ขั้นต่ำ',n:1},'สถานะ'],
-    FIN_CO.map(f=>'<tr><td><b>'+esc(f.name)+'</b></td><td class="n">'+f.rate+'</td>'
-      +'<td class="n">'+f.minDownPct+'%</td>'
-      +'<td>'+(f.active? pill('ใช้งาน','good') : pill('ปิดใช้งาน','mut'))+'</td></tr>'),'',
-    FIN_CO.map(f=>crow('', esc(f.name), (f.active? pill('ใช้งาน','good') : pill('ปิดใช้งาน','mut')),
-      'ดอกเบี้ย '+f.rate+'%/เดือน · ดาวน์ขั้นต่ำ '+f.minDownPct+'%')));
-  $('#cfFinGo').onclick=()=>go('fin');
   if(!$('#cfSave').dataset.init){ $('#cfSave').dataset.init=1;
     $$('#cfTabs button').forEach(b=> b.onclick=()=>{ $$('#cfTabs button').forEach(x=>x.classList.remove('on'));
       b.classList.add('on'); $$('#s-settings .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p)); });
@@ -5765,6 +5288,7 @@ function rSettings(){
     $('#cfReset').onclick=()=>{ CFG=Object.assign({},DEFAULTS); rSettings(); toast('คืนค่าเริ่มต้นแล้ว'); refreshAll(); };
   }
   rModels();
+  rFinCo();
 }
 /* ---------- ตั้งค่ารุ่นรถและสี — ป้อนหน้ารับรถเข้า ใบเสนอราคา และคำนวณค่างวด ---------- */
 function vmRefs(code){ return UNITS.filter(u=>u.variant===code).length; }
@@ -6143,7 +5667,7 @@ function gsSearch(){
   });
   CUSTOMERS.filter(c=>inScope(c.branch)).forEach(c=>{
     if((c.name+(c.phone||'')).toLowerCase().indexOf(q)>=0)
-      res.push({ik:'user',t:c.name,s:(c.phone||'')+' · '+c.stage,go:()=>{ closeGs(); go('cust'); setTimeout(()=>custDrawer(c.id),120); }});
+      res.push({ik:'user',t:c.name,s:(c.phone||'')+' · '+c.stage,go:()=>{ closeGs(); dealGo(c.id); }});
   });
   sScoped().forEach(s=>{ const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
     if(((c?c.name:'')+u.engine+u.model).toLowerCase().indexOf(q)>=0)
