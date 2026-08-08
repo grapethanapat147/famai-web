@@ -1088,7 +1088,7 @@ body.lock{ overflow:hidden; }
 
       <!-- ============ 5. ขายรถ ============ -->
       <section class="screen" id="s-sell">
-        <div class="tabs" id="sellTabs"><button class="on" data-p="p1">เปิดการขาย</button><button data-p="p2">คำนวณค่างวด</button><button data-p="p3">เอกสารที่ออก</button></div>
+        <div class="tabs" id="sellTabs"><button class="on" data-p="p1">เปิดการขาย</button><button data-p="p2">คำนวณค่างวด</button></div>
         <div class="pane on" id="p1"><div class="g2">
           <div class="card"><div class="hd"><h3>รายละเอียดการขาย</h3></div><div class="bd">
             <div class="f">
@@ -1136,16 +1136,6 @@ body.lock{ overflow:hidden; }
           <div class="tw"><table id="finCmp"></table></div>
           <div id="fWarn"></div>
         </div></div></div>
-        <div class="pane" id="p3"><div class="g2e">
-          <div>
-            <div class="card"><div class="hd"><h3>ประเภทเอกสาร</h3></div><div class="bd">
-              <div class="chips" id="docTypes" style="margin-bottom:var(--s2)"></div>
-              <div id="docList"></div>
-            </div></div>
-            <div class="card"><div class="hd"><h3>การขายล่าสุด</h3><div class="d">เลือกเพื่อพิมพ์เอกสารย้อนหลัง</div></div><div class="bd flush"><div class="tw"><table id="docSales"></table></div></div></div>
-          </div>
-          <div class="card"><div class="hd"><h3>ตัวอย่างเอกสาร</h3><div class="sp"></div><button class="btn sec sm noprint" id="docPrint"><svg class="i i-sm"><use href="#i-print"/></svg> พิมพ์</button></div><div class="bd docwrap"><div id="docPrev"></div></div></div>
-        </div></div>
       </section>
 
       <!-- ============ 6. โอนย้ายระหว่างสาขา ============ -->
@@ -2510,12 +2500,10 @@ function calEvents(){
     ev.push({d:t.due,k:'task',t:'ติดตาม '+(c?c.name:'')}); });
   REGS.filter(r=>inScope(r.branch)&&r.stage!=='ส่งมอบแล้ว').forEach(r=>{ const s=SALES.find(x=>x.id===r.saleId);
     const c=s&&CUSTOMERS.find(x=>x.id===s.custId); ev.push({d:r.due,k:'reg',t:'ทะเบียน '+(c?c.name:'')}); });
-  /* วันลาของคนอื่นเป็นข้อมูลส่วนตัว — คนทั่วไปเห็นเฉพาะวันลาของตัวเองบนปฏิทิน
-     (บรรทัดนี้เดิมไม่กรองอะไรเลย ทั้งที่อีเวนต์อื่นในฟังก์ชันเดียวกันกรอง inScope ทุกตัว) */
+  /* v1.11: วันลาของทีมเปิดให้ทุกคนในสาขาเห็น เพื่อประเมินความเสี่ยงงานล่วงหน้าได้
+     ป้ายบนปฏิทินบอกแค่ "ลา · ชื่อเล่น" ไม่เคยบอกประเภทการลาอยู่แล้ว จึงไม่หลุดข้อมูลส่วนตัว */
   LEAVES.filter(l=>{
       if(l.status==='ไม่อนุมัติ') return false;
-      if(l.staffId===ME.id) return true;
-      if(!(canFixAtt()||rolePerm().approve)) return false;
       const st=STAFF.find(s=>s.id===l.staffId); return st && inScope(st.branch);
     }).forEach(l=>{ const st=STAFF.find(s=>s.id===l.staffId);
     let d=l.from, n=0; while(d<=l.to && n<40){ ev.push({d,k:'leave',t:'ลา '+(st?st.nick:'')}); d=addDays(d,1); n++; } });
@@ -2828,10 +2816,9 @@ function rSell(){
     $('#sCust').onblur=$('#sPhone').onblur=()=>setTimeout(sugHide,150);
     $$('#sellTabs button').forEach(b=> b.onclick=()=>{ $$('#sellTabs button').forEach(x=>x.classList.remove('on'));
       b.classList.add('on'); $$('#s-sell .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p));
-      if(b.dataset.p==='p2') finCompare(); if(b.dataset.p==='p3') renderDocs(); });
+      if(b.dataset.p==='p2') finCompare(); });
     ['fNet','fDown'].forEach(k=> $('#'+k).oninput=finCompare);
     $('#fModel').onchange=finCompare;
-    $('#docPrint').onclick=printCurrentDoc;
   }
   /* เติมใหม่ทุกครั้ง — รับการเพิ่ม/ลบ/ปิดใช้งานไฟแนนซ์ */
   (function(){ const el=$('#sFinCo'), want=el.value, act=finActive();
@@ -2946,11 +2933,9 @@ function saveSale(force){
     +'<dt>ราคาสุทธิ</dt><dd><b>'+baht(net)+'</b>'+(pay==='finance'?' · ดาวน์ '+fmt(s.down)+' ฿':' · เงินสด')+'</dd></dl>'
     +'<div class="f" style="margin-top:var(--s3)">'
     +'<button class="btn" id="psDeal">ไปที่ดีลของลูกค้า →</button>'
-    +'<button class="btn sec" id="psDoc">พิมพ์เอกสาร</button>'
     +'<button class="btn sec" id="psSale">ดูการขายนี้</button>'
     +'<button class="btn ghost" id="psNext">ขายคันต่อไป</button></div>');
   $('#psDeal').onclick=()=>{ closeModal(); dealGo(c.id); };
-  $('#psDoc').onclick=()=>{ closeModal(); sellTab('p3'); DOC_SALE=s.id; renderDocs(); };
   $('#psSale').onclick=()=>{ closeModal(); saleDrawer(s.id); };
   $('#psNext').onclick=closeModal;
 }
@@ -3047,17 +3032,16 @@ function docNoFor(s, type){
   if(!s.docs[type]) s.docs[type]=nextDocNo(s.branch, type);
   return s.docs[type];
 }
-/* ข้อมูลที่เอกสารต้องใช้ — จากการขายจริง หรือจากฟอร์มที่ยังไม่บันทึก */
+/* ข้อมูลที่เอกสารต้องใช้ — มาจากการขายจริงเสมอ
+   ตั้งแต่ v1.11 เอกสารอยู่บนหน้าดีลซึ่งผูกกับการขายใบเดียวอยู่แล้ว
+   จึงไม่มีทางที่ DOC_SALE จะว่าง (ของเดิมมีทางแยกอ่านค่าจากฟอร์มขายที่ยังไม่บันทึก
+   ซึ่งตอนนี้เป็นโค้ดที่ไปไม่ถึง และเป็นกับดักถ้า DOC_SALE ค้างจากดีลก่อนหน้า) */
 function docData(){
-  if(DOC_SALE){
-    const s=SALES.find(x=>x.id===DOC_SALE);
-    if(s){ const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
-      return {s, u, cust:c?c.name:'—', phone:c?c.phone:'', pay:s.pay, disc:s.disc, net:s.net, down:s.down||0, date:s.soldAt}; }
-  }
-  const u=curUnit(); if(!u) return null;
-  const disc=num($('#sDisc').value);
-  return {s:null, u, cust:$('#sCust').value||'— ยังไม่ระบุ —', phone:$('#sPhone').value||'',
-    pay:$('#sPay').value, disc, net:u.retail-disc, down:num($('#sDown').value)||0, date:TODAY};
+  const s=DOC_SALE && SALES.find(x=>x.id===DOC_SALE);
+  if(!s) return null;
+  const u=UNITS.find(x=>x.id===s.unitId), c=CUSTOMERS.find(x=>x.id===s.custId);
+  if(!u) return null;
+  return {s, u, cust:c?c.name:'—', phone:c?c.phone:'', pay:s.pay, disc:s.disc, net:s.net, down:s.down||0, date:s.soldAt};
 }
 function docHTML(type, d){
   const def=DOC_DEFS[type], u=d.u, br=bOf(u.branch);
@@ -3089,50 +3073,40 @@ function docHTML(type, d){
    +'<div class="g"><span>รวมทั้งสิ้น</span><span>'+fmt(amt)+' ฿</span></div></div>'
    +'<div class="sig"><div>ผู้รับเงิน</div><div>ผู้รับสินค้า</div></div></div>';
 }
+/* ---------- ใครพิมพ์เอกสารขายได้ (v1.11 ตามที่เจ้าของสั่ง: "ให้แต่ บัญชีและผู้บริหาร") ----------
+   รวมแอดมินด้วยเพราะเป็นบัญชีเจ้าของร้านเองและมีสิทธิ์ทุกอย่างในแอปอยู่แล้ว
+   เซลล์พิมพ์ไม่ได้แล้ว — ใบเสร็จเป็นเอกสารการเงิน ต้องผ่านคนที่รับผิดชอบตัวเลข */
+const canPrintDoc = () => ['admin','manager','acct'].indexOf(ME.role) >= 0;
 function printCurrentDoc(){
+  /* ด่านอยู่ในฟังก์ชัน ไม่ใช่ที่ปุ่ม — ซ่อนปุ่มอย่างเดียวเลี่ยงได้ */
+  if(!canPrintDoc()){ toast('พิมพ์เอกสารไม่ได้','เฉพาะบัญชีและผู้บริหารเท่านั้น',1); return; }
   const d=docData(); if(!d){ toast('เลือกรถหรือรายการขายก่อน','',1); return; }
   const html=docHTML(DOC_SEL, d);
   printHTML(DOC_DEFS[DOC_SEL].copies===2 ? docCopies(html) : html);
-  if(d.s) renderDocs();   /* เลขที่เพิ่งออกจริงต้องโชว์ในตาราง */
+  if(d.s) rDeal();   /* เลขที่เพิ่งออกจริงต้องโชว์ทันที */
 }
-function renderDocs(){
-  const d=docData();
-  const pay = d? d.pay : $('#sPay').value;
-  const allowed=docAllowed(pay);
+/* ---------- เอกสารของดีลใบนี้ ----------
+   เดิมเป็นแท็บในหน้าขายรถที่ต้องเลือกการขายจากรายการก่อน ทั้งที่เอกสารเป็นของดีล ไม่ใช่ของฟอร์ม
+   ย้ายมาอยู่ในหน้าดีลจึงไม่ต้องเลือกอะไรอีก และคนที่พิมพ์ได้ (บัญชี/ผู้บริหาร) เข้าถึงได้จริง
+   ด่านสิทธิ์อยู่ใน printCurrentDoc() ไม่ใช่แค่ซ่อนส่วนนี้ */
+function dealDocs(d){
+  if(!d.s || d.s.void || !canPrintDoc()) return '';
+  DOC_SALE=d.s.id;
+  const allowed=docAllowed(d.s.pay);
   if(allowed.indexOf(DOC_SEL)<0) DOC_SEL=allowed[0];
-  $('#docTypes').innerHTML=allowed.map(t=>'<button class="chip'+(t===DOC_SEL?' on':'')+'" data-dt="'+t+'">'+esc(DOC_DEFS[t].n)+'</button>').join('');
-  $$('#docTypes .chip').forEach(b=> b.onclick=()=>{ DOC_SEL=b.dataset.dt; renderDocs(); });
-  $('#docList').innerHTML=(DOC_SALE?'<div class="note g">'+ic('check','i i-sm')+'<span>กำลังดูเอกสารของการขายจริง — เลขที่ออกครั้งแรกที่พิมพ์ แล้วใช้เลขเดิมตลอด</span></div>':'')
-    +'<p class="foot">'+esc(DOC_DEFS[DOC_SEL].n)+' พิมพ์ '+(DOC_DEFS[DOC_SEL].copies===2?'ต้นฉบับ + สำเนา (2 แผ่น)':'แผ่นเดียว')
-    +' · เลขที่เอกสารแยกตามสาขา × ประเภท × ปี</p>';
-  /* การขายล่าสุด — คลิกแถวเพื่อสลับไปพิมพ์เอกสารของรายการนั้น */
-  const recent=sScoped().slice().sort((a,b)=>b.soldAt.localeCompare(a.soldAt)).slice(0,10);
-  const dsRow=(s,ix)=>{
-      if(ix===0) return '<tr class="clk" data-dsale=""><td colspan="5">'
-        +(DOC_SALE===''?'<b>◉ ':'○ ')+'ฟอร์มที่กำลังกรอก (ยังไม่บันทึก)'+(DOC_SALE===''?'</b>':'')+'</td></tr>';
-      const c=CUSTOMERS.find(x=>x.id===s.custId), u=UNITS.find(x=>x.id===s.unitId);
-      return '<tr class="clk" data-dsale="'+s.id+'"><td>'+(DOC_SALE===s.id?'<b>◉</b> ':'○ ')+thDate(s.soldAt)+'</td>'
-        +'<td><b>'+esc(c?c.name:'—')+'</b></td><td>'+esc(u?u.model:'—')+'</td>'
-        +'<td class="n">'+money(s.net)+'</td>'
-        +'<td class="mono" style="font-size:var(--t-label)">'+esc(Object.values(s.docs||{}).concat(s.docNo&&!(s.docs&&s.docs.TAXINV)?[s.docNo]:[]).join(' · ')||'—')
-        +' <button class="lnk q" data-sdet="'+s.id+'">ดู</button></td></tr>'; };
-  const dsCard=(s,ix)=>{
-      if(ix===0) return crow('data-dsale=""',
-        (DOC_SALE===''?'◉ ':'○ ')+'ฟอร์มที่กำลังกรอก (ยังไม่บันทึก)','','','');
-      const c=CUSTOMERS.find(x=>x.id===s.custId), u=UNITS.find(x=>x.id===s.unitId);
-      return crow('data-dsale="'+s.id+'"',
-        (DOC_SALE===s.id?'◉ ':'○ ')+esc(c?c.name:'—'), money(s.net),
-        thDate(s.soldAt)+' · '+esc(u?u.model:'—'),
-        '<span class="mono" style="font-size:var(--t-label)">'+esc(Object.values(s.docs||{}).concat(s.docNo&&!(s.docs&&s.docs.TAXINV)?[s.docNo]:[]).join(' · ')||'ยังไม่ออกเลขที่')+'</span>'
-        +'<span style="flex:1"></span><button class="lnk" data-sdet="'+s.id+'">ดูการขาย</button>');
-    };
-  tbl($('#docSales'), ['วันที่','ลูกค้า','รุ่น',{t:'สุทธิ',n:1},'เลขที่ออกแล้ว'],
-    [{}].concat(recent).map(dsRow), 'ยังไม่มีการขาย',
-    [{}].concat(recent).map(dsCard));
-  $$('#docSales [data-dsale]').forEach(r=> r.onclick=()=>{ DOC_SALE=r.dataset.dsale; renderDocs(); });
-  wireSaleLinks();
-  $('#docPrev').innerHTML = d? docHTML(DOC_SEL, d) : '<div class="empty"><b>เลือกรถก่อน</b>หรือคลิกการขายล่าสุดด้านซ้าย</div>';
+  const dd=docData(); if(!dd) return '';
+  const issued=Object.keys(d.s.docs||{});
+  return '<h4 class="sec">เอกสาร</h4>'
+    +'<div class="chips" style="margin-bottom:var(--s2)">'
+      +allowed.map(t=>'<button class="chip'+(t===DOC_SEL?' on':'')+'" data-dldt="'+t+'">'+esc(DOC_DEFS[t].n)+'</button>').join('')
+      +'<span class="sp"></span><button class="btn sec sm noprint" id="dlPrint">'+ic('print','i i-sm')+' พิมพ์</button></div>'
+    +'<p class="foot">'+esc(DOC_DEFS[DOC_SEL].n)+' พิมพ์ '
+      +(DOC_DEFS[DOC_SEL].copies===2?'ต้นฉบับ + สำเนา (2 แผ่น)':'แผ่นเดียว')
+      +' · เลขที่ออกครั้งแรกที่พิมพ์ แล้วใช้เลขเดิมตลอด'
+      +(issued.length? ' · ออกแล้ว '+esc(issued.map(t=>d.s.docs[t]).join(' · ')) : '')+'</p>'
+    +'<div class="docwrap">'+docHTML(DOC_SEL, dd)+'</div>';
 }
+
 
 /* ============================= 6. โอนย้าย ============================= */
 function rTransfer(){
@@ -3454,6 +3428,7 @@ function dealDetail(d){
         +'<span>'+esc(t.kind)+' · '+thDate(t.due)+'</span>'
         +'<button class="lnk fx" data-dltask="'+t.id+'">เสร็จแล้ว</button></div>'; }).join('')
     : '<p class="foot">ไม่มีงานติดตามค้าง</p>';
+  h+=dealDocs(d);
   const sv=SERVICE.filter(x=>x.custId===d.c.id);
   if(sv.length) h+='<h4 class="sec">ประวัติเข้าศูนย์ ('+sv.length+')</h4>'
     +sv.map(v=>'<div class="frow"><span>'+esc(v.type)+' · '+thDate(v.at)+' · '+fmt(v.km)+' กม.</span></div>').join('');
@@ -3492,6 +3467,8 @@ function rDealOne(id){
   on('data-dlvoid',  cancelSale);
   on('data-dltask',  tid=>{ const t=TASKS.find(x=>x.id===tid); if(!t) return;
     t.done=true; toast('ปิดงานติดตามแล้ว'); refreshAll(); });
+  $$('#dlOne [data-dldt]').forEach(b=> b.onclick=()=>{ DOC_SEL=b.dataset.dldt; rDeal(); });
+  const pr=$('#dlPrint'); if(pr) pr.onclick=printCurrentDoc;
   const plate=()=> $('#dlPlate')? $('#dlPlate').value : null;
   $$('#dlOne [data-dlplate]').forEach(b=> b.onclick=()=>regSavePlate(b.dataset.dlplate, plate()));
   $$('#dlOne [data-dlrnext]').forEach(b=> b.onclick=()=>{
@@ -3642,13 +3619,11 @@ function saleDrawer(id){
   h+='<h4 class="sec">เอกสาร</h4>'
     +(dts.length? dts.map(t=>'<div class="frow"><span class="mono">'+esc(s.docs[t])+'</span>'
         +'<span class="tsub">'+esc(DOC_DEFS[t]?DOC_DEFS[t].n:t)+'</span></div>').join('') : '<p class="foot">ยังไม่ออกเอกสาร</p>')
-    +(canSee('sell')&&!s.void?'<div style="margin-top:var(--s1)"><button class="lnk" id="sdDocs">พิมพ์ / ออกเอกสารของการขายนี้ →</button></div>':'');
+;
   if(!s.void && (ME.role==='admin'||ME.role==='manager') && typeof cancelSale==='function')
     h+='<div class="savebar"><button class="btn dgr" id="sdVoid">ยกเลิกการขาย</button></div>';
   openDrawer('การขาย · '+(c?c.name:''), h);
   const sdd=$('#sdDeal'); if(sdd) sdd.onclick=()=>{ closeDrawer(); dealGo(c.id); };
-  const sd=$('#sdDocs'); if(sd) sd.onclick=()=>{ closeDrawer(); go('sell');
-    setTimeout(()=>{ sellTab('p3'); DOC_SALE=s.id; renderDocs(); },120); };
   const sv=$('#sdVoid'); if(sv) sv.onclick=()=>cancelSale(s.id);
 }
 /* ปุ่ม "ดูการขาย" ใช้ร่วมกันหลายหน้า — เรียกหลัง render ที่มี [data-sdet] */
@@ -4993,26 +4968,28 @@ function rHr(){
     el.innerHTML='• รูปลงเวลาเก็บอยู่ <b>'+st.n+'</b> รูป รวม <b>'+mb+' MB</b>'+(parts.length?' ('+parts.join(' · ')+')':'')
       +'<br>• เกิน 30 วันย่อเหลือ 384×288 · เกิน 1 ปีลบรูปทิ้ง เหลือแต่เวลา — เครื่องจึงไม่บวม'
       +(st.mem? '<br>• <b style="color:var(--attn)">เบราว์เซอร์นี้เก็บรูปถาวรไม่ได้</b> รูปจะหายเมื่อปิดแอป':''); });
-  /* ใบลาของคนอื่นเป็นข้อมูลส่วนตัว (ลาป่วย = ข้อมูลสุขภาพ) — คนทั่วไปเห็นเฉพาะของตัวเอง
-     ผู้มีสิทธิ์อนุมัติเห็นเฉพาะสาขาที่ตัวเองเห็นได้ ของเดิมโชว์ทุกคนทุกสาขาให้ทุกบทบาท */
-  const lvSee = (canFixAtt()||rolePerm().approve)
-    ? LEAVES.filter(l=>{ const s=STAFF.find(x=>x.id===l.staffId); return s && inScope(s.branch); })
-    : LEAVES.filter(l=>l.staffId===ME.id);
+  /* ---------- ใครเห็นใบลาแค่ไหน (v1.11 — เจ้าของสั่ง "เปิดวันลาให้เพื่อนร่วมงานเห็น แต่ไม่เปิดรายละเอียด") ----------
+     เพื่อนร่วมงานในสาขาเดียวกันเห็น "ใครลาวันไหน และอนุมัติแล้วหรือยัง" เพื่อประเมินความเสี่ยงงานได้
+     แต่ไม่เห็น "ลาอะไร" เพราะประเภทการลาบอกเรื่องส่วนตัว (ลาป่วย = ข้อมูลสุขภาพ)
+     ด่านอยู่ใน lvView() ที่เป็นคนตัดสินว่าเปิดอะไร ไม่ใช่การซ่อน DOM ทีหลัง */
+  const lvBoss = canFixAtt()||rolePerm().approve;
+  const lvSee = LEAVES.filter(l=>{ const s=STAFF.find(x=>x.id===l.staffId); return s && inScope(s.branch); });
+  const lvView = l => ({ mine: l.staffId===ME.id,
+    type: (l.staffId===ME.id || lvBoss) ? l.type : 'ลา' });
   const lvAct = l => (l.status==='รออนุมัติ' && rolePerm().approve && l.staffId!==ME.id);
+  const lvPill = l => pill(l.status, l.status==='อนุมัติแล้ว'?'good':(l.status==='ไม่อนุมัติ'?'bad':'warn'));
+  const lvBtns = (l,q) => lvAct(l)
+    ? '<button class="lnk" data-lv="'+l.id+'" data-ok="1">อนุมัติ</button>'+(q?'':' · ')
+      +'<button class="lnk'+(q?' q':'')+'" data-lv="'+l.id+'" data-ok="0">ไม่อนุมัติ</button>' : '';
   tbl($('#lvTable'), ['พนักงาน','ประเภท','ตั้งแต่','ถึง','สถานะ',''],
-    lvSee.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId);
-      return '<tr><td><b>'+esc(s?s.nick:'—')+'</b></td><td>'+esc(l.type)+'</td><td>'+thDate(l.from)+'</td><td>'+thDate(l.to)+'</td>'
-        +'<td>'+pill(l.status, l.status==='อนุมัติแล้ว'?'good':(l.status==='ไม่อนุมัติ'?'bad':'warn'))+'</td>'
-        +'<td>'+(lvAct(l)?
-          '<button class="lnk" data-lv="'+l.id+'" data-ok="1">อนุมัติ</button> · <button class="lnk" data-lv="'+l.id+'" data-ok="0">ไม่อนุมัติ</button>':'')+'</td></tr>'; }),
-    canFixAtt()? 'ไม่มีใบลา' : 'คุณยังไม่มีใบลา',
-    lvSee.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId);
-      return crow('', esc(s?s.nick:'—'),
-        pill(l.status, l.status==='อนุมัติแล้ว'?'good':(l.status==='ไม่อนุมัติ'?'bad':'warn')),
-        esc(l.type)+' · '+thDate(l.from)+' – '+thDate(l.to),
-        (lvAct(l)?
-          '<button class="lnk" data-lv="'+l.id+'" data-ok="1">อนุมัติ</button>'
-          +'<button class="lnk q" data-lv="'+l.id+'" data-ok="0">ไม่อนุมัติ</button>':'')); }));
+    lvSee.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId), v=lvView(l);
+      return '<tr'+(v.mine?' class="self"':'')+'><td><b>'+esc(s?s.nick:'—')+'</b></td><td>'+esc(v.type)+'</td>'
+        +'<td>'+thDate(l.from)+'</td><td>'+thDate(l.to)+'</td>'
+        +'<td>'+lvPill(l)+'</td><td>'+lvBtns(l)+'</td></tr>'; }),
+    'ยังไม่มีใบลาในสาขานี้',
+    lvSee.map(l=>{ const s=STAFF.find(x=>x.id===l.staffId), v=lvView(l);
+      return crow(v.mine?'class="self"':'', esc(s?s.nick:'—'), lvPill(l),
+        esc(v.type)+' · '+thDate(l.from)+' – '+thDate(l.to), lvBtns(l,1)); }));
   $$('[data-lv]').forEach(b=> b.onclick=()=>{ const l=LEAVES.find(x=>x.id===b.dataset.lv);
     /* อนุมัติใบลาของตัวเองไม่ได้ — ใบลาที่อนุมัติแล้วลดวันขาดบันทึก จึงกระทบเงินโดยตรง */
     if(!l || !lvAct(l)){ toast('อนุมัติใบลาของตัวเองไม่ได้','ต้องให้ผู้มีสิทธิ์คนอื่นอนุมัติ',1); return; }
