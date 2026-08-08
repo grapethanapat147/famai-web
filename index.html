@@ -454,6 +454,39 @@ textarea.inp{ height:auto; padding:var(--s1) var(--s2); resize:vertical; line-he
 .bar .bf,.prog .bf{ height:100%; border-radius:var(--r-pill); background:var(--ink); }
 .bar .bf.g,.prog .bf.g{ background:var(--pos); } .bar .bf.w{ background:var(--attn); }
 .bar .bf.d,.prog .bf.d{ background:var(--accent); }
+
+/* -------------------- PSTEP — แถบความคืบหน้าเป็นเลขขั้น 1..N --------------------
+   ใช้แทนกระดานคัมบังในงานติดตามลูกค้า บรรทัดเดียวบอกครบว่าอยู่ขั้นไหนและเหลืออีกกี่ขั้น
+   ไม่มีกล่องหุ้มเลย มีแค่ตัวเลข เส้นเชื่อม และสีที่บอกว่าถึงหรือยัง
+   ขั้นที่ผ่านแล้ว = วงหมึกทึบ · ขั้นปัจจุบัน = วงแดงทึบ · ขั้นที่ยังไม่ถึง = วงขอบบาง */
+.pstep{ display:flex; align-items:center; min-width:0; }
+.pstep .pst{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:var(--s-half); }
+.pstep .pn{ width:22px; height:22px; border-radius:var(--r-pill); position:relative;
+  border:1px solid var(--hairline); background:var(--card); color:var(--muted);
+  font-size:11px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+  transition:background var(--dur-ui) var(--ease), color var(--dur-ui) var(--ease); }
+/* วงกลม 22px เล็กเกินกว่าจะกดถูกด้วยนิ้ว — ขยายพื้นที่กดเป็น 44px โดยไม่ขยับ layout
+   หัวและท้ายไม่ยื่นออกข้าง ไม่งั้นแถบล้นกรอบตัวเองไปฝั่งละ 6px */
+.pstep button.pn::after{ content:''; position:absolute; inset:-11px -6px; }
+.pstep .pst:first-child button.pn::after{ left:0; }
+.pstep .pst:last-child  button.pn::after{ right:0; }
+.pstep button.pn:active{ transform:scale(.92); }
+.pstep .pn.done{ background:var(--ink); border-color:var(--ink); color:var(--card); }
+.pstep .pn.now{ background:var(--accent); border-color:var(--accent); color:var(--paper); }
+/* ตกราง (เช่นไฟแนนซ์ไม่ผ่าน) — วงแดงกลวง บอกว่าหยุดอยู่ตรงนี้ ไม่ได้เดินต่อ */
+.pstep.off .pn.now{ background:var(--card); border-color:var(--accent); color:var(--accent); }
+.pstep .pl{ flex:1 1 auto; min-width:10px; height:2px; background:var(--hairline-2); }
+.pstep .pl.on{ background:var(--ink); }
+/* แบบมีชื่อขั้นใต้ตัวเลข ใช้ในแผ่นรายละเอียดที่มีที่ว่างพอ */
+.pstep.lab{ align-items:flex-start; }
+.pstep.lab .pst{ flex:1 1 0; min-width:0; }
+.pstep.lab .pl{ flex:0 0 var(--s1); margin-top:11px; }
+.pstep.lab em{ font-style:normal; font-size:11px; line-height:1.25; color:var(--muted);
+  text-align:center; overflow-wrap:anywhere; }
+.pstep.lab .pst.at em{ color:var(--ink); font-weight:600; }
+.pslab{ font-size:var(--t-label); color:var(--muted); white-space:nowrap; }
+.pslab.off{ color:var(--accent); }
 .vbars{ display:flex; align-items:flex-end; gap:var(--s2); height:160px; padding-top:var(--s3); }
 .vb{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; height:100%; }
 .vb .col{ width:100%; max-width:40px; height:100%; background:var(--hairline-2);
@@ -1178,7 +1211,7 @@ body.lock{ overflow:hidden; }
           <div><div class="card"><div class="hd"><h3>Pipeline ลูกค้า</h3></div><div class="bd" id="funnel"></div></div>
           <div class="card"><div class="hd"><h3>รอบการติดตาม</h3></div><div class="bd" id="cadence"></div></div></div>
         </div>
-        <div class="card"><div class="hd"><h3>ลูกค้า × รถ</h3><div class="d">เปลี่ยนสถานะได้จากแถว</div><div class="sp"></div>
+        <div class="card"><div class="hd"><h3>ลูกค้า × รถ</h3><div class="d">แตะเลขขั้นที่อยู่ติดกันเพื่อเลื่อน</div><div class="sp"></div>
           <select class="inp ct" id="fwStage"></select>
           <input class="inp ct" id="fwQ" placeholder="ค้นหาชื่อ" style="width:180px;font-size:var(--t-table)">
           <button class="btn sec sm fbtn noprint" id="fwFilt"><svg class="i i-sm"><use href="#i-sliders"/></svg> ตัวกรอง</button>
@@ -2065,6 +2098,25 @@ function crow(attrs, title, right, sub, foot){
     +(foot?'<div class="crf">'+foot+'</div>':'')+'</div>';
 }
 function pill(txt, kind){ return '<span class="pill p-'+kind+'">'+esc(txt)+'</span>'; }
+/* แถบความคืบหน้าเป็นเลขขั้น 1..N — ใช้แทนกระดานคัมบัง เห็นในบรรทัดเดียวว่าอยู่ขั้นไหน เหลืออีกกี่ขั้น
+   track = ชื่อขั้นเรียงตามลำดับจริง (ต้องเป็นเส้นตรง ไม่มีทางแยก)
+   i     = ดัชนีขั้นปัจจุบัน นับจาก 0
+   o.off = ตกราง เช่นลูกค้าที่ไฟแนนซ์ไม่ผ่าน — ขั้นปัจจุบันเป็นวงแดงกลวง ไม่นับว่าเดินต่อ
+   o.act = ฟังก์ชันคืน attribute ให้ปุ่มขั้นนั้น ใส่แล้วกดเลื่อนขั้นได้ ไม่ใส่คือแสดงอย่างเดียว
+           กดได้เฉพาะขั้นที่ติดกับขั้นปัจจุบัน ±1 — ข้ามขั้นแล้วประวัติการติดตามขาดช่วง
+   o.lab = โชว์ชื่อขั้นใต้ตัวเลข ใช้ในแผ่นรายละเอียดที่มีที่ว่างพอ */
+function steps(track, i, o){
+  o=o||{};
+  return '<div class="pstep'+(o.off?' off':'')+(o.lab?' lab':'')+'">'
+    +track.map((t,ix)=>{
+      const cls='pn'+(ix<i?' done':'')+(ix===i?' now':'');
+      const node=(o.act && Math.abs(ix-i)===1)
+        ? '<button class="'+cls+'" '+o.act(ix)+' title="ย้ายไป '+esc(t)+'">'+(ix+1)+'</button>'
+        : '<span class="'+cls+'" title="'+esc(t)+'">'+(ix+1)+'</span>';
+      return (ix? '<i class="pl'+(ix<=i?' on':'')+'"></i>' : '')
+        +'<div class="pst'+(ix===i?' at':'')+'">'+node+(o.lab?'<em>'+esc(t)+'</em>':'')+'</div>';
+    }).join('')+'</div>';
+}
 function ageTag(d){ const a=CFG.aging; if(d<=a*0.34) return pill(d+' วัน','good');
   if(d<=a) return pill(d+' วัน','warn'); return pill(d+' วัน','bad'); }
 
@@ -3270,7 +3322,41 @@ function qDraw(no){
 }
 
 /* ============================= 8. ลูกค้า (ข้อมูลเบื้องต้น) ============================= */
+/* CUST_STAGES = ค่าที่เก็บได้ทั้งหมด ใช้เป็นตัวเลือกในตัวกรอง
+   CUST_TRACK  = เส้นทางจริงที่ลูกค้าเดิน เป็นเส้นตรง 5 ขั้น ไม่มีทางแยก
+   "ไม่ผ่าน" ไม่ใช่ขั้นที่ 5 แต่คือการตกรางที่ขั้น 3 (ทำสัญญา) — ยื่นแล้วไฟแนนซ์ไม่อนุมัติ
+   ของเดิมเก็บ "ไม่ผ่าน" ไว้กลางลิสต์เดียวกัน ปุ่ม "ขั้นถัดไป" จาก "ผ่าน" จึงเด้งไป "ไม่ผ่าน"
+   และจาก "ไม่ผ่าน" เด้งไป "รับรถสำเร็จ" ได้ ทั้งที่ทั้งสองทางไม่มีอยู่จริงในธุรกิจ */
 const CUST_STAGES=['เข้ามาดูรถ','สนใจ','ทำสัญญา','ผ่าน','ไม่ผ่าน','รับรถสำเร็จ'];
+const CUST_TRACK =['เข้ามาดูรถ','สนใจ','ทำสัญญา','ผ่าน','รับรถสำเร็จ'];
+const CUST_OFF='ไม่ผ่าน';
+const custStep = stage => stage===CUST_OFF
+  ? { i:CUST_TRACK.indexOf('ทำสัญญา'), off:true }
+  : { i:Math.max(0, CUST_TRACK.indexOf(stage)), off:false };
+/* เลื่อนขั้นลูกค้า — ด่านอยู่ในฟังก์ชัน ไม่ใช่ที่ปุ่ม เพราะปุ่มที่ไม่ได้วาดยังถูกเรียกจากที่อื่นได้
+   1) ขยับได้ทีละขั้นจากขั้นปัจจุบันเท่านั้น
+   2) "รับรถสำเร็จ" ตั้งเองไม่ได้ — ขั้นนี้แปลว่ารถถึงมือลูกค้าแล้ว ต้องมาจากการกดส่งมอบในงานทะเบียน
+      (ทุกการขายสร้างงานทะเบียนให้อัตโนมัติตอน saveSale จึงไม่มีใครค้างอยู่ขั้น 4 ตลอดไป) */
+function custMove(id, ix){
+  const c=CUSTOMERS.find(x=>x.id===id); if(!c) return false;
+  const st=custStep(c.stage), to=CUST_TRACK[ix];
+  if(!to) return false;
+  if(Math.abs(ix-st.i)!==1){ toast('เลื่อนได้ทีละขั้น','กดเลขที่อยู่ติดกับขั้นปัจจุบัน',1); return false; }
+  if(to==='รับรถสำเร็จ'){ toast('ตั้ง "รับรถสำเร็จ" เองไม่ได้','ขั้นนี้ขยับให้เองตอนกดส่งมอบในหน้าทะเบียน',1); return false; }
+  c.stage=to;
+  toast('อัปเดตสถานะแล้ว', c.name+' → ขั้น '+(ix+1)+' '+to);
+  refreshAll();
+  return true;
+}
+/* ทำเครื่องหมายว่าไฟแนนซ์ไม่ผ่าน — ทางเดียวที่ตั้งค่านี้ด้วยมือได้
+   ปกติมาเองจากเคสสินเชื่อที่ถูกปฏิเสธ (syncFinToReg) ตัวนี้ไว้ให้เซลล์บันทึกกรณีที่รู้ก่อน */
+function custReject(id, on){
+  const c=CUSTOMERS.find(x=>x.id===id); if(!c) return false;
+  if(on){ c.stage=CUST_OFF; toast('ทำเครื่องหมายไม่ผ่านแล้ว', c.name); }
+  else  { c.stage='ทำสัญญา'; toast('เอาเครื่องหมายไม่ผ่านออกแล้ว', c.name+' → ทำสัญญา'); }
+  refreshAll();
+  return true;
+}
 function custModal(id){
   const c=id? CUSTOMERS.find(x=>x.id===id) : null;
   const opt=(list,sel)=>list.map(x=>'<option'+(x===sel?' selected':'')+'>'+esc(x)+'</option>').join('');
@@ -3350,47 +3436,73 @@ function rFollow(){
     toast('ปิดงานติดตามแล้ว'); refreshAll(); });
 
   const cs=CUSTOMERS.filter(c=>inScope(c.branch));
-  $('#funnel').innerHTML=CUST_STAGES.map(s=>{ const n=cs.filter(c=>c.stage===s).length;
-    const mx=Math.max(1,...CUST_STAGES.map(x=>cs.filter(c=>c.stage===x).length));
-    return '<div class="bar"><div class="bl"><span>'+esc(s)+'</span><b>'+n+'</b></div>'
-      +'<div class="bt"><div class="bf '+(s==='ไม่ผ่าน'?'d':(s==='รับรถสำเร็จ'?'g':''))+'" style="width:'+(n/mx*100)+'%"></div></div></div>'; }).join('');
+  /* เรียงตามเส้นทางจริง 5 ขั้น แล้วต่อท้ายด้วย "ไม่ผ่าน" ซึ่งเป็นการตกราง ไม่ใช่ปลายทาง
+     เลขหน้าชื่อขั้นตรงกับเลขบนแถบความคืบหน้าของแต่ละคน จะได้อ่านคู่กันได้ */
+  $('#funnel').innerHTML=CUST_TRACK.concat([CUST_OFF]).map((s,ix)=>{
+    const n=cs.filter(c=>c.stage===s).length;
+    const mx=Math.max(1,...CUST_TRACK.concat([CUST_OFF]).map(x=>cs.filter(c=>c.stage===x).length));
+    return '<div class="bar"><div class="bl"><span>'+(ix<CUST_TRACK.length?(ix+1)+' · ':'')+esc(s)+'</span><b>'+n+'</b></div>'
+      +'<div class="bt"><div class="bf '+(s===CUST_OFF?'d':(s==='รับรถสำเร็จ'?'g':''))+'" style="width:'+(n/mx*100)+'%"></div></div></div>'; }).join('');
   const labels={7:'ถามความรู้สึกหลังออกรถ',30:'เช็กระยะและเรื่องทะเบียน',90:'เช็กระยะครั้งถัดไป',365:'ต่อ พ.ร.บ. / เสนอเปลี่ยนรถ',1095:'เสนอเปลี่ยนรถใหม่'};
   $('#cadence').innerHTML=String(CFG.cadence).split(',').map(d=>'<div style="display:flex;gap:var(--s2);padding:var(--s1) 0;border-bottom:1px solid var(--hairline-2);font-size:var(--t-table)">'
     +pill(d+' วัน','brand')+'<span>'+esc(labels[+d]||'ติดตามลูกค้า')+'</span></div>').join('');
 
-  /* ลูกค้า × รถ — แถวละคน เปลี่ยนสถานะได้ทันที */
+  /* ลูกค้า × รถ — แถวละคน กดเลขขั้นที่อยู่ติดกันเพื่อเลื่อนได้ทันที */
   const q=$('#fwQ').value.trim().toLowerCase(), st=$('#fwStage').value;
   const fwL=cs.filter(c=>(!st||c.stage===st)&&(!q||c.name.toLowerCase().indexOf(q)>=0)).map(c=>{
       const s=SALES.find(x=>x.custId===c.id && !x.void), u=s&&UNITS.find(x=>x.id===s.unitId);
       const veh = u? u.model+' · '+u.color+' <span class="tsub mono">'+u.engine+'</span>'
                 : esc(PRICE[c.variant]?PRICE[c.variant].m+' (สนใจ)':c.variant||'—');
-      return {c, veh, i:CUST_STAGES.indexOf(c.stage), open:TASKS.filter(t=>t.custId===c.id&&!t.done).length}; });
-  const fwMv=({c,i})=>(i>0?'<button class="lnk" data-fwmv="'+c.id+'|-1">◀</button> ':'')
-    +(i<CUST_STAGES.length-1&&c.stage!=='รับรถสำเร็จ'?'<button class="lnk" data-fwmv="'+c.id+'|1">'+esc(CUST_STAGES[i+1])+' ▶</button>':'');
-  tbl($('#fwTable'), ['ลูกค้า','รถที่สนใจ/ซื้อ','เซลล์','สถานะ','เลื่อนสถานะ',{t:'งานค้าง',n:1}],
+      return {c, veh, s:custStep(c.stage), open:TASKS.filter(t=>t.custId===c.id&&!t.done).length}; });
+  const fwBar = x => steps(CUST_TRACK, x.s.i, { off:x.s.off,
+    act: ix => 'data-fwst="'+x.c.id+'|'+ix+'"' });
+  /* ข้อความกำกับ — คนที่ไม่ได้มองแถบยังรู้ว่าอยู่ขั้นไหน และคนตาบอดสีอ่านได้ */
+  const fwNow = x => x.s.off
+    ? '<span class="pslab off">ไม่ผ่าน — หยุดที่ขั้น '+(x.s.i+1)+'</span>'
+    : '<span class="pslab">ขั้น '+(x.s.i+1)+'/'+CUST_TRACK.length+' · '+esc(CUST_TRACK[x.s.i])+'</span>';
+  tbl($('#fwTable'), ['ลูกค้า','รถที่สนใจ/ซื้อ','เซลล์','ความคืบหน้า',{t:'งานค้าง',n:1}],
     fwL.map(x=>'<tr class="clk" data-cust="'+x.c.id+'"><td><b>'+esc(x.c.name)+'</b><div class="tsub">'+esc(x.c.phone||'')+'</div></td>'
         +'<td>'+x.veh+'</td><td>'+esc(x.c.owner||'—')+'</td>'
-        +'<td>'+pill(x.c.stage, x.c.stage==='รับรถสำเร็จ'?'good':(x.c.stage==='ไม่ผ่าน'?'bad':'info'))+'</td>'
-        +'<td style="white-space:nowrap">'+fwMv(x)+'</td><td class="n">'+(x.open||'—')+'</td></tr>'),
+        +'<td style="min-width:190px">'+fwBar(x)+'<div style="margin-top:var(--s-half)">'+fwNow(x)+'</div></td>'
+        +'<td class="n">'+(x.open||'—')+'</td></tr>'),
     'ไม่พบลูกค้าตามเงื่อนไข',
     fwL.map(x=>crow('data-cust="'+x.c.id+'"',
       esc(x.c.name),
-      pill(x.c.stage, x.c.stage==='รับรถสำเร็จ'?'good':(x.c.stage==='ไม่ผ่าน'?'bad':'info')),
+      x.s.off? '<span class="pslab off">ไม่ผ่าน</span>' : '<span class="pslab">'+(x.s.i+1)+'/'+CUST_TRACK.length+'</span>',
       x.veh+' · '+esc(x.c.owner||'—')+(x.open?' · ค้าง '+x.open+' งาน':''),
-      fwMv(x))));
+      fwBar(x)+fwNow(x))));
   $$('#fwTable [data-cust]').forEach(r=> r.onclick=()=>custDrawer(r.dataset.cust));
-  $$('#fwTable [data-fwmv]').forEach(b=> b.onclick=e=>{ e.stopPropagation();
-    const [id,dir]=b.dataset.fwmv.split('|'); const c=CUSTOMERS.find(x=>x.id===id);
-    const i=CUST_STAGES.indexOf(c.stage)+(+dir);
-    if(i>=0&&i<CUST_STAGES.length){ c.stage=CUST_STAGES[i]; toast('อัปเดตสถานะแล้ว', c.name+' → '+c.stage); rFollow(); } });
+  wireCustSteps('#fwTable');
   fsSync('follow');
+}
+/* ปุ่มเลขขั้นอยู่ในแถวที่กดแล้วเปิดแผ่นลูกค้า — ต้องหยุด event ไม่ให้ทะลุขึ้นไป
+   ใช้ร่วมกันทั้งในตารางและในแผ่นรายละเอียด จะได้ไม่มีกติกาสองชุด */
+function wireCustSteps(scope, after){
+  $$(scope+' [data-fwst]').forEach(b=> b.onclick=e=>{ e.stopPropagation();
+    const [id,ix]=b.dataset.fwst.split('|');
+    if(custMove(id, +ix) && after) after(id); });
+  $$(scope+' [data-fwrej]').forEach(b=> b.onclick=e=>{ e.stopPropagation();
+    const [id,on]=b.dataset.fwrej.split('|');
+    if(custReject(id, on==='1') && after) after(id); });
 }
 function custDrawer(id){
   const c=CUSTOMERS.find(x=>x.id===id); if(!c) return;
   const ss=SALES.filter(s=>s.custId===id), ts=TASKS.filter(t=>t.custId===id), sv=SERVICE.filter(s=>s.custId===id);
+  const cst=custStep(c.stage);
   let h='<dl class="kv"><dt>ชื่อ</dt><dd><b>'+esc(c.name)+'</b></dd><dt>เบอร์</dt><dd>'+esc(c.phone||'—')+'</dd>'
-    +'<dt>รู้จักจาก</dt><dd>'+esc(c.src)+'</dd><dt>สถานะ</dt><dd>'+pill(c.stage,'info')+'</dd>'
+    +'<dt>รู้จักจาก</dt><dd>'+esc(c.src)+'</dd>'
     +'<dt>เซลล์ที่ดูแล</dt><dd>'+esc(c.owner||'—')+'</dd><dt>สาขา</dt><dd>'+esc(bName(c.branch))+'</dd></dl>';
+  /* แถบความคืบหน้าแบบเต็ม มีชื่อขั้นใต้ตัวเลข — ในแผ่นมีที่ว่างพอ ไม่ต้องย่อเหมือนในตาราง
+     กดเลขที่อยู่ติดกับขั้นปัจจุบันเพื่อเลื่อน ด่านทั้งหมดอยู่ใน custMove() */
+  h+='<h4 class="sec">ความคืบหน้า</h4>'
+    +steps(CUST_TRACK, cst.i, { off:cst.off, lab:1, act: ix => 'data-fwst="'+c.id+'|'+ix+'"' })
+    +'<div style="margin-top:var(--s2);display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap">'
+    +(cst.off? '<span class="pslab off">ไฟแนนซ์ไม่ผ่าน — หยุดที่ขั้น '+(cst.i+1)+' '+esc(CUST_TRACK[cst.i])+'</span>'
+             : '<span class="pslab">ขั้น '+(cst.i+1)+'/'+CUST_TRACK.length+' · '+esc(CUST_TRACK[cst.i])+'</span>')
+    +(cst.off? '<button class="lnk" data-fwrej="'+c.id+'|0">เอาเครื่องหมายไม่ผ่านออก</button>'
+       : (cst.i>=CUST_TRACK.indexOf('ทำสัญญา') && c.stage!=='รับรถสำเร็จ'
+          ? '<button class="lnk" data-fwrej="'+c.id+'|1">ทำเครื่องหมายว่าไม่ผ่าน</button>' : ''))
+    +'</div>';
   h+='<h4 class="sec">ประวัติการซื้อ ('+ss.length+')</h4>';
   h+= ss.length? ss.map(s=>{ const u=UNITS.find(x=>x.id===s.unitId);
     return '<div style="padding:var(--s1) 0;border-bottom:1px solid var(--hairline-2);font-size:var(--t-table)"><b>'+esc(u.model)+'</b> · '+esc(u.color)
@@ -3405,6 +3517,8 @@ function custDrawer(id){
       +(t.done?pill('เสร็จ','good'):pill(t.kind,'brand'))+'<span>'+thDate(t.due)+'</span></div>').join('') : '<div class="tsub">—</div>';
   openDrawer(c.name, h);
   wireSaleLinks();
+  /* เลื่อนขั้นจากในแผ่นแล้ววาดแผ่นใหม่ทันที ไม่งั้นแถบยังค้างที่ขั้นเดิมทั้งที่ข้อมูลเปลี่ยนแล้ว */
+  wireCustSteps('#drwB', cid => custDrawer(cid));
 }
 
 /* ---------- มุมมองการขายหนึ่งรายการ — ฮับต่อยอดหลังขาย: สินเชื่อ / ทะเบียน / เอกสาร ---------- */
