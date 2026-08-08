@@ -247,7 +247,7 @@ ${app.lanes.map(l => `<tr><td><b>${esc(l.n)}</b></td><td>${l.s.map(s => {
       roles: ROLES, lanes: LANES, cfg: { company: CFG.company }
     }));
     const stamp = new Date().toISOString().slice(0, 10);
-    app.meta = [app.cfg.company, 'ระบบจัดการร้าน v1.5', 'สร้างเมื่อ ' + stamp,
+    app.meta = [app.cfg.company, 'ระบบจัดการร้าน v1.12', 'สร้างเมื่อ ' + stamp,
       MASK ? 'ปิดบังเลขตัวรถและเลขเอกสารแล้ว' : 'แสดงข้อมูลจริงทั้งหมด'];
     await page.close();
 
@@ -259,8 +259,8 @@ ${app.lanes.map(l => `<tr><td><b>${esc(l.n)}</b></td><td>${l.s.map(s => {
       await p.click('#lgGo');
       await p.waitForTimeout(500);
       const want = app.menu.filter(m => m.k && m.r.includes(role)).map(m => m.k)
-        .filter(k => ['dash', 'stock', 'sell', 'quote', 'follow', 'reg', 'fin', 'ar', 'service', 'parts',
-          'partsale', 'recv', 'transfer', 'attend', 'hr', 'payroll', 'report', 'expense', 'settings', 'users'].includes(k))
+        .filter(k => ['dash', 'stock', 'sell', 'quote', 'deal', 'ar', 'service', 'parts',
+          'recv', 'transfer', 'attend', 'hr', 'payroll', 'report', 'expense', 'settings', 'users'].includes(k))
         .slice(0, 6);
       const shots = await shoot(p, want);
       await p.close();

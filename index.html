@@ -1262,58 +1262,63 @@ body.lock{ overflow:hidden; }
         <div class="pane" id="v3"><div class="card"><div class="hd"><h3>เตือนเช็กระยะ</h3><div class="d">ตามรอบที่ตั้งไว้ในหน้าตั้งค่า</div><div class="sp"></div><button class="btn sec sm" id="svLine">รายการส่ง LINE</button></div><div class="bd flush"><div class="tw"><table id="svRemind"></table></div></div></div></div>
       </section>
 
-      <!-- ============ 13. สต๊อกอะไหล่ ============ -->
+
+
+
+      <!-- ============ 13. อะไหล่และของแถม ============
+           รวมของเดิม 3 หน้า (สต๊อกอะไหล่ · เบิกและขายอะไหล่ · ของแถม) เป็นแท็บในหน้าเดียว
+           ทั้งสามเป็น "ของในร้านที่ต้องนับให้ตรง" เหมือนกัน แยกเป็นสามเมนูทำให้ต้องเดินหาทุกครั้ง
+           สิทธิ์ยังแยกรายแท็บเหมือนเดิม ไม่ได้เปิดกว้างขึ้นเพราะรวมหน้า -->
       <section class="screen" id="s-parts">
-        <div class="kpis k3" id="pKpi"></div>
-        <div class="g2">
-          <div class="card"><div class="hd"><h3>อะไหล่คงเหลือ</h3><div class="sp"></div><button class="lnk" id="expParts"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="pTable"></table></div></div></div>
-          <div class="card"><div class="hd"><h3>เพิ่ม / รับอะไหล่</h3></div><div class="bd">
-            <div class="f">
-              <div class="f2"><div><label class="fl">รหัส</label><input class="inp" id="pCode" placeholder="PART-041"></div>
-              <div><label class="fl">ชื่อ</label><input class="inp" id="pName" placeholder="ผ้าเบรกหน้า"></div></div>
-              <div class="f3"><div><label class="fl">ต้นทุน</label><input class="inp num" id="pCost" value="0"></div>
-              <div><label class="fl">ราคาขาย</label><input class="inp num" id="pPrice" value="0"></div>
-              <div><label class="fl">จำนวน</label><input class="inp num" id="pQty" value="0"></div></div>
-              <div><label class="fl">จุดสั่งซื้อ (ต่ำกว่านี้ให้เตือน)</label><input class="inp num" id="pMin" value="3"></div>
-            </div>
-            <div class="savebar"><button class="btn" id="pSave">บันทึก</button></div>
-          </div></div>
-        </div>
-      </section>
-
-      <!-- ============ 14. เบิกและขายอะไหล่ ============ -->
-      <section class="screen" id="s-partsale">
-        <div class="g2">
-          <div class="card"><div class="hd"><h3>ตัดสต๊อกอะไหล่</h3></div><div class="bd">
-            <div class="f">
-              <div><label class="fl">อะไหล่</label><select class="inp" id="msPart"></select></div>
-              <div class="f3">
-                <div><label class="fl">จำนวน</label><input class="inp num" id="msQty" value="1"></div>
-                <div><label class="fl">ประเภท</label><select class="inp" id="msType"><option value="sale">ขายหน้าร้าน</option><option value="job">เบิกเข้าใบงานซ่อม</option></select></div>
-                <div><label class="fl">สาขา</label><select class="inp" id="msBranch"></select></div>
+        <div class="tabs" id="ptTabs"></div>
+        <div class="pane on" id="pt1">
+          <div class="kpis k3" id="pKpi"></div>
+          <div class="g2">
+            <div class="card"><div class="hd"><h3>อะไหล่คงเหลือ</h3><div class="sp"></div><button class="lnk" id="expParts"><svg class="i i-sm"><use href="#i-download"/></svg> ส่งออก</button></div><div class="bd flush"><div class="tw"><table id="pTable"></table></div></div></div>
+            <div class="card"><div class="hd"><h3>เพิ่ม / รับอะไหล่</h3></div><div class="bd">
+              <div class="f">
+                <div class="f2"><div><label class="fl">รหัส</label><input class="inp" id="pCode" placeholder="PART-041"></div>
+                <div><label class="fl">ชื่อ</label><input class="inp" id="pName" placeholder="ผ้าเบรกหน้า"></div></div>
+                <div class="f3"><div><label class="fl">ต้นทุน</label><input class="inp num" id="pCost" value="0"></div>
+                <div><label class="fl">ราคาขาย</label><input class="inp num" id="pPrice" value="0"></div>
+                <div><label class="fl">จำนวน</label><input class="inp num" id="pQty" value="0"></div></div>
+                <div><label class="fl">จุดสั่งซื้อ (ต่ำกว่านี้ให้เตือน)</label><input class="inp num" id="pMin" value="3"></div>
               </div>
-              <div id="msPrev"></div>
-            </div>
-            <div class="savebar"><button class="btn" id="msSave">บันทึก</button></div>
-          </div></div>
-          <div class="card"><div class="hd"><h3>การเคลื่อนไหวล่าสุด</h3></div><div class="bd flush"><div class="tw"><table id="msTable"></table></div></div></div>
+              <div class="savebar"><button class="btn" id="pSave">บันทึก</button></div>
+            </div></div>
+          </div>
         </div>
-      </section>
-
-      <!-- ============ 15. ของแถม ============ -->
-      <section class="screen" id="s-gift">
-        <div class="g2">
-          <div class="card"><div class="hd"><h3>สต๊อกของแถม</h3></div><div class="bd flush"><div class="tw"><table id="gTable"></table></div></div></div>
-          <div class="card"><div class="hd"><h3>เพิ่ม / รับของแถม</h3></div><div class="bd">
-            <div class="f">
-              <div><label class="fl">ชื่อของแถม</label><input class="inp" id="gName" placeholder="หมวกกันน็อก"></div>
-              <div class="f3"><div><label class="fl">ต้นทุน/ชิ้น</label><input class="inp num" id="gCost" value="0"></div>
-              <div><label class="fl">จำนวน</label><input class="inp num" id="gQty" value="0"></div>
-              <div><label class="fl">จุดสั่งซื้อ</label><input class="inp num" id="gMin" value="5"></div></div>
-              <div><label class="fl">สาขา</label><select class="inp" id="gBranch"></select></div>
-            </div>
-            <div class="savebar"><button class="btn" id="gSave">บันทึก</button></div>
-          </div></div>
+        <div class="pane" id="pt2">
+          <div class="g2">
+            <div class="card"><div class="hd"><h3>ตัดสต๊อกอะไหล่</h3></div><div class="bd">
+              <div class="f">
+                <div><label class="fl">อะไหล่</label><select class="inp" id="msPart"></select></div>
+                <div class="f3">
+                  <div><label class="fl">จำนวน</label><input class="inp num" id="msQty" value="1"></div>
+                  <div><label class="fl">ประเภท</label><select class="inp" id="msType"><option value="sale">ขายหน้าร้าน</option><option value="job">เบิกเข้าใบงานซ่อม</option></select></div>
+                  <div><label class="fl">สาขา</label><select class="inp" id="msBranch"></select></div>
+                </div>
+                <div id="msPrev"></div>
+              </div>
+              <div class="savebar"><button class="btn" id="msSave">บันทึก</button></div>
+            </div></div>
+            <div class="card"><div class="hd"><h3>การเคลื่อนไหวล่าสุด</h3></div><div class="bd flush"><div class="tw"><table id="msTable"></table></div></div></div>
+          </div>
+        </div>
+        <div class="pane" id="pt3">
+          <div class="g2">
+            <div class="card"><div class="hd"><h3>สต๊อกของแถม</h3></div><div class="bd flush"><div class="tw"><table id="gTable"></table></div></div></div>
+            <div class="card"><div class="hd"><h3>เพิ่ม / รับของแถม</h3></div><div class="bd">
+              <div class="f">
+                <div><label class="fl">ชื่อของแถม</label><input class="inp" id="gName" placeholder="หมวกกันน็อก"></div>
+                <div class="f3"><div><label class="fl">ต้นทุน/ชิ้น</label><input class="inp num" id="gCost" value="0"></div>
+                <div><label class="fl">จำนวน</label><input class="inp num" id="gQty" value="0"></div>
+                <div><label class="fl">จุดสั่งซื้อ</label><input class="inp num" id="gMin" value="5"></div></div>
+                <div><label class="fl">สาขา</label><select class="inp" id="gBranch"></select></div>
+              </div>
+              <div class="savebar"><button class="btn" id="gSave">บันทึก</button></div>
+            </div></div>
+          </div>
         </div>
       </section>
 
@@ -1982,9 +1987,7 @@ const MENU = [
   {k:'ar',       t:'เงินค้างรับ',       s:'ยอดที่ยังไม่ได้รับ',           ic:'cash', r:['admin','manager','acct']},
   {g:'บริการและอะไหล่'},
   {k:'service',  t:'ศูนย์ซ่อม',        s:'ใบงานซ่อมและเช็กระยะ',         ic:'wrench', r:['admin','manager','tech','stock']},
-  {k:'parts',    t:'สต๊อกอะไหล่',      s:'ของคงเหลือและจุดสั่งซื้อ',      ic:'cog', r:['admin','manager','stock','tech','acct']},
-  {k:'partsale', t:'เบิกและขายอะไหล่',  s:'ตัดสต๊อกอะไหล่',              ic:'receipt', r:['admin','manager','stock','tech']},
-  {k:'gift',     t:'ของแถม',           s:'สต๊อกของแถมแยกสาขา',          ic:'gift', r:['admin','manager','stock','sales']},
+  {k:'parts',    t:'อะไหล่และของแถม',  s:'ของคงเหลือ เบิก/ขาย และของแถม', ic:'cog', r:['admin','manager','stock','tech','acct','sales']},
   {g:'บัญชีและพนักงาน'},
   {k:'expense',  t:'ค่าใช้จ่าย',        s:'บันทึกรายจ่ายพร้อมใบเสร็จ',    ic:'files', r:['admin','manager','acct']},
   {k:'attend',   t:'ภาพรวมการเข้างาน',  s:'ใครมาแล้ว ใครสาย ใครยังไม่มา',   ic:'users', r:['admin','manager','hr']},
@@ -2272,7 +2275,7 @@ function go(k){
 function refreshAll(){ render(); badges(); promoBar(); }
 function render(){
   const f={dash:rDash,cal:rCal,report:rReport,recv:rRecv,stock:rStock,sell:rSell,transfer:rTransfer,quote:rQuote,
-    deal:rDeal,ar:rAr,service:rService,parts:rParts,partsale:rPartSale,gift:rGift,
+    deal:rDeal,ar:rAr,service:rService,parts:rParts,
     expense:rExpense,attend:rAttend,hr:rHr,payroll:rPayroll,users:rUsers,imp:rImp,settings:rSettings,flow:rFlow}[CUR];
   if(f) f();
   badges();
@@ -2288,12 +2291,13 @@ function badges(){
             + FINCASES.filter(c=>inScope(c.branch) && ['ส่งเรื่อง','ยื่นเอกสาร','รอผล','ติดตามต่อ'].indexOf(c.status)>=0).length
             + REGS.filter(r=>inScope(r.branch) && r.stage!=='ส่งมอบแล้ว').length);
   set('stock',UNITS.filter(u=>u.status==='available' && inScope(u.branch) && age(u)>CFG.aging).length);
-  set('parts',PARTS.filter(p=>inScope(p.branch) && p.qty<p.min).length);
+  /* ของแถมย้ายมาอยู่หน้าเดียวกับอะไหล่แล้ว ตัวนับจึงรวมกัน */
+  set('parts',PARTS.filter(p=>inScope(p.branch) && p.qty<p.min).length
+            + GIFTS.filter(g=>inScope(g.branch) && g.qty<g.min).length);
   set('ar',   AR.filter(a=>inScope(a.branch) && a.due-a.paid>0).length);
   set('hr',   LEAVES.filter(l=>l.status==='รออนุมัติ').length
               + (canFixAtt()? attQueue(curDate().slice(0,7)).length : 0));
   set('service',SERVICE.filter(s=>inScope(s.branch) && s.status!=='ส่งมอบแล้ว').length);
-  set('gift', GIFTS.filter(g=>inScope(g.branch) && g.qty<g.min).length);
   /* จุดรวมบนแท็บ "อื่น ๆ" — มีงานค้างในเมนูที่ไม่ได้อยู่บนแถบล่าง */
   const tm=$('#tb-more');
   if(tm){ const rest=Object.keys(CNT).filter(k=> CNT[k]>0 && canSee(k) && !$('#bnav [data-s="'+k+'"]'));
@@ -4155,7 +4159,33 @@ function svSave(){
 }
 
 /* ============================= 13-14. อะไหล่ ============================= */
+/* ---------- อะไหล่และของแถม — สามแท็บในหน้าเดียว ----------
+   สิทธิ์ยังแยกรายแท็บเหมือนตอนที่เป็นสามเมนู การรวมหน้าไม่ได้เปิดให้ใครเห็นเพิ่ม
+   ถ้าบทบาทไหนเห็นแท็บเดียว แถบแท็บจะไม่ขึ้นเลย จะได้ไม่มีแท็บโดด ๆ ให้กด */
+const PT_TABS=[
+  {p:'pt1', n:'สต๊อกอะไหล่',    r:['admin','manager','stock','tech','acct']},
+  {p:'pt2', n:'เบิก / ขายอะไหล่', r:['admin','manager','stock','tech']},
+  {p:'pt3', n:'ของแถม',        r:['admin','manager','stock','sales']}
+];
+let PT_SEL='';
+function ptTab(pane){
+  const ok=PT_TABS.filter(t=>t.r.indexOf(ME.role)>=0);
+  if(!ok.some(t=>t.p===pane)) pane=(ok[0]||{}).p||'pt1';
+  PT_SEL=pane;
+  $$('#ptTabs button').forEach(b=>b.classList.toggle('on', b.dataset.p===pane));
+  $$('#s-parts .pane').forEach(x=>x.classList.toggle('on', x.id===pane));
+}
 function rParts(){
+  const ok=PT_TABS.filter(t=>t.r.indexOf(ME.role)>=0);
+  $('#ptTabs').innerHTML = ok.length>1
+    ? ok.map(t=>'<button data-p="'+t.p+'">'+esc(t.n)+'</button>').join('') : '';
+  $$('#ptTabs button').forEach(b=> b.onclick=()=>ptTab(b.dataset.p));
+  ptTab(PT_SEL || (ok[0]||{}).p || 'pt1');
+  if(ok.some(t=>t.p==='pt1')) rPartsStock();
+  if(ok.some(t=>t.p==='pt2')) rPartSale();
+  if(ok.some(t=>t.p==='pt3')) rGift();
+}
+function rPartsStock(){
   if(!$('#pSave').dataset.init){ $('#pSave').dataset.init=1;
     $('#pSave').onclick=()=>{ const code=$('#pCode').value.trim(), name=$('#pName').value.trim();
       if(!code||!name){ toast('กรอกรหัสและชื่ออะไหล่','',1); return; }
