@@ -2080,7 +2080,9 @@ function closeDrawer(){ $('#drw').classList.remove('on'); $('#ov').classList.rem
 function openModal(title, html){ $('#mdT').textContent=title; $('#mdB').innerHTML=html; $('#modal').classList.add('on'); syncLock(); }
 /* ปิดกล้องทุกครั้งที่กล่องลอยปิด ไม่ว่าจะปิดด้วยปุ่ม X, ESC หรือกดยืนยัน
    ถ้าไม่ทำ MediaStream ค้างและไฟกล้องไม่ดับเพราะ closeModal ไม่ล้าง innerHTML */
-function closeModal(){ camStop(); if(psClock){ clearInterval(psClock); psClock=null; }
+/* ปิดแผ่นแล้วต้องปล่อยทรัพยากรทุกตัวจากที่เดียว — กล้อง นาฬิกา และการเฝ้าดูตำแหน่ง
+   ถ้าไล่ใส่ทีละทางออก (ปุ่มปิด · Escape · แตะพื้นหลัง) จะมีทางที่ลืมเสมอ */
+function closeModal(){ camStop(); geoStop(); if(psClock){ clearInterval(psClock); psClock=null; }
   $('#modal').classList.remove('on'); syncLock(); }
 /* ล็อก scroll พื้นหลังเมื่อมี overlay ใดเปิดอยู่ — จำเป็นบนมือถือ */
 function syncLock(){ document.body.classList.toggle('lock',
@@ -4637,10 +4639,41 @@ function geoGet(){
   return new Promise((res,rej)=>{
     if(!navigator.geolocation){ rej({code:0}); return; }
     navigator.geolocation.getCurrentPosition(
-      pos=>res({lat:+pos.coords.latitude.toFixed(6), lng:+pos.coords.longitude.toFixed(6),
-        acc:Math.round(pos.coords.accuracy)}),
+      pos=>res(geoFix(pos)),
       err=>rej(err), {enableHighAccuracy:true, timeout:10000, maximumAge:0});
   });
+}
+const geoFix = pos => ({ lat:+pos.coords.latitude.toFixed(6), lng:+pos.coords.longitude.toFixed(6),
+  acc:Math.round(pos.coords.accuracy) });
+
+/* ---------- เฝ้าดูตำแหน่งแทนการอ่านครั้งเดียว ----------
+   getCurrentPosition คืนค่าแรกที่ระบบมีให้ ซึ่งมักเป็นค่าจากเสาสัญญาณที่ยังไม่นิ่ง (±60-2000 ม.)
+   ระหว่างที่ผู้ใช้ถ่ายรูปอยู่แล้ว 10-20 วินาที เครื่องมีเวลาจับดาวเทียมพอดี
+   จึงเฝ้าดูไปเรื่อย ๆ แล้วเก็บค่าที่แม่นที่สุดไว้ — ได้ความแม่นยำมาฟรีโดยผู้ใช้ไม่ต้องรออะไรเพิ่ม
+   n กับ still ใช้ต่อในรอบถัดไปเพื่อดูว่าค่าที่ได้ "ขยับ" แบบ GPS จริงหรือนิ่งสนิทแบบแอปปลอมตำแหน่ง */
+let GEO_WATCH=null;
+function geoStop(){
+  if(GEO_WATCH!=null){ try{ navigator.geolocation.clearWatch(GEO_WATCH); }catch(_){}
+    GEO_WATCH=null; }
+}
+function geoWatch(ms, onFix, onErr){
+  geoStop();
+  if(!navigator.geolocation){ if(onErr) onErr({code:0}); return; }
+  let best=null, n=0, still=0;
+  const done=()=>{ geoStop(); };
+  const take=pos=>{
+    const g=geoFix(pos); n++;
+    if(best && g.lat===best.lat && g.lng===best.lng && g.acc===best.acc) still++;
+    if(!best || g.acc < best.acc){ best=g; }
+    best.n=n; best.still=still;
+    onFix(Object.assign({}, best));
+    /* แม่นพอแล้วหยุดเลย ไม่ต้องกินแบตต่อ */
+    if(best.acc<=20) done();
+  };
+  GEO_WATCH=navigator.geolocation.watchPosition(take,
+    err=>{ if(!best && onErr) onErr(err); },
+    {enableHighAccuracy:true, timeout:ms, maximumAge:0});
+  setTimeout(done, ms);
 }
 const GEO_ERR={ 0:'เครื่องนี้ไม่รองรับการหาตำแหน่ง',
   1:'ยังไม่ได้อนุญาตให้เข้าถึงตำแหน่ง — เปิดสิทธิ์ในตั้งค่าเบราว์เซอร์แล้วกดอัปเดตอีกครั้ง',
@@ -4820,15 +4853,28 @@ function punchSheet(staffId, side){
         : e && e.message==='timeout' ? 'รอสิทธิ์กล้องนานเกินไป — ปิดแผ่นแล้วลองใหม่'
         : 'ยังไม่ได้อนุญาตให้ใช้กล้อง — เปิดสิทธิ์ในตั้งค่าเบราว์เซอร์แล้วลองใหม่'); }
   };
-  const askGeo=async()=>{
+  /* เฝ้าดู 20 วินาที เอาค่าที่แม่นที่สุด — ผู้ใช้กำลังถ่ายรูปอยู่แล้วจึงไม่ได้รอเพิ่ม
+     geoAt ต้องขยับตามทุกครั้งที่ได้ค่าที่ดีกว่า ไม่งั้นคนที่ถ่ายรูปช้าจะโดนด่านหลักฐานเก่าเกิน 120 วิ */
+  const askGeo=()=>{
     $('#psGeoGo').disabled=true; $('#psGeo').textContent='กำลังหาตำแหน่ง…';
-    try{
-      const g=await geoGet();
+    let got=false;
+    geoWatch(20000, g=>{
+      got=true;
       PS_PROOF.geo=g; PS_PROOF.geoAt=new Date().toISOString();
-      $('#psGeo').innerHTML=geoLink(g);
-    }catch(err){ delete PS_PROOF.geo; delete PS_PROOF.geoAt;
-      $('#psGeo').innerHTML='<span style="color:var(--st-none)">'+esc(GEO_ERR[err&&err.code]||GEO_ERR[2])+'</span>'; }
-    $('#psGeoGo').disabled=false; sync();
+      if(!$('#psGeo')) return;                 /* แผ่นถูกปิดไปแล้วระหว่างรอ */
+      $('#psGeo').innerHTML=geoLink(g)
+        +(g.acc>20? ' <span class="tsub">กำลังหาให้แม่นขึ้น…</span>' : '');
+      $('#psGeoGo').disabled=false; sync();
+    }, err=>{
+      delete PS_PROOF.geo; delete PS_PROOF.geoAt;
+      if(!$('#psGeo')) return;
+      $('#psGeo').innerHTML='<span style="color:var(--st-none)">'+esc(GEO_ERR[err&&err.code]||GEO_ERR[2])+'</span>';
+      $('#psGeoGo').disabled=false; sync();
+    });
+    /* ไม่มี callback เลยภายในเวลาที่กำหนด = หาไม่เจอ ต้องปลดปุ่มให้กดใหม่ได้ */
+    setTimeout(()=>{ if(!got && $('#psGeoGo')){ $('#psGeoGo').disabled=false;
+      if($('#psGeo') && $('#psGeo').textContent==='กำลังหาตำแหน่ง…')
+        $('#psGeo').innerHTML='<span style="color:var(--st-none)">'+esc(GEO_ERR[3])+'</span>'; } }, 20500);
   };
   $('#psShot').onclick=async()=>{
     const data=camSnap(vid,t0.w,t0.h,t0.q);
@@ -5580,12 +5626,22 @@ function rSites(){
   const edit=canEditSites();
   $('#siFormCard').style.display = edit? '' : 'none';
   if(edit && !$('#siSave').dataset.init){ $('#siSave').dataset.init=1;
-    $('#siPin').onclick=async()=>{
+    /* ใช้การเฝ้าดูตัวเดียวกับการลงเวลา เอาค่าที่แม่นที่สุด ไม่ใช่ค่าแรก
+       ถ้าหมุดเองเพี้ยนไป 40 ม. ระยะที่คำนวณทุกครั้งหลังจากนี้จะเพี้ยนตามไปตลอด */
+    $('#siPin').onclick=()=>{
       $('#siPin').disabled=true; $('#siGeo').textContent='กำลังหาตำแหน่ง…';
-      try{ SI_PIN=await geoGet(); $('#siGeo').innerHTML=geoLink(SI_PIN); }
-      catch(err){ SI_PIN=null;
-        $('#siGeo').innerHTML='<span style="color:var(--st-none)">'+esc(GEO_ERR[err&&err.code]||GEO_ERR[2])+'</span>'; }
-      $('#siPin').disabled=false;
+      geoWatch(20000, g=>{
+        SI_PIN=g;
+        if(!$('#siGeo')) return;
+        $('#siGeo').innerHTML=geoLink(g)
+          +(g.acc>20? ' <span class="tsub">กำลังหาให้แม่นขึ้น… รออีกครู่ก่อนกดเพิ่ม</span>' : '');
+        $('#siPin').disabled=false;
+      }, err=>{ SI_PIN=null;
+        if(!$('#siGeo')) return;
+        $('#siGeo').innerHTML='<span style="color:var(--st-none)">'+esc(GEO_ERR[err&&err.code]||GEO_ERR[2])+'</span>';
+        $('#siPin').disabled=false;
+      });
+      setTimeout(()=>{ if($('#siPin')) $('#siPin').disabled=false; }, 20500);
     };
     $('#siSave').onclick=siteSave;
   }
