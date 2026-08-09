@@ -1621,6 +1621,27 @@ function days(a,b){ return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:0
 function addDays(s,n){ const d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return iso(d); }
 /* วันที่ ณ ตอนเรียก — TODAY ถูกคำนวณครั้งเดียวตอนเปิดแอป ถ้าเปิดค้างข้ามเที่ยงคืนจะเพี้ยน */
 const curDate = () => iso(new Date());
+
+/* ---------- เวลาที่ใช้คิดเงินต้องไม่ได้มาจากนาฬิกาของพนักงาน ----------
+   ของเดิม punch() ใช้ new Date() ตรง ๆ แปลว่าใครหมุนนาฬิกาเครื่องย้อนก็ "ไม่สาย" ได้ฟรี ๆ
+   รอบนี้วัดส่วนต่างระหว่างนาฬิกาเครื่องกับนาฬิกาของเซิร์ฟเวอร์เก็บไว้ก่อน (จาก header Date)
+   แล้ว punchNow() ค่อยบวกกลับ — จึงยังเป็นฟังก์ชันธรรมดา ไม่ต้อง await ตอนกดยืนยัน
+   ความละเอียดของ header Date เป็นวินาที บวกเวลาเดินทางของเน็ตอีกเล็กน้อย คลาดได้ ±1-2 วินาที
+   ซึ่งดีกว่าการเชื่อนาฬิกาที่ผู้ใช้ตั้งเองได้อย่างเทียบกันไม่ติด
+   ต่อโหมดข้อมูลจริงรอบหน้า ให้ย้ายไปใช้ now() ของ Postgres ใน RPC punch_clock() แทน */
+let SRV_SKEW=null;        /* มิลลิวินาที: เวลาเซิร์ฟเวอร์ − เวลาเครื่อง · null = ยังไม่รู้ */
+async function srvSync(){
+  try{
+    const r=await fetch(location.pathname+'?_t='+Date.now(), {method:'HEAD', cache:'no-store'});
+    const d=r.headers.get('date'); if(!d) return null;
+    const t=new Date(d).getTime(); if(isNaN(t)) return null;
+    SRV_SKEW=t-Date.now();
+    return SRV_SKEW;
+  }catch(_){ return null; }
+}
+const punchNow = () => new Date(Date.now() + (SRV_SKEW||0));
+const punchDate = () => iso(punchNow());
+const timeSrc  = () => SRV_SKEW==null? 'device' : 'server';
 /* เวลาเป็นวินาที — ทุกสูตรชั่วโมงทำงาน/OT/สาย คิดจากค่านี้ วินาทีจึงมีผลกับเงินจริง */
 function toSec(t){ if(!t) return 0; const p=String(t).split(':');
   return (+p[0]||0)*3600 + (+p[1]||0)*60 + (+p[2]||0); }
@@ -2189,6 +2210,8 @@ function doLogin(){
   $('#meName').textContent = st.name;
   $('#meRole').textContent = ROLES[st.role].name+' · '+(rolePerm().allBranch?'ทุกสาขา':bName(st.branch));
   buildNav(); seedDemo(); go(firstScreen());
+  /* เทียบนาฬิกากับเซิร์ฟเวอร์ตั้งแต่เข้าระบบ จะได้ไม่ต้องรอตอนกดลงเวลา */
+  srvSync();
   toast('เข้าสู่ระบบแล้ว', st.name);
 }
 function firstScreen(){ const m=MENU.find(m=>m.k && m.r.indexOf(ME.role)>=0); return m?m.k:'dash'; }
@@ -4782,12 +4805,16 @@ function punch(staffId, side, proof){
   const v=geoVerdict(staffId, proof.geo);
   if(v.outside && !String(proof.reason||'').trim()){
     toast('อยู่นอกพื้นที่ลงเวลา','ระบุเหตุผลก่อน แล้วกดยืนยันอีกครั้ง',1); return null; }
-  const t=hhmmss(new Date());
-  const a=attEnsure(staffId, curDate());
+  /* เวลาและวันที่ของแถวมาจาก punchNow() ทั้งคู่ — ตั้งนาฬิกาเครื่องเป็นพรุ่งนี้
+     แล้วไปเขียนทับแถววันอื่นไม่ได้ */
+  const now=punchNow();
+  const t=hhmmss(now);
+  const a=attEnsure(staffId, punchDate());
   a[side]=t;
   a[side+'Proof']=Object.assign({ by:ME.id, byName:ME.name,
     device:navigator.userAgent.slice(0,80), deviceId:deviceId(),
-    clientAt:new Date().toISOString(),
+    clientAt:new Date().toISOString(), timeSrc:timeSrc(),
+    skewMs:(SRV_SKEW==null? null : Math.round(SRV_SKEW)),
     siteId:v.siteId||null, siteName:v.siteName||null,
     dist:(v.dist==null? null : v.dist),
     outside:!!v.outside, nosite:!!v.nosite, observed:!!v.observed,
@@ -4948,11 +4975,16 @@ function punchSheet(staffId, side){
     if(!t){ sync(); return; }        /* ถูกด่านใน punch() ปฏิเสธ — ให้ผู้ใช้แก้แล้วกดใหม่ */
     closeModal(); refreshAll();
   };
+  /* นาฬิกาบนแผ่นต้องเป็นเวลาเดียวกับที่จะถูกบันทึกจริง ไม่ใช่นาฬิกาเครื่อง
+     ไม่งั้นผู้ใช้เห็นเลขหนึ่ง แต่ระบบบันทึกอีกเลขหนึ่ง */
   const tick=()=>{ const el=$('#psNow'); if(!el){ clearInterval(psClock); psClock=null; return; }
-    el.textContent=hhmmss(new Date());
+    el.textContent=hhmmss(punchNow());
     $('#psHint').textContent = side==='in'
       ? 'เวลาเข้างาน '+CFG.workIn+' (ผ่อนผัน '+(+CFG.lateGrace||0)+' นาที)'
       : 'เวลาเลิกงาน '+CFG.workOut; };
+  /* ถามเวลาเซิร์ฟเวอร์ระหว่างที่ผู้ใช้กำลังถ่ายรูปอยู่แล้ว — ไม่ได้ทำให้ใครรอเพิ่ม
+     ได้มาเมื่อไหร่นาฬิกาบนแผ่นจะขยับตามเอง */
+  srvSync().then(()=>{ if($('#psNow')) tick(); });
   tick(); if(psClock) clearInterval(psClock); psClock=setInterval(tick,1000);
   sync(); startCam(); askGeo();
 }
