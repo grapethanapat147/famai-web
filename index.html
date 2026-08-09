@@ -1539,7 +1539,11 @@ body.lock{ overflow:hidden; }
               <div><label class="fl">ตำแหน่งของจุด</label>
                 <div id="siGeo" class="tsub">ยังไม่ได้ปักหมุด</div>
                 <div class="psAct"><button class="btn sec sm" id="siPin"><svg class="i i-sm"><use href="#i-route"/></svg> ปักหมุดจากตำแหน่งปัจจุบัน</button></div>
-                <div class="tsub">ยืนที่หน้าร้านแล้วกดปุ่มนี้ — ระบบจะเอาพิกัดที่แม่นที่สุดให้เอง ไม่ต้องพิมพ์ตัวเลข</div></div>
+                <div class="tsub">ยืนที่หน้าร้านแล้วกดปุ่มนี้ — ระบบจะเอาพิกัดที่แม่นที่สุดให้เอง ไม่ต้องพิมพ์ตัวเลข</div>
+                <div style="margin-top:var(--s2)"><label class="fl">หรือวางลิงก์จาก Google Maps</label>
+                  <input class="inp" id="siPaste" placeholder="https://www.google.com/maps/place/…">
+                  <div class="tsub">เปิด Google Maps → กดค้างที่ตัวร้านให้ขึ้นหมุด → แชร์ → คัดลอกลิงก์ แล้ววางตรงนี้
+                    · วางพิกัดเป็นตัวเลข <span class="mono">13.7563, 100.5018</span> ก็ได้</div></div></div>
             </div>
             <div class="savebar"><button class="btn" id="siSave">เพิ่ม<svg class="i"><use href="#i-arrow"/></svg></button></div>
           </div></div>
@@ -1740,6 +1744,39 @@ let SITES = [
 ];
 const siteById = id => SITES.find(s=>s.id===id);
 const sitesOf  = b  => SITES.filter(s=>s.branch===b && s.active);
+
+/* ---------- อ่านพิกัดจากลิงก์ Google Maps ----------
+   ไม่ต้องไปยืนที่ร้านก็ตั้งจุดได้ เปิดแผนที่ กดค้างที่ตัวร้าน แล้วคัดลอกลิงก์มาวาง
+   ลำดับความเชื่อถือของค่าที่เจอในลิงก์:
+     !3d!4d = หมุดจริงของสถานที่ (แม่นที่สุด)
+     q= / ll= = พิกัดที่ระบุมาตรง ๆ
+     @      = จุดกึ่งกลางของแผนที่ ซึ่งอาจไม่ตรงกับหมุดถ้าผู้ใช้เลื่อนแผนที่ไปแล้ว
+   ลิงก์ย่อ (maps.app.goo.gl) อ่านไม่ได้จากในเบราว์เซอร์ เพราะต้องตามรีไดเรกต์ข้ามโดเมน
+   จึงต้องบอกผู้ใช้ให้เปิดลิงก์ก่อนแล้วคัดลอกลิงก์เต็มจากแถบที่อยู่มาแทน */
+function parseGeo(text){
+  const s=String(text||'').trim();
+  if(!s) return null;
+  const n='(-?\\d{1,3}(?:\\.\\d+)?)';
+  const pats=[
+    new RegExp('!3d'+n+'!4d'+n),
+    new RegExp('[?&](?:q|query|ll|center|daddr|destination)=(?:loc:)?'+n+'(?:,|%2C)\\s*'+n, 'i'),
+    new RegExp('@'+n+','+n),
+    new RegExp('^'+n+'\\s*,\\s*'+n+'$')
+  ];
+  for(let i=0;i<pats.length;i++){
+    const m=s.match(pats[i]);
+    if(!m) continue;
+    const lat=+m[1], lng=+m[2];
+    if(!isFinite(lat)||!isFinite(lng)) continue;
+    if(Math.abs(lat)>90 || Math.abs(lng)>180) continue;
+    if(lat===0 && lng===0) continue;                 /* กลางมหาสมุทร = พาร์สพลาดแน่ */
+    return { lat:+lat.toFixed(6), lng:+lng.toFixed(6) };
+  }
+  return null;
+}
+const geoShortLink = s => /(maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(String(s||''));
+/* ไทยอยู่ราว lat 5.5-20.5 · lng 97-106 — นอกกรอบนี้เตือนแต่ไม่ห้าม เผื่อกรณีที่คิดไม่ถึง */
+const inThailand = g => g.lat>=5 && g.lat<=21 && g.lng>=96 && g.lng<=106;
 
 /* ระยะทางระหว่างสองพิกัดเป็นเมตร (haversine) — ไม่ต้องใช้ไลบรารีหรือ PostGIS */
 function distM(a, b){
@@ -5889,7 +5926,9 @@ function siteSave(){
   SITES.push({id:nid('SI'), branch:br, name, kind:'sub', lat:SI_PIN.lat, lng:SI_PIN.lng,
     radius:+$('#siRadius').value, pinAcc:SI_PIN.acc, holdsStock:false, active:true});
   toast('เพิ่มจุดลงเวลาแล้ว', name+' · '+bName(br));
-  $('#siName').value=''; SI_PIN=null; $('#siGeo').textContent='ยังไม่ได้ปักหมุด';
+  $('#siName').value=''; SI_PIN=null;
+  if($('#siPaste')) $('#siPaste').value='';
+  $('#siGeo').textContent='ยังไม่ได้ปักหมุด';
   refreshAll(); return true;
 }
 function rSites(){
@@ -5913,6 +5952,28 @@ function rSites(){
       });
       setTimeout(()=>{ if($('#siPin')) $('#siPin').disabled=false; }, 20500);
     };
+    /* วางลิงก์แล้วอ่านพิกัดให้ทันที ไม่ต้องมีปุ่มเพิ่ม */
+    const readPaste=()=>{
+      const raw=$('#siPaste').value.trim();
+      if(!raw){ return; }
+      const g=parseGeo(raw);
+      if(!g){
+        SI_PIN=null;
+        $('#siGeo').innerHTML='<span style="color:var(--st-none)">'
+          +(geoShortLink(raw)
+            ? 'ลิงก์ย่อแบบนี้อ่านพิกัดไม่ได้ — เปิดลิงก์ในเบราว์เซอร์ก่อน แล้วคัดลอกลิงก์เต็มจากแถบที่อยู่มาวางแทน'
+            : 'อ่านพิกัดจากข้อความนี้ไม่ได้ — ใช้ลิงก์จาก Google Maps หรือพิมพ์เป็น 13.7563, 100.5018')
+          +'</span>';
+        return;
+      }
+      SI_PIN={ lat:g.lat, lng:g.lng, acc:null };
+      $('#siGeo').innerHTML=geoLink({lat:g.lat, lng:g.lng, acc:'—'}).replace(' <span class="tsub">(±— ม.)</span>','')
+        +' <span class="tsub">จากลิงก์แผนที่</span>'
+        +(inThailand(g)? '' : '<div class="tsub" style="color:var(--attn)">พิกัดนี้อยู่นอกประเทศไทย'
+            +' — ตรวจว่าคัดลอกมาถูกลิงก์หรือเปล่า</div>');
+    };
+    $('#siPaste').oninput=readPaste;
+    $('#siPaste').onpaste=()=>setTimeout(readPaste,0);
     $('#siSave').onclick=siteSave;
   }
   if(edit) $('#siBranch').innerHTML=BRANCHES.filter(b=>inScope(b.code))
@@ -5921,7 +5982,7 @@ function rSites(){
   const head=['จุด','สาขา',{t:'รัศมี (ม.)',n:1},'สถานะ'];
   if(edit) head.push('');
   const sub = s => ['พิกัด '+s.lat.toFixed(5)+', '+s.lng.toFixed(5)]
-    .concat(s.pinAcc? ['หมุดแม่น ±'+s.pinAcc+' ม.'] : [])
+    .concat(s.pinAcc? ['หมุดแม่น ±'+s.pinAcc+' ม.'] : ['ตั้งจากลิงก์แผนที่'])
     .concat(siteRefs(s.id)? ['ใช้แล้ว '+siteRefs(s.id)+' ครั้ง'] : []).join(' · ');
   tbl($('#siTable'), head, mine.map(s=>
     '<tr><td><b>'+esc(s.name)+'</b><div class="tsub">'+esc(sub(s))+'</div></td>'
