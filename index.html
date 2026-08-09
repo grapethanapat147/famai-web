@@ -1466,7 +1466,7 @@ body.lock{ overflow:hidden; }
 
       <!-- ============ 21. ตั้งค่าระบบ ============ -->
       <section class="screen" id="s-settings">
-        <div class="tabs" id="cfTabs"><button class="on" data-p="cf1">เกณฑ์ระบบ</button><button data-p="cf2">รุ่นรถและสี</button><button data-p="cf3">บริษัทไฟแนนซ์</button></div>
+        <div class="tabs" id="cfTabs"><button class="on" data-p="cf1">เกณฑ์ระบบ</button><button data-p="cf2">รุ่นรถและสี</button><button data-p="cf3">บริษัทไฟแนนซ์</button><button data-p="cf4">จุดลงเวลา</button></div>
         <div class="pane on" id="cf1">
         <div class="g2e">
           <div class="card"><div class="hd"><h3>ข้อมูลบริษัท</h3></div><div class="bd">
@@ -1492,6 +1492,15 @@ body.lock{ overflow:hidden; }
               <div><label class="fl">ค่าคอมต่อกำไร (%)</label><input class="inp num" id="cfComm"></div>
             </div>
           </div></div>
+          <div class="card"><div class="hd"><h3>การตรวจตำแหน่งตอนลงเวลา</h3><div class="d">จุดลงเวลาตั้งได้ที่แท็บ “จุดลงเวลา” · สาขาที่ยังไม่ปักหมุดจะข้ามการตรวจไปเลย</div></div><div class="bd">
+            <div class="f2">
+              <div><label class="fl">โหมด</label><select class="inp" id="cfGeoMode">
+                <option value="watch">สังเกตอย่างเดียว — ยังไม่บังคับ</option>
+                <option value="enforce">บังคับ — นอกพื้นที่ต้องบอกเหตุผล</option></select></div>
+              <div><label class="fl">พิกัดคลาดเคลื่อนเกิน (ม.) = ติดธง</label><input class="inp num" id="cfGeoAcc"></div>
+              <div><label class="fl">ผ่อนผันรัศมีสูงสุด (ม.)</label><input class="inp num" id="cfGeoSlack"></div>
+            </div>
+          </div></div>
         </div>
         <div class="savebar"><button class="btn" id="cfSave">บันทึกการตั้งค่า</button><button class="btn sec" id="cfReset">คืนค่าเริ่มต้น</button></div>
         </div>
@@ -1514,6 +1523,25 @@ body.lock{ overflow:hidden; }
               <div><label class="fl">หมายเหตุ</label><input class="inp" id="fcNote" placeholder="เงื่อนไขพิเศษ ผู้ติดต่อ"></div>
             </div>
             <div class="savebar"><button class="btn" id="fcSave">เพิ่ม<svg class="i"><use href="#i-arrow"/></svg></button></div>
+          </div></div>
+        </div></div>
+        <div class="pane" id="cf4"><div class="g2">
+          <div class="card"><div class="hd"><h3>จุดลงเวลา</h3><div class="d">ร้านย่อยก็เป็นจุดหนึ่งในนี้ · สาขาที่ยังไม่มีจุด พนักงานลงเวลาได้ตามปกติ</div></div><div class="bd flush"><div class="tw"><table id="siTable"></table></div></div></div>
+          <div class="card" id="siFormCard"><div class="hd"><h3>เพิ่มจุดลงเวลา</h3></div><div class="bd">
+            <div class="f">
+              <div><label class="fl">ชื่อจุด</label><input class="inp" id="siName" placeholder="ร้านย่อยบางแค"></div>
+              <div class="f2">
+                <div><label class="fl">สาขาที่สังกัด</label><select class="inp" id="siBranch"></select></div>
+                <div><label class="fl">รัศมี (เมตร)</label><select class="inp" id="siRadius">
+                  <option value="100">100</option><option value="150" selected>150</option>
+                  <option value="250">250</option><option value="400">400</option></select></div>
+              </div>
+              <div><label class="fl">ตำแหน่งของจุด</label>
+                <div id="siGeo" class="tsub">ยังไม่ได้ปักหมุด</div>
+                <div class="psAct"><button class="btn sec sm" id="siPin"><svg class="i i-sm"><use href="#i-route"/></svg> ปักหมุดจากตำแหน่งปัจจุบัน</button></div>
+                <div class="tsub">ยืนที่หน้าร้านแล้วกดปุ่มนี้ — ระบบจะเอาพิกัดที่แม่นที่สุดให้เอง ไม่ต้องพิมพ์ตัวเลข</div></div>
+            </div>
+            <div class="savebar"><button class="btn" id="siSave">เพิ่ม<svg class="i"><use href="#i-arrow"/></svg></button></div>
           </div></div>
         </div></div>
       </section>
@@ -1661,7 +1689,11 @@ const DEFAULTS = {
   taxId:'0 1055 07000 64 5', phone:'02-000-0000',
   aging:90, regDays:30, lowStock:2, vat:7,
   cadence:'7,30,90,365,1095', km:'500,1000,4000,8000',
-  workIn:'08:30', workOut:'17:30', lateGrace:5, otRate:1.5, commPct:8
+  workIn:'08:30', workOut:'17:30', lateGrace:5, otRate:1.5, commPct:8,
+  /* การตรวจตำแหน่งตอนลงเวลา — watch = คิดและเก็บแต่ยังไม่บังคับ · enforce = นอกพื้นที่ต้องบอกเหตุผล
+     เปิดเป็น watch ก่อนเสมอ เพราะรัศมีที่เดาเอาจะเด้งใส่คนที่มาทำงานจริงทุกเช้า
+     ให้เก็บตัวเลขจริงสัก 2-3 สัปดาห์ ดูการกระจายของ acc กับ dist แล้วค่อยตั้งรัศมีจากหลักฐาน */
+  geoMode:'watch', geoAcc:120, geoSlack:100
 };
 let CFG = Object.assign({}, DEFAULTS);
 
@@ -1673,6 +1705,40 @@ const BRANCHES = [
 ];
 const bName = c => (BRANCHES.find(b=>b.code===c)||{}).name || c;
 const bOf   = c => BRANCHES.find(b=>b.code===c) || BRANCHES[0];
+
+/* ---------- จุดลงเวลา ----------
+   ร้านย่อยของแต่ละสาขาเป็นแถวหนึ่งในตารางนี้ ไม่ใช่ชนิดข้อมูลใหม่ และไม่ใช่ลำดับชั้นใต้สาขา
+   เพราะสต๊อกยังผูกกับ 3 สาขาเหมือนเดิม (ถ้าทำเป็นลำดับชั้นจะลามไปทุกที่ที่เรียก inScope)
+   holdsStock จองชื่อไว้เฉย ๆ สำหรับรอบ "สต๊อกร้านย่อย" — ยังไม่มีใครอ่าน
+   seed ไว้จุดเดียว อีกสองสาขาไม่มีจุด จะได้เห็นทั้งเส้นทาง "มีจุด" และ "ยังไม่ตั้งจุด" ในโหมดสาธิต */
+let SITES = [
+  {id:'SI1', branch:'FMG01', name:'สำนักงานใหญ่', kind:'main',
+   lat:13.756331, lng:100.501765, radius:150, pinAcc:12, holdsStock:false, active:true}
+];
+const siteById = id => SITES.find(s=>s.id===id);
+const sitesOf  = b  => SITES.filter(s=>s.branch===b && s.active);
+
+/* ระยะทางระหว่างสองพิกัดเป็นเมตร (haversine) — ไม่ต้องใช้ไลบรารีหรือ PostGIS */
+function distM(a, b){
+  const R=6371000, rad=Math.PI/180;
+  const dLat=(b.lat-a.lat)*rad, dLng=(b.lng-a.lng)*rad;
+  const h=Math.pow(Math.sin(dLat/2),2)
+        + Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.pow(Math.sin(dLng/2),2);
+  return Math.round(2*R*Math.asin(Math.min(1,Math.sqrt(h))));
+}
+/* จุดที่ใกล้ที่สุดของสาขานั้น — คืน null เมื่อสาขายังไม่มีจุด (ต้องปล่อยผ่าน ไม่ใช่ปิดกั้น
+   ไม่งั้นวันแรกที่ deploy ทั้งบริษัทจะลงเวลาไม่ได้เพราะยังไม่มีใครปักหมุด) */
+function nearestSite(branch, g){
+  const list=sitesOf(branch);
+  if(!list.length || !g) return null;
+  let best=null;
+  list.forEach(s=>{ const d=distM(g,s); if(!best || d<best.dist) best={site:s, dist:d}; });
+  /* บวกความคลาดเคลื่อนของเครื่องเข้าไปในรัศมี คนที่อยู่จริงแต่สัญญาณไม่ดีจะได้ไม่โดนกล่าวหา
+     แต่มีเพดาน geoSlack กันไม่ให้ค่าที่หยาบมาก ๆ กลายเป็นช่องโหว่ */
+  const slack=Math.min(g.acc||0, +CFG.geoSlack||0);
+  return { siteId:best.site.id, siteName:best.site.name, dist:best.dist,
+           outside: best.dist > best.site.radius + slack };
+}
 
 /* ---------- แปลงข้อมูลจริงเป็นคันรถ ---------- */
 let UNITS = U_RAW.map((r,i)=>{
@@ -5471,7 +5537,7 @@ function impCheck(){
 /* ============================= 21. ตั้งค่า ============================= */
 const CFMAP={cfCo:'company',cfAddr:'address',cfTax:'taxId',cfPhone:'phone',cfAging:'aging',cfReg:'regDays',
   cfLow:'lowStock',cfVat:'vat',cfCad:'cadence',cfKm:'km',cfIn:'workIn',cfOut:'workOut',cfGrace:'lateGrace',
-  cfOt:'otRate',cfComm:'commPct'};
+  cfOt:'otRate',cfComm:'commPct',cfGeoMode:'geoMode',cfGeoAcc:'geoAcc',cfGeoSlack:'geoSlack'};
 function rSettings(){
   Object.keys(CFMAP).forEach(k=> $('#'+k).value = CFG[CFMAP[k]]);
   if(!$('#cfSave').dataset.init){ $('#cfSave').dataset.init=1;
@@ -5479,12 +5545,75 @@ function rSettings(){
       b.classList.add('on'); $$('#s-settings .pane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.p)); });
     $('#vmAdd').onclick=()=>modelModal();
     $('#cfSave').onclick=()=>{ Object.keys(CFMAP).forEach(k=>{ const v=$('#'+k).value;
-      CFG[CFMAP[k]] = ['aging','regDays','lowStock','vat','lateGrace','otRate','commPct'].indexOf(CFMAP[k])>=0 ? num(v) : v; });
+      CFG[CFMAP[k]] = ['aging','regDays','lowStock','vat','lateGrace','otRate','commPct','geoAcc','geoSlack']
+        .indexOf(CFMAP[k])>=0 ? num(v) : v; });
       toast('บันทึกการตั้งค่าแล้ว','ทุกหน้าจะใช้เกณฑ์ใหม่ทันที'); refreshAll(); };
     $('#cfReset').onclick=()=>{ CFG=Object.assign({},DEFAULTS); rSettings(); toast('คืนค่าเริ่มต้นแล้ว'); refreshAll(); };
   }
   rModels();
   rFinCo();
+  rSites();
+}
+/* ---------- ตั้งค่าจุดลงเวลา ----------
+   ด่านอยู่ในฟังก์ชันบันทึก ไม่ใช่ที่ปุ่ม — ซ่อนฟอร์มเป็นเรื่อง UX เท่านั้น (กฎ §9b)
+   หมายเหตุ: ROLES.manager.allBranch = 1 ผู้บริหารจึงเพิ่มจุดให้สาขาไหนก็ได้
+   ระบบยังไม่มีบทบาท "หัวหน้าสาขา" ที่เห็นแค่สาขาตัวเอง ถ้าจะมีต้องเพิ่มบทบาทใหม่ทั้งชุด */
+const canEditSites = () => ['admin','manager'].indexOf(ME.role)>=0;
+/* ลบจุดที่มีการลงเวลาอ้างอยู่ไม่ได้ — กติกาเดียวกับ vmRefs() ของรุ่นรถ */
+const siteRefs = id => ATT.filter(a=>['inProof','outProof']
+  .some(k=>(a[k]||{}).siteId===id)).length;
+let SI_PIN=null;
+function siteSave(){
+  if(!canEditSites()){ toast('ไม่มีสิทธิ์แก้จุดลงเวลา','เฉพาะผู้ดูแลระบบและผู้บริหาร',1); return false; }
+  const name=$('#siName').value.trim(), br=$('#siBranch').value;
+  if(!name){ toast('กรอกชื่อจุด','',1); return false; }
+  if(!inScope(br)){ toast('เพิ่มจุดให้สาขาที่ไม่ได้ดูแลไม่ได้','',1); return false; }
+  if(SITES.some(s=>s.branch===br && s.name===name)){ toast('ชื่อจุดซ้ำในสาขานี้',name,1); return false; }
+  if(!SI_PIN){ toast('ยังไม่ได้ปักหมุด','กด “ปักหมุดจากตำแหน่งปัจจุบัน” ก่อน',1); return false; }
+  SITES.push({id:nid('SI'), branch:br, name, kind:'sub', lat:SI_PIN.lat, lng:SI_PIN.lng,
+    radius:+$('#siRadius').value, pinAcc:SI_PIN.acc, holdsStock:false, active:true});
+  toast('เพิ่มจุดลงเวลาแล้ว', name+' · '+bName(br));
+  $('#siName').value=''; SI_PIN=null; $('#siGeo').textContent='ยังไม่ได้ปักหมุด';
+  refreshAll(); return true;
+}
+function rSites(){
+  const edit=canEditSites();
+  $('#siFormCard').style.display = edit? '' : 'none';
+  if(edit && !$('#siSave').dataset.init){ $('#siSave').dataset.init=1;
+    $('#siPin').onclick=async()=>{
+      $('#siPin').disabled=true; $('#siGeo').textContent='กำลังหาตำแหน่ง…';
+      try{ SI_PIN=await geoGet(); $('#siGeo').innerHTML=geoLink(SI_PIN); }
+      catch(err){ SI_PIN=null;
+        $('#siGeo').innerHTML='<span style="color:var(--st-none)">'+esc(GEO_ERR[err&&err.code]||GEO_ERR[2])+'</span>'; }
+      $('#siPin').disabled=false;
+    };
+    $('#siSave').onclick=siteSave;
+  }
+  if(edit) $('#siBranch').innerHTML=BRANCHES.filter(b=>inScope(b.code))
+    .map(b=>'<option value="'+b.code+'">'+esc(b.name)+'</option>').join('');
+  const mine=SITES.filter(s=>inScope(s.branch));
+  const head=['จุด','สาขา',{t:'รัศมี (ม.)',n:1},'สถานะ'];
+  if(edit) head.push('');
+  const sub = s => ['พิกัด '+s.lat.toFixed(5)+', '+s.lng.toFixed(5)]
+    .concat(s.pinAcc? ['หมุดแม่น ±'+s.pinAcc+' ม.'] : [])
+    .concat(siteRefs(s.id)? ['ใช้แล้ว '+siteRefs(s.id)+' ครั้ง'] : []).join(' · ');
+  tbl($('#siTable'), head, mine.map(s=>
+    '<tr><td><b>'+esc(s.name)+'</b><div class="tsub">'+esc(sub(s))+'</div></td>'
+    +'<td>'+esc(bName(s.branch))+'</td><td class="n">'+s.radius+'</td>'
+    +'<td>'+(s.active? pill('ใช้งาน','good') : pill('ปิดใช้งาน','mut'))+'</td>'
+    +(edit? '<td style="white-space:nowrap"><button class="lnk" data-sit="'+s.id+'">'+(s.active?'ปิด':'เปิด')+'</button>'
+      +' <button class="lnk" data-sid="'+s.id+'">ลบ</button></td>' : '')+'</tr>'),
+    'ยังไม่ได้ปักหมุดจุดลงเวลาเลย — ตอนนี้ระบบยังตรวจตำแหน่งใครไม่ได้',
+    mine.map(s=> crow('', esc(s.name), (s.active? pill('ใช้งาน','good') : pill('ปิดใช้งาน','mut')),
+      esc(bName(s.branch))+' · รัศมี '+s.radius+' ม.<br>'+esc(sub(s)),
+      (edit? '<button class="lnk" data-sit="'+s.id+'">'+(s.active?'ปิด':'เปิด')+'</button>'
+        +'<button class="lnk q" data-sid="'+s.id+'">ลบ</button>' : ''))));
+  if(!edit) return;
+  $$('[data-sit]').forEach(b=> b.onclick=()=>{ const s=siteById(b.dataset.sit); s.active=!s.active;
+    toast(s.active?'เปิดใช้งานแล้ว':'ปิดใช้งานแล้ว', s.name); refreshAll(); });
+  $$('[data-sid]').forEach(b=> b.onclick=()=>{ const s=siteById(b.dataset.sid), n=siteRefs(s.id);
+    if(n){ toast('ลบไม่ได้ — มีการลงเวลาอ้างอยู่', s.name+' ถูกใช้ '+n+' ครั้ง · ปิดใช้งานแทนได้',1); return; }
+    SITES.splice(SITES.indexOf(s),1); toast('ลบจุดแล้ว',s.name); refreshAll(); });
 }
 /* ---------- ตั้งค่ารุ่นรถและสี — ป้อนหน้ารับรถเข้า ใบเสนอราคา และคำนวณค่างวด ---------- */
 function vmRefs(code){ return UNITS.filter(u=>u.variant===code).length; }
