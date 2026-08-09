@@ -51,7 +51,9 @@ const URL = 'https://<โปรเจกต์>.supabase.co';
 const KEY = '<publishable key>';
 const LABEL = { ready:'มีรถพร้อมส่ง', low:'เหลือน้อย', order:'สั่งจอง' };
 
-fetch(URL + '/rest/v1/model?select=*&order=retail.asc', { headers:{ apikey: KEY } })
+/* 'Accept-Profile': 'pub' ขาดไม่ได้ — ไม่ใส่จะได้ 404 เพราะสคีมาปริยายคือ public */
+fetch(URL + '/rest/v1/model?select=*&order=retail.asc',
+      { headers:{ apikey: KEY, 'Accept-Profile': 'pub' } })
   .then(r => r.json())
   .then(ms => {
     document.getElementById('g').innerHTML = ms.map(m => `
@@ -77,23 +79,30 @@ fetch(URL + '/rest/v1/model?select=*&order=retail.asc', { headers:{ apikey: KEY 
 
 ```
 GET /rest/v1/model
-    apikey: <publishable key>
+    apikey:         <publishable key>
+    Accept-Profile: pub          ← ขาดไม่ได้
 ```
+
+> **`Accept-Profile: pub` ต้องมีทุกคำขอ** ไม่ใส่จะได้
+> `404 · Could not find the table 'public.model'` เพราะสคีมาปริยายคือ `public`
+> ซึ่งเป็นสคีมาที่คนนอกแตะไม่ได้ (สำหรับ `POST /rpc/…` ใช้ `Content-Profile: pub` แทน)
 
 รองรับไวยากรณ์ของ PostgREST ทั้งหมด (กรอง เรียง แบ่งหน้า)
 
 ```bash
+P=(-H "apikey: $KEY" -H "Accept-Profile: pub")
+
 # ทุกรุ่น เรียงตามราคา
-curl "$URL/rest/v1/model?select=*&order=retail.asc" -H "apikey: $KEY"
+curl "$URL/rest/v1/model?select=*&order=retail.asc" "${P[@]}"
 
 # เฉพาะที่มีของพร้อมส่ง
-curl "$URL/rest/v1/model?availability=eq.ready" -H "apikey: $KEY"
+curl "$URL/rest/v1/model?availability=eq.ready" "${P[@]}"
 
 # เฉพาะออโตเมติก ราคาไม่เกิน 60,000
-curl "$URL/rest/v1/model?cat=eq.Automatic&retail=lte.60000" -H "apikey: $KEY"
+curl "$URL/rest/v1/model?cat=eq.Automatic&retail=lte.60000" "${P[@]}"
 
 # รุ่นเดียว
-curl "$URL/rest/v1/model?code=eq.B6FU00" -H "apikey: $KEY"
+curl "$URL/rest/v1/model?code=eq.B6FU00" "${P[@]}"
 ```
 
 คำตอบ:
@@ -105,9 +114,9 @@ curl "$URL/rest/v1/model?code=eq.B6FU00" -H "apikey: $KEY"
     "model": "FINN",
     "model_th": "ฟินน์ ล้อแม็ก",
     "cat": "Moped",
-    "cc": 114,
+    "cc": 114.00,
     "year": 2567,
-    "retail": 46900,
+    "retail": 46900.00,
     "photo": "https://<โปรเจกต์>.supabase.co/storage/v1/object/public/model-photo/model/B6FU00/card-a1b2c3.webp",
     "colors": [
       { "code": "010C", "name": "ฟ้า" },
@@ -125,14 +134,15 @@ curl "$URL/rest/v1/model?code=eq.B6FU00" -H "apikey: $KEY"
 
 ```
 POST /rest/v1/rpc/order_status
-     apikey: <publishable key>
-     Content-Type: application/json
+     apikey:          <publishable key>
+     Content-Profile: pub          ← ขาดไม่ได้ (ฝั่ง POST ใช้ตัวนี้ ไม่ใช่ Accept-Profile)
+     Content-Type:    application/json
      { "p_token": "A7K2-9MTX-4RBQ" }
 ```
 
 ```bash
 curl -X POST "$URL/rest/v1/rpc/order_status" \
-  -H "apikey: $KEY" -H "Content-Type: application/json" \
+  -H "apikey: $KEY" -H "Content-Profile: pub" -H "Content-Type: application/json" \
   -d '{"p_token":"A7K2-9MTX-4RBQ"}'
 ```
 
@@ -150,6 +160,10 @@ curl -X POST "$URL/rest/v1/rpc/order_status" \
   "shop": { "name": "Famai Motor Group", "phone": "02-000-0000" }
 }
 ```
+
+> **ตอนนี้ `shop.phone` ยังเป็น `null` ทุกสาขา** เพราะ `branch.phone` ในฐานข้อมูลยังว่าง
+> หน้าติดตามบอกลูกค้าว่า "กรุณาติดต่อร้าน" แต่ยังไม่มีเบอร์ให้โทร — ต้องเติมก่อนเปิดใช้จริง
+> ระหว่างนี้ให้เว็บ fallback ไปที่เบอร์กลางของร้านเมื่อค่าเป็น `null`
 
 ไม่เจอ (รหัสผิด · การขายถูกยกเลิก · รหัสหมดอายุ) — **คำตอบเหมือนกันทั้งสามกรณี** โดยตั้งใจ
 
@@ -181,9 +195,9 @@ curl -X POST "$URL/rest/v1/rpc/order_status" \
 | `model` | text | ชื่อรุ่นภาษาอังกฤษ |
 | `model_th` | text | ชื่อรุ่นภาษาไทย (อาจเป็นค่าว่าง) |
 | `cat` | text | ประเภท: `Automatic` · `Moped` · `Sport` |
-| `cc` | int | ความจุกระบอกสูบ |
+| `cc` | number | ความจุกระบอกสูบ — JSON ส่งมาเป็น `114.00` (numeric ของฐานข้อมูล) JavaScript อ่านได้เป็น `114` ตามปกติ |
 | `year` | int | ปีรุ่น (พ.ศ.) |
-| `retail` | int | ราคาขายปลีก บาท — `null` = ยังไม่กำหนดราคา ให้แสดงว่า "สอบถามราคา" |
+| `retail` | number | ราคาขายปลีก บาท (ส่งมาเป็น `46900.00`) — `null` = ยังไม่กำหนดราคา ให้แสดงว่า "สอบถามราคา" |
 | `photo` | text | URL รูปปกชั้น card — `null` = ยังไม่มีรูป |
 | `colors` | array | `[{code, name}]` เรียงตามรหัสสี |
 | `photos` | array | `[{card, full}]` สูงสุด 4 มุม เรียงตามลำดับที่ร้านตั้งไว้ |
@@ -268,11 +282,17 @@ API ไม่ส่งข้อมูลพวกนี้ออกมาอย�
 | ลิมิตหน้าติดตาม | **20 ครั้ง/ชั่วโมง/ไอพี** เกินแล้วจะได้ error |
 | CORS | Supabase เปิดให้อยู่แล้ว เรียกจากเบราว์เซอร์ได้เลย |
 
-**ต้องทำครั้งเดียวหลังรัน migration** (เจ้าของร้านหรือผู้ดูแลระบบเป็นคนทำ)
+**การตั้งค่าฝั่ง Supabase ทำครบแล้วเมื่อ 9 ส.ค. 2569** — คนทำเว็บไม่ต้องแตะอะไร
 
-1. Supabase Dashboard → Settings → API → **Exposed schemas** เพิ่ม `pub`
-2. Storage → ตรวจว่ามี bucket `model-photo` และเป็นแบบ public
-3. รัน advisor แล้วดูว่าไม่มีคำเตือนใหม่
+| รายการ | สถานะ |
+|---|---|
+| migration 10–15 | รันครบแล้ว |
+| สคีมา `pub` เปิดให้ PostgREST เห็น | เปิดแล้ว (ตั้งที่ role `authenticator` ท้าย migration 15 ไม่ใช่ที่หน้า Settings) |
+| bucket `model-photo` | มีแล้ว เป็น public อ่านได้โดยไม่ล็อกอิน เขียนไม่ได้ |
+| ถอนสิทธิ์ `anon` จากสคีมา `public` | ถอนแล้ว ตารางจริงทุกตัวตอบ 401 |
+
+ถ้าวันหลังไปแก้ **Settings → API → Exposed schemas** ในหน้าเว็บแล้วไม่มีผล
+ให้ดู `alter role authenticator set pgrst.db_schemas` ท้าย migration 15 — ค่าที่ตั้งกับ role ชนะค่าในหน้าเว็บ
 
 ---
 
@@ -305,7 +325,9 @@ API ไม่ส่งข้อมูลพวกนี้ออกมาอย�
 
 | อาการ | สาเหตุและวิธีแก้ |
 |---|---|
-| ได้ `[]` เปล่า | ยังไม่ได้เพิ่ม `pub` ใน Exposed schemas (§7) |
+| `PGRST106 Invalid schema: pub` | สคีมา `pub` หลุดจาก Exposed schemas — ดู §7 |
+| `PGRST205 Could not find the table` ทั้งที่ตั้งค่าถูก | แคชสคีมาของ PostgREST ยังไม่รีเฟรช สั่ง `notify pgrst, 'reload schema';` แล้วรอ ~5 วินาที |
+| ได้ `[]` เปล่า | เชื่อมได้แล้วแต่ไม่มีข้อมูล — ไม่ใช่ปัญหาสิทธิ์ |
 | `permission denied for schema public` | เรียกตารางในสคีมา `public` — เรียกได้เฉพาะของใน `pub` |
 | `JWT expired` / `Invalid API key` | ใช้คีย์ผิดตัว ต้องใช้ **publishable key** ไม่ใช่ service key |
 | รูปไม่ขึ้น | ร้านยังไม่ได้อัปรูปรุ่นนั้น — `photo` เป็น `null` ให้เว็บวาด placeholder เอง |

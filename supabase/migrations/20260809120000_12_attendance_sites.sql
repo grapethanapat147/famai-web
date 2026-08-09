@@ -213,6 +213,8 @@ grant execute on function public.punch_clock(text,numeric,numeric,integer,text,t
 -- geo_mode เริ่มที่ watch เสมอ: คิดและเก็บทุกอย่างแต่ยังไม่บังคับและยังไม่ติดธง
 -- รัศมีที่เดาเอาจะเด้งใส่คนที่มาทำงานจริงทุกเช้า แล้วสุดท้ายฟีเจอร์จะถูกสั่งปิด
 -- เก็บตัวเลขจริงสัก 2-3 สัปดาห์ ดูการกระจายของ acc กับ dist แล้วค่อยตั้งรัศมีจากหลักฐาน
+-- value เป็น jsonb: ข้อความต้องใส่เครื่องหมายคำพูดให้เป็น JSON ที่ถูกต้อง
+-- ('geo_mode','watch') จะพัง เพราะ watch เปล่า ๆ ไม่ใช่ JSON — ส่วนตัวเลขไม่ต้องใส่
 insert into app_setting (key,value) values
-  ('geo_mode','watch'), ('geo_acc_m','120'), ('geo_slack_m','100')
+  ('geo_mode', to_jsonb('watch'::text)), ('geo_acc_m','120'::jsonb), ('geo_slack_m','100'::jsonb)
   on conflict (key) do nothing;

@@ -242,47 +242,85 @@ GET  /rest/v1/motorcycle_unit?select=…      → รถตามสิทธิ
 
 ---
 
-## 10. รัน migration 10–14 ลงฐานข้อมูลจริง (ยังไม่ได้ทำ)
+## 10. migration 10–15 — รันลงฐานข้อมูลจริงแล้ว
 
-ตรวจเมื่อ 9 ส.ค. 2569: ฐานข้อมูลจริงรันถึงแค่ **migration 09**
-(`branch` กับ `sale` มีอยู่ · `company_event` ของ migration 10 ยังไม่มี · สคีมา `pub` ยังไม่มี)
+รันเมื่อ **9 ส.ค. 2569** ฐานข้อมูลจริงตอนนี้อยู่ที่ **migration 15**
 
-migration 10–14 จึงยังไม่ถูกใช้งาน แปลว่า **ตอนนี้เว็บขายรถยังดึงข้อมูลไม่ได้**
-และคอลัมน์เรื่องจุดลงเวลายังไม่มีในฐานข้อมูลจริง (โหมดสาธิตในแอปทำงานได้ปกติ ไม่กระทบ)
+| # | ชื่อ | ได้อะไรมา |
+|---|---|---|
+| 10 | `10_v1_features` | ปฏิทินบริษัท · ตารางส่วนขยายของ v1.0 |
+| 11 | `11_attendance_review` | คิวตรวจการลงเวลา · `late_grace_min` |
+| 12 | `12_attendance_sites` | `branch_site` · คอลัมน์ snapshot 14 ช่อง · `punch_clock()` · `meters_between()` · `is_manager()` |
+| 13 | `13_model_photo` | bucket `model-photo` (public) · ตาราง `model_photo` |
+| 14 | `14_public_api` | สคีมา `pub` · ถอนสิทธิ์ `anon` จาก `public` · `pub.model` · `pub.order_status()` · `sale.public_token` |
+| 15 | `15_order_status_volatile` | แก้ `pub.order_status` ให้เป็น `volatile` + เปิดสคีมา `pub` ให้ PostgREST |
 
-### วิธีที่ง่ายที่สุด — วางทีเดียวจบ
+สคีมา `pub` เปิดให้ PostgREST เห็นแล้วด้วย
+`alter role authenticator set pgrst.db_schemas = 'public, graphql_public, pub'`
+(อยู่ท้าย migration 15) **ค่าที่ตั้งกับ role ชนะค่าในหน้า Settings → API → Exposed schemas**
+ถ้าวันหลังไปแก้ในหน้าเว็บแล้วไม่มีผล ให้กลับมาดูบรรทัดนั้น
 
-1. เปิด Supabase → **SQL Editor** → New query
-2. คัดลอกไฟล์ **`supabase/apply-10-to-14.sql`** ทั้งไฟล์ไปวาง แล้วกด Run
-3. Settings → **API → Exposed schemas** เพิ่ม `pub`
-4. Storage → ตรวจว่ามี bucket **`model-photo`** และเป็น public
-5. รัน advisor แล้วดูว่าไม่มีคำเตือนใหม่
-
-ไฟล์นั้นสร้างจาก migration 5 ไฟล์จริงต่อกันตามลำดับ ไม่ได้เขียนใหม่ และรันซ้ำได้ปลอดภัย
-เพราะทุกคำสั่งเป็น `if not exists` / `drop ... if exists` / `on conflict do nothing`
-
-**ระวังหนึ่งอย่าง** ตอนท้ายมีการถอนสิทธิ์ `anon` ออกจากสคีมา `public` ทั้งหมด
-ซึ่งตั้งใจให้เป็นแบบนั้น หลังจากนี้คนที่ไม่ล็อกอินจะเข้าถึงได้เฉพาะสคีมา `pub`
-
-### ตรวจว่าสำเร็จแล้วหรือยัง
+### ตรวจว่ายังดีอยู่
 
 ```bash
 SB=https://hpsmjavfvrdctclmlmhp.supabase.co
-KEY=<publishable key>
+KEY=sb_publishable_WVL0ff-x2L0EwngZH8RZiw_4vNISVa_
 
-# ต้องได้ 200 และมีข้อมูล (ไม่ใช่ 406)
-curl -s -o /dev/null -w "%{http_code}\n" "$SB/rest/v1/model?limit=1" \
+# 200 พร้อมรายการรุ่นรถ — เว็บขายรถอ่านได้
+curl -s "$SB/rest/v1/model?select=code,model,retail,availability&limit=3" \
   -H "apikey: $KEY" -H "Accept-Profile: pub"
 
-# ต้องได้ [] เปล่า — คนนอกอ่านตารางจริงไม่ได้
+# 401 permission denied — คนนอกอ่านตารางจริงไม่ได้
 curl -s "$SB/rest/v1/sale?limit=1" -H "apikey: $KEY"
+
+# 200 {"found": false} — โทเคนมั่วต้องตอบเหมือนโทเคนที่หมดอายุ ไม่บอกว่าอันไหนมีจริง
+curl -s -X POST "$SB/rest/v1/rpc/order_status" -H "apikey: $KEY" \
+  -H "Content-Profile: pub" -H "Content-Type: application/json" \
+  -d '{"p_token":"ZZZZ-ZZZZ-ZZZZ"}'
 ```
 
-### ทำไมเครื่องมืออัตโนมัติทำให้ไม่ได้
+ผลที่ตรวจจริงหลังรันเสร็จ:
 
-Supabase MCP ต่อฐานข้อมูลไม่ได้ — ขึ้น `password authentication failed for user "postgres"`
-ทั้งฝั่งอ่านและฝั่งเขียน ตัวโปรเจกต์เองปกติดี (REST กับ Auth ตอบ 200)
-เป็นเรื่องรหัสผ่านฐานข้อมูลที่เก็บไว้ในตัวเชื่อมต่อ ไม่ใช่ตัวฐานข้อมูล
+| ตรวจ | ผล |
+|---|---|
+| `anon` อ่าน `public.sale` `customer` `employee` `attendance` `app_user` `branch` `motorcycle_unit` `price_history` `finance_case` `public_lookup_log` | **401 permission denied ทุกตาราง** |
+| `anon` อ่าน `pub.model` | 200 · 14 รุ่น · คืน 11 คอลัมน์ที่อนุญาตเท่านั้น |
+| `anon` เขียน `pub.model` / เรียก `pub.gen_token()` | ถูกปฏิเสธ |
+| `anon` embed จาก `pub.model` ไป `model_variant` `motorcycle_unit` `price_history` `sale` | PGRST200 — ไม่มีทางเดินไปตารางแม่ |
+| `anon` อัปไฟล์เข้า bucket `model-photo` | 403 RLS · แต่ **อ่านสาธารณะได้** (404 ไม่ใช่ 401) |
+| เพดาน 20 ครั้ง/ชม. ของ `pub.order_status` | เกิน 20 → ปฏิเสธ · ต่ำกว่า → ผ่าน |
+| เคสไฟแนนซ์ไม่ผ่าน | คืน `กรุณาติดต่อร้าน` · ทั้ง payload ไม่มีคำว่า "ไม่ผ่าน"/"ปฏิเสธ" ไม่มีเหตุผล ไม่มีชื่อบริษัทไฟแนนซ์ · เบอร์เป็น `xxx-xxx-5678` · ชื่อเหลือชื่อต้น |
 
-ถ้าอยากให้รันอัตโนมัติได้ในรอบหน้า ให้รีเซ็ตรหัสผ่านฐานข้อมูลใน
-Supabase → Settings → Database → Reset database password แล้วเชื่อมต่อ MCP ใหม่
+### สองบั๊กที่เจอตอนรันจริง — จดไว้กันพลาดซ้ำ
+
+**1 · `app_setting.value` เป็น `jsonb` ไม่ใช่ `text`**
+
+```sql
+insert into app_setting (key,value) values ('geo_mode','watch');
+-- 22P02  invalid input syntax for type json · Token "watch" is invalid
+```
+
+`watch` เปล่า ๆ ไม่ใช่ JSON ที่ถูกต้อง ตัวเลขอย่าง `'120'` ผ่านเพราะเป็น JSON number
+ข้อความต้องเขียนเป็น `to_jsonb('watch'::text)` หรือ `'"watch"'`
+migration 08 ทำถูกอยู่แล้ว (`('work_start','"08:30"')`) — 12 ต่างหากที่พลาด
+
+**2 · ฟังก์ชันที่เขียนข้อมูลต้องเป็น `volatile`**
+
+`pub.order_status` ประกาศเป็น `stable` แต่ตัวมันเอง `insert` ลง `public_lookup_log`
+เพื่อจำกัดอัตรา Postgres จึงปฏิเสธ **ทุกครั้ง** ที่เรียก:
+
+```
+0A000  INSERT is not allowed in a non-volatile function
+```
+
+ที่อันตรายคือ **ใน SQL Editor ไม่มีทางเจอ** เพราะการรัน `create function` สำเร็จ
+ต้องยิงเรียกจริงผ่าน PostgREST ถึงจะโผล่ — บทเรียนคือ *apply แล้วยังไม่จบ ต้องยิงจริงทุก endpoint*
+
+### ยังต้องทำด้วยมือ
+
+1. **เปลี่ยนรหัสผ่านฐานข้อมูล** — Settings → Database → Reset database password
+   (รหัสเดิมถูกส่งผ่านแชตเพื่อใช้รันครั้งนี้ ถือว่าเปิดเผยแล้ว)
+2. **เปิด Leaked Password Protection** — Authentication → Policies
+   advisor เตือนอยู่ว่าปิดอยู่ ระบบจะเทียบรหัสกับฐาน HaveIBeenPwned ให้
+3. **เติมเบอร์โทรของสาขา** — `branch.phone` ยังว่างทั้ง 3 สาขา
+   หน้าติดตามของลูกค้าบอกว่า "กรุณาติดต่อร้าน" แต่ยังไม่มีเบอร์ให้โทร
