@@ -1137,7 +1137,7 @@ body.lock{ overflow:hidden; }
           </div>
         </div></div>
         <div class="pane" id="p2"><div class="card"><div class="hd"><h3>คำนวณค่างวด — เลือกรุ่น + ดาวน์ เทียบทุกไฟแนนซ์ทุกงวดทันที</h3></div><div class="bd">
-          <div class="note w"><svg class="i i-sm"><use href="#i-alert"/></svg><span>เรตดอกเบี้ยเป็นค่าสมมุติ — แก้เรตจริง/เรตรายช่วงงวดได้ที่หน้าเคสสินเชื่อ แท็บบริษัทไฟแนนซ์</span></div>
+          <div class="note w"><svg class="i i-sm"><use href="#i-alert"/></svg><span>เรตดอกเบี้ยเป็นค่าสมมุติ — แก้เรตจริง/เรตรายช่วงงวดได้ที่หน้าตั้งค่าระบบ แท็บบริษัทไฟแนนซ์</span></div>
           <div class="f3" style="margin-bottom:var(--s2)">
             <div><label class="fl">รุ่นรถ</label><select class="inp" id="fModel"></select></div>
             <div><label class="fl">ราคาสุทธิ (฿)</label><input class="inp num" id="fNet"></div>
@@ -4748,6 +4748,29 @@ async function photoStats(){
   all.forEach(r=>{ by[r.tier]=by[r.tier]||{n:0,b:0}; by[r.tier].n++; by[r.tier].b+=r.bytes||0; });
   return { n:all.length, bytes:all.reduce((s,r)=>s+(r.bytes||0),0), by, mem: IDB_OK===false };
 }
+/* ---------- ตัดสินตำแหน่ง ณ วินาทีที่กด ----------
+   ผลที่ได้จะถูก "แช่" ลงในหลักฐาน ไม่คิดใหม่ตอนวาดจอ
+   ถ้าปล่อยให้ attFlags() ไปวัดระยะจาก SITES สด ๆ วันที่เจ้าของขยับหมุดหรือขยายรัศมี
+   ธงของบันทึกย้อนหลังทุกใบจะเปลี่ยนเงียบ ๆ และเดือนที่ตรวจไปแล้วจะพลิกทั้งเดือน
+   กติกาห้ามลบจุดกันได้แค่ชื่อ ไม่ได้กันเรขาคณิต — การแช่ผลไว้เท่านั้นที่กันได้ */
+function geoVerdict(staffId, g){
+  const s=STAFF.find(x=>x.id===staffId)||ME;
+  const n=nearestSite(s.branch, g);
+  if(!n) return {nosite:true, outside:false};
+  /* โหมดสังเกต: คิดและเก็บทุกอย่างเหมือนเดิม แต่ไม่บังคับและไม่ติดธง
+     observed เก็บไว้ให้ดูว่า "ถ้าบังคับตอนนี้จะโดนกี่ครั้ง" ก่อนตัดสินใจสลับโหมด */
+  if(CFG.geoMode!=='enforce') return Object.assign({}, n, {outside:false, observed:n.outside});
+  return n;
+}
+/* รหัสเครื่อง — เป็นสัญญาณ ไม่ใช่กำแพง ล้างที่เก็บข้อมูลแล้วเปลี่ยนได้ */
+function deviceId(){
+  try{ let v=localStorage.getItem('famai_dev');
+    if(!v){ v=(window.crypto && crypto.randomUUID ? crypto.randomUUID()
+      : String(Math.random())+String(Date.now())).replace(/\D/g,'').slice(0,16);
+      localStorage.setItem('famai_dev', v); }
+    return v;
+  }catch(_){ return null; }
+}
 /* บันทึกเวลา ณ วินาทีที่กดปุ่มยืนยัน โดยต้องมีหลักฐานครบมาแล้ว
    ด่านทุกชั้นอยู่ในฟังก์ชันนี้ ไม่ใช่ที่ปุ่ม — ซ่อนปุ่มอย่างเดียวเลี่ยงได้ */
 function punch(staffId, side, proof){
@@ -4756,11 +4779,19 @@ function punch(staffId, side, proof){
     toast('ยังลงเวลาไม่ได้','ต้องมีทั้งรูปถ่ายและตำแหน่งก่อน',1); return null; }
   if(proofStale(proof)){
     toast('หลักฐานเก่าเกินไป','ถ่ายรูปและอัปเดตตำแหน่งใหม่แล้วกดยืนยันอีกครั้ง',1); return null; }
+  const v=geoVerdict(staffId, proof.geo);
+  if(v.outside && !String(proof.reason||'').trim()){
+    toast('อยู่นอกพื้นที่ลงเวลา','ระบุเหตุผลก่อน แล้วกดยืนยันอีกครั้ง',1); return null; }
   const t=hhmmss(new Date());
   const a=attEnsure(staffId, curDate());
   a[side]=t;
   a[side+'Proof']=Object.assign({ by:ME.id, byName:ME.name,
-    device:navigator.userAgent.slice(0,80) }, proof);
+    device:navigator.userAgent.slice(0,80), deviceId:deviceId(),
+    clientAt:new Date().toISOString(),
+    siteId:v.siteId||null, siteName:v.siteName||null,
+    dist:(v.dist==null? null : v.dist),
+    outside:!!v.outside, nosite:!!v.nosite, observed:!!v.observed,
+    reason:String(proof.reason||'').trim()||null }, proof);
   toast((side==='in'?'ลงเวลาเข้าแล้ว ':'ลงเวลาออกแล้ว ')+t, 'บันทึกพร้อมรูปและตำแหน่งเรียบร้อย');
   if(IDB_OK===false) toast('เก็บรูปถาวรไม่ได้','เบราว์เซอร์นี้ใช้ IndexedDB ไม่ได้ — รูปจะหายเมื่อปิดแอป',1);
   if(CUR==='hr') rHr();
@@ -4825,8 +4856,13 @@ function punchSheet(staffId, side){
       +'<div class="psAct"><button class="btn sec sm" id="psShot">'+ic('camera','i i-sm')+' ถ่ายรูป</button>'
       +'<button class="btn sec sm" id="psRe" style="display:none">'+ic('refresh','i i-sm')+' ถ่ายใหม่</button></div></div>'
     +'<div class="psSec"><div class="fl">2 · ตำแหน่งที่ลงเวลา</div>'
+      +'<div id="psSite" class="tsub"></div>'
       +'<div id="psGeo" class="tsub">กำลังหาตำแหน่ง…</div>'
       +'<div class="psAct"><button class="btn sec sm" id="psGeoGo">'+ic('route','i i-sm')+' อัปเดตตำแหน่ง</button></div></div>'
+    /* ขั้นที่ 3 โผล่เฉพาะตอนอยู่นอกพื้นที่ — คนที่อยู่ที่ร้านจริงต้องไม่รู้สึกว่ามีอะไรเพิ่มขึ้นเลย */
+    +'<div class="psSec" id="psWhyBox" style="display:none"><div class="fl">3 · ทำไมถึงลงเวลาที่นี่</div>'
+      +'<input class="inp" id="psWhy" placeholder="เช่น ออกไปส่งรถให้ลูกค้า">'
+      +'<div class="tsub">ผู้จัดการจะเห็นข้อความนี้ในคิวตรวจ</div></div>'
     /* รายการตรวจติดอยู่กับปุ่มยืนยัน จะได้เห็นพร้อมกันเสมอว่าทำไมกดไม่ได้ */
     +'<div class="psBar"><div class="psChk" id="psChk"></div>'
       +'<button class="btn" id="psGo" disabled>'+ic('check')
@@ -4837,10 +4873,22 @@ function punchSheet(staffId, side){
   /* รายการตรวจบอกตรง ๆ ว่าขาดอะไร และคุมปุ่มยืนยันจากที่เดียว */
   const sync=()=>{
     const okP=!!PS_PROOF.photoId, okG=!!PS_PROOF.geo;
+    /* กรณีปกติต้องขึ้นข้อความยืนยันให้เห็นด้วย ไม่ใช่เงียบ — ความไว้ใจมาจากตรงนี้ */
+    const v = okG? geoVerdict(staffId, PS_PROOF.geo) : null;
+    $('#psSite').innerHTML = !v ? ''
+      : v.nosite ? '<span class="tsub">สาขานี้ยังไม่ได้ตั้งจุดลงเวลา — ระบบยังตรวจตำแหน่งไม่ได้</span>'
+      : v.outside ? '<b style="color:var(--st-none)">'+ic('alert','i i-sm')+' อยู่นอกจุดลงเวลา — ห่างจาก '
+          +esc(v.siteName)+' '+(v.dist>=1000? (v.dist/1000).toFixed(1)+' กม.' : v.dist+' ม.')+'</b>'
+      : '<b style="color:var(--pos)">'+ic('check-circle','i i-sm')+' '+esc(v.siteName)
+          +' · ห่าง '+v.dist+' ม.</b>';
+    const need = !!(v && v.outside);
+    $('#psWhyBox').style.display = need? '' : 'none';
+    const okW = !need || !!$('#psWhy').value.trim();
     const line=(ok,t)=>'<div class="'+(ok?'ok':'')+'">'+ic(ok?'check-circle':'circle','i i-sm')+' '+t+'</div>';
     $('#psChk').innerHTML=line(okP,'รูปถ่าย')+line(okG,'ตำแหน่ง')
-      +(okP&&okG? '' : '<div class="all">ต้องครบทั้งสองอย่างถึงจะลงเวลาได้</div>');
-    $('#psGo').disabled=!(okP&&okG);
+      +(need? line(okW,'เหตุผลที่อยู่นอกพื้นที่') : '')
+      +(okP&&okG&&okW? '' : '<div class="all">ต้องครบทุกข้อถึงจะลงเวลาได้</div>');
+    $('#psGo').disabled=!(okP&&okG&&okW);
   };
   const camMsg=t=>{ $('#psCamMsg').textContent=t; $('#psCamMsg').style.display=t?'':'none'; };
   const startCam=async()=>{
@@ -4893,7 +4941,9 @@ function punchSheet(staffId, side){
     sync(); startCam();
   };
   $('#psGeoGo').onclick=askGeo;
+  $('#psWhy').oninput=sync;
   $('#psGo').onclick=()=>{
+    PS_PROOF.reason=$('#psWhy').value;
     const t=punch(staffId, side, PS_PROOF);
     if(!t){ sync(); return; }        /* ถูกด่านใน punch() ปฏิเสธ — ให้ผู้ใช้แก้แล้วกดใหม่ */
     closeModal(); refreshAll();
