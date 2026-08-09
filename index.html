@@ -4523,9 +4523,87 @@ function attFlags(a){
   ['in','out'].forEach(side=>{ const p=a[side+'Proof'];
     if(p && p.by && p.by!==a.staffId)
       f.push({k:'notme', t:'บัญชีที่กดไม่ใช่เจ้าของแถว ('+(p.byName||p.by)+')', tone:'bad'}); });
+  /* ---------- ธงเรื่องตำแหน่งและเครื่อง ----------
+     ทุกตัวอ่านจาก "ผลที่แช่ไว้" ในหลักฐานเท่านั้น ห้ามคำนวณระยะใหม่จาก SITES สด ๆ
+     ไม่งั้นวันที่เจ้าของขยับหมุด ธงของบันทึกย้อนหลังทุกใบจะเปลี่ยนตาม */
+  ['in','out'].forEach(side=>{ const p=a[side+'Proof']; if(!p) return;
+    const w=side==='in'?'เข้า':'ออก';
+    if(p.outside) f.push({k:'outside', tone:'bad',
+      t:'ลงเวลา'+w+'นอกพื้นที่ '+(p.siteName? esc0(p.siteName)+' ':'')
+        +'ห่าง '+(p.dist>=1000? (p.dist/1000).toFixed(1)+' กม.' : p.dist+' ม.')
+        +(p.reason? ' · '+esc0(p.reason) : '')});
+    if(p.nosite) f.push({k:'nosite', t:'ยังไม่ได้ตั้งจุดลงเวลาของสาขานี้', tone:'mut'});
+    if(p.geo && p.geo.acc > (+CFG.geoAcc||120))
+      f.push({k:'lowacc', t:'พิกัดตอน'+w+'คลาดเคลื่อนสูง ±'+p.geo.acc+' ม.', tone:'mut'});
+    /* แอปปลอมตำแหน่งส่วนใหญ่ยิงค่าเดิมซ้ำทุกวินาที — callback เยอะแต่ค่าไม่ขยับเลย
+       ส่วนมือถือจริงที่อยู่นิ่ง watchPosition แทบไม่ยิงซ้ำ ตัวแยกคือ "จำนวนครั้ง" ไม่ใช่ความนิ่ง */
+    if(p.geo && p.geo.n>=5 && p.geo.still>=p.geo.n-1)
+      f.push({k:'geopin', t:'พิกัดไม่ขยับเลยตลอด '+p.geo.n+' ครั้งที่อ่าน', tone:'warn'});
+    if(p.skewMs!=null && Math.abs(p.skewMs)>120000)
+      f.push({k:'clockskew', tone:'warn',
+        t:'นาฬิกาเครื่องต่างจากเวลาจริง '+Math.round(Math.abs(p.skewMs)/60000)+' นาที'});
+  });
+  if(attGeoRep(a))    f.push({k:'georep', t:'พิกัดซ้ำเป๊ะกับครั้งก่อนติดกัน 3 ครั้ง', tone:'bad'});
+  if(attNewDevice(a)) f.push({k:'newdev', t:'ลงเวลาจากเครื่องที่ไม่เคยใช้มาก่อน', tone:'warn'});
+  const j=attFarJump(a);
+  if(j) f.push({k:'jump', t:'ระยะกับเวลาไม่สอดคล้องกัน — '+j, tone:'warn'});
   return f;
 }
-const rvNeeds = f => f.some(x=>x.k!=='nophoto');   /* ไม่มีรูปอย่างเดียวไม่ต้องเรียกผู้จัดการมาตรวจ */
+/* esc สำหรับข้อความในธง — ธงถูกเอาไปวางใน innerHTML หลายที่ */
+const esc0 = s => esc(s);
+/* ---------- ตัวช่วยจับพิรุธ ----------
+   ทุกตัวอ่านจากประวัติที่บันทึกไว้แล้ว ไม่ได้ไปถามอุปกรณ์ใหม่ */
+const attPunches = staffId => ATT.filter(x=>x.staffId===staffId)
+  .sort((x,y)=> x.date<y.date? -1 : x.date>y.date? 1 : 0)
+  .flatMap(x=>['in','out'].filter(k=>x[k]&&x[k+'Proof']).map(k=>({date:x.date, at:x[k], p:x[k+'Proof']})));
+/* GPS จริงไม่เคยคืนค่าเดิมเป๊ะครบทั้ง lat lng acc ติดกันหลายครั้งข้ามวัน
+   แต่มือถือในตึกที่เทียบตำแหน่งจาก WiFi ซ้ำได้จริง จึงตั้งเกณฑ์ไว้ที่ติดกัน 3 ครั้ง */
+function attGeoRep(a){
+  const all=attPunches(a.staffId).filter(x=>x.p.geo);
+  const key=x=>x.p.geo.lat+','+x.p.geo.lng+','+x.p.geo.acc;
+  const mine=['in','out'].filter(k=>a[k]&&a[k+'Proof']&&a[k+'Proof'].geo)
+    .map(k=>key({p:a[k+'Proof']}));
+  if(!mine.length) return false;
+  let run=0, hit=false;
+  for(let i=0;i<all.length;i++){
+    run = (i>0 && key(all[i])===key(all[i-1])) ? run+1 : 0;
+    if(run>=2 && mine.indexOf(key(all[i]))>=0) hit=true;   /* ซ้ำติดกัน 3 ครั้ง = run 2 */
+  }
+  return hit;
+}
+/* เครื่องใหม่เป็นสัญญาณ ไม่ใช่กำแพง — และต้องไม่ติดธงถ้าคนนั้นยังไม่เคยมีประวัติเครื่องเลย
+   ไม่งั้นวันแรกที่เปิดใช้ พนักงานทุกคนจะเข้าคิวตรวจพร้อมกันหมด */
+function attNewDevice(a){
+  const p=a.inProof||a.outProof;
+  if(!p || !p.deviceId) return false;
+  const seen={}; let any=false;
+  ATT.forEach(x=>{ if(x.staffId!==a.staffId || x.date>=a.date) return;
+    ['inProof','outProof'].forEach(k=>{ const q=x[k];
+      if(q && q.deviceId){ seen[q.deviceId]=1; any=true; } }); });
+  return any && !seen[p.deviceId];
+}
+/* เข้างานที่สาขาแล้วอีก 10 นาทีลงเวลาออกห่างไป 30 กม. เป็นไปไม่ได้ */
+function attFarJump(a){
+  const all=attPunches(a.staffId).filter(x=>x.p.geo);
+  const mineAt=['in','out'].filter(k=>a[k]).map(k=>a.date+'T'+a[k]);
+  for(let i=1;i<all.length;i++){
+    const A=all[i-1], B=all[i];
+    if(mineAt.indexOf(B.date+'T'+B.at)<0) continue;
+    const dt=(new Date(B.date+'T'+B.at)-new Date(A.date+'T'+A.at))/1000;
+    if(dt<=0) continue;
+    /* ตัดสินที่ "ความเร็วที่ต้องใช้" อย่างเดียว ไม่จำกัดช่วงเวลา
+       เคยใส่เพดานไว้ว่าห่างเกินครึ่งชั่วโมงให้ข้าม แต่นั่นกลับกลบเคสที่ผิดจริง
+       เช่น 100 กม. ใน 40 นาที = 150 กม./ชม. ซึ่งเป็นไปไม่ได้แต่หลุดเพดานไป */
+    const d=distM(A.p.geo, B.p.geo);
+    const kmh=(d/1000)/(dt/3600);
+    if(kmh>120) return Math.round(d/1000*10)/10+' กม. ใน '+Math.round(dt/60)+' นาที';
+  }
+  return null;
+}
+/* ธงที่เป็นแค่ "ข้อมูลประกอบ" ไม่ควรลากผู้จัดการเข้ามาตรวจ
+   ถ้าคิวเต็มไปด้วยเรื่องที่ไม่ต้องทำอะไร คนจะเลิกอ่านคิว แล้วธงที่สำคัญจริงจะตายไปด้วย */
+const RV_SKIP={nophoto:1, nosite:1, lowacc:1};
+const rvNeeds = f => f.some(x=>!RV_SKIP[x.k]);
 function attStaffScope(){
   return rolePerm().allBranch ? STAFF : STAFF.filter(s=>s.branch===ME.branch);
 }
@@ -5180,6 +5258,8 @@ async function psRender(){
   const m=attMonth(PS_ID, ym), a=attOf(PS_ID, PS_DAY), c=attCalc(a||{});
   const st=abState({id:PS_ID}, PS_DAY), f=a? attFlags(a):[];
   const self=PS_ID===ME.id;
+  /* กติกาเดียวกับ attBadges: รูป พิกัด จุด ระยะ เหตุผล เห็นได้เฉพาะเจ้าตัวกับคนที่มีหน้าที่ตรวจ */
+  const mayView = self || canFixAtt();
   const prevM=iso(new Date(+ym.slice(0,4), +ym.slice(5,7)-2, 2)).slice(0,7);
   const nextM=iso(new Date(+ym.slice(0,4), +ym.slice(5,7), 2)).slice(0,7);
   const shot=async side=>{ const p=(a&&(side==='out'? a.outProof : a.inProof))||{};
@@ -5193,7 +5273,24 @@ async function psRender(){
       +(drift? '<div class="tsub" style="color:var(--st-none)">รูปถ่ายตอน '+esc(shotAt)+' ไม่ตรงกับเวลาที่บันทึก</div>'
              : (shotAt? '<div class="tsub mono">ถ่ายตอน '+esc(shotAt)+'</div>':''))
       +(p.geo? '<div class="tsub">'+geoLink(p.geo)+'</div>':'')
+      /* จุดที่ลงเวลา ระยะ และเหตุผล อยู่ในบล็อกเดียวกับรูปและพิกัด
+         จึงถูกกันด้วย mayView ชั้นเดียวกันโดยอัตโนมัติ (กฎ §9b) */
+      +(p.siteName? '<div class="tsub">'+esc(p.siteName)+' · ห่าง '+p.dist+' ม.'
+          +(p.outside? ' <b style="color:var(--st-none)">นอกพื้นที่</b>':'')+'</div>':'')
+      +(p.reason? '<div class="tsub">เหตุผล: '+esc(p.reason)+'</div>':'')
       +(p.device? '<div class="tsub" style="overflow-wrap:anywhere">'+esc(p.device)+'</div>':'')+'</div>'; };
+  /* ภาพรวมของเดือน — คนโกงเป็นนิสัยเห็นเป็นรูปแบบชัดกว่าธงรายวัน และไม่กล่าวหาใคร */
+  const siteSum=(()=>{
+    const rows=ATT.filter(x=>x.staffId===PS_ID && String(x.date).slice(0,7)===ym);
+    const at={}; let off=0, offD=0, n=0;
+    rows.forEach(x=>['inProof','outProof'].forEach(k=>{ const p=x[k]; if(!p||!p.siteId&&!p.nosite) return;
+      n++; if(p.outside){ off++; offD+=p.dist||0; } else if(p.siteName) at[p.siteName]=(at[p.siteName]||0)+1; }));
+    if(!n) return '';
+    const parts=Object.keys(at).sort((x,y)=>at[y]-at[x]).map(k=>esc(k)+' '+at[k]+' ครั้ง');
+    if(off) parts.push('นอกพื้นที่ '+off+' ครั้ง (เฉลี่ยห่าง '
+      +(offD/off>=1000? (offD/off/1000).toFixed(1)+' กม.' : Math.round(offD/off)+' ม.')+')');
+    return parts.length? '<div class="tsub">ลงเวลาที่ '+parts.join(' · ')+'</div>' : '';
+  })();
 
   el.innerHTML=
     '<div class="tsub" style="margin-bottom:var(--s2)">'+esc(bName(s.branch))+'</div>'
@@ -5218,6 +5315,7 @@ async function psRender(){
       +'<div><b'+(m.leaveDays?'':' style="color:var(--muted)"')+'>'+m.leaveDays+'</b><span>วันลา</span></div>'
       +'<div><b'+(m.missDays?' style="color:var(--st-none)"':'')+'>'+m.missDays+'</b><span>ไม่มีบันทึก</span></div>'
     +'</div>'
+    +(mayView? siteSum : '')
     /* ---- วันที่เลือก ---- */
     +'<h6 style="margin:var(--s3) 0 var(--s1)">'+thDate(PS_DAY)+'</h6>'
     +(a? '<div class="f2">'+(await shot('in'))+(await shot('out'))+'</div>'
@@ -5460,6 +5558,21 @@ function rReview(ym){
 
 /* ============================= 18. เงินเดือน ============================= */
 let PR_MONTH=null;                      /* งวดเงินเดือนที่กำลังดู */
+/* ---------- เงินต้องไม่ออกจากระบบก่อนมีคนตรวจ ----------
+   เจ้าของสั่งว่ารายการที่น่าสงสัยต้อง "ยืนยันก่อนเข้าเงินเดือน"
+   จะไม่ตัดชั่วโมงเงียบ ๆ เพราะคนที่ออกไปทำงานจริงจะถูกหักเงินโดยไม่มีใครรู้
+   แต่จะกันไม่ให้ส่งออกไฟล์โอนเงิน/CSV จนกว่าคิวตรวจของงวดนั้นจะเคลียร์ —
+   บังคับให้การตรวจเกิดขึ้นจริงโดยไม่แตะตัวเลขของใครสักคน */
+const PR_MUST=['outside','georep','jump','newdev','geopin','clockskew','notme'];
+function prUnchecked(ym){
+  return attQueue(ym).filter(x=> x.f.some(y=>PR_MUST.indexOf(y.k)>=0)).length;
+}
+function prBlocked(ym){
+  const n=prUnchecked(ym);
+  if(!n) return false;
+  toast('ยังส่งออกไม่ได้', 'งวดนี้มี '+n+' รายการที่ยังไม่ได้ตรวจ — ไปที่ ลงเวลาและลา → ตรวจการลงเวลา',1);
+  return true;
+}
 function rPayroll(){
   if(!$('#prWho').dataset.init){ $('#prWho').dataset.init=1;
     $('#prWho').innerHTML=STAFF.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('');
@@ -5482,10 +5595,12 @@ function rPayroll(){
           +'<td class="n">'+fmt(r.ssn)+'</td><td class="n">'+fmt(r.ssn)+'</td><td class="n">'+fmt(r.ssn*2)+'</td></tr>').join('')
         +'</tbody><tfoot><tr><th colspan="3">รวมนำส่ง</th><th class="n">'+fmt(rows.reduce((s,r)=>s+r.ssn,0))
         +'</th><th class="n">'+fmt(rows.reduce((s,r)=>s+r.ssn,0))+'</th><th class="n">'+fmt(rows.reduce((s,r)=>s+r.ssn*2,0))+'</th></tr></tfoot></table></div>'); };
-    $('#prBank').onclick=()=>{ if(noMoney()){ toast('ไม่มีสิทธิ์ส่งออกข้อมูลเงินเดือน','',1); return; } const rows=prCalc(PR_MONTH);
+    $('#prBank').onclick=()=>{ if(noMoney()){ toast('ไม่มีสิทธิ์ส่งออกข้อมูลเงินเดือน','',1); return; }
+      if(prBlocked(PR_MONTH)) return; const rows=prCalc(PR_MONTH);
       csv('ไฟล์โอนเงินเดือน',['เลขที่บัญชี','ชื่อบัญชี','จำนวนเงิน','อ้างอิง'],
         rows.map(r=>[r.s.bank, r.s.name, r.net.toFixed(2), 'เงินเดือน '+(+PR_MONTH.slice(5,7))+'/'+(+PR_MONTH.slice(0,4)+543)])); };
-    $('#expPr').onclick=()=>{ if(noMoney()){ toast('ไม่มีสิทธิ์ส่งออกข้อมูลเงินเดือน','',1); return; } const rows=prCalc(PR_MONTH);
+    $('#expPr').onclick=()=>{ if(noMoney()){ toast('ไม่มีสิทธิ์ส่งออกข้อมูลเงินเดือน','',1); return; }
+      if(prBlocked(PR_MONTH)) return; const rows=prCalc(PR_MONTH);
       csv('เงินเดือน',['ชื่อ','ตำแหน่ง','วันทำงาน','ชั่วโมงรวม','OT (ชม.)','นาทีสาย','วันไม่มีบันทึก','เงินเดือน','OT','คอมมิชชั่น','หักสาย','ประกันสังคม','สุทธิ'],
         rows.map(r=>[r.s.name,ROLES[r.s.role].name,r.att.workDays,hm1(r.att.hrs),hm1(r.att.otH),Math.round(r.att.lateMin),
           r.att.missDays,r.base,r.ot,r.comm,r.lateD,r.ssn,r.net])); };
@@ -5494,8 +5609,10 @@ function rPayroll(){
   $('#prMonth').value=PR_MONTH; fsSync('payrol');
   const lastD=new Date(+PR_MONTH.slice(0,4), +PR_MONTH.slice(5,7), 0).getDate();
   const partial = PR_MONTH===curDate().slice(0,7);
+  const unchecked=prUnchecked(PR_MONTH);
   $('#prPeriod').textContent='งวด 1 – '+lastD+' '+rpMonthTh(PR_MONTH)
-    + (partial? ' · คิดถึงวันที่ '+(+curDate().slice(8,10))+' (งวดยังไม่ปิด)' : '');
+    + (partial? ' · คิดถึงวันที่ '+(+curDate().slice(8,10))+' (งวดยังไม่ปิด)' : '')
+    + (unchecked? ' · ยังตรวจไม่ครบ '+unchecked+' รายการ — ส่งออกไม่ได้จนกว่าจะตรวจ' : '');
   const rows=prCalc(PR_MONTH);
   const warn=rows.reduce((n,r)=>n+r.att.missDays,0);
   tbl($('#prTable'), ['พนักงาน','ตำแหน่ง','มาทำงาน',{t:'เงินเดือน',n:1},{t:'OT',n:1},{t:'คอมมิชชั่น',n:1},{t:'หักสาย',n:1},{t:'ประกันสังคม',n:1},{t:'สุทธิ',n:1}],
