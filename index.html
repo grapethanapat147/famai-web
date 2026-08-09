@@ -1699,6 +1699,8 @@ function bikeSVG(cat, cc, hex){
 /* รูปของรุ่น — รูปจริงที่อัปโหลดมาก่อน ไม่มีก็วาดเงา */
 function bikeArt(variant, colorName){
   const p=PRICE[variant];
+  /* ลำดับ: รูปที่เก็บถาวรบน Storage → รูปที่เพิ่งเลือกในเซสชันนี้ (โหมดสาธิต) → เงารถที่วาดเอง */
+  if(p && p.imgUrl) return '<img class="bike" src="'+esc(p.imgUrl)+'" alt="" loading="lazy">';
   if(p && p.img) return '<img class="bike" src="'+p.img+'" alt="">';
   return bikeSVG(p?p.cat:'Automatic', p?p.cc:0, COLOR_HEX[colorName]||'#8A8F94');
 }
@@ -4813,6 +4815,49 @@ function shrinkData(data, w, h, q){
     im.src=data;
   });
 }
+/* ---------- ย่อรูปก่อนอัป ไม่ใช่ย่อทีหลัง ----------
+   รูปจากมือถือใบละ 3-12 MB จะไม่ถูกอัปขึ้นเลย แปลงเป็น WebP บนแคนวาสก่อน
+   ครอปกลางแบบ object-fit:cover เหมือน camSnap() เพื่อให้ได้จัตุรัสที่ไม่บิด
+   การเข้ารหัสใหม่ลบ EXIF ให้เอง — พิกัด GPS ที่ติดมากับรูปถ่ายจึงไม่หลุดไปกับเว็บสาธารณะ
+   ระวัง: Safari ต่ำกว่า 16.4 เข้ารหัส webp ไม่ได้ และจะเงียบ ๆ คืน PNG กลับมา
+   ซึ่งใหญ่กว่า JPEG หลายเท่า จึงต้องตรวจ blob.type ทุกครั้งแล้วถอยไป JPEG */
+function imgResize(src, size, q){
+  return new Promise(res=>{
+    const im=new Image();
+    im.onerror=()=>res(null);
+    im.onload=()=>{
+      const s=Math.max(size/im.width, size/im.height);
+      const sw=size/s, sh=size/s, sx=(im.width-sw)/2, sy=(im.height-sh)/2;
+      const cv=document.createElement('canvas'); cv.width=size; cv.height=size;
+      const g=cv.getContext('2d');
+      g.fillStyle='#fff'; g.fillRect(0,0,size,size);
+      g.drawImage(im, sx,sy,sw,sh, 0,0,size,size);
+      cv.toBlob(bl=>{
+        if(bl && bl.type==='image/webp'){ res({blob:bl, type:'image/webp', ext:'webp'}); return; }
+        cv.toBlob(b2=> res(b2? {blob:b2, type:'image/jpeg', ext:'jpg'} : null), 'image/jpeg', 0.85);
+      }, 'image/webp', q);
+    };
+    im.src=src;
+  });
+}
+/* สองชั้นพอ — การ์ดใช้ในแอปและกริดบนเว็บขาย · เต็มใช้หน้ารายละเอียดรถ
+   ที่ q0.82 จะได้ราว 50-70 KB กับ 250-400 KB ต่อใบ */
+const IMG_TIERS=[{k:'card', size:640, q:0.82}, {k:'full', size:1600, q:0.82}];
+const fileToDataURL = f => new Promise(res=>{
+  const rd=new FileReader(); rd.onload=()=>res(rd.result); rd.onerror=()=>res(null); rd.readAsDataURL(f); });
+/* แปลงไฟล์ที่ผู้ใช้เลือกเป็นสองชั้น คืนพร้อม dataURL ของชั้น card ไว้แสดงตัวอย่างทันที */
+async function imgPrepare(file){
+  const src=await fileToDataURL(file); if(!src) return null;
+  const out={ src:null, tiers:{}, bytes:0 };
+  for(const t of IMG_TIERS){
+    const r=await imgResize(src, t.size, t.q); if(!r) return null;
+    out.tiers[t.k]=r; out.bytes+=r.blob.size;
+  }
+  out.src=await new Promise(res=>{ const rd=new FileReader();
+    rd.onload=()=>res(rd.result); rd.readAsDataURL(out.tiers.card.blob); });
+  out.orig=file.size;
+  return out;
+}
 async function agePhotos(now, limit){
   const t0=now? new Date(now) : new Date();
   const all=await idbAll();
@@ -5919,11 +5964,19 @@ function modelModal(code){
     +'<label class="drop" for="vmImg">'+ic('clip','i i-sm')+' เลือกรูป</label><input type="file" id="vmImg" accept="image/*" style="display:none">'
     +'<span id="vmImgName" class="tsub" style="margin-left:var(--s1)">'+(p&&p.img?'มีรูปอยู่แล้ว — เลือกใหม่เพื่อแทนที่':'')+'</span></div></div>'
     +'<div class="savebar"><button class="btn" id="vmGo">'+(p?'บันทึก':'เพิ่มรุ่น')+'<svg class="i"><use href="#i-check"/></svg></button></div>');
-  let imgData = p? p.img : null;
+  let imgData = p? p.img : null, imgPack = null;
   $('#vmCost').oninput=()=>{ $('#vmVat').value=Math.round(num($('#vmCost').value)*0.07); };
   if(!p) $('#vmVat').value='';
-  $('#vmImg').onchange=e=>{ const f=e.target.files[0]; if(!f) return;
-    const rd=new FileReader(); rd.onload=()=>{ imgData=rd.result; $('#vmImgName').textContent=f.name; }; rd.readAsDataURL(f); };
+  /* ย่อทันทีที่เลือกไฟล์ ไม่ยัดรูปดิบขนาด 3-12 MB เข้าหน่วยความจำหรือขึ้น Storage
+     บอกขนาดที่ประหยัดได้ให้เห็นด้วย จะได้รู้ว่าระบบทำอะไรให้ */
+  $('#vmImg').onchange=async e=>{ const f=e.target.files[0]; if(!f) return;
+    $('#vmImgName').textContent='กำลังย่อรูป…';
+    const pk=await imgPrepare(f);
+    if(!pk){ $('#vmImgName').textContent='อ่านไฟล์รูปไม่ได้'; return; }
+    imgPack=pk; imgData=pk.src;
+    const kb=n=>Math.round(n/1024).toLocaleString('en-US')+' KB';
+    $('#vmImgName').textContent=f.name+' · '+kb(pk.orig)+' → '+kb(pk.bytes)
+      +' ('+pk.tiers.card.ext.toUpperCase()+' สองขนาด)'; };
   $('#vmGo').onclick=()=>{
     const v=(code||$('#vmCode').value.trim().toUpperCase());
     if(!/^[A-Z0-9]{6}$/.test(v)){ toast('รหัสรุ่นต้องเป็นตัวอักษร/ตัวเลข 6 ตัว','เช่น BTF300',1); return; }
@@ -5936,8 +5989,11 @@ function modelModal(code){
     const cost=num($('#vmCost').value);
     PRICE[v]={ m, th:$('#vmTh').value.trim(), cat:$('#vmCat').value, cc:num($('#vmCc').value)||null,
       yr:num($('#vmYr').value)||null, cost, vat:Math.round(cost*0.07), retail:num($('#vmRetail').value)||null,
-      c, img:imgData||undefined };
+      c, img:imgData||undefined, imgUrl:(p&&p.imgUrl)||undefined, imgFullUrl:(p&&p.imgFullUrl)||undefined };
     closeModal(); toast(code?'บันทึกรุ่นแล้ว':'เพิ่มรุ่นแล้ว', m+' ('+v+') · ใช้ได้ทันทีในหน้ารับรถเข้า');
+    /* โหมดข้อมูลจริงเท่านั้นที่อัปขึ้น Storage — โหมดสาธิตถือ dataURL ไว้ในเซสชันเหมือนเดิม
+       อัปหลังปิดแผ่นแล้ว ผู้ใช้จึงไม่ต้องนั่งรอเน็ต */
+    if(imgPack && LIVE) modelPhotoUpload(v, imgPack);
     refreshAll(); };
 }
 
@@ -6293,6 +6349,38 @@ async function sbFetch(path, opt){
 function sbSelect(table, params){
   const q = new URLSearchParams(params).toString();
   return sbFetch('/rest/v1/'+table+(q?'?'+q:''));
+}
+/* ---------- อัปไฟล์ขึ้น Storage ----------
+   sbFetch ตั้ง Content-Type เป็น json ตายตัว จึงส่งไฟล์ไม่ได้ ต้องมีทางแยกของตัวเอง
+   (หมายเหตุนี้เขียนค้างไว้ตั้งแต่รอบก่อนแล้ว) */
+async function sbUpload(bucket, path, blob, type){
+  const h={ apikey:SB_KEY, 'Content-Type':type, 'x-upsert':'true', 'cache-control':'31536000' };
+  if(SB_TOKEN) h.Authorization='Bearer '+SB_TOKEN;
+  const r=await fetch(SB_URL+'/storage/v1/object/'+bucket+'/'+path, {method:'POST', headers:h, body:blob});
+  if(!r.ok) throw new Error('อัปรูปไม่สำเร็จ (HTTP '+r.status+')');
+  return SB_URL+'/storage/v1/object/public/'+bucket+'/'+path;
+}
+const sbPublicUrl = (bucket, path) => SB_URL+'/storage/v1/object/public/'+bucket+'/'+path;
+/* ชื่อไฟล์ผูกกับเนื้อไฟล์ อัปทับรุ่นเดิมได้โดยไม่ต้องกลัวรูปเก่าค้างในแคช (ตั้ง cache 1 ปี) */
+async function blobHash(blob){
+  try{
+    const buf=await blob.arrayBuffer();
+    const d=await crypto.subtle.digest('SHA-256', buf);
+    return [...new Uint8Array(d)].slice(0,6).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }catch(_){ return String(blob.size); }
+}
+async function modelPhotoUpload(variant, pack){
+  try{
+    const urls={};
+    for(const t of IMG_TIERS){
+      const r=pack.tiers[t.k];
+      const path='model/'+variant+'/'+t.k+'-'+(await blobHash(r.blob))+'.'+r.ext;
+      urls[t.k]=await sbUpload('model-photo', path, r.blob, r.type);
+    }
+    const p=PRICE[variant]; if(p){ p.imgUrl=urls.card; p.imgFullUrl=urls.full; }
+    toast('อัปรูปรุ่นแล้ว', variant+' · '+Math.round(pack.bytes/1024)+' KB');
+    refreshAll();
+  }catch(e){ toast('อัปรูปไม่สำเร็จ', (e&&e.message)||'ลองใหม่อีกครั้ง', 1); }
 }
 /* ---------- ที่ต้องต่อเพิ่มเมื่อย้ายลงเวลาไปโหมดข้อมูลจริง (รอบถัดไป) ----------
    1) โหลด STAFF จาก app_user ด้วย — ตอนนี้โหมดข้อมูลจริงไม่โหลด ปุ่มลงเวลาจึงไม่โผล่
