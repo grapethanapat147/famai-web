@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { isCustomerMode } from "@/lib/auth/money";
 import { visibleMenu, type MenuItem } from "@/lib/nav/menu";
 import { AppShell } from "@/components/shell/AppShell";
 
@@ -23,12 +24,16 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const rest = items.filter((i) => i.key !== "sell" && !BOTTOM_PRIORITY.includes(i.key));
   const primary = [...byPriority, ...rest].slice(0, 4);
 
+  const customerMode = await isCustomerMode();
+
   return (
     <AppShell
       menu={menu}
       primary={primary}
       canSell={canSell}
       user={{ fullName: user.fullName, nickname: user.nickname }}
+      canToggleMoney={user.perms.money}
+      customerMode={customerMode}
     >
       {children}
     </AppShell>

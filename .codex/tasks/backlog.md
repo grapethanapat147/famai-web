@@ -15,7 +15,6 @@
 - [FAM-E12: AI SDK Integration (deferred)](tickets/FAM-E12.md)
 
 ## Phase 1 — Tasks (foundation batch)
-- [FAM-1006: RBAC menu + server money-strip + customer mode](tickets/FAM-1006.md)
 
 > Phase 1 screen/feature tickets (FAM-1007–1018: recv, stock, models, .xls import, sell,
 > documents, payment, dashboards, settings, cron, backups, pilot) — จะเพิ่มเป็น batch ถัดไป

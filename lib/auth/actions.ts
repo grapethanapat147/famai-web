@@ -1,7 +1,10 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { CUSTOMER_MODE_COOKIE } from "@/lib/auth/constants";
 
 export type LoginState = { error: string } | null;
 
@@ -28,4 +31,16 @@ export async function logout(): Promise<void> {
   const supabase = await createServerSupabase();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+/** สลับโหมดลูกค้า (ซ่อน/แสดงต้นทุน-กำไรทุกหน้า) — เก็บใน cookie แล้ว re-render ให้ server strip ใหม่ */
+export async function toggleCustomerMode(): Promise<void> {
+  const store = await cookies();
+  const on = store.get(CUSTOMER_MODE_COOKIE)?.value === "1";
+  store.set(CUSTOMER_MODE_COOKIE, on ? "0" : "1", {
+    httpOnly: false,
+    sameSite: "lax",
+    path: "/",
+  });
+  revalidatePath("/", "layout");
 }
