@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: import.meta.dirname,
   },
+  images: {
+    // รูปรถ/รูปรุ่น เก็บบน Supabase Storage
+    remotePatterns: [{ protocol: "https", hostname: "hpsmjavfvrdctclmlmhp.supabase.co" }],
+  },
 };
 
 export default nextConfig;
