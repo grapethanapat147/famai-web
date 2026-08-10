@@ -21,10 +21,10 @@ export default function Home() {
         </div>
         <div className="mt-6">
           <Link
-            href="/dash"
+            href="/login"
             className="inline-flex items-center gap-2 rounded-[24px] bg-ink px-4 py-2 text-sm font-medium text-card transition-transform active:scale-[0.97]"
           >
-            เข้าดูโครงระบบ
+            เข้าสู่ระบบ
             <span className="text-accent" aria-hidden>
               →
             </span>

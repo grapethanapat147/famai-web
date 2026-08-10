@@ -12,11 +12,13 @@ export function AppShell({
   menu,
   primary,
   canSell,
+  user,
   children,
 }: {
   menu: MenuGroup[];
   primary: MenuItem[];
   canSell: boolean;
+  user: { fullName: string; nickname: string | null };
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -26,7 +28,7 @@ export function AppShell({
     <div className="flex min-h-dvh">
       <Sidebar menu={menu} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar title={title} />
+        <TopBar title={title} user={user} />
         <main className="flex-1 overflow-x-hidden px-4 pb-28 pt-5 lg:px-6 lg:pb-8">{children}</main>
       </div>
       <MobileNav menu={menu} primary={primary} canSell={canSell} />
