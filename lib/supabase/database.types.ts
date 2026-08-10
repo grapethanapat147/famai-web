@@ -133,6 +133,43 @@ type AppSetting = {
   value: Json;
 };
 
+type Sale = {
+  id: string;
+  branch_id: string;
+  unit_id: string;
+  customer_id: string;
+  salesperson_id: string | null;
+  sold_at: string;
+  list_price: number;
+  discount: number;
+  net_price: number;
+  cost: number;
+  freebie_cost: number;
+  gross_profit: number;
+  pay_method: string; // cash | finance
+  down_payment: number | null;
+  term_months: number | null;
+  note: string | null;
+  finance_id: string | null;
+  doc_no: string | null;
+  voided_at: string | null;
+  voided_reason: string | null;
+  created_at: string;
+};
+
+type Receivable = {
+  id: string;
+  branch_id: string;
+  sale_id: string;
+  kind: string; // finance | customer | อื่นๆ
+  payer_finance_id: string | null;
+  amount_due: number;
+  amount_paid: number;
+  due_at: string | null;
+  settled_at: string | null;
+  balance: number; // generated = amount_due - amount_paid
+};
+
 type Empty = Record<PropertyKey, never>;
 
 export type Database = {
@@ -149,6 +186,8 @@ export type Database = {
       motorcycle_unit: Table<MotorcycleUnit>;
       customer: Table<Customer>;
       app_setting: Table<AppSetting>;
+      sale: Table<Sale>;
+      receivable: Table<Receivable>;
     };
     Views: Empty;
     Functions: {

@@ -6,4 +6,5 @@
 - [FAM-1003: Core UI components](tickets/FAM-1003.md) — ready for review
 - [FAM-1005: Auth — login & session](tickets/FAM-1005.md) — ready for review
 - [FAM-1006: RBAC menu + server money-strip + customer mode](tickets/FAM-1006.md) — ready for review
-- [FAM-1008: Stock screen (สต๊อกรถ)](tickets/FAM-1008.md)
+- [FAM-1008: Stock screen (สต๊อกรถ)](tickets/FAM-1008.md) — ready for review
+- [FAM-1017: Dashboard (ภาพรวม)](tickets/FAM-1017.md)
