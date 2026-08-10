@@ -48,14 +48,14 @@ export function ConnectionBadge() {
   }, []);
 
   const view: Record<Status, { dot: string; text: string }> = {
-    checking: { dot: "bg-ink-3", text: "กำลังตรวจการเชื่อมต่อ…" },
-    ok: { dot: "bg-info", text: "เชื่อมต่อ Supabase (public API) สำเร็จ" },
-    error: { dot: "bg-brand", text: `เชื่อมต่อไม่ได้: ${detail}` },
-    unconfigured: { dot: "bg-ink-3", text: "ยังไม่ตั้งค่า .env.local (NEXT_PUBLIC_SUPABASE_*)" },
+    checking: { dot: "bg-muted", text: "กำลังตรวจการเชื่อมต่อ…" },
+    ok: { dot: "bg-pos", text: "เชื่อมต่อ Supabase (public API) สำเร็จ" },
+    error: { dot: "bg-accent", text: `เชื่อมต่อไม่ได้: ${detail}` },
+    unconfigured: { dot: "bg-muted", text: "ยังไม่ตั้งค่า .env.local (NEXT_PUBLIC_SUPABASE_*)" },
   };
 
   return (
-    <span className="inline-flex items-center gap-2 text-sm text-ink-2">
+    <span className="inline-flex items-center gap-2 text-sm text-ink-soft">
       <span className={`h-2.5 w-2.5 rounded-full ${view[status].dot}`} aria-hidden />
       {view[status].text}
     </span>

@@ -15,7 +15,6 @@
 - [FAM-E12: AI SDK Integration (deferred)](tickets/FAM-E12.md)
 
 ## Phase 1 — Tasks (foundation batch)
-- [FAM-1002: Design tokens + Thai fonts + app shell](tickets/FAM-1002.md)
 - [FAM-1003: Core UI components](tickets/FAM-1003.md)
 - [FAM-1005: Auth — login & session](tickets/FAM-1005.md)
 - [FAM-1006: RBAC menu + server money-strip + customer mode](tickets/FAM-1006.md)
