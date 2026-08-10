@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ConnectionBadge } from "@/components/ConnectionBadge";
 
 export default function Home() {
@@ -17,6 +18,17 @@ export default function Home() {
         </p>
         <div className="mt-6">
           <ConnectionBadge />
+        </div>
+        <div className="mt-6">
+          <Link
+            href="/dash"
+            className="inline-flex items-center gap-2 rounded-[24px] bg-ink px-4 py-2 text-sm font-medium text-card transition-transform active:scale-[0.97]"
+          >
+            เข้าดูโครงระบบ
+            <span className="text-accent" aria-hidden>
+              →
+            </span>
+          </Link>
         </div>
       </div>
     </main>

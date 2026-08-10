@@ -79,5 +79,13 @@ export function visibleMenu(roleCodes: readonly string[]): MenuGroup[] {
   })).filter((g) => g.items.length > 0);
 }
 
+/** รายการเมนูแบบแบน (ไม่แบ่งกลุ่ม) */
+export const MENU_ITEMS: MenuItem[] = MENU.flatMap((g) => g.items);
+
 /** ทุก key ที่มีในเมนู (ไว้ทำ route/ตรวจ) */
-export const ALL_MENU_KEYS: string[] = MENU.flatMap((g) => g.items.map((i) => i.key));
+export const ALL_MENU_KEYS: string[] = MENU_ITEMS.map((i) => i.key);
+
+/** หา item จาก key */
+export function menuItem(key: string): MenuItem | undefined {
+  return MENU_ITEMS.find((i) => i.key === key);
+}
