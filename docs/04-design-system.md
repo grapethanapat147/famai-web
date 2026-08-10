@@ -5,6 +5,10 @@
 
 ใช้จริงแล้วใน `prototype/Famai_Prototype_v0.7.html`
 
+> **ชุดตรวจที่อ้างถึงทั้งเอกสารนี้ (`sites-r13` `geofence-r13` `publicshape-r14` ฯลฯ)
+> อยู่ที่ `tools/qa/suites/` — รันทั้งหมดด้วย `node tools/qa/run.js`**
+> ทุกชุดพิสูจน์ด้วยกฎเดียวกัน: **ถอดด่านออกแล้วต้องแดง** ดู `tools/qa/README.md`
+
 ---
 
 ## กฎ 8 ข้อที่ระบบนี้ยึด
