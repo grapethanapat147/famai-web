@@ -17,3 +17,10 @@ dist/
 # ชั่วคราว
 *.log
 tmp/
+
+# Next.js / toolchain (FAM-1001)
+next-env.d.ts
+*.tsbuildinfo
+/coverage
+.turbo
+.vercel

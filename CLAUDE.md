@@ -1,0 +1,48 @@
+# Famai — Next.js App (Claude Code Instructions)
+
+เป้าหมายสาย work นี้: **สร้าง Next.js + Supabase + Vercel AI SDK app** โดยพอร์ตดีไซน์/พฤติกรรม
+จากต้นแบบ `index.html` (v1.15, 24 จอ) และ **ใช้ schema/RLS ที่มีอยู่แล้ว** ไม่รื้อฐานข้อมูล
+
+## Source of truth (อ่านก่อนทำงานที่เกี่ยวข้อง — ห้ามเดา/ทำซ้ำ)
+
+| ต้องการรู้ | อ่านที่ |
+|---|---|
+| ขาดอะไร/ทำอะไรก่อน | `docs/01-gap-analysis.md` |
+| สถานะจริง + กับดัก + งานค้าง | `docs/08-state-and-handoff.md` |
+| สถาปัตยกรรม/ค่าใช้จ่าย/cron/LINE/e-Tax | `docs/02-architecture.md` |
+| แผน Phase 0–4 | `docs/05-roadmap.md` |
+| ตาราง/ERD (48 ตาราง) | `docs/03-data-model.md` |
+| design tokens + กฎ UI (§9 rules) | `docs/04-design-system.md` |
+| ต่อ Supabase จริง | `docs/06-supabase-setup.md` |
+| public catalog/status API | `docs/07-public-api.md` |
+| ดีไซน์/พฤติกรรมจริง | `index.html` (v1.15) + `prototype/` (เก่า, อ้างอิงเท่านั้น) |
+| requirements ระดับลูกค้า | `.codex/specs/Famai_System_Build_Spec.md` (สเปกต้นฉบับ) |
+
+## Stack
+
+Next.js (App Router) + TypeScript · Supabase (Postgres + RLS + Auth + Storage) · Tailwind + design tokens (§04) · Vercel AI SDK (ติดตั้งไว้ ยังไม่เปิดใช้ — FAM-E12) · Deploy Vercel + Supabase Cloud
+
+## Ticket-First (บังคับ)
+
+งาน dev ทุกชิ้นต้องมี ticket ก่อน implement — Epic (`FAM-E0X`) + Task (`FAM-XXXX`)
+ดู `.codex/context/kanban-flow.md` · board อยู่ที่ `.codex/tasks/`
+
+## Non-negotiable (จาก handoff §6 + design-system §9 + architecture §5)
+
+1. **ด่านอยู่ในฟังก์ชันที่เขียนข้อมูล ไม่ใช่ที่ปุ่ม** — ซ่อนปุ่ม/CSS ไม่นับว่ากัน (§9b)
+2. **money-fields ซ่อนฝั่งเซิร์ฟเวอร์** — ไม่ส่งต้นทุน/กำไร/มูลค่าสต๊อก/ยอดจัด ออก API ถ้าไม่มีสิทธิ์ `money`; customer mode = ซ่อนเหมือนกัน
+3. **branch isolation = RLS** ที่ DB (มี `my_branches()`/`is_all_branch()` แล้ว) ไม่ใช่ filter ในแอป
+4. **money/atomic ops ผ่าน RPC** — `next_doc_no()`, sell (ตัดสต๊อก+กันขายซ้ำ), `punch_clock()` (เวลาจากเซิร์ฟเวอร์)
+5. **ไม่ hardcode เกณฑ์** — อ่านจาก `app_setting` (ค่าเป็น `jsonb` → ใช้ `to_jsonb()`)
+6. **เลขเอกสารกันซ้ำด้วย `next_doc_no()`** แยกสาขา/ประเภท/ปี — ยกเลิกต้องเก็บเหตุผล ไม่ลบ
+7. **service_role key ฝั่ง server เท่านั้น** — client ใช้ publishable key + RLS
+8. **apply migration ผ่าน ≠ ใช้ได้** — ยิงจริงทุก endpoint ด้วยสิทธิ์ role ที่จะใช้จริง (§9j)
+9. **PDPA** — เก็บเท่าที่จำเป็น, เลขบัตร ปชช. จำกัดสิทธิ์เห็น, มี consent/สิทธิ์ลบ-แก้ + log การเปิดดูข้อมูลลูกค้า
+
+## Conventions
+
+- เช็ค `index.html` + `docs/` ก่อนสร้างของใหม่ ยึด design token §04 · Node parse ISO เป็น UTC ส่วนแอปใช้ Asia/Bangkok — คำนวณเวลาฝั่งที่ถูก timezone
+- ทุก code change มี test; security-critical (RLS/money/double-sell/doc-no) ต้องมี test ก่อน Done
+- QA เดิม: `node tools/qa/run.js` (33 ชุด, Playwright) — อย่าทำ QA พังตอนพอร์ต
+- ตอบสั้น กระชับ · ห้ามสร้างไฟล์ docs ใหม่นอกจากผู้ใช้ขอ
+- git: origin ชี้ repo ของเพื่อน — **ห้าม push จนกว่าผู้ใช้ยืนยัน** remote
