@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/database.types";
 
 /**
  * service_role client — ข้ามผ่าน RLS ทั้งหมด
@@ -12,7 +13,7 @@ export function createAdminSupabase() {
   if (!serviceRoleKey) {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY ยังไม่ตั้งค่า — เพิ่มใน .env.local (server-only)");
   }
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey, {
+  return createClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
