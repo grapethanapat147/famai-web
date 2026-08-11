@@ -181,6 +181,40 @@ type Sale = {
   created_at: string;
 };
 
+type Part = {
+  id: string;
+  branch_id: string;
+  code: string;
+  name: string;
+  cost: number;
+  price: number;
+  qty_on_hand: number;
+  min_qty: number;
+};
+
+type PartMovement = {
+  id: number;
+  part_id: string;
+  branch_id: string;
+  kind: string; // receive | sale | job | adjust | transfer
+  qty: number; // + เข้า / − ออก
+  job_id: string | null;
+  sale_id: string | null;
+  unit_price: number | null;
+  at: string;
+  by_user: string | null;
+  note: string | null;
+};
+
+type Freebie = {
+  id: string;
+  branch_id: string;
+  name: string;
+  cost: number;
+  qty_on_hand: number;
+  min_qty: number;
+};
+
 type FinanceCompany = {
   id: string;
   name: string;
@@ -225,6 +259,9 @@ export type Database = {
       sale: Table<Sale>;
       receivable: Table<Receivable>;
       finance_company: Table<FinanceCompany>;
+      part: Table<Part>;
+      part_movement: Table<PartMovement>;
+      freebie: Table<Freebie>;
     };
     Views: Empty;
     Functions: {
