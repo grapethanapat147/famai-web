@@ -63,6 +63,7 @@ export const MENU: MenuGroup[] = [
   {
     group: "ข้อมูลและตั้งค่า",
     items: [
+      { key: "models", title: "รุ่นรถและสี", subtitle: "แคตตาล็อกรุ่น สี ราคา และรูป", icon: "bike", roles: ["admin", "manager"] },
       { key: "imp", title: "นำเข้าข้อมูล", subtitle: "อ่านไฟล์จากระบบยามาฮ่า", icon: "folder", roles: ["admin", "manager", "stock"] },
       { key: "settings", title: "ตั้งค่าระบบ", subtitle: "เกณฑ์ทั้งหมดที่ระบบใช้", icon: "sliders", roles: ["admin", "manager"] },
       { key: "flow", title: "ผังกระบวนการ", subtitle: "ใครทำอะไรตอนไหน", icon: "route", roles: ["admin", "manager", "sales", "stock", "acct", "hr", "tech"] },
