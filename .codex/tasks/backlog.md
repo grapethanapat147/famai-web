@@ -19,3 +19,6 @@
 > Phase 1 screen/feature tickets (FAM-1007–1018: recv, stock, models, .xls import, sell,
 > documents, payment, dashboards, settings, cron, backups, pilot) — จะเพิ่มเป็น batch ถัดไป
 > หลังยืนยันทิศทาง + อ่าน docs/03 (data-model) และ docs/04 (design-system) ให้ครบ
+
+## Revision 1 (R1) — structural
+- [FAM-1022: Company entity + branch hierarchy](tickets/FAM-1022.md)

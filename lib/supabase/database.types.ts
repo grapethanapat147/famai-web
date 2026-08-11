@@ -37,6 +37,19 @@ type Branch = {
   address: string | null;
   phone: string | null;
   is_active: boolean;
+  company_id: string | null; // R1: บริษัทแม่ (migration 16)
+};
+
+type Company = {
+  id: string;
+  code: string;
+  name: string;
+  tax_id: string | null;
+  address: string | null;
+  phone: string | null;
+  is_wholesale: boolean;
+  is_active: boolean;
+  created_at: string;
 };
 
 type AppUser = {
@@ -176,6 +189,7 @@ export type Database = {
   public: {
     Tables: {
       branch: Table<Branch>;
+      company: Table<Company>;
       app_user: Table<AppUser>;
       role: Table<Role>;
       app_user_role: Table<{ user_id: string; role_id: string }>;
