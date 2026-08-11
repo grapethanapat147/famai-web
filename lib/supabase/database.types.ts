@@ -170,6 +170,16 @@ type Sale = {
   created_at: string;
 };
 
+type FinanceCompany = {
+  id: string;
+  name: string;
+  flat_rate_pct: number | null;
+  min_down_pct: number | null;
+  commission: number | null;
+  note: string | null;
+  is_active: boolean;
+};
+
 type Receivable = {
   id: string;
   branch_id: string;
@@ -202,6 +212,7 @@ export type Database = {
       app_setting: Table<AppSetting>;
       sale: Table<Sale>;
       receivable: Table<Receivable>;
+      finance_company: Table<FinanceCompany>;
     };
     Views: Empty;
     Functions: {
