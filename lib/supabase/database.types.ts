@@ -37,6 +37,19 @@ type Branch = {
   address: string | null;
   phone: string | null;
   is_active: boolean;
+  company_id: string | null; // R1: บริษัทแม่ (migration 16)
+};
+
+type Company = {
+  id: string;
+  code: string;
+  name: string;
+  tax_id: string | null;
+  address: string | null;
+  phone: string | null;
+  is_wholesale: boolean;
+  is_active: boolean;
+  created_at: string;
 };
 
 type AppUser = {
@@ -157,6 +170,16 @@ type Sale = {
   created_at: string;
 };
 
+type FinanceCompany = {
+  id: string;
+  name: string;
+  flat_rate_pct: number | null;
+  min_down_pct: number | null;
+  commission: number | null;
+  note: string | null;
+  is_active: boolean;
+};
+
 type Receivable = {
   id: string;
   branch_id: string;
@@ -176,6 +199,7 @@ export type Database = {
   public: {
     Tables: {
       branch: Table<Branch>;
+      company: Table<Company>;
       app_user: Table<AppUser>;
       role: Table<Role>;
       app_user_role: Table<{ user_id: string; role_id: string }>;
@@ -188,6 +212,7 @@ export type Database = {
       app_setting: Table<AppSetting>;
       sale: Table<Sale>;
       receivable: Table<Receivable>;
+      finance_company: Table<FinanceCompany>;
     };
     Views: Empty;
     Functions: {
