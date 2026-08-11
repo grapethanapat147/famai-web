@@ -85,6 +85,17 @@ type ModelColor = {
   color_name: string;
 };
 
+type ModelPhoto = {
+  id: string;
+  variant_id: string;
+  path_card: string;
+  path_full: string;
+  bytes: number | null;
+  sort: number;
+  alt: string | null;
+  created_at: string;
+};
+
 type PriceHistory = {
   id: string;
   variant_id: string;
@@ -206,6 +217,7 @@ export type Database = {
       app_user_branch: Table<{ user_id: string; branch_id: string }>;
       model_variant: Table<ModelVariant>;
       model_color: Table<ModelColor>;
+      model_photo: Table<ModelPhoto>;
       price_history: Table<PriceHistory>;
       motorcycle_unit: Table<MotorcycleUnit>;
       customer: Table<Customer>;

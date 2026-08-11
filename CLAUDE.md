@@ -46,3 +46,13 @@ Next.js (App Router) + TypeScript · Supabase (Postgres + RLS + Auth + Storage) 
 - QA เดิม: `node tools/qa/run.js` (33 ชุด, Playwright) — อย่าทำ QA พังตอนพอร์ต
 - ตอบสั้น กระชับ · ห้ามสร้างไฟล์ docs ใหม่นอกจากผู้ใช้ขอ
 - git: origin ชี้ repo ของเพื่อน — **ห้าม push จนกว่าผู้ใช้ยืนยัน** remote
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
