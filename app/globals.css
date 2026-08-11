@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+/*
+ * Famai design tokens — ตรงกับ docs/04-design-system.md §2 และ index.html v1.15 (ของจริงที่ shipped)
+ * แดง = Yamaha #E60012 ใช้เป็น "ช่วงเวลา" ไม่ใช่พื้นผิว (docs/04 §1)
+ */
+:root {
+  /* Canvas */
+  --paper: #fafaf8;
+  --paper-2: #f4f3ef;
+  --card: #ffffff;
+  --dark: #0e0f12;
+
+  /* Ink */
+  --ink: #16181d;
+  --ink-soft: #3a3e47;
+  --muted: #8b8f98;
+  --hairline: rgba(22, 24, 29, 0.12);
+  --hairline-2: rgba(22, 24, 29, 0.06);
+
+  /* Accent — หนึ่งเดียว */
+  --accent: #e60012;
+  --accent-hover: #ff2b39;
+  --accent-deep: #b3000e;
+  --accent-wash: rgba(230, 0, 18, 0.06);
+
+  /* สถานะ — ข้อความ+จุด ไม่มีพื้นสี */
+  --pos: #1f7a4d;
+  --attn: #a96410;
+
+  /* Spacing 8-point */
+  --s-half: 4px;
+  --s1: 8px;
+  --s2: 16px;
+  --s3: 24px;
+  --s4: 32px;
+  --s5: 48px;
+  --s6: 64px;
+
+  /* Radii */
+  --r-input: 8px;
+  --r-card: 12px;
+  --r-lg: 16px;
+  --r-btn: 24px;
+  --r-pill: 999px;
+
+  /* Shadow — ย้อมสีหมึก */
+  --sh-sm: 0 1px 2px rgba(22, 24, 29, 0.06);
+  --sh-md: 0 8px 24px rgba(22, 24, 29, 0.1);
+  --sh-lg: 0 20px 50px rgba(22, 24, 29, 0.16);
+  --glow: 0 0 30px rgba(230, 0, 18, 0.28);
+
+  /* Motion */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-ui: 0.3s;
+  --dur-in: 1s;
+
+  /* Fonts — ประกอบจากตัวแปรของ next/font (--f-thai = Noto Sans Thai self-host, --f-inter = Inter)
+     shipped ใช้ Noto Sans Thai (Thai/display) + Inter (Latin/ตัวเลข tabular) */
+  --f-display: var(--f-thai), "Noto Sans Thai", system-ui, sans-serif;
+  --f-body: var(--f-inter), var(--f-thai), "Noto Sans Thai", system-ui, sans-serif;
+  --f-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-card: var(--card);
+  --color-dark: var(--dark);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-deep: var(--accent-deep);
+  --color-pos: var(--pos);
+  --color-attn: var(--attn);
+  --color-hairline: var(--hairline);
+
+  --font-sans: var(--f-body);
+  --font-display: var(--f-display);
+  --font-mono: var(--f-mono);
+}
+
+html {
+  font-family: var(--f-body);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* ตัวเลขทุกที่ใช้ tabular-nums (docs/04 §3) */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

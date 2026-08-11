@@ -1,0 +1,64 @@
+import type { TypedSupabaseClient } from "@/lib/supabase/client-type";
+
+/**
+ * Wrapper สำหรับฟังก์ชัน/RPC ที่มีอยู่จริงในฐานข้อมูล (supabase/migrations)
+ * — ทุกตัวเป็น security definer + ประเมินในสิทธิ์ของผู้เรียก (RLS ยังบังคับ)
+ *
+ * หมายเหตุ:
+ * - ยังไม่มี "sell" RPC ในฐานข้อมูล (บันทึกการขายลง DB ค้างอยู่ — handoff) → จะเพิ่ม migration + wrapper ใน FAM-1011
+ * - punch_clock() (ลงเวลา, พารามิเตอร์เยอะ) wrap ในงานฝั่ง HR/attendance (FAM-E09) ไม่ใช่ที่นี่
+ */
+
+/** เลขเอกสารกันซ้ำ แยกสาขา × ประเภท × ปี พ.ศ. → เช่น "FMG-TAXINV-2569-00001" */
+export async function nextDocNo(
+  client: TypedSupabaseClient,
+  branchId: string,
+  docType: string,
+  yearBE: number,
+): Promise<string> {
+  const { data, error } = await client.rpc("next_doc_no", {
+    p_branch: branchId,
+    p_type: docType,
+    p_year: yearBE,
+  });
+  if (error) {
+    throw new Error(`next_doc_no ล้มเหลว: ${error.message}`);
+  }
+  return data;
+}
+
+/** id ของสาขาที่ผู้ใช้ปัจจุบันเข้าถึงได้ (ตาม app_user_branch) */
+export async function myBranches(client: TypedSupabaseClient): Promise<string[]> {
+  const { data, error } = await client.rpc("my_branches");
+  if (error) {
+    throw new Error(`my_branches ล้มเหลว: ${error.message}`);
+  }
+  return data ?? [];
+}
+
+/** ผู้ใช้ปัจจุบันมีสิทธิ์เห็นทุกสาขาหรือไม่ (app_user.all_branch) */
+export async function isAllBranch(client: TypedSupabaseClient): Promise<boolean> {
+  const { data, error } = await client.rpc("is_all_branch");
+  if (error) {
+    throw new Error(`is_all_branch ล้มเหลว: ${error.message}`);
+  }
+  return Boolean(data);
+}
+
+/** ผู้ใช้ปัจจุบันเป็น admin หรือไม่ (มี role code = 'admin') */
+export async function isAdmin(client: TypedSupabaseClient): Promise<boolean> {
+  const { data, error } = await client.rpc("is_admin");
+  if (error) {
+    throw new Error(`is_admin ล้มเหลว: ${error.message}`);
+  }
+  return Boolean(data);
+}
+
+/** ผู้ใช้ปัจจุบันเป็น admin หรือ manager หรือไม่ */
+export async function isManager(client: TypedSupabaseClient): Promise<boolean> {
+  const { data, error } = await client.rpc("is_manager");
+  if (error) {
+    throw new Error(`is_manager ล้มเหลว: ${error.message}`);
+  }
+  return Boolean(data);
+}
