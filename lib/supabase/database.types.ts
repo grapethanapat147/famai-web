@@ -181,6 +181,39 @@ type Sale = {
   created_at: string;
 };
 
+type ServiceJob = {
+  id: string;
+  branch_id: string;
+  job_no: string;
+  customer_id: string | null;
+  unit_id: string | null;
+  engine_no: string | null;
+  frame_no: string | null;
+  customer_kind: string | null;
+  odometer_km: number | null;
+  service_type: string | null;
+  symptom: string | null;
+  checked_in_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  status: string; // รับเข้า | กำลังซ่อม | รออะไหล่ | เสร็จ | ส่งมอบแล้ว
+  labor_cost: number;
+  parts_cost: number;
+  total: number;
+  technician_id: string | null;
+};
+
+type ServiceJobLine = {
+  id: number;
+  job_id: string;
+  kind: string; // labor | part
+  part_id: string | null;
+  description: string | null;
+  qty: number;
+  unit_price: number;
+  amount: number;
+};
+
 type Part = {
   id: string;
   branch_id: string;
@@ -262,6 +295,8 @@ export type Database = {
       part: Table<Part>;
       part_movement: Table<PartMovement>;
       freebie: Table<Freebie>;
+      service_job: Table<ServiceJob>;
+      service_job_line: Table<ServiceJobLine>;
     };
     Views: Empty;
     Functions: {
