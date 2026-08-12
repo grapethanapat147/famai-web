@@ -106,6 +106,17 @@ type PriceHistory = {
   source: string | null;
 };
 
+type UnitTransfer = {
+  id: string;
+  unit_id: string;
+  from_branch: string;
+  to_branch: string;
+  requested_at: string;
+  received_at: string | null;
+  status: string; // in_transit | received | cancelled
+  note: string | null;
+};
+
 type MotorcycleUnit = {
   id: string;
   branch_id: string;
@@ -348,6 +359,7 @@ export type Database = {
       model_photo: Table<ModelPhoto>;
       price_history: Table<PriceHistory>;
       motorcycle_unit: Table<MotorcycleUnit>;
+      unit_transfer: Table<UnitTransfer>;
       customer: Table<Customer>;
       app_setting: Table<AppSetting>;
       sale: Table<Sale>;
