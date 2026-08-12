@@ -181,6 +181,34 @@ type Sale = {
   created_at: string;
 };
 
+type FinanceCase = {
+  id: string;
+  branch_id: string;
+  sale_id: string | null;
+  customer_id: string;
+  company_id: string;
+  status: string; // ส่งเรื่อง | ยื่นเอกสาร | รอผล | ติดตามต่อ | อนุมัติแล้ว | ปฏิเสธ | ยกเลิก
+  amount: number | null;
+  submitted_at: string | null;
+  decided_at: string | null;
+  reject_reason: string | null;
+};
+
+type Registration = {
+  id: string;
+  sale_id: string;
+  branch_id: string;
+  stage: string; // ขายแล้ว | ส่งไฟแนนซ์ | อนุมัติ | รอทะเบียน | ป้ายขาว | ส่งมอบแล้ว
+  plate_no: string | null;
+  book_no: string | null;
+  submitted_at: string | null;
+  approved_at: string | null;
+  plate_received_at: string | null;
+  delivered_at: string | null;
+  due_at: string | null;
+  note: string | null;
+};
+
 type ServiceJob = {
   id: string;
   branch_id: string;
@@ -292,6 +320,8 @@ export type Database = {
       sale: Table<Sale>;
       receivable: Table<Receivable>;
       finance_company: Table<FinanceCompany>;
+      finance_case: Table<FinanceCase>;
+      registration: Table<Registration>;
       part: Table<Part>;
       part_movement: Table<PartMovement>;
       freebie: Table<Freebie>;
