@@ -181,6 +181,29 @@ type Sale = {
   created_at: string;
 };
 
+type Quotation = {
+  id: string;
+  branch_id: string;
+  doc_no: string;
+  quote_date: string;
+  valid_until: string | null;
+  customer_name: string;
+  customer_phone: string | null;
+  customer_address: string | null;
+  created_by: string | null;
+};
+
+type QuotationOption = {
+  id: string;
+  quotation_id: string;
+  slot: number;
+  variant_id: string | null;
+  price: number;
+  finance_id: string | null;
+  down_payment: number | null;
+  terms: Json; // [{ months, monthly }]
+};
+
 type FinanceCase = {
   id: string;
   branch_id: string;
@@ -322,6 +345,8 @@ export type Database = {
       finance_company: Table<FinanceCompany>;
       finance_case: Table<FinanceCase>;
       registration: Table<Registration>;
+      quotation: Table<Quotation>;
+      quotation_option: Table<QuotationOption>;
       part: Table<Part>;
       part_movement: Table<PartMovement>;
       freebie: Table<Freebie>;
