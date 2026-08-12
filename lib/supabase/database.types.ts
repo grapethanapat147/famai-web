@@ -276,6 +276,24 @@ type ServiceJobLine = {
   amount: number;
 };
 
+type ExpenseCategory = {
+  id: string;
+  name: string;
+};
+
+type Expense = {
+  id: string;
+  branch_id: string;
+  category_id: string;
+  spent_at: string;
+  amount: number;
+  vendor: string | null;
+  tax_invoice_no: string | null;
+  has_receipt: boolean;
+  note: string | null;
+  created_by: string | null;
+};
+
 type Part = {
   id: string;
   branch_id: string;
@@ -373,6 +391,8 @@ export type Database = {
       part: Table<Part>;
       part_movement: Table<PartMovement>;
       freebie: Table<Freebie>;
+      expense: Table<Expense>;
+      expense_category: Table<ExpenseCategory>;
       service_job: Table<ServiceJob>;
       service_job_line: Table<ServiceJobLine>;
     };
