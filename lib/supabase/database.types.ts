@@ -322,6 +322,16 @@ type Receivable = {
   balance: number; // generated = amount_due - amount_paid
 };
 
+type ReceiptPayment = {
+  id: string;
+  receivable_id: string;
+  paid_at: string;
+  amount: number;
+  method: string | null; // เงินสด | โอน | เช็ค
+  ref_no: string | null;
+  by_user: string | null;
+};
+
 type Empty = Record<PropertyKey, never>;
 
 export type Database = {
@@ -342,6 +352,7 @@ export type Database = {
       app_setting: Table<AppSetting>;
       sale: Table<Sale>;
       receivable: Table<Receivable>;
+      receipt_payment: Table<ReceiptPayment>;
       finance_company: Table<FinanceCompany>;
       finance_case: Table<FinanceCase>;
       registration: Table<Registration>;
