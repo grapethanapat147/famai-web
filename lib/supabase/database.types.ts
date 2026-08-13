@@ -276,6 +276,44 @@ type ServiceJobLine = {
   amount: number;
 };
 
+type Employee = {
+  id: string;
+  user_id: string | null;
+  branch_id: string;
+  emp_code: string | null;
+  position: string | null;
+  hired_at: string | null;
+  resigned_at: string | null;
+  base_salary: number | null;
+  ssn_no: string | null;
+  bank_code: string | null;
+  bank_account: string | null;
+};
+
+type Attendance = {
+  id: number;
+  employee_id: string;
+  work_date: string;
+  check_in: string | null;
+  check_out: string | null;
+  status: string | null; // ปกติ | สาย | ลา | ขาด
+  late_minutes: number | null;
+  work_minutes: number | null;
+  ot_minutes: number;
+};
+
+type LeaveRequest = {
+  id: string;
+  employee_id: string;
+  leave_type: string; // ลาป่วย | ลากิจ | ลาพักร้อน
+  date_from: string;
+  date_to: string;
+  status: string; // รออนุมัติ | อนุมัติ | ปฏิเสธ
+  approved_by: string | null;
+  approved_at: string | null;
+  reason: string | null;
+};
+
 type ExpenseCategory = {
   id: string;
   name: string;
@@ -393,6 +431,9 @@ export type Database = {
       freebie: Table<Freebie>;
       expense: Table<Expense>;
       expense_category: Table<ExpenseCategory>;
+      employee: Table<Employee>;
+      attendance: Table<Attendance>;
+      leave_request: Table<LeaveRequest>;
       service_job: Table<ServiceJob>;
       service_job_line: Table<ServiceJobLine>;
     };
