@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { allowedPartsTabs, canAccessPartsTab, needsParts, needsFreebies } from "@/lib/parts/tabs";
-import { isLowStock, lowStockCount, partsBadgeCount, filterParts, type PartRow } from "@/lib/parts/stock";
+import { isLowStock, lowStockCount, partsBadgeCount, filterParts, canManageParts, type PartRow } from "@/lib/parts/stock";
 
 describe("parts tab gating (docs/04 §9h)", () => {
   it("admin sees all three tabs in fixed order", () => {
@@ -73,5 +73,14 @@ describe("filterParts", () => {
 
   it("onlyLow keeps parts at/under min", () => {
     expect(filterParts(parts, { onlyLow: true }).map((p) => p.id)).toEqual(["1"]);
+  });
+});
+
+describe("canManageParts", () => {
+  it("gates inventory writes to admin/manager/stock (view-only for tech/acct)", () => {
+    expect(canManageParts(["stock"])).toBe(true);
+    expect(canManageParts(["manager"])).toBe(true);
+    expect(canManageParts(["tech"])).toBe(false);
+    expect(canManageParts(["acct"])).toBe(false);
   });
 });
