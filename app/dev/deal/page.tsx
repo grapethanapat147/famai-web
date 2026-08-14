@@ -17,7 +17,7 @@ const DEALS: Deal[] = [
     soldAt: "2026-08-11T10:00:00Z",
     stage: "ส่งไฟแนนซ์",
     plateNo: null,
-    finance: { companyName: "กรุงศรี ออโต้", status: "รอผล", amount: 84000, rejectReason: null },
+    finance: { id: "fc1", companyName: "กรุงศรี ออโต้", status: "รอผล", amount: 84000, rejectReason: null },
   },
   {
     saleId: "2",
@@ -43,7 +43,7 @@ const DEALS: Deal[] = [
     soldAt: "2026-08-08T14:00:00Z",
     stage: "ส่งไฟแนนซ์",
     plateNo: null,
-    finance: { companyName: "ทิสโก้", status: "ปฏิเสธ", amount: 170000, rejectReason: "ประวัติเครดิตไม่ผ่าน" },
+    finance: { id: "fc3", companyName: "ทิสโก้", status: "ปฏิเสธ", amount: 170000, rejectReason: "ประวัติเครดิตไม่ผ่าน" },
   },
   {
     saleId: "4",
@@ -65,14 +65,22 @@ async function mockAdvance(formData: FormData): Promise<DealActionResult> {
   return { ok: true, message: `เลื่อนไป ${to}` };
 }
 
+async function mockFinance(formData: FormData): Promise<DealActionResult> {
+  const to = String(formData.get("to"));
+  if (to === "ปฏิเสธ" && !String(formData.get("reason")).trim()) {
+    return { ok: false, error: "กรุณาระบุเหตุผลที่ปฏิเสธ" };
+  }
+  return { ok: true };
+}
+
 export default function DevDealPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
       <header className="mb-6">
         <h1 className="font-display text-[28px] font-semibold text-ink">ลูกค้าและดีล (preview)</h1>
-        <p className="mt-1 text-ink-soft">sample data — กดดีลเพื่อดูแถบขั้น + เลื่อนขั้น (เงินสด 4 ขั้น · เงินผ่อน 6 ขั้น · ตกราง=ไฟแนนซ์ปฏิเสธ)</p>
+        <p className="mt-1 text-ink-soft">sample data — กดดีลเพื่อดูแถบขั้น + เลื่อนขั้น · จัดการงานสินเชื่อ (รอผล→อนุมัติ/ปฏิเสธ · ปฏิเสธ→ยื่นใหม่)</p>
       </header>
-      <DealView deals={DEALS} canManage action={mockAdvance} />
+      <DealView deals={DEALS} canManage action={mockAdvance} canManageFinance financeAction={mockFinance} />
     </main>
   );
 }
