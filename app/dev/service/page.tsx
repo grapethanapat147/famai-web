@@ -90,14 +90,36 @@ async function mockAdvance(formData: FormData): Promise<ServiceActionResult> {
   return { ok: true };
 }
 
+async function mockCreate(formData: FormData): Promise<ServiceActionResult> {
+  if (!String(formData.get("unit_id")) && !String(formData.get("engine_no")).trim()) {
+    return { ok: false, error: "ระบุรถ" };
+  }
+  return { ok: true };
+}
+
+const CREATE_OPTIONS = {
+  customers: [
+    { id: "c1", name: "สมชาย ใจดี" },
+    { id: "c2", name: "มานี รักษ์ดี" },
+  ],
+  technicians: [
+    { id: "t1", name: "ช่างเอก" },
+    { id: "t2", name: "ช่างบี" },
+  ],
+  units: [
+    { id: "u1", label: "NMAX · แดง · E3X8E-112097", engineNo: "E3X8E-112097", frameNo: "MLEUG374100112097" },
+    { id: "u2", label: "Aerox · น้ำเงิน · E34RE-057401", engineNo: "E34RE-057401", frameNo: "MLEUE364111399878" },
+  ],
+};
+
 export default function DevServicePage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
       <header className="mb-6">
         <h1 className="font-display text-[28px] font-semibold text-ink">ศูนย์ซ่อม (preview)</h1>
-        <p className="mt-1 text-ink-soft">sample data — กดใบงานเพื่อดูรายละเอียด + เลื่อนสถานะ (ไป: … →)</p>
+        <p className="mt-1 text-ink-soft">sample data — เปิดใบงานซ่อม · กดใบงานเพื่อดูรายละเอียด + เลื่อนสถานะ (ไป: … →)</p>
       </header>
-      <ServiceView jobs={JOBS} canManage action={mockAdvance} />
+      <ServiceView jobs={JOBS} canManage action={mockAdvance} createOptions={CREATE_OPTIONS} createAction={mockCreate} />
     </main>
   );
 }

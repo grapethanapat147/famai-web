@@ -5,11 +5,21 @@ import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Drawer } from "@/components/ui/Drawer";
+import { Modal } from "@/components/ui/Modal";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatThaiDate } from "@/lib/format";
 import { SERVICE_STATUSES, nextStatuses, statusVariant, type ServiceStatus } from "@/lib/service/status";
-import { filterJobs, statusCounts, type ServiceActionResult, type ServiceJob } from "@/lib/service/jobs";
+import { SERVICE_TYPES, filterJobs, statusCounts, type ServiceActionResult, type ServiceJob } from "@/lib/service/jobs";
+
+export type ServiceCreateOptions = {
+  customers: { id: string; name: string }[];
+  units: { id: string; label: string; engineNo: string; frameNo: string }[];
+  technicians: { id: string; name: string }[];
+};
+
+const inputCls =
+  "w-full rounded-[8px] border border-hairline bg-card px-3 py-2.5 text-base text-ink outline-none focus:border-ink";
 
 const selectClass =
   "rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
@@ -18,15 +28,20 @@ export function ServiceView({
   jobs,
   canManage,
   action,
+  createOptions,
+  createAction,
 }: {
   jobs: ServiceJob[];
   canManage: boolean;
   action: (formData: FormData) => Promise<ServiceActionResult>;
+  createOptions?: ServiceCreateOptions;
+  createAction?: (formData: FormData) => Promise<ServiceActionResult>;
 }) {
   const [status, setStatus] = useState<ServiceStatus | "all">("all");
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [selected, setSelected] = useState<ServiceJob | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const counts = statusCounts(jobs);
   const rows = filterJobs(jobs, { status, search, fromDate });
@@ -55,6 +70,18 @@ export function ServiceView({
 
   return (
     <div className="mx-auto max-w-6xl">
+      {canManage && createAction && createOptions && (
+        <div className="mb-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setCreating(true)}
+            className="rounded-[24px] bg-ink px-4 py-2 text-sm font-medium text-card transition-transform active:scale-[0.99]"
+          >
+            + เปิดใบงานซ่อม
+          </button>
+        </div>
+      )}
+
       {/* สรุปตามสถานะ (docs/04: สถานะเป็นตัวบอก) */}
       <div className="mb-4 flex flex-wrap gap-2">
         {SERVICE_STATUSES.map((s) => (
@@ -107,7 +134,165 @@ export function ServiceView({
         onClose={() => setSelected(null)}
         onAdvanced={() => setSelected(null)}
       />
+
+      {canManage && createAction && createOptions && (
+        <CreateJobModal open={creating} options={createOptions} action={createAction} onClose={() => setCreating(false)} />
+      )}
     </div>
+  );
+}
+
+function CreateJobModal({
+  open,
+  options,
+  action,
+  onClose,
+}: {
+  open: boolean;
+  options: ServiceCreateOptions;
+  action: (formData: FormData) => Promise<ServiceActionResult>;
+  onClose: () => void;
+}) {
+  const [customerId, setCustomerId] = useState("");
+  const [unitId, setUnitId] = useState("");
+  const [engineNo, setEngineNo] = useState("");
+  const [frameNo, setFrameNo] = useState("");
+  const [serviceType, setServiceType] = useState(SERVICE_TYPES[0]);
+  const [odometer, setOdometer] = useState("");
+  const [symptom, setSymptom] = useState("");
+  const [technicianId, setTechnicianId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const canSubmit = unitId !== "" || engineNo.trim() !== "";
+
+  function selectUnit(id: string) {
+    setUnitId(id);
+    const u = options.units.find((x) => x.id === id);
+    if (u) {
+      setEngineNo(u.engineNo);
+      setFrameNo(u.frameNo);
+    }
+  }
+
+  function reset() {
+    setCustomerId("");
+    setUnitId("");
+    setEngineNo("");
+    setFrameNo("");
+    setServiceType(SERVICE_TYPES[0]);
+    setOdometer("");
+    setSymptom("");
+    setTechnicianId("");
+    setError(null);
+  }
+
+  async function submit() {
+    if (!canSubmit || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const fd = new FormData();
+    fd.set("customer_id", customerId);
+    fd.set("unit_id", unitId);
+    fd.set("engine_no", engineNo);
+    fd.set("frame_no", frameNo);
+    fd.set("service_type", serviceType);
+    fd.set("odometer_km", odometer);
+    fd.set("symptom", symptom);
+    fd.set("technician_id", technicianId);
+    const res = await action(fd);
+    setBusy(false);
+    if (res.ok) {
+      reset();
+      onClose();
+    } else {
+      setError(res.error);
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="เปิดใบงานซ่อม">
+      <div className="flex flex-col gap-3">
+        <Field label="ลูกค้า (ถ้ามี)">
+          <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className={inputCls}>
+            <option value="">— ลูกค้าทั่วไป / วอล์กอิน —</option>
+            {options.customers.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="รถในร้าน (ถ้ามี — เลือกแล้วเติมเลขเครื่องให้)">
+          <select value={unitId} onChange={(e) => selectUnit(e.target.value)} className={inputCls}>
+            <option value="">— รถนอก (กรอกเลขเครื่องด้านล่าง) —</option>
+            {options.units.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="เลขเครื่อง *">
+            <input value={engineNo} onChange={(e) => setEngineNo(e.target.value)} className={inputCls} />
+          </Field>
+          <Field label="เลขตัวถัง">
+            <input value={frameNo} onChange={(e) => setFrameNo(e.target.value)} className={inputCls} />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="ประเภทงาน">
+            <select value={serviceType} onChange={(e) => setServiceType(e.target.value)} className={inputCls}>
+              {SERVICE_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="เลขไมล์ (กม.)">
+            <input value={odometer} onChange={(e) => setOdometer(e.target.value)} inputMode="numeric" className={inputCls} />
+          </Field>
+        </div>
+
+        <Field label="ช่างผู้รับผิดชอบ (ถ้ามี)">
+          <select value={technicianId} onChange={(e) => setTechnicianId(e.target.value)} className={inputCls}>
+            <option value="">— ยังไม่กำหนด —</option>
+            {options.technicians.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="อาการ / รายละเอียด">
+          <input value={symptom} onChange={(e) => setSymptom(e.target.value)} className={inputCls} />
+        </Field>
+
+        {error && <StatusBadge variant="bad">{error}</StatusBadge>}
+
+        <div className="mt-1 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-[24px] px-4 py-2 text-sm text-ink-soft">
+            ยกเลิก
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!canSubmit || busy}
+            className="rounded-[24px] bg-accent px-5 py-2 text-sm font-medium text-card disabled:opacity-50"
+          >
+            {busy ? "กำลังเปิดงาน…" : "เปิดใบงาน"}
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -221,5 +406,14 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
       <dt className="text-muted">{label}</dt>
       <dd className="text-ink">{children}</dd>
     </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1 text-sm text-ink-soft">
+      {label}
+      {children}
+    </label>
   );
 }

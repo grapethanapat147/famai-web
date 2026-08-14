@@ -7,7 +7,7 @@ import {
   statusVariant,
   isServiceStatus,
 } from "@/lib/service/status";
-import { filterJobs, statusCounts, openJobCount, canManageService, type ServiceJob } from "@/lib/service/jobs";
+import { filterJobs, statusCounts, openJobCount, canManageService, isServiceType, SERVICE_TYPES, type ServiceJob } from "@/lib/service/jobs";
 
 describe("service status machine", () => {
   it("allows only forward/side transitions", () => {
@@ -104,5 +104,11 @@ describe("canManageService", () => {
     expect(canManageService(["stock"])).toBe(true);
     expect(canManageService(["sales"])).toBe(false);
     expect(canManageService(["acct"])).toBe(false);
+  });
+
+  it("isServiceType validates against SERVICE_TYPES", () => {
+    expect(SERVICE_TYPES).toContain("เช็กระยะ");
+    expect(isServiceType("ซ่อม")).toBe(true);
+    expect(isServiceType("bogus")).toBe(false);
   });
 });

@@ -15,6 +15,13 @@ export function canManageService(roleCodes: readonly string[]): boolean {
   return SERVICE_ROLES.some((r) => roles.has(r));
 }
 
+/** ประเภทงานซ่อม (service_job.service_type) */
+export const SERVICE_TYPES: readonly string[] = ["เช็กระยะ", "ซ่อม", "เคลม", "อื่นๆ"];
+
+export function isServiceType(v: string): boolean {
+  return SERVICE_TYPES.includes(v);
+}
+
 export type ServiceLine = {
   id: string;
   kind: "labor" | "part";

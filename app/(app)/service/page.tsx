@@ -2,8 +2,8 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { canManageService, type ServiceJob, type ServiceLine } from "@/lib/service/jobs";
 import { isServiceStatus, type ServiceStatus } from "@/lib/service/status";
-import { ServiceView } from "@/components/service/ServiceView";
-import { advanceStatus } from "./actions";
+import { ServiceView, type ServiceCreateOptions } from "@/components/service/ServiceView";
+import { advanceStatus, createServiceJob } from "./actions";
 
 export const metadata = { title: "ศูนย์ซ่อม — Famai Motor Group" };
 
@@ -27,7 +27,7 @@ export default async function ServicePage() {
       : Promise.resolve({ data: [] }),
     supabase.from("customer").select("id, full_name"),
     supabase.from("app_user").select("id, full_name"),
-    supabase.from("motorcycle_unit").select("id, variant_id, color_code, engine_no"),
+    supabase.from("motorcycle_unit").select("id, variant_id, color_code, engine_no, frame_no"),
     supabase.from("model_variant").select("id, model_name"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),
   ]);
@@ -77,5 +77,28 @@ export default async function ServicePage() {
     };
   });
 
-  return <ServiceView jobs={viewJobs} canManage={canManageService(user?.roleCodes ?? [])} action={advanceStatus} />;
+  const createOptions: ServiceCreateOptions = {
+    customers: (customersRes.data ?? []).map((c) => ({ id: c.id, name: c.full_name })),
+    technicians: (techsRes.data ?? []).map((t) => ({ id: t.id, name: t.full_name })),
+    units: (unitsRes.data ?? []).map((u) => {
+      const model = variantName.get(u.variant_id);
+      const color = colorName.get(`${u.variant_id}:${u.color_code}`);
+      return {
+        id: u.id,
+        label: `${model ?? "รถ"}${color ? ` · ${color}` : ""} · ${u.engine_no}`,
+        engineNo: u.engine_no,
+        frameNo: u.frame_no ?? "",
+      };
+    }),
+  };
+
+  return (
+    <ServiceView
+      jobs={viewJobs}
+      canManage={canManageService(user?.roleCodes ?? [])}
+      action={advanceStatus}
+      createOptions={createOptions}
+      createAction={createServiceJob}
+    />
+  );
 }
