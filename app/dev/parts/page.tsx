@@ -38,6 +38,10 @@ async function mockUpdateFreebie(): Promise<PartsActionResult> {
   return { ok: true };
 }
 
+async function mockOk(): Promise<PartsActionResult> {
+  return { ok: true };
+}
+
 export default function DevPartsPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
@@ -50,8 +54,12 @@ export default function DevPartsPage() {
         parts={PARTS}
         freebies={FREEBIES}
         canSeeMoney
+        canManageParts
         issuePartAction={mockIssue}
         updateFreebieAction={mockUpdateFreebie}
+        addPartAction={mockOk}
+        updatePartAction={mockOk}
+        receivePartAction={mockOk}
       />
     </main>
   );

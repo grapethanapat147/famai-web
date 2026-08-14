@@ -41,6 +41,13 @@ export function partsBadgeCount(
   return lowStockCount(parts) + lowStockCount(freebies);
 }
 
+/** ผู้จัดการคลังอะไหล่ (รับเข้า/เพิ่ม/แก้ข้อมูลหลัก) — admin/manager/stock (tech/acct ดูอย่างเดียว) */
+const PARTS_MANAGE_ROLES = ["admin", "manager", "stock"];
+export function canManageParts(roleCodes: readonly string[]): boolean {
+  const roles = new Set(roleCodes);
+  return PARTS_MANAGE_ROLES.some((r) => roles.has(r));
+}
+
 /** กรองอะไหล่ด้วยคำค้น (รหัส/ชื่อ) + เฉพาะที่ต่ำ */
 export function filterParts(
   parts: readonly PartRow[],

@@ -3,9 +3,9 @@ import { getCurrentUser } from "@/lib/auth";
 import { canSeeMoney } from "@/lib/auth/money";
 import { stripMoneyFields } from "@/lib/auth/strip-money";
 import { allowedPartsTabs, needsParts, needsFreebies } from "@/lib/parts/tabs";
-import type { FreebieRow, PartRow } from "@/lib/parts/stock";
+import { canManageParts, type FreebieRow, type PartRow } from "@/lib/parts/stock";
 import { PartsView } from "@/components/parts/PartsView";
-import { issuePart, updateFreebie } from "./actions";
+import { addPart, issuePart, receivePart, updateFreebie, updatePart } from "./actions";
 
 export const metadata = { title: "อะไหล่และของแถม — Famai Motor Group" };
 
@@ -61,8 +61,12 @@ export default async function PartsPage() {
       parts={parts}
       freebies={freebies}
       canSeeMoney={see}
+      canManageParts={canManageParts(roleCodes)}
       issuePartAction={issuePart}
       updateFreebieAction={updateFreebie}
+      addPartAction={addPart}
+      updatePartAction={updatePart}
+      receivePartAction={receivePart}
     />
   );
 }

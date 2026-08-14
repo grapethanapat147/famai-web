@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { canAccessPartsTab } from "@/lib/parts/tabs";
-import type { PartsActionResult } from "@/lib/parts/stock";
+import { canManageParts, type PartsActionResult } from "@/lib/parts/stock";
 
 const ISSUE_KINDS = new Set(["sale", "job"]);
 
@@ -147,6 +147,164 @@ export async function updateFreebie(formData: FormData): Promise<PartsActionResu
   const { data: updated, error } = await supabase.from("freebie").update(patch).eq("id", freebieId).select("id");
   if (error || !updated || updated.length === 0) {
     return { ok: false, error: "บันทึกไม่สำเร็จ (หรือไม่มีสิทธิ์สาขานี้)" };
+  }
+
+  revalidatePath("/parts");
+  return { ok: true };
+}
+
+/**
+ * เพิ่มอะไหล่ใหม่เข้าคลัง (FAM-1026) — ด่าน canManageParts (admin/manager/stock) + RLS สาขา
+ * ต้นทุนตั้งได้เฉพาะผู้มีสิทธิ์ money · unique (branch, code)
+ */
+export async function addPart(formData: FormData): Promise<PartsActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canManageParts(user.roleCodes)) {
+    return { ok: false, error: "ไม่มีสิทธิ์จัดการคลังอะไหล่" };
+  }
+
+  const code = String(formData.get("code") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const price = Number(formData.get("price"));
+  const cost = user.perms.money ? Number(formData.get("cost")) : 0;
+  const minQty = toInt(formData.get("min_qty")) ?? 0;
+  const qty = toInt(formData.get("qty_on_hand")) ?? 0;
+
+  if (!code || !name) {
+    return { ok: false, error: "กรอกรหัสและชื่ออะไหล่" };
+  }
+  if (!Number.isFinite(price) || price < 0) {
+    return { ok: false, error: "ราคาขายไม่ถูกต้อง" };
+  }
+  if (!Number.isFinite(cost) || cost < 0 || minQty < 0 || qty < 0) {
+    return { ok: false, error: "ค่าตัวเลขไม่ถูกต้อง" };
+  }
+
+  const supabase = await createServerSupabase();
+  const branchId = user.branchIds[0] ?? (await supabase.from("branch").select("id").limit(1).maybeSingle()).data?.id;
+  if (!branchId) {
+    return { ok: false, error: "ไม่พบสาขา" };
+  }
+
+  const { error } = await supabase
+    .from("part")
+    .insert({ branch_id: branchId, code, name, cost, price, qty_on_hand: qty, min_qty: minQty });
+  if (error) {
+    return { ok: false, error: error.code === "23505" ? "รหัสอะไหล่นี้มีอยู่แล้ว" : "เพิ่มไม่สำเร็จ" };
+  }
+  revalidatePath("/parts");
+  return { ok: true };
+}
+
+/** แก้ข้อมูลหลักอะไหล่ (ราคา/จุดสั่งซื้อ + ต้นทุนเฉพาะ money) — ด่าน canManageParts */
+export async function updatePart(formData: FormData): Promise<PartsActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canManageParts(user.roleCodes)) {
+    return { ok: false, error: "ไม่มีสิทธิ์จัดการคลังอะไหล่" };
+  }
+
+  const partId = String(formData.get("part_id") ?? "").trim();
+  if (!partId) {
+    return { ok: false, error: "ไม่พบอะไหล่" };
+  }
+
+  const patch: { price?: number; min_qty?: number; cost?: number } = {};
+  const priceRaw = String(formData.get("price") ?? "").trim();
+  if (priceRaw !== "") {
+    const price = Number(priceRaw);
+    if (!Number.isFinite(price) || price < 0) {
+      return { ok: false, error: "ราคาขายไม่ถูกต้อง" };
+    }
+    patch.price = price;
+  }
+  const min = toInt(formData.get("min_qty"));
+  if (min != null) {
+    if (min < 0) {
+      return { ok: false, error: "จุดสั่งซื้อไม่ถูกต้อง" };
+    }
+    patch.min_qty = min;
+  }
+  const costRaw = String(formData.get("cost") ?? "").trim();
+  if (costRaw !== "") {
+    if (!user.perms.money) {
+      return { ok: false, error: "ไม่มีสิทธิ์แก้ต้นทุน" };
+    }
+    const cost = Number(costRaw);
+    if (!Number.isFinite(cost) || cost < 0) {
+      return { ok: false, error: "ต้นทุนไม่ถูกต้อง" };
+    }
+    patch.cost = cost;
+  }
+  if (Object.keys(patch).length === 0) {
+    return { ok: false, error: "ไม่มีข้อมูลที่จะแก้" };
+  }
+
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase.from("part").update(patch).eq("id", partId).select("id");
+  if (error || !data || data.length === 0) {
+    return { ok: false, error: "บันทึกไม่สำเร็จ (หรือไม่มีสิทธิ์สาขานี้)" };
+  }
+  revalidatePath("/parts");
+  return { ok: true };
+}
+
+/**
+ * รับอะไหล่เข้า (บวกสต๊อก) — ด่าน canManageParts · compare-and-swap กันแข่งกัน + log part_movement kind=receive
+ */
+export async function receivePart(formData: FormData): Promise<PartsActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canManageParts(user.roleCodes)) {
+    return { ok: false, error: "ไม่มีสิทธิ์จัดการคลังอะไหล่" };
+  }
+
+  const partId = String(formData.get("part_id") ?? "").trim();
+  const qty = toInt(formData.get("qty"));
+  if (!partId) {
+    return { ok: false, error: "ไม่พบอะไหล่" };
+  }
+  if (qty == null || qty <= 0) {
+    return { ok: false, error: "จำนวนต้องมากกว่า 0" };
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: part, error: readError } = await supabase
+    .from("part")
+    .select("id, branch_id, qty_on_hand")
+    .eq("id", partId)
+    .maybeSingle();
+  if (readError || !part) {
+    return { ok: false, error: "ไม่พบอะไหล่ (หรือไม่มีสิทธิ์สาขานี้)" };
+  }
+
+  const { data: updated, error: casError } = await supabase
+    .from("part")
+    .update({ qty_on_hand: part.qty_on_hand + qty })
+    .eq("id", partId)
+    .eq("qty_on_hand", part.qty_on_hand)
+    .select("id");
+  if (casError || !updated || updated.length === 0) {
+    return { ok: false, error: "สต๊อกเพิ่งเปลี่ยน กรุณาลองใหม่" };
+  }
+
+  const { error: moveError } = await supabase.from("part_movement").insert({
+    part_id: partId,
+    branch_id: part.branch_id,
+    kind: "receive",
+    qty,
+    by_user: user.id,
+  });
+  if (moveError) {
+    await supabase.from("part").update({ qty_on_hand: part.qty_on_hand }).eq("id", partId).eq("qty_on_hand", part.qty_on_hand + qty);
+    return { ok: false, error: "บันทึกการรับเข้าไม่สำเร็จ กรุณาลองใหม่" };
   }
 
   revalidatePath("/parts");
