@@ -17,6 +17,7 @@ export function canManageDeal(roleCodes: readonly string[]): boolean {
 
 /** สถานะเคสสินเชื่อ (ธ.) — ปฏิเสธ = ดีลตกราง */
 export type FinanceInfo = {
+  id: string;
   companyName: string;
   status: string; // ส่งเรื่อง | ยื่นเอกสาร | รอผล | ติดตามต่อ | อนุมัติแล้ว | ปฏิเสธ | ยกเลิก
   amount: number | null;

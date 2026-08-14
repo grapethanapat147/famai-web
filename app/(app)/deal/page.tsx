@@ -1,9 +1,10 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { canManageDeal, type Deal, type FinanceInfo } from "@/lib/deal/deals";
+import { canManageFinance } from "@/lib/deal/finance";
 import { isRegStage, type PayMethod, type RegStage } from "@/lib/deal/stage";
 import { DealView } from "@/components/deal/DealView";
-import { advanceRegistration } from "./actions";
+import { advanceFinance, advanceRegistration } from "./actions";
 
 export const metadata = { title: "ลูกค้าและดีล — Famai Motor Group" };
 
@@ -25,7 +26,7 @@ export default async function DealPage() {
       ? supabase.from("registration").select("id, sale_id, stage, plate_no").in("sale_id", saleIds)
       : Promise.resolve({ data: [] }),
     saleIds.length
-      ? supabase.from("finance_case").select("sale_id, company_id, status, amount, reject_reason").in("sale_id", saleIds)
+      ? supabase.from("finance_case").select("id, sale_id, company_id, status, amount, reject_reason").in("sale_id", saleIds)
       : Promise.resolve({ data: [] }),
     supabase.from("customer").select("id, full_name"),
     supabase.from("finance_company").select("id, name"),
@@ -35,6 +36,7 @@ export default async function DealPage() {
   ]);
 
   type FinRow = {
+    id: string;
     sale_id: string | null;
     company_id: string;
     status: string;
@@ -64,6 +66,7 @@ export default async function DealPage() {
     const stage: RegStage = reg && isRegStage(reg.stage) ? reg.stage : "ขายแล้ว";
     const finance: FinanceInfo | null = fin
       ? {
+          id: fin.id,
           companyName: companyName.get(fin.company_id) ?? "—",
           status: fin.status,
           amount: fin.amount != null ? Number(fin.amount) : null,
@@ -85,5 +88,14 @@ export default async function DealPage() {
     };
   });
 
-  return <DealView deals={deals} canManage={canManageDeal(user?.roleCodes ?? [])} action={advanceRegistration} />;
+  const roleCodes = user?.roleCodes ?? [];
+  return (
+    <DealView
+      deals={deals}
+      canManage={canManageDeal(roleCodes)}
+      action={advanceRegistration}
+      canManageFinance={canManageFinance(roleCodes)}
+      financeAction={advanceFinance}
+    />
+  );
 }

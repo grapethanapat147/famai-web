@@ -215,6 +215,16 @@ type QuotationOption = {
   terms: Json; // [{ months, monthly }]
 };
 
+type FinanceCaseEvent = {
+  id: number;
+  case_id: string;
+  from_status: string | null;
+  to_status: string;
+  at: string;
+  by_user: string | null;
+  note: string | null;
+};
+
 type FinanceCase = {
   id: string;
   branch_id: string;
@@ -444,6 +454,7 @@ export type Database = {
       receipt_payment: Table<ReceiptPayment>;
       finance_company: Table<FinanceCompany>;
       finance_case: Table<FinanceCase>;
+      finance_case_event: Table<FinanceCaseEvent>;
       registration: Table<Registration>;
       quotation: Table<Quotation>;
       quotation_option: Table<QuotationOption>;

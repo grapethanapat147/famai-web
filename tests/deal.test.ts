@@ -61,8 +61,8 @@ function deal(over: Partial<Deal>): Deal {
 
 describe("deal derivations", () => {
   it("isOffTrack when finance rejected", () => {
-    expect(isOffTrack(deal({ finance: { companyName: "กรุงศรี", status: "ปฏิเสธ", amount: 80000, rejectReason: "เครดิตไม่ผ่าน" } }))).toBe(true);
-    expect(isOffTrack(deal({ finance: { companyName: "กรุงศรี", status: "รอผล", amount: 80000, rejectReason: null } }))).toBe(false);
+    expect(isOffTrack(deal({ finance: { id: "f1", companyName: "กรุงศรี", status: "ปฏิเสธ", amount: 80000, rejectReason: "เครดิตไม่ผ่าน" } }))).toBe(true);
+    expect(isOffTrack(deal({ finance: { id: "f1", companyName: "กรุงศรี", status: "รอผล", amount: 80000, rejectReason: null } }))).toBe(false);
     expect(isOffTrack(deal({ finance: null }))).toBe(false);
   });
 
