@@ -228,6 +228,27 @@ type FinanceCase = {
   reject_reason: string | null;
 };
 
+type CompanyEvent = {
+  id: string;
+  branch_id: string | null;
+  event_date: string;
+  event_type: string; // อีเวนท์ | ประชุม | รับเชิญ | อื่นๆ
+  title: string;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+type ServiceReminder = {
+  id: string;
+  customer_id: string;
+  unit_id: string | null;
+  target_km: number;
+  due_date: string | null;
+  status: string;
+  notified_at: string | null;
+};
+
 type Registration = {
   id: string;
   sale_id: string;
@@ -426,6 +447,8 @@ export type Database = {
       registration: Table<Registration>;
       quotation: Table<Quotation>;
       quotation_option: Table<QuotationOption>;
+      company_event: Table<CompanyEvent>;
+      service_reminder: Table<ServiceReminder>;
       part: Table<Part>;
       part_movement: Table<PartMovement>;
       freebie: Table<Freebie>;
