@@ -4,6 +4,7 @@ import { getSetting } from "@/lib/settings";
 import { latestPrice } from "@/lib/models/rows";
 import { canManageQuote, type QuoteListRow } from "@/lib/quote/quotes";
 import { QuoteView, type QuoteFinanceCo, type QuoteVehicle } from "@/components/quote/QuoteView";
+import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 import { createQuote } from "./actions";
 
 export const metadata = { title: "ใบเสนอราคา — Famai Motor Group" };
@@ -24,7 +25,7 @@ export default async function QuotePage() {
   const quotesRaw = quoteRows ?? [];
   const quoteIds = quotesRaw.map((q) => q.id);
 
-  const [optsRes, usersRes, variantsRes, pricesRes, finRes] = await Promise.all([
+  const [optsRes, usersRes, variantsRes, pricesRes, finRes, branchRes, companyRes] = await Promise.all([
     quoteIds.length
       ? supabase.from("quotation_option").select("quotation_id").in("quotation_id", quoteIds)
       : Promise.resolve({ data: [] }),
@@ -32,6 +33,8 @@ export default async function QuotePage() {
     supabase.from("model_variant").select("id, code, model_name, model_th"),
     supabase.from("price_history").select("variant_id, effective_from, retail"),
     supabase.from("finance_company").select("id, name, flat_rate_pct").eq("is_active", true),
+    supabase.from("branch").select("id, name, address, phone, tax_id, company_id").eq("is_active", true),
+    supabase.from("company").select("id, name, address, phone, tax_id"),
   ]);
 
   const optCount = new Map<string, number>();
@@ -77,6 +80,20 @@ export default async function QuotePage() {
 
   const financeTerms = await getSetting("finance_terms");
 
+  const branches = branchRes.data ?? [];
+  const userBranch = branches.find((b) => user?.branchIds.includes(b.id)) ?? branches[0] ?? null;
+  const company = userBranch?.company_id
+    ? (companyRes.data ?? []).find((c) => c.id === userBranch.company_id) ?? null
+    : null;
+  const seller: QuoteSeller = {
+    shopName: company?.name ?? "Famai Motor Group",
+    branchName: userBranch?.name ?? "สำนักงานใหญ่",
+    address: userBranch?.address ?? company?.address ?? null,
+    phone: userBranch?.phone ?? company?.phone ?? null,
+    taxId: userBranch?.tax_id ?? company?.tax_id ?? null,
+    sellerName: user?.fullName ?? "",
+  };
+
   return (
     <QuoteView
       quotes={quotes}
@@ -84,6 +101,7 @@ export default async function QuotePage() {
       financeCompanies={financeCompanies}
       financeTerms={financeTerms}
       today={todayISO()}
+      seller={seller}
       canManage={canManageQuote(user?.roleCodes ?? [])}
       action={createQuote}
     />

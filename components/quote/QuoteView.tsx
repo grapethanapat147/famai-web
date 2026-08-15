@@ -8,6 +8,8 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatThaiDate } from "@/lib/format";
 import { financedAmount, optionTerms } from "@/lib/quote/finance";
 import { filterQuotes, isExpired, type QuoteActionResult, type QuoteListRow } from "@/lib/quote/quotes";
+import { quotePrintColumns } from "@/lib/quote/print";
+import { PrintableQuoteDoc, type QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 
 export type QuoteVehicle = { variantId: string; code: string; name: string; retail: number };
 export type QuoteFinanceCo = { id: string; name: string; ratePct: number };
@@ -23,6 +25,7 @@ export function QuoteView({
   financeCompanies,
   financeTerms,
   today,
+  seller,
   canManage,
   action,
 }: {
@@ -31,6 +34,7 @@ export function QuoteView({
   financeCompanies: QuoteFinanceCo[];
   financeTerms: number[];
   today: string;
+  seller: QuoteSeller;
   canManage: boolean;
   action: (formData: FormData) => Promise<QuoteActionResult>;
 }) {
@@ -42,6 +46,8 @@ export function QuoteView({
         vehicles={vehicles}
         financeCompanies={financeCompanies}
         financeTerms={financeTerms}
+        today={today}
+        seller={seller}
         action={action}
         onBack={() => setMode("list")}
       />
@@ -132,12 +138,16 @@ function QuoteBuilder({
   vehicles,
   financeCompanies,
   financeTerms,
+  today,
+  seller,
   action,
   onBack,
 }: {
   vehicles: QuoteVehicle[];
   financeCompanies: QuoteFinanceCo[];
   financeTerms: number[];
+  today: string;
+  seller: QuoteSeller;
   action: (formData: FormData) => Promise<QuoteActionResult>;
   onBack: () => void;
 }) {
@@ -148,6 +158,7 @@ function QuoteBuilder({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedDoc, setSavedDoc] = useState<string | null>(null);
+  const [preview, setPreview] = useState(false);
 
   function setOpt(i: number, patch: Partial<OptState>) {
     setOpts((prev) => prev.map((o, idx) => (idx === i ? { ...o, ...patch } : o)));
@@ -168,6 +179,7 @@ function QuoteBuilder({
   });
   const active = built.filter((b) => b.v && b.o.price > 0);
   const canSubmit = customerName.trim() !== "" && active.length > 0;
+  const printColumns = quotePrintColumns(built);
 
   async function save() {
     if (!canSubmit || busy) {
@@ -206,8 +218,18 @@ function QuoteBuilder({
         <div className="flex gap-2">
           <button
             type="button"
+            onClick={() => setPreview((p) => !p)}
+            disabled={printColumns.length === 0}
+            className={`rounded-[24px] border px-4 py-2 text-sm disabled:opacity-50 ${
+              preview ? "border-ink bg-card text-ink" : "border-hairline text-ink-soft"
+            }`}
+          >
+            {preview ? "ซ่อนตัวอย่าง" : "ดูตัวอย่าง"}
+          </button>
+          <button
+            type="button"
             onClick={() => window.print()}
-            disabled={active.length === 0}
+            disabled={printColumns.length === 0}
             className="rounded-[24px] border border-hairline px-4 py-2 text-sm text-ink-soft disabled:opacity-50"
           >
             พิมพ์
@@ -275,8 +297,27 @@ function QuoteBuilder({
         ))}
       </div>
 
-      {/* ตารางเทียบ */}
-      <CompareTable built={built} active={active.length > 0} financeTerms={financeTerms} customerName={customerName} />
+      {/* ตารางเทียบ (บนจอ) */}
+      <div className="print:hidden">
+        <CompareTable built={built} active={active.length > 0} financeTerms={financeTerms} />
+      </div>
+
+      {/* เอกสารพิมพ์: ซ่อนบนจอ (เว้นเปิดตัวอย่าง) · แสดงเดี่ยวตอนพิมพ์ */}
+      {printColumns.length > 0 && (
+        <div className={preview ? "mt-6" : ""}>
+          <PrintableQuoteDoc
+            seller={seller}
+            docNo={savedDoc}
+            quoteDate={today}
+            validUntil={validUntil || null}
+            customerName={customerName}
+            customerPhone={customerPhone}
+            columns={printColumns}
+            financeTerms={financeTerms}
+            preview={preview}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -285,12 +326,10 @@ function CompareTable({
   built,
   active,
   financeTerms,
-  customerName,
 }: {
   built: Array<{ o: OptState; v?: QuoteVehicle; fin?: QuoteFinanceCo; financed: number; terms: Array<{ months: number; monthly: number }> }>;
   active: boolean;
   financeTerms: number[];
-  customerName: string;
 }) {
   const cols = built.filter((b) => b.v && b.o.price > 0);
   if (!active) {
@@ -303,8 +342,6 @@ function CompareTable({
 
   return (
     <div className="overflow-x-auto rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
-      <p className="mb-1 hidden text-lg font-semibold text-ink print:block">ใบเสนอราคา</p>
-      {customerName && <p className="mb-3 hidden text-sm text-ink-soft print:block">ลูกค้า: {customerName}</p>}
       <table className="w-full min-w-[360px] text-sm">
         <thead>
           <tr className="border-b border-hairline text-left">

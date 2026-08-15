@@ -1,6 +1,7 @@
 "use client";
 
 import { QuoteView, type QuoteFinanceCo, type QuoteVehicle } from "@/components/quote/QuoteView";
+import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 import type { QuoteActionResult, QuoteListRow } from "@/lib/quote/quotes";
 
 /** พรีวิวหน้าใบเสนอราคา (quote) — sample data · /quote จริงต่อ DB ผ่าน RLS */
@@ -23,6 +24,15 @@ const FINANCE: QuoteFinanceCo[] = [
   { id: "tisco", name: "ทิสโก้", ratePct: 1.42 },
 ];
 
+const SELLER: QuoteSeller = {
+  shopName: "Famai Motor Group",
+  branchName: "ปากช่อง",
+  address: "123 ถ.มิตรภาพ ต.ปากช่อง อ.ปากช่อง จ.นครราชสีมา 30130",
+  phone: "044-123-456",
+  taxId: "0305xxxxxxxxx",
+  sellerName: "เอ พนักงานขาย",
+};
+
 async function mockCreate(formData: FormData): Promise<QuoteActionResult> {
   const name = String(formData.get("customer_name") ?? "").trim();
   if (!name) {
@@ -44,6 +54,7 @@ export default function DevQuotePage() {
         financeCompanies={FINANCE}
         financeTerms={[12, 18, 24, 36, 48]}
         today="2026-08-12"
+        seller={SELLER}
         canManage
         action={mockCreate}
       />
