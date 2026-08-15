@@ -1,10 +1,10 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import { canManageDeal, type Deal, type FinanceInfo } from "@/lib/deal/deals";
+import { canManageDeal, canVoidDeal, type Deal, type FinanceInfo } from "@/lib/deal/deals";
 import { canManageFinance } from "@/lib/deal/finance";
 import { isRegStage, type PayMethod, type RegStage } from "@/lib/deal/stage";
 import { DealView } from "@/components/deal/DealView";
-import { advanceFinance, advanceRegistration } from "./actions";
+import { advanceFinance, advanceRegistration, voidDeal } from "./actions";
 
 export const metadata = { title: "ลูกค้าและดีล — Famai Motor Group" };
 
@@ -96,6 +96,8 @@ export default async function DealPage() {
       action={advanceRegistration}
       canManageFinance={canManageFinance(roleCodes)}
       financeAction={advanceFinance}
+      canVoid={canVoidDeal(roleCodes)}
+      voidAction={voidDeal}
     />
   );
 }

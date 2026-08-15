@@ -15,6 +15,19 @@ export function canManageDeal(roleCodes: readonly string[]): boolean {
   return DEAL_ROLES.some((r) => roles.has(r));
 }
 
+/** ผู้มีสิทธิ์ยกเลิกดีล (ลูกค้าเท) — เข้มกว่าเลื่อนขั้น เพราะย้อนการขาย/คืนสต๊อก จำกัดหัวหน้า */
+const VOID_ROLES = ["admin", "manager"];
+
+export function canVoidDeal(roleCodes: readonly string[]): boolean {
+  const roles = new Set(roleCodes);
+  return VOID_ROLES.some((r) => roles.has(r));
+}
+
+/** ยกเลิกดีลได้เฉพาะก่อนส่งมอบ — ส่งมอบแล้วถือว่าจบ ย้อนผ่านหน้านี้ไม่ได้ */
+export function isVoidableStage(stage: RegStage): boolean {
+  return stage !== "ส่งมอบแล้ว";
+}
+
 /** สถานะเคสสินเชื่อ (ธ.) — ปฏิเสธ = ดีลตกราง */
 export type FinanceInfo = {
   id: string;

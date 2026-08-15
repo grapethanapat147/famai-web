@@ -9,7 +9,7 @@ import {
   stageTimestampField,
   REG_STAGES,
 } from "@/lib/deal/stage";
-import { filterDeals, stageCounts, openDealCount, isOffTrack, canManageDeal, type Deal } from "@/lib/deal/deals";
+import { filterDeals, stageCounts, openDealCount, isOffTrack, canManageDeal, canVoidDeal, isVoidableStage, type Deal } from "@/lib/deal/deals";
 
 describe("deal track (§9g: cash 4 steps, finance 6 steps)", () => {
   it("cash track drops the finance steps", () => {
@@ -89,5 +89,24 @@ describe("canManageDeal", () => {
     expect(canManageDeal(["acct"])).toBe(true);
     expect(canManageDeal(["tech"])).toBe(false);
     expect(canManageDeal(["stock"])).toBe(false);
+  });
+});
+
+describe("canVoidDeal (ลูกค้าเท — เข้มกว่า manage)", () => {
+  it("only admin/manager may void; sales/acct may not", () => {
+    expect(canVoidDeal(["admin"])).toBe(true);
+    expect(canVoidDeal(["manager"])).toBe(true);
+    expect(canVoidDeal(["sales"])).toBe(false);
+    expect(canVoidDeal(["acct"])).toBe(false);
+    expect(canVoidDeal([])).toBe(false);
+  });
+});
+
+describe("isVoidableStage", () => {
+  it("blocks void once delivered, allows before", () => {
+    expect(isVoidableStage("ขายแล้ว")).toBe(true);
+    expect(isVoidableStage("ส่งไฟแนนซ์")).toBe(true);
+    expect(isVoidableStage("รอทะเบียน")).toBe(true);
+    expect(isVoidableStage("ส่งมอบแล้ว")).toBe(false);
   });
 });

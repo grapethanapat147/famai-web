@@ -73,14 +73,29 @@ async function mockFinance(formData: FormData): Promise<DealActionResult> {
   return { ok: true };
 }
 
+async function mockVoid(formData: FormData): Promise<DealActionResult> {
+  if (!String(formData.get("reason")).trim()) {
+    return { ok: false, error: "กรุณาระบุเหตุผลที่ยกเลิก" };
+  }
+  return { ok: true, message: "ยกเลิกดีลแล้ว" };
+}
+
 export default function DevDealPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
       <header className="mb-6">
         <h1 className="font-display text-[28px] font-semibold text-ink">ลูกค้าและดีล (preview)</h1>
-        <p className="mt-1 text-ink-soft">sample data — กดดีลเพื่อดูแถบขั้น + เลื่อนขั้น · จัดการงานสินเชื่อ (รอผล→อนุมัติ/ปฏิเสธ · ปฏิเสธ→ยื่นใหม่)</p>
+        <p className="mt-1 text-ink-soft">sample data — กดดีลเพื่อดูแถบขั้น + เลื่อนขั้น · จัดการงานสินเชื่อ (รอผล→อนุมัติ/ปฏิเสธ · ปฏิเสธ→ยื่นใหม่) · ลูกค้าเท (ยกเลิกดีล)</p>
       </header>
-      <DealView deals={DEALS} canManage action={mockAdvance} canManageFinance financeAction={mockFinance} />
+      <DealView
+        deals={DEALS}
+        canManage
+        action={mockAdvance}
+        canManageFinance
+        financeAction={mockFinance}
+        canVoid
+        voidAction={mockVoid}
+      />
     </main>
   );
 }

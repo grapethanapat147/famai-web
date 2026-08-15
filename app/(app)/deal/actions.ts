@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import { canManageDeal, type DealActionResult } from "@/lib/deal/deals";
+import { canManageDeal, canVoidDeal, isVoidableStage, type DealActionResult } from "@/lib/deal/deals";
 import { isRegStage, regNext, stageTimestampField, type PayMethod } from "@/lib/deal/stage";
 import { canFinanceTransition, canManageFinance, isFinanceStatus } from "@/lib/deal/finance";
 
@@ -141,6 +141,70 @@ export async function advanceFinance(formData: FormData): Promise<DealActionResu
     by_user: user.id,
     note: to === "ปฏิเสธ" ? reason : null,
   });
+
+  revalidatePath("/deal");
+  return { ok: true };
+}
+
+/**
+ * ยกเลิกดีล — ลูกค้าเท (FAM-1028) — ด่านสิทธิ์ยกเลิก (admin/manager) + เหตุผลจำเป็น
+ * ยกเลิกได้ก่อนส่งมอบเท่านั้น · soft-void การขาย (voided_at/voided_reason) แบบ compare-and-swap กันยกเลิกซ้ำ
+ * ผลข้างเคียง best-effort (ไม่ล้มการยกเลิกหลักถ้าพลาด): คืนรถเข้าสต๊อก (sold→available, CAS) + ปิดเคสสินเชื่อ (→ยกเลิก)
+ */
+export async function voidDeal(formData: FormData): Promise<DealActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canVoidDeal(user.roleCodes)) {
+    return { ok: false, error: "ไม่มีสิทธิ์ยกเลิกดีล (เฉพาะหัวหน้า/ผู้ดูแล)" };
+  }
+
+  const saleId = String(formData.get("sale_id") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!saleId) {
+    return { ok: false, error: "ไม่พบดีล" };
+  }
+  if (!reason) {
+    return { ok: false, error: "กรุณาระบุเหตุผลที่ยกเลิก" };
+  }
+
+  const supabase = await createServerSupabase();
+
+  const { data: sale, error: readError } = await supabase
+    .from("sale")
+    .select("id, unit_id, voided_at")
+    .eq("id", saleId)
+    .maybeSingle();
+  if (readError || !sale) {
+    return { ok: false, error: "ไม่พบดีล (หรือไม่มีสิทธิ์สาขานี้)" };
+  }
+  if (sale.voided_at) {
+    return { ok: false, error: "ดีลนี้ถูกยกเลิกไปแล้ว" };
+  }
+
+  // ห้ามยกเลิกหลังส่งมอบ — อ่านขั้นทะเบียนจริง
+  const { data: reg } = await supabase.from("registration").select("stage").eq("sale_id", saleId).maybeSingle();
+  if (reg && isRegStage(reg.stage) && !isVoidableStage(reg.stage)) {
+    return { ok: false, error: "ดีลส่งมอบแล้ว ยกเลิกผ่านหน้านี้ไม่ได้" };
+  }
+
+  const { data: voided, error: casError } = await supabase
+    .from("sale")
+    .update({ voided_at: new Date().toISOString(), voided_reason: reason })
+    .eq("id", saleId)
+    .is("voided_at", null)
+    .select("id");
+  if (casError || !voided || voided.length === 0) {
+    return { ok: false, error: "ดีลเพิ่งถูกยกเลิก กรุณารีเฟรช" };
+  }
+
+  // คืนรถเข้าสต๊อก (best-effort) — เฉพาะคันที่ยังสถานะ sold
+  if (sale.unit_id) {
+    await supabase.from("motorcycle_unit").update({ status: "available" }).eq("id", sale.unit_id).eq("status", "sold");
+  }
+  // ปิดเคสสินเชื่อของดีลนี้ (best-effort) — ดีลถูกยกเลิกแล้ว เคสสินเชื่อย่อมยกเลิกตาม (idempotent)
+  await supabase.from("finance_case").update({ status: "ยกเลิก" }).eq("sale_id", saleId).neq("status", "ยกเลิก");
 
   revalidatePath("/deal");
   return { ok: true };
