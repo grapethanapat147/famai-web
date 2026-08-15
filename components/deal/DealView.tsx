@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { StepBar } from "@/components/ui/StepBar";
 import { formatThaiDate } from "@/lib/format";
 import { dealTrack, regNext, stageIndex, stageVariant, type RegStage } from "@/lib/deal/stage";
-import { filterDeals, isOffTrack, stageCounts, type Deal, type DealActionResult } from "@/lib/deal/deals";
+import { filterDeals, isOffTrack, isVoidableStage, stageCounts, type Deal, type DealActionResult } from "@/lib/deal/deals";
 import { REG_STAGES } from "@/lib/deal/stage";
 import { finNext, financeActionLabel, financeStatusVariant, isFinanceStatus, type FinanceStatus } from "@/lib/deal/finance";
 
@@ -26,12 +26,16 @@ export function DealView({
   action,
   canManageFinance = false,
   financeAction,
+  canVoid = false,
+  voidAction,
 }: {
   deals: Deal[];
   canManage: boolean;
   action: (formData: FormData) => Promise<DealActionResult>;
   canManageFinance?: boolean;
   financeAction?: (formData: FormData) => Promise<DealActionResult>;
+  canVoid?: boolean;
+  voidAction?: (formData: FormData) => Promise<DealActionResult>;
 }) {
   const [stage, setStage] = useState<RegStage | "all">("all");
   const [search, setSearch] = useState("");
@@ -122,6 +126,8 @@ export function DealView({
         action={action}
         canManageFinance={canManageFinance}
         financeAction={financeAction}
+        canVoid={canVoid}
+        voidAction={voidAction}
         onClose={() => setSelected(null)}
         onAdvanced={() => setSelected(null)}
       />
@@ -135,6 +141,8 @@ function DealDrawer({
   action,
   canManageFinance,
   financeAction,
+  canVoid,
+  voidAction,
   onClose,
   onAdvanced,
 }: {
@@ -143,12 +151,16 @@ function DealDrawer({
   action: (formData: FormData) => Promise<DealActionResult>;
   canManageFinance: boolean;
   financeAction?: (formData: FormData) => Promise<DealActionResult>;
+  canVoid: boolean;
+  voidAction?: (formData: FormData) => Promise<DealActionResult>;
   onClose: () => void;
   onAdvanced: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [voiding, setVoiding] = useState(false);
+  const [voidReason, setVoidReason] = useState("");
   const [current, setCurrent] = useState<string | null>(null);
 
   // รีเซ็ต error/เหตุผล เมื่อเปิดดีลใหม่ (เทียบ id ระหว่าง render)
@@ -156,6 +168,30 @@ function DealDrawer({
     setCurrent(deal.saleId);
     setError(null);
     setRejectReason("");
+    setVoiding(false);
+    setVoidReason("");
+  }
+
+  async function doVoid() {
+    if (!deal || !voidAction || busy) {
+      return;
+    }
+    if (!voidReason.trim()) {
+      setError("กรุณาระบุเหตุผลที่ยกเลิก");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const fd = new FormData();
+    fd.set("sale_id", deal.saleId);
+    fd.set("reason", voidReason.trim());
+    const res = await voidAction(fd);
+    setBusy(false);
+    if (res.ok) {
+      onAdvanced();
+    } else {
+      setError(res.error);
+    }
   }
 
   async function advanceFin(caseId: string, to: FinanceStatus) {
@@ -260,6 +296,52 @@ function DealDrawer({
               >
                 {busy ? "กำลังบันทึก…" : `ไป: ${next} →`}
               </button>
+            </div>
+          )}
+
+          {canVoid && voidAction && isVoidableStage(deal.stage) && (
+            <div className="mt-2 border-t border-hairline pt-3">
+              {voiding ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs text-muted">ลูกค้าเท — ยกเลิกดีลนี้ (คืนรถเข้าสต๊อก + ปิดเคสสินเชื่อ)</p>
+                  <input
+                    value={voidReason}
+                    onChange={(e) => setVoidReason(e.target.value)}
+                    placeholder="เหตุผลที่ยกเลิก (จำเป็น)"
+                    className={inputCls}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={busy || !voidReason.trim()}
+                      onClick={doVoid}
+                      className="flex-1 rounded-[24px] bg-accent py-2.5 text-sm font-medium text-card disabled:opacity-50"
+                    >
+                      {busy ? "กำลังยกเลิก…" : "ยืนยันยกเลิกดีล"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        setVoiding(false);
+                        setVoidReason("");
+                        setError(null);
+                      }}
+                      className="rounded-[24px] border border-hairline px-4 py-2.5 text-sm text-ink-soft disabled:opacity-50"
+                    >
+                      ไม่ยกเลิก
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setVoiding(true)}
+                  className="text-sm text-accent hover:underline"
+                >
+                  ลูกค้าเท — ยกเลิกดีล
+                </button>
+              )}
             </div>
           )}
         </div>
