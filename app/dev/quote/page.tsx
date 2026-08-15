@@ -2,13 +2,36 @@
 
 import { QuoteView, type QuoteFinanceCo, type QuoteVehicle } from "@/components/quote/QuoteView";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
-import type { QuoteActionResult, QuoteListRow } from "@/lib/quote/quotes";
+import type { QuoteActionResult, SavedQuote } from "@/lib/quote/quotes";
 
 /** พรีวิวหน้าใบเสนอราคา (quote) — sample data · /quote จริงต่อ DB ผ่าน RLS */
 
-const QUOTES: QuoteListRow[] = [
-  { id: "1", docNo: "FMG-QUOTE-2569-00007", customerName: "สมชาย ใจดี", quoteDate: "2026-08-11", validUntil: "2026-08-25", optionCount: 2, createdByName: "เอ" },
-  { id: "2", docNo: "FMG-QUOTE-2569-00006", customerName: "มานี รักษ์ดี", quoteDate: "2026-08-05", validUntil: "2026-08-10", optionCount: 1, createdByName: "บี" },
+const QUOTES: SavedQuote[] = [
+  {
+    id: "1",
+    docNo: "FMG-QUOTE-2569-00007",
+    customerName: "สมชาย ใจดี",
+    customerPhone: "081-234-5678",
+    quoteDate: "2026-08-11",
+    validUntil: "2026-08-25",
+    optionCount: 2,
+    createdByName: "เอ",
+    options: [
+      { slot: 1, variantId: "v2", price: 92000, financeId: "krungsri", down: 10000 },
+      { slot: 2, variantId: "v4", price: 78000, financeId: "tisco", down: 8000 },
+    ],
+  },
+  {
+    id: "2",
+    docNo: "FMG-QUOTE-2569-00006",
+    customerName: "มานี รักษ์ดี",
+    customerPhone: "",
+    quoteDate: "2026-08-05",
+    validUntil: "2026-08-10",
+    optionCount: 1,
+    createdByName: "บี",
+    options: [{ slot: 1, variantId: "v1", price: 46900, financeId: "", down: 0 }],
+  },
 ];
 
 const VEHICLES: QuoteVehicle[] = [
@@ -41,12 +64,24 @@ async function mockCreate(formData: FormData): Promise<QuoteActionResult> {
   return { ok: true, docNo: "FMG-QUOTE-2569-00008" };
 }
 
+async function mockUpdate(formData: FormData): Promise<QuoteActionResult> {
+  const name = String(formData.get("customer_name") ?? "").trim();
+  if (!name) {
+    return { ok: false, error: "กรอกชื่อลูกค้า" };
+  }
+  return { ok: true, id: String(formData.get("quote_id") ?? ""), docNo: "FMG-QUOTE-2569-00007" };
+}
+
+async function mockDelete(): Promise<QuoteActionResult> {
+  return { ok: true };
+}
+
 export default function DevQuotePage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
       <header className="mb-6 print:hidden">
         <h1 className="font-display text-[28px] font-semibold text-ink">ใบเสนอราคา (preview)</h1>
-        <p className="mt-1 text-ink-soft">sample data — กด &ldquo;สร้างใบเสนอราคา&rdquo; เพื่อเทียบรถ 2 คัน × ไฟแนนซ์ × หลายงวด</p>
+        <p className="mt-1 text-ink-soft">sample data — สร้างใหม่ หรือคลิกใบที่บันทึกไว้เพื่อดู/แก้/ทำสำเนา/ลบ</p>
       </header>
       <QuoteView
         quotes={QUOTES}
@@ -57,6 +92,8 @@ export default function DevQuotePage() {
         seller={SELLER}
         canManage
         action={mockCreate}
+        updateAction={mockUpdate}
+        deleteAction={mockDelete}
       />
     </main>
   );

@@ -7,7 +7,13 @@ import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatThaiDate } from "@/lib/format";
 import { financedAmount, optionTerms } from "@/lib/quote/finance";
-import { filterQuotes, isExpired, type QuoteActionResult, type QuoteListRow } from "@/lib/quote/quotes";
+import {
+  filterQuotes,
+  isExpired,
+  savedOptionsToSlots,
+  type QuoteActionResult,
+  type SavedQuote,
+} from "@/lib/quote/quotes";
 import { quotePrintColumns } from "@/lib/quote/print";
 import { PrintableQuoteDoc, type QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 
@@ -28,8 +34,10 @@ export function QuoteView({
   seller,
   canManage,
   action,
+  updateAction,
+  deleteAction,
 }: {
-  quotes: QuoteListRow[];
+  quotes: SavedQuote[];
   vehicles: QuoteVehicle[];
   financeCompanies: QuoteFinanceCo[];
   financeTerms: number[];
@@ -37,24 +45,42 @@ export function QuoteView({
   seller: QuoteSeller;
   canManage: boolean;
   action: (formData: FormData) => Promise<QuoteActionResult>;
+  updateAction?: (formData: FormData) => Promise<QuoteActionResult>;
+  deleteAction?: (formData: FormData) => Promise<QuoteActionResult>;
 }) {
   const [mode, setMode] = useState<"list" | "build">("list");
+  const [editing, setEditing] = useState<SavedQuote | null>(null);
+
+  function openNew() {
+    setEditing(null);
+    setMode("build");
+  }
+
+  function openQuote(q: SavedQuote) {
+    setEditing(q);
+    setMode("build");
+  }
 
   if (mode === "build") {
     return (
       <QuoteBuilder
+        key={editing?.id ?? "new"}
+        editing={editing}
         vehicles={vehicles}
         financeCompanies={financeCompanies}
         financeTerms={financeTerms}
         today={today}
         seller={seller}
+        canManage={canManage}
         action={action}
+        updateAction={updateAction}
+        deleteAction={deleteAction}
         onBack={() => setMode("list")}
       />
     );
   }
 
-  return <QuoteList quotes={quotes} today={today} canManage={canManage} onNew={() => setMode("build")} />;
+  return <QuoteList quotes={quotes} today={today} canManage={canManage} onNew={openNew} onOpen={openQuote} />;
 }
 
 /* ── รายการใบเสนอราคา ─────────────────────────────────────────────────── */
@@ -63,16 +89,18 @@ function QuoteList({
   today,
   canManage,
   onNew,
+  onOpen,
 }: {
-  quotes: QuoteListRow[];
+  quotes: SavedQuote[];
   today: string;
   canManage: boolean;
   onNew: () => void;
+  onOpen: (q: SavedQuote) => void;
 }) {
   const [search, setSearch] = useState("");
-  const rows = filterQuotes(quotes, search);
+  const rows = filterQuotes(quotes, search) as SavedQuote[];
 
-  const columns: Column<QuoteListRow>[] = [
+  const columns: Column<SavedQuote>[] = [
     {
       key: "doc",
       header: "เลขที่ / ลูกค้า",
@@ -125,7 +153,7 @@ function QuoteList({
           />
         </FilterBar>
       </div>
-      <DataTable columns={columns} rows={rows} rowKey={(q) => q.id} empty="ยังไม่มีใบเสนอราคา (หรือยังไม่ได้ล็อกอิน)" />
+      <DataTable columns={columns} rows={rows} rowKey={(q) => q.id} onRowClick={onOpen} empty="ยังไม่มีใบเสนอราคา (หรือยังไม่ได้ล็อกอิน)" />
     </div>
   );
 }
@@ -135,34 +163,48 @@ type OptState = { vehicleId: string; price: number; financeId: string; down: num
 const emptyOpt: OptState = { vehicleId: "", price: 0, financeId: "", down: 0 };
 
 function QuoteBuilder({
+  editing,
   vehicles,
   financeCompanies,
   financeTerms,
   today,
   seller,
+  canManage,
   action,
+  updateAction,
+  deleteAction,
   onBack,
 }: {
+  editing: SavedQuote | null;
   vehicles: QuoteVehicle[];
   financeCompanies: QuoteFinanceCo[];
   financeTerms: number[];
   today: string;
   seller: QuoteSeller;
+  canManage: boolean;
   action: (formData: FormData) => Promise<QuoteActionResult>;
+  updateAction?: (formData: FormData) => Promise<QuoteActionResult>;
+  deleteAction?: (formData: FormData) => Promise<QuoteActionResult>;
   onBack: () => void;
 }) {
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [validUntil, setValidUntil] = useState("");
-  const [opts, setOpts] = useState<OptState[]>([{ ...emptyOpt }, { ...emptyOpt }]);
+  const isEdit = editing !== null;
+  const [customerName, setCustomerName] = useState(editing?.customerName ?? "");
+  const [customerPhone, setCustomerPhone] = useState(editing?.customerPhone ?? "");
+  const [validUntil, setValidUntil] = useState(editing?.validUntil ?? "");
+  const [opts, setOpts] = useState<OptState[]>(() =>
+    editing ? savedOptionsToSlots(editing.options) : [{ ...emptyOpt }, { ...emptyOpt }],
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedDoc, setSavedDoc] = useState<string | null>(null);
+  const [saveNote, setSaveNote] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   function setOpt(i: number, patch: Partial<OptState>) {
     setOpts((prev) => prev.map((o, idx) => (idx === i ? { ...o, ...patch } : o)));
     setSavedDoc(null);
+    setSaveNote(null);
   }
 
   function selectVehicle(i: number, variantId: string) {
@@ -181,12 +223,7 @@ function QuoteBuilder({
   const canSubmit = customerName.trim() !== "" && active.length > 0;
   const printColumns = quotePrintColumns(built);
 
-  async function save() {
-    if (!canSubmit || busy) {
-      return;
-    }
-    setBusy(true);
-    setError(null);
+  function buildFormData(): FormData {
     const payload = active.map((b, i) => ({
       slot: i + 1,
       variantId: b.v!.variantId,
@@ -200,6 +237,27 @@ function QuoteBuilder({
     fd.set("customer_phone", customerPhone.trim());
     fd.set("valid_until", validUntil);
     fd.set("options", JSON.stringify(payload));
+    return fd;
+  }
+
+  async function save() {
+    if (!canSubmit || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const fd = buildFormData();
+    if (isEdit && updateAction) {
+      fd.set("quote_id", editing.id);
+      const res = await updateAction(fd);
+      setBusy(false);
+      if (res.ok) {
+        setSaveNote(`อัปเดตใบเสนอราคาแล้ว — เลขที่ ${editing.docNo}`);
+      } else {
+        setError(res.error);
+      }
+      return;
+    }
     const res = await action(fd);
     setBusy(false);
     if (res.ok) {
@@ -209,13 +267,50 @@ function QuoteBuilder({
     }
   }
 
+  // ทำสำเนา (เฉพาะโหมดแก้) — บันทึกสถานะปัจจุบันเป็นใบใหม่
+  async function duplicate() {
+    if (!canSubmit || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const res = await action(buildFormData());
+    setBusy(false);
+    if (res.ok) {
+      setSaveNote(`ทำสำเนาเป็นใบใหม่แล้ว — เลขที่ ${res.docNo ?? "ใหม่"}`);
+    } else {
+      setError(res.error);
+    }
+  }
+
+  async function remove() {
+    if (!isEdit || !deleteAction || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const fd = new FormData();
+    fd.set("quote_id", editing.id);
+    const res = await deleteAction(fd);
+    setBusy(false);
+    if (res.ok) {
+      onBack();
+    } else {
+      setError(res.error);
+      setConfirmDelete(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="mb-4 flex items-center justify-between gap-3 print:hidden">
-        <button type="button" onClick={onBack} className="text-sm text-ink-soft hover:text-ink">
-          ← กลับรายการ
-        </button>
-        <div className="flex gap-2">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <div className="flex min-w-0 items-center gap-2">
+          <button type="button" onClick={onBack} className="text-sm text-ink-soft hover:text-ink">
+            ← กลับรายการ
+          </button>
+          {isEdit && <span className="truncate font-mono text-xs text-muted">แก้ · {editing.docNo}</span>}
+        </div>
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setPreview((p) => !p)}
@@ -234,18 +329,31 @@ function QuoteBuilder({
           >
             พิมพ์
           </button>
-          <button
-            type="button"
-            onClick={save}
-            disabled={!canSubmit || busy}
-            className="rounded-[24px] bg-accent px-5 py-2 text-sm font-medium text-card disabled:opacity-50"
-          >
-            {busy ? "กำลังบันทึก…" : "บันทึก"}
-          </button>
+          {isEdit && canManage && (
+            <button
+              type="button"
+              onClick={duplicate}
+              disabled={!canSubmit || busy}
+              className="rounded-[24px] border border-hairline px-4 py-2 text-sm text-ink-soft disabled:opacity-50"
+            >
+              ทำสำเนา
+            </button>
+          )}
+          {canManage && (
+            <button
+              type="button"
+              onClick={save}
+              disabled={!canSubmit || busy}
+              className="rounded-[24px] bg-accent px-5 py-2 text-sm font-medium text-card disabled:opacity-50"
+            >
+              {busy ? "กำลังบันทึก…" : isEdit ? "อัปเดต" : "บันทึก"}
+            </button>
+          )}
         </div>
       </div>
 
       {savedDoc && <div className="mb-4"><StatusBadge variant="good">บันทึกใบเสนอราคาแล้ว — เลขที่ {savedDoc}</StatusBadge></div>}
+      {saveNote && <div className="mb-4"><StatusBadge variant="good">{saveNote}</StatusBadge></div>}
       {error && <div className="mb-4"><StatusBadge variant="bad">{error}</StatusBadge></div>}
 
       <div className="mb-5 grid gap-3 sm:grid-cols-3 print:hidden">
@@ -307,8 +415,8 @@ function QuoteBuilder({
         <div className={preview ? "mt-6" : ""}>
           <PrintableQuoteDoc
             seller={seller}
-            docNo={savedDoc}
-            quoteDate={today}
+            docNo={isEdit ? editing.docNo : savedDoc}
+            quoteDate={isEdit ? editing.quoteDate : today}
             validUntil={validUntil || null}
             customerName={customerName}
             customerPhone={customerPhone}
@@ -316,6 +424,36 @@ function QuoteBuilder({
             financeTerms={financeTerms}
             preview={preview}
           />
+        </div>
+      )}
+
+      {isEdit && canManage && deleteAction && (
+        <div className="mt-6 flex justify-end print:hidden">
+          {confirmDelete ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-ink-soft">ลบใบนี้ถาวร?</span>
+              <button
+                type="button"
+                onClick={remove}
+                disabled={busy}
+                className="rounded-[24px] bg-accent px-4 py-2 text-sm font-medium text-card disabled:opacity-50"
+              >
+                {busy ? "กำลังลบ…" : "ยืนยันลบ"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={busy}
+                className="rounded-[24px] border border-hairline px-4 py-2 text-sm text-ink-soft disabled:opacity-50"
+              >
+                ไม่ลบ
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setConfirmDelete(true)} className="text-sm text-accent hover:underline">
+              ลบใบเสนอราคานี้
+            </button>
+          )}
         </div>
       )}
     </div>

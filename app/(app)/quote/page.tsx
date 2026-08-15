@@ -2,10 +2,10 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getSetting } from "@/lib/settings";
 import { latestPrice } from "@/lib/models/rows";
-import { canManageQuote, type QuoteListRow } from "@/lib/quote/quotes";
+import { canManageQuote, type SavedQuote, type SavedQuoteOption } from "@/lib/quote/quotes";
 import { QuoteView, type QuoteFinanceCo, type QuoteVehicle } from "@/components/quote/QuoteView";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
-import { createQuote } from "./actions";
+import { createQuote, deleteQuote, updateQuote } from "./actions";
 
 export const metadata = { title: "ใบเสนอราคา — Famai Motor Group" };
 
@@ -20,14 +20,17 @@ export default async function QuotePage() {
 
   const { data: quoteRows } = await supabase
     .from("quotation")
-    .select("id, doc_no, quote_date, valid_until, customer_name, created_by")
+    .select("id, doc_no, quote_date, valid_until, customer_name, customer_phone, created_by")
     .order("quote_date", { ascending: false });
   const quotesRaw = quoteRows ?? [];
   const quoteIds = quotesRaw.map((q) => q.id);
 
   const [optsRes, usersRes, variantsRes, pricesRes, finRes, branchRes, companyRes] = await Promise.all([
     quoteIds.length
-      ? supabase.from("quotation_option").select("quotation_id").in("quotation_id", quoteIds)
+      ? supabase
+          .from("quotation_option")
+          .select("quotation_id, slot, variant_id, price, finance_id, down_payment")
+          .in("quotation_id", quoteIds)
       : Promise.resolve({ data: [] }),
     supabase.from("app_user").select("id, full_name"),
     supabase.from("model_variant").select("id, code, model_name, model_th"),
@@ -37,20 +40,30 @@ export default async function QuotePage() {
     supabase.from("company").select("id, name, address, phone, tax_id"),
   ]);
 
-  const optCount = new Map<string, number>();
+  const optionsByQuote = new Map<string, SavedQuoteOption[]>();
   for (const o of optsRes.data ?? []) {
-    optCount.set(o.quotation_id, (optCount.get(o.quotation_id) ?? 0) + 1);
+    const list = optionsByQuote.get(o.quotation_id) ?? [];
+    list.push({
+      slot: o.slot,
+      variantId: o.variant_id,
+      price: Number(o.price),
+      financeId: o.finance_id,
+      down: o.down_payment != null ? Number(o.down_payment) : 0,
+    });
+    optionsByQuote.set(o.quotation_id, list);
   }
   const userName = new Map((usersRes.data ?? []).map((u) => [u.id, u.full_name]));
 
-  const quotes: QuoteListRow[] = quotesRaw.map((q) => ({
+  const quotes: SavedQuote[] = quotesRaw.map((q) => ({
     id: q.id,
     docNo: q.doc_no,
     customerName: q.customer_name,
+    customerPhone: q.customer_phone ?? "",
     quoteDate: q.quote_date,
     validUntil: q.valid_until,
-    optionCount: optCount.get(q.id) ?? 0,
+    optionCount: (optionsByQuote.get(q.id) ?? []).length,
     createdByName: (q.created_by && userName.get(q.created_by)) || null,
+    options: optionsByQuote.get(q.id) ?? [],
   }));
 
   const pricesByVariant = new Map<string, Array<{ effective_from: string; retail: number | null }>>();
@@ -104,6 +117,8 @@ export default async function QuotePage() {
       seller={seller}
       canManage={canManageQuote(user?.roleCodes ?? [])}
       action={createQuote}
+      updateAction={updateQuote}
+      deleteAction={deleteQuote}
     />
   );
 }
