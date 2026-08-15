@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
@@ -8,15 +8,19 @@ import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { formatThaiDate } from "@/lib/format";
+import { formatBaht, formatThaiDate } from "@/lib/format";
 import { SERVICE_STATUSES, nextStatuses, statusVariant, type ServiceStatus } from "@/lib/service/status";
-import { SERVICE_TYPES, filterJobs, statusCounts, type ServiceActionResult, type ServiceJob } from "@/lib/service/jobs";
+import { SERVICE_TYPES, filterJobs, statusCounts, type ServiceActionResult, type ServiceJob, type ServiceLine } from "@/lib/service/jobs";
+import { jobTotals, lineAmount, type LineKind } from "@/lib/service/lines";
 
 export type ServiceCreateOptions = {
   customers: { id: string; name: string }[];
   units: { id: string; label: string; engineNo: string; frameNo: string }[];
   technicians: { id: string; name: string }[];
 };
+
+export type ServicePartOption = { id: string; name: string; price: number; qtyOnHand: number };
+export type ServiceLineOptions = { parts: ServicePartOption[] };
 
 const inputCls =
   "w-full rounded-[8px] border border-hairline bg-card px-3 py-2.5 text-base text-ink outline-none focus:border-ink";
@@ -30,12 +34,18 @@ export function ServiceView({
   action,
   createOptions,
   createAction,
+  lineOptions,
+  lineAction,
+  removeLineAction,
 }: {
   jobs: ServiceJob[];
   canManage: boolean;
   action: (formData: FormData) => Promise<ServiceActionResult>;
   createOptions?: ServiceCreateOptions;
   createAction?: (formData: FormData) => Promise<ServiceActionResult>;
+  lineOptions?: ServiceLineOptions;
+  lineAction?: (formData: FormData) => Promise<ServiceActionResult>;
+  removeLineAction?: (formData: FormData) => Promise<ServiceActionResult>;
 }) {
   const [status, setStatus] = useState<ServiceStatus | "all">("all");
   const [search, setSearch] = useState("");
@@ -131,6 +141,9 @@ export function ServiceView({
         job={selected}
         canManage={canManage}
         action={action}
+        lineOptions={lineOptions}
+        lineAction={lineAction}
+        removeLineAction={removeLineAction}
         onClose={() => setSelected(null)}
         onAdvanced={() => setSelected(null)}
       />
@@ -300,17 +313,52 @@ function JobDrawer({
   job,
   canManage,
   action,
+  lineOptions,
+  lineAction,
+  removeLineAction,
   onClose,
   onAdvanced,
 }: {
   job: ServiceJob | null;
   canManage: boolean;
   action: (formData: FormData) => Promise<ServiceActionResult>;
+  lineOptions?: ServiceLineOptions;
+  lineAction?: (formData: FormData) => Promise<ServiceActionResult>;
+  removeLineAction?: (formData: FormData) => Promise<ServiceActionResult>;
   onClose: () => void;
   onAdvanced: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // แก้รายการ (FAM-1027b): เก็บรายการเป็น state ในดรอเวอร์ + อัปเดตทันที (optimistic)
+  const [jobKey, setJobKey] = useState<string | null>(null);
+  const [lines, setLines] = useState<ServiceLine[]>([]);
+  const [addKind, setAddKind] = useState<LineKind>("labor");
+  const [addPartId, setAddPartId] = useState("");
+  const [addDesc, setAddDesc] = useState("");
+  const [addQty, setAddQty] = useState("1");
+  const [addPrice, setAddPrice] = useState("");
+  const [lineBusy, setLineBusy] = useState(false);
+  const [lineError, setLineError] = useState<string | null>(null);
+  const tmpRef = useRef(0);
+
+  // รีเซ็ตเมื่อเปิดใบงานใหม่ (รวมถึงปิด→เปิดใบเดิม เพราะปิดแล้ว key = null) — เทียบระหว่าง render
+  const currentId = job?.id ?? null;
+  if (currentId !== jobKey) {
+    setJobKey(currentId);
+    setLines(job?.lines ?? []);
+    setError(null);
+    setLineError(null);
+    setAddKind("labor");
+    setAddPartId("");
+    setAddDesc("");
+    setAddQty("1");
+    setAddPrice("");
+  }
+
+  const editable = canManage && !!lineAction && job?.status !== "ส่งมอบแล้ว";
+  const totals = jobTotals(lines.map((l) => ({ kind: l.kind, amount: l.amount })));
 
   async function advance(to: ServiceStatus) {
     if (!job || busy) {
@@ -331,7 +379,89 @@ function JobDrawer({
     }
   }
 
+  function selectPart(id: string) {
+    setAddPartId(id);
+    const p = lineOptions?.parts.find((x) => x.id === id);
+    if (p) {
+      setAddPrice(String(p.price));
+      setAddDesc(p.name);
+    }
+  }
+
+  async function addLine() {
+    if (!job || !lineAction || lineBusy) {
+      return;
+    }
+    const qtyNum = Number(addQty);
+    if (!Number.isFinite(qtyNum) || qtyNum <= 0) {
+      setLineError("จำนวนต้องมากกว่า 0");
+      return;
+    }
+    const part = addKind === "part" ? lineOptions?.parts.find((p) => p.id === addPartId) : undefined;
+    if (addKind === "part" && !part) {
+      setLineError("เลือกอะไหล่");
+      return;
+    }
+    if (part && part.qtyOnHand < qtyNum) {
+      setLineError(`สต๊อกไม่พอ — เหลือ ${part.qtyOnHand}`);
+      return;
+    }
+    const desc = addKind === "part" ? addDesc.trim() || part!.name : addDesc.trim();
+    if (addKind === "labor" && !desc) {
+      setLineError("กรอกรายละเอียดค่าแรง");
+      return;
+    }
+    const unitPrice = addKind === "part" && addPrice.trim() === "" ? part!.price : Number(addPrice);
+    if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+      setLineError("ราคาต่อหน่วยไม่ถูกต้อง");
+      return;
+    }
+
+    setLineBusy(true);
+    setLineError(null);
+    const fd = new FormData();
+    fd.set("job_id", job.id);
+    fd.set("kind", addKind);
+    fd.set("part_id", addKind === "part" ? addPartId : "");
+    fd.set("description", desc);
+    fd.set("qty", String(qtyNum));
+    fd.set("unit_price", String(unitPrice));
+    const res = await lineAction(fd);
+    setLineBusy(false);
+    if (!res.ok) {
+      setLineError(res.error);
+      return;
+    }
+    setLines((prev) => [
+      ...prev,
+      { id: `tmp-${(tmpRef.current += 1)}`, kind: addKind, description: desc, qty: qtyNum, unitPrice, amount: lineAmount(qtyNum, unitPrice) },
+    ]);
+    setAddPartId("");
+    setAddDesc("");
+    setAddQty("1");
+    setAddPrice("");
+  }
+
+  async function removeLine(lineId: string) {
+    if (!job || !removeLineAction || lineBusy) {
+      return;
+    }
+    setLineBusy(true);
+    setLineError(null);
+    const fd = new FormData();
+    fd.set("line_id", lineId);
+    fd.set("job_id", job.id);
+    const res = await removeLineAction(fd);
+    setLineBusy(false);
+    if (!res.ok) {
+      setLineError(res.error);
+      return;
+    }
+    setLines((prev) => prev.filter((l) => l.id !== lineId));
+  }
+
   const nexts = job ? nextStatuses(job.status) : [];
+  const canAdd = addKind === "part" ? addPartId !== "" : addDesc.trim() !== "";
 
   return (
     <Drawer open={job !== null} onClose={onClose} title={job ? `${job.jobNo} · ${job.customerName}` : ""}>
@@ -351,29 +481,106 @@ function JobDrawer({
             {job.symptom && <Row label="อาการ/รายละเอียด">{job.symptom}</Row>}
           </dl>
 
-          {job.lines.length > 0 && (
-            <div>
-              <p className="mb-1 font-medium text-ink">รายการ</p>
+          <div>
+            <p className="mb-1 font-medium text-ink">รายการ</p>
+            {lines.length === 0 ? (
+              <p className="text-muted">ยังไม่มีรายการ</p>
+            ) : (
               <ul className="flex flex-col gap-1">
-                {job.lines.map((ln) => (
-                  <li key={ln.id} className="flex items-center justify-between gap-3 border-b border-hairline-2 pb-1 last:border-0">
-                    <span className="min-w-0 truncate text-ink-soft">
-                      <span className="text-muted">{ln.kind === "labor" ? "ค่าแรง" : "อะไหล่"}</span> · {ln.description}
-                      {ln.qty > 1 ? ` ×${ln.qty}` : ""}
-                    </span>
-                    <Money value={ln.amount} />
-                  </li>
-                ))}
+                {lines.map((ln) => {
+                  const canRemove = editable && !!removeLineAction && !ln.id.startsWith("tmp-");
+                  return (
+                    <li key={ln.id} className="flex items-center justify-between gap-3 border-b border-hairline-2 pb-1 last:border-0">
+                      <span className="min-w-0 truncate text-ink-soft">
+                        <span className="text-muted">{ln.kind === "labor" ? "ค่าแรง" : "อะไหล่"}</span> · {ln.description}
+                        {ln.qty > 1 ? ` ×${ln.qty}` : ""}
+                      </span>
+                      <span className="flex shrink-0 items-center gap-2">
+                        <Money value={ln.amount} />
+                        {canRemove && (
+                          <button
+                            type="button"
+                            aria-label="ลบรายการ"
+                            disabled={lineBusy}
+                            onClick={() => removeLine(ln.id)}
+                            className="rounded-full px-2 text-muted hover:text-accent disabled:opacity-50"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
+            )}
+          </div>
+
+          {editable && lineOptions && (
+            <div className="rounded-[12px] border border-hairline p-3">
+              <p className="mb-2 font-medium text-ink">เพิ่มรายการ</p>
+              <div className="mb-3">
+                <Chips
+                  value={addKind}
+                  onChange={(k) => {
+                    setAddKind(k);
+                    setAddPartId("");
+                    setAddDesc("");
+                    setAddPrice("");
+                    setLineError(null);
+                  }}
+                  options={[
+                    { value: "labor" as LineKind, label: "ค่าแรง" },
+                    { value: "part" as LineKind, label: "อะไหล่" },
+                  ]}
+                />
+              </div>
+
+              {addKind === "part" ? (
+                <Field label="อะไหล่ (ตัดสต๊อกอัตโนมัติ)">
+                  <select value={addPartId} onChange={(e) => selectPart(e.target.value)} className={inputCls}>
+                    <option value="">— เลือกอะไหล่ —</option>
+                    {lineOptions.parts.map((p) => (
+                      <option key={p.id} value={p.id} disabled={p.qtyOnHand <= 0}>
+                        {p.name} · เหลือ {p.qtyOnHand} · {formatBaht(p.price)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              ) : (
+                <Field label="รายละเอียดค่าแรง">
+                  <input value={addDesc} onChange={(e) => setAddDesc(e.target.value)} className={inputCls} />
+                </Field>
+              )}
+
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <Field label="จำนวน">
+                  <input value={addQty} onChange={(e) => setAddQty(e.target.value)} inputMode="numeric" className={inputCls} />
+                </Field>
+                <Field label="ราคา/หน่วย">
+                  <input value={addPrice} onChange={(e) => setAddPrice(e.target.value)} inputMode="numeric" className={inputCls} />
+                </Field>
+              </div>
+
+              {lineError && <div className="mt-2"><StatusBadge variant="bad">{lineError}</StatusBadge></div>}
+
+              <button
+                type="button"
+                disabled={!canAdd || lineBusy}
+                onClick={addLine}
+                className="mt-3 w-full rounded-[24px] border border-hairline py-2.5 text-sm font-medium text-ink disabled:opacity-50"
+              >
+                {lineBusy ? "กำลังบันทึก…" : "+ เพิ่มรายการ"}
+              </button>
             </div>
           )}
 
           <div className="rounded-[12px] bg-paper p-3">
-            <Row label="ค่าแรง"><Money value={job.laborCost} /></Row>
-            <Row label="ค่าอะไหล่"><Money value={job.partsCost} /></Row>
+            <Row label="ค่าแรง"><Money value={totals.laborCost} /></Row>
+            <Row label="ค่าอะไหล่"><Money value={totals.partsCost} /></Row>
             <div className="mt-1 flex items-center justify-between gap-3 border-t border-hairline pt-2">
               <span className="font-semibold text-ink">ยอดชำระ</span>
-              <span className="font-semibold text-ink"><Money value={job.total} /></span>
+              <span className="font-semibold text-ink"><Money value={totals.total} /></span>
             </div>
           </div>
 
