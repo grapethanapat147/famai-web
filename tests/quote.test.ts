@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { flatMonthly, financedAmount, optionTerms } from "@/lib/quote/finance";
+import {
+  flatMonthly,
+  financedAmount,
+  optionTerms,
+  parseRateTiers,
+  hasRateTiers,
+  rateForTerm,
+  financeLabel,
+} from "@/lib/quote/finance";
 import { isExpired, filterQuotes, canManageQuote, savedOptionsToSlots, type QuoteListRow } from "@/lib/quote/quotes";
 
 describe("quote finance (flat monthly)", () => {
@@ -26,6 +34,49 @@ describe("quote finance (flat monthly)", () => {
     expect(rows[0].monthly).toBe(7867);
     // 24 งวด: 80000×(1+0.36)=108800 ÷24 = 4533.33 → 4533
     expect(rows[1].monthly).toBe(4533);
+  });
+});
+
+describe("tiered finance rates (FAM-1029 · rate_tiers)", () => {
+  it("parseRateTiers keeps numeric term keys, drops junk, empty → null", () => {
+    expect(parseRateTiers({ "12": 1.29, "36": 1.45 })).toEqual({ "12": 1.29, "36": 1.45 });
+    expect(parseRateTiers({ "12": 1.29, foo: 2, "24": "x" })).toEqual({ "12": 1.29 });
+    expect(parseRateTiers({})).toBeNull();
+    expect(parseRateTiers(null)).toBeNull();
+    expect(parseRateTiers([1, 2])).toBeNull();
+    expect(parseRateTiers("nope")).toBeNull();
+  });
+
+  it("hasRateTiers detects a non-empty tier map", () => {
+    expect(hasRateTiers({ "12": 1.2 })).toBe(true);
+    expect(hasRateTiers({})).toBe(false);
+    expect(hasRateTiers(null)).toBe(false);
+    expect(hasRateTiers(undefined)).toBe(false);
+  });
+
+  it("rateForTerm uses the tier when present, else the flat base", () => {
+    const tiers = { "12": 1.29, "36": 1.45 };
+    expect(rateForTerm(12, 1.35, tiers)).toBe(1.29);
+    expect(rateForTerm(36, 1.35, tiers)).toBe(1.45);
+    expect(rateForTerm(24, 1.35, tiers)).toBe(1.35); // ไม่มี tier 24 → flat
+    expect(rateForTerm(12, 1.35, null)).toBe(1.35); // ไม่มี tier เลย → flat
+  });
+
+  it("optionTerms applies tiered rates per term", () => {
+    const tiers = { "12": 1.0, "24": 2.0 };
+    const rows = optionTerms(100000, 20000, 1.5, [12, 24, 36], tiers);
+    // financed 80,000
+    // 12 งวด @1.0%: 80000×(1+0.12)=89600 ÷12 = 7466.67 → 7467
+    expect(rows[0].monthly).toBe(7467);
+    // 24 งวด @2.0%: 80000×(1+0.48)=118400 ÷24 = 4933.33 → 4933
+    expect(rows[1].monthly).toBe(4933);
+    // 36 งวด ไม่มี tier → flat 1.5%: 80000×(1+0.54)=123200 ÷36 = 3422.22 → 3422
+    expect(rows[2].monthly).toBe(3422);
+  });
+
+  it("financeLabel shows per-term note when tiered, base rate otherwise", () => {
+    expect(financeLabel("กรุงศรี", 1.35, { "12": 1.29 })).toBe("กรุงศรี · เรตตามงวด");
+    expect(financeLabel("กรุงศรี", 1.35, null)).toBe("กรุงศรี 1.35%");
   });
 });
 
