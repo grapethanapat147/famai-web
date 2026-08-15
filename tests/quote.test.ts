@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { flatMonthly, financedAmount, optionTerms } from "@/lib/quote/finance";
-import { isExpired, filterQuotes, canManageQuote, type QuoteListRow } from "@/lib/quote/quotes";
+import { isExpired, filterQuotes, canManageQuote, savedOptionsToSlots, type QuoteListRow } from "@/lib/quote/quotes";
 
 describe("quote finance (flat monthly)", () => {
   it("financedAmount clamps at zero", () => {
@@ -52,5 +52,36 @@ describe("quote list helpers", () => {
     expect(canManageQuote(["manager"])).toBe(true);
     expect(canManageQuote(["tech"])).toBe(false);
     expect(canManageQuote(["stock"])).toBe(false);
+  });
+});
+
+describe("savedOptionsToSlots (FAM-1029 view/edit)", () => {
+  it("maps saved options into fixed 2 slots, sorted by slot", () => {
+    const slots = savedOptionsToSlots([
+      { slot: 2, variantId: "v2", price: 78000, financeId: "tisco", down: 8000 },
+      { slot: 1, variantId: "v1", price: 92000, financeId: "krungsri", down: 10000 },
+    ]);
+    expect(slots).toHaveLength(2);
+    expect(slots[0]).toEqual({ vehicleId: "v1", price: 92000, financeId: "krungsri", down: 10000 });
+    expect(slots[1]).toEqual({ vehicleId: "v2", price: 78000, financeId: "tisco", down: 8000 });
+  });
+
+  it("pads empty slots when fewer options and nulls become empty strings", () => {
+    const slots = savedOptionsToSlots([{ slot: 1, variantId: null, price: 46900, financeId: null, down: 0 }]);
+    expect(slots[0]).toEqual({ vehicleId: "", price: 46900, financeId: "", down: 0 });
+    expect(slots[1]).toEqual({ vehicleId: "", price: 0, financeId: "", down: 0 });
+  });
+
+  it("truncates extras beyond slotCount", () => {
+    const slots = savedOptionsToSlots(
+      [
+        { slot: 1, variantId: "a", price: 1, financeId: null, down: 0 },
+        { slot: 2, variantId: "b", price: 2, financeId: null, down: 0 },
+        { slot: 3, variantId: "c", price: 3, financeId: null, down: 0 },
+      ],
+      2,
+    );
+    expect(slots).toHaveLength(2);
+    expect(slots.map((s) => s.vehicleId)).toEqual(["a", "b"]);
   });
 });
