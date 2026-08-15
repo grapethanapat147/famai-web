@@ -97,6 +97,26 @@ async function mockCreate(formData: FormData): Promise<ServiceActionResult> {
   return { ok: true };
 }
 
+async function mockAddLine(formData: FormData): Promise<ServiceActionResult> {
+  if (Number(formData.get("qty")) <= 0) {
+    return { ok: false, error: "จำนวนต้องมากกว่า 0" };
+  }
+  return { ok: true };
+}
+
+async function mockRemoveLine(): Promise<ServiceActionResult> {
+  return { ok: true };
+}
+
+const LINE_OPTIONS = {
+  parts: [
+    { id: "p1", name: "น้ำมันเครื่อง Yamalube", price: 220, qtyOnHand: 40 },
+    { id: "p2", name: "ผ้าเบรกหน้า NMAX", price: 380, qtyOnHand: 6 },
+    { id: "p3", name: "หัวเทียน NGK", price: 120, qtyOnHand: 0 },
+    { id: "p4", name: "ยางนอก 110/70-13", price: 850, qtyOnHand: 3 },
+  ],
+};
+
 const CREATE_OPTIONS = {
   customers: [
     { id: "c1", name: "สมชาย ใจดี" },
@@ -117,9 +137,18 @@ export default function DevServicePage() {
     <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
       <header className="mb-6">
         <h1 className="font-display text-[28px] font-semibold text-ink">ศูนย์ซ่อม (preview)</h1>
-        <p className="mt-1 text-ink-soft">sample data — เปิดใบงานซ่อม · กดใบงานเพื่อดูรายละเอียด + เลื่อนสถานะ (ไป: … →)</p>
+        <p className="mt-1 text-ink-soft">sample data — เปิดใบงานซ่อม · กดใบงานเพื่อดูรายละเอียด + เพิ่ม/ลบรายการ (ค่าแรง/อะไหล่) + เลื่อนสถานะ</p>
       </header>
-      <ServiceView jobs={JOBS} canManage action={mockAdvance} createOptions={CREATE_OPTIONS} createAction={mockCreate} />
+      <ServiceView
+        jobs={JOBS}
+        canManage
+        action={mockAdvance}
+        createOptions={CREATE_OPTIONS}
+        createAction={mockCreate}
+        lineOptions={LINE_OPTIONS}
+        lineAction={mockAddLine}
+        removeLineAction={mockRemoveLine}
+      />
     </main>
   );
 }

@@ -2,8 +2,8 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { canManageService, type ServiceJob, type ServiceLine } from "@/lib/service/jobs";
 import { isServiceStatus, type ServiceStatus } from "@/lib/service/status";
-import { ServiceView, type ServiceCreateOptions } from "@/components/service/ServiceView";
-import { advanceStatus, createServiceJob } from "./actions";
+import { ServiceView, type ServiceCreateOptions, type ServiceLineOptions } from "@/components/service/ServiceView";
+import { addServiceLine, advanceStatus, createServiceJob, removeServiceLine } from "./actions";
 
 export const metadata = { title: "ศูนย์ซ่อม — Famai Motor Group" };
 
@@ -21,7 +21,7 @@ export default async function ServicePage() {
   const jobs = jobRows ?? [];
   const jobIds = jobs.map((j) => j.id);
 
-  const [linesRes, customersRes, techsRes, unitsRes, variantsRes, colorsRes] = await Promise.all([
+  const [linesRes, customersRes, techsRes, unitsRes, variantsRes, colorsRes, partsRes] = await Promise.all([
     jobIds.length
       ? supabase.from("service_job_line").select("id, job_id, kind, description, qty, unit_price, amount").in("job_id", jobIds)
       : Promise.resolve({ data: [] }),
@@ -30,6 +30,7 @@ export default async function ServicePage() {
     supabase.from("motorcycle_unit").select("id, variant_id, color_code, engine_no, frame_no"),
     supabase.from("model_variant").select("id, model_name"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),
+    supabase.from("part").select("id, name, price, qty_on_hand").order("name"),
   ]);
 
   const customerName = new Map((customersRes.data ?? []).map((c) => [c.id, c.full_name]));
@@ -92,6 +93,15 @@ export default async function ServicePage() {
     }),
   };
 
+  const lineOptions: ServiceLineOptions = {
+    parts: (partsRes.data ?? []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: Number(p.price),
+      qtyOnHand: Number(p.qty_on_hand),
+    })),
+  };
+
   return (
     <ServiceView
       jobs={viewJobs}
@@ -99,6 +109,9 @@ export default async function ServicePage() {
       action={advanceStatus}
       createOptions={createOptions}
       createAction={createServiceJob}
+      lineOptions={lineOptions}
+      lineAction={addServiceLine}
+      removeLineAction={removeServiceLine}
     />
   );
 }
