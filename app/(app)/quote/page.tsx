@@ -2,6 +2,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getSetting } from "@/lib/settings";
 import { latestPrice } from "@/lib/models/rows";
+import { parseRateTiers } from "@/lib/quote/finance";
 import { canManageQuote, type SavedQuote, type SavedQuoteOption } from "@/lib/quote/quotes";
 import { QuoteView, type QuoteFinanceCo, type QuoteVehicle } from "@/components/quote/QuoteView";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
@@ -35,7 +36,7 @@ export default async function QuotePage() {
     supabase.from("app_user").select("id, full_name"),
     supabase.from("model_variant").select("id, code, model_name, model_th"),
     supabase.from("price_history").select("variant_id, effective_from, retail"),
-    supabase.from("finance_company").select("id, name, flat_rate_pct").eq("is_active", true),
+    supabase.from("finance_company").select("id, name, flat_rate_pct, rate_tiers").eq("is_active", true),
     supabase.from("branch").select("id, name, address, phone, tax_id, company_id").eq("is_active", true),
     supabase.from("company").select("id, name, address, phone, tax_id"),
   ]);
@@ -89,6 +90,7 @@ export default async function QuotePage() {
     id: f.id,
     name: f.name,
     ratePct: Number(f.flat_rate_pct ?? 0),
+    rateTiers: parseRateTiers(f.rate_tiers),
   }));
 
   const financeTerms = await getSetting("finance_terms");

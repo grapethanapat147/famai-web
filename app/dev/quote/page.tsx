@@ -42,7 +42,7 @@ const VEHICLES: QuoteVehicle[] = [
 ];
 
 const FINANCE: QuoteFinanceCo[] = [
-  { id: "krungsri", name: "กรุงศรี ออโต้", ratePct: 1.35 },
+  { id: "krungsri", name: "กรุงศรี ออโต้", ratePct: 1.35, rateTiers: { "12": 1.19, "24": 1.35, "48": 1.59 } },
   { id: "thanachart", name: "ธนชาต", ratePct: 1.48 },
   { id: "tisco", name: "ทิสโก้", ratePct: 1.42 },
 ];

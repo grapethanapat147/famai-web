@@ -4,12 +4,12 @@
  * ตรรกะล้วน (ไม่มี React/DOM) เพื่อเทสต์ได้ตรง ๆ และใช้ร่วมกับตารางบนจอ
  */
 
-import type { TermRow } from "@/lib/quote/finance";
+import { financeLabel, type RateTiers, type TermRow } from "@/lib/quote/finance";
 
 export type PrintBuilt = {
   o: { price: number; down: number };
   v?: { name: string };
-  fin?: { name: string; ratePct: number };
+  fin?: { name: string; ratePct: number; rateTiers?: RateTiers | null };
   financed: number;
   terms: readonly TermRow[];
 };
@@ -32,7 +32,7 @@ export function quotePrintColumns(built: readonly PrintBuilt[]): PrintColumn[] {
       price: b.o.price,
       down: b.o.down,
       financed: b.financed,
-      financeLabel: b.fin ? `${b.fin.name} ${b.fin.ratePct}%` : "เงินสด",
+      financeLabel: b.fin ? financeLabel(b.fin.name, b.fin.ratePct, b.fin.rateTiers) : "เงินสด",
       monthlyByTerm: Object.fromEntries(b.terms.map((t) => [t.months, t.monthly])),
     }));
 }

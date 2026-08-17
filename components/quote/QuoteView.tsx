@@ -6,7 +6,7 @@ import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatThaiDate } from "@/lib/format";
-import { financedAmount, optionTerms } from "@/lib/quote/finance";
+import { financeLabel, financedAmount, optionTerms, type RateTiers } from "@/lib/quote/finance";
 import {
   filterQuotes,
   isExpired,
@@ -18,7 +18,7 @@ import { quotePrintColumns } from "@/lib/quote/print";
 import { PrintableQuoteDoc, type QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 
 export type QuoteVehicle = { variantId: string; code: string; name: string; retail: number };
-export type QuoteFinanceCo = { id: string; name: string; ratePct: number };
+export type QuoteFinanceCo = { id: string; name: string; ratePct: number; rateTiers?: RateTiers | null };
 
 const inputCls =
   "w-full rounded-[8px] border border-hairline bg-card px-3 py-2.5 text-base text-ink outline-none focus:border-ink";
@@ -216,7 +216,7 @@ function QuoteBuilder({
     const v = vehicles.find((x) => x.variantId === o.vehicleId);
     const fin = financeCompanies.find((f) => f.id === o.financeId);
     const financed = financedAmount(o.price, o.down);
-    const terms = fin ? optionTerms(o.price, o.down, fin.ratePct, financeTerms) : [];
+    const terms = fin ? optionTerms(o.price, o.down, fin.ratePct, financeTerms, fin.rateTiers) : [];
     return { o, v, fin, financed, terms };
   });
   const active = built.filter((b) => b.v && b.o.price > 0);
@@ -499,7 +499,7 @@ function CompareTable({
             label="ไฟแนนซ์"
             cols={cols.map((b, i) => (
               <span key={i} className="text-ink-soft">
-                {b.fin ? `${b.fin.name} ${b.fin.ratePct}%` : "เงินสด"}
+                {b.fin ? financeLabel(b.fin.name, b.fin.ratePct, b.fin.rateTiers) : "เงินสด"}
               </span>
             ))}
           />

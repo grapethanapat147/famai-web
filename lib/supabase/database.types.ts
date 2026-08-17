@@ -401,6 +401,7 @@ type FinanceCompany = {
   id: string;
   name: string;
   flat_rate_pct: number | null;
+  rate_tiers: Json | null; // เรตรายช่วงงวด เช่น {"12":1.29,"36":1.45} — คีย์ที่ไม่มีใช้ flat_rate_pct
   min_down_pct: number | null;
   commission: number | null;
   note: string | null;
