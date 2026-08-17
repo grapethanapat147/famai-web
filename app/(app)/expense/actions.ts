@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import { canManageExpense, type ExpenseActionResult } from "@/lib/expense/expenses";
+import { canApproveExpense, canManageExpense, type ExpenseActionResult } from "@/lib/expense/expenses";
 
 function todayISO(): string {
   const d = new Date();
@@ -62,6 +62,71 @@ export async function recordExpense(formData: FormData): Promise<ExpenseActionRe
   });
   if (error) {
     return { ok: false, error: "บันทึกไม่สำเร็จ (สิทธิ์ไม่พอ หรือหมวดไม่ถูกต้อง)" };
+  }
+
+  revalidatePath("/expense");
+  return { ok: true };
+}
+
+/**
+ * อนุมัติค่าใช้จ่าย (FAM-1030 · R1 การเงินกดอนุมัติ) — ด่านสิทธิ์ perms.approve
+ * compare-and-swap `approved_at IS NULL` กันอนุมัติซ้ำ/แข่งกัน · บันทึกผู้อนุมัติ + เวลา
+ */
+export async function approveExpense(formData: FormData): Promise<ExpenseActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canApproveExpense(user.perms)) {
+    return { ok: false, error: "ไม่มีสิทธิ์อนุมัติ (ต้องมีสิทธิ์อนุมัติของบัญชี/หัวหน้า)" };
+  }
+
+  const expenseId = String(formData.get("expense_id") ?? "").trim();
+  if (!expenseId) {
+    return { ok: false, error: "ไม่พบรายการ" };
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: updated, error } = await supabase
+    .from("expense")
+    .update({ approved_by: user.id, approved_at: new Date().toISOString() })
+    .eq("id", expenseId)
+    .is("approved_at", null)
+    .select("id");
+  if (error || !updated || updated.length === 0) {
+    return { ok: false, error: "อนุมัติไม่สำเร็จ (อาจถูกอนุมัติไปแล้ว หรือไม่มีสิทธิ์สาขานี้)" };
+  }
+
+  revalidatePath("/expense");
+  return { ok: true };
+}
+
+/**
+ * ถอนอนุมัติ (FAM-1030) — เผื่อกดผิด · ด่านสิทธิ์ perms.approve · ล้าง approved_by/approved_at
+ */
+export async function revokeExpenseApproval(formData: FormData): Promise<ExpenseActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canApproveExpense(user.perms)) {
+    return { ok: false, error: "ไม่มีสิทธิ์ถอนอนุมัติ" };
+  }
+
+  const expenseId = String(formData.get("expense_id") ?? "").trim();
+  if (!expenseId) {
+    return { ok: false, error: "ไม่พบรายการ" };
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: updated, error } = await supabase
+    .from("expense")
+    .update({ approved_by: null, approved_at: null })
+    .eq("id", expenseId)
+    .not("approved_at", "is", null)
+    .select("id");
+  if (error || !updated || updated.length === 0) {
+    return { ok: false, error: "ถอนอนุมัติไม่สำเร็จ (อาจยังไม่ถูกอนุมัติ)" };
   }
 
   revalidatePath("/expense");

@@ -10,6 +10,7 @@ import { formatThaiDate } from "@/lib/format";
 import {
   expenseTotals,
   filterExpenses,
+  isExpenseApproved,
   type ExpenseActionResult,
   type ExpenseRow,
 } from "@/lib/expense/expenses";
@@ -28,6 +29,9 @@ export function ExpenseView({
   canSeeMoney,
   today,
   action,
+  canApprove = false,
+  approveAction,
+  revokeAction,
 }: {
   expenses: ExpenseRow[];
   categories: ExpenseCategoryOption[];
@@ -35,12 +39,16 @@ export function ExpenseView({
   canSeeMoney: boolean;
   today: string;
   action: (formData: FormData) => Promise<ExpenseActionResult>;
+  canApprove?: boolean;
+  approveAction?: (formData: FormData) => Promise<ExpenseActionResult>;
+  revokeAction?: (formData: FormData) => Promise<ExpenseActionResult>;
 }) {
   const [categoryId, setCategoryId] = useState("all");
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [onlyMissing, setOnlyMissing] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [selected, setSelected] = useState<ExpenseRow | null>(null);
 
   const rows = filterExpenses(expenses, { categoryId, search, fromDate, onlyMissingReceipt: onlyMissing });
   const totals = expenseTotals(rows);
@@ -63,15 +71,22 @@ export function ExpenseView({
       header: "ใบเสร็จ",
       render: (e) => (e.hasReceipt ? <span className="text-muted">มี</span> : <StatusBadge variant="warn">ใบเสร็จหาย</StatusBadge>),
     },
+    {
+      key: "status",
+      header: "สถานะ",
+      render: (e) =>
+        isExpenseApproved(e) ? <StatusBadge variant="good">อนุมัติแล้ว</StatusBadge> : <StatusBadge variant="warn">รออนุมัติ</StatusBadge>,
+    },
     { key: "amount", header: "จำนวนเงิน", align: "right", render: (e) => <Money value={e.amount} canSee={canSeeMoney} /> },
   ];
 
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="รวม" value={<Money value={totals.total} canSee={canSeeMoney} />} />
           <Stat label="จำนวน" value={<span className="tabular">{totals.count}</span>} />
+          <Stat label="รออนุมัติ" value={<Money value={totals.pendingAmount} canSee={canSeeMoney} />} accent={totals.pendingCount > 0} />
           <Stat label="ใบเสร็จหาย" value={<Money value={totals.missingReceiptAmount} canSee={canSeeMoney} />} accent={totals.missingReceiptCount > 0} />
         </div>
         {canManage && (
@@ -116,11 +131,124 @@ export function ExpenseView({
         </FilterBar>
       </div>
 
-      <DataTable columns={columns} rows={rows} rowKey={(e) => e.id} empty="ไม่มีค่าใช้จ่าย (หรือยังไม่ได้ล็อกอิน)" />
+      <DataTable columns={columns} rows={rows} rowKey={(e) => e.id} onRowClick={setSelected} empty="ไม่มีค่าใช้จ่าย (หรือยังไม่ได้ล็อกอิน)" />
 
       {canManage && (
         <AddExpenseModal open={adding} categories={categories} today={today} action={action} onClose={() => setAdding(false)} />
       )}
+
+      <ExpenseDetailModal
+        expense={selected}
+        canSeeMoney={canSeeMoney}
+        canApprove={canApprove}
+        approveAction={approveAction}
+        revokeAction={revokeAction}
+        onClose={() => setSelected(null)}
+        onDone={() => setSelected(null)}
+      />
+    </div>
+  );
+}
+
+function ExpenseDetailModal({
+  expense,
+  canSeeMoney,
+  canApprove,
+  approveAction,
+  revokeAction,
+  onClose,
+  onDone,
+}: {
+  expense: ExpenseRow | null;
+  canSeeMoney: boolean;
+  canApprove: boolean;
+  approveAction?: (formData: FormData) => Promise<ExpenseActionResult>;
+  revokeAction?: (formData: FormData) => Promise<ExpenseActionResult>;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [current, setCurrent] = useState<string | null>(null);
+
+  // รีเซ็ต error เมื่อเปิดรายการใหม่ (เทียบ id ระหว่าง render)
+  if (expense && expense.id !== current) {
+    setCurrent(expense.id);
+    setError(null);
+  }
+
+  async function run(fn: ((formData: FormData) => Promise<ExpenseActionResult>) | undefined) {
+    if (!expense || !fn || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const fd = new FormData();
+    fd.set("expense_id", expense.id);
+    const res = await fn(fd);
+    setBusy(false);
+    if (res.ok) {
+      onDone();
+    } else {
+      setError(res.error);
+    }
+  }
+
+  const approved = expense ? isExpenseApproved(expense) : false;
+
+  return (
+    <Modal open={expense !== null} onClose={onClose} title="รายละเอียดค่าใช้จ่าย">
+      {expense && (
+        <div className="flex flex-col gap-3 text-sm">
+          <Row label="หมวด">{expense.categoryName}</Row>
+          <Row label="ซื้อกับใคร">{expense.vendor || "—"}</Row>
+          <Row label="จำนวนเงิน"><Money value={expense.amount} canSee={canSeeMoney} /></Row>
+          <Row label="วันที่จ่าย">{formatThaiDate(expense.spentAt)}</Row>
+          <Row label="เลขใบกำกับภาษี">{expense.taxInvoiceNo || "—"}</Row>
+          <Row label="ใบเสร็จ">{expense.hasReceipt ? "มี" : <StatusBadge variant="warn">ใบเสร็จหาย</StatusBadge>}</Row>
+          {expense.note && <Row label="หมายเหตุ">{expense.note}</Row>}
+          <Row label="ผู้บันทึก">{expense.createdByName || "—"}</Row>
+          <Row label="สถานะ">
+            {approved ? (
+              <StatusBadge variant="good">อนุมัติแล้ว{expense.approvedByName ? ` · ${expense.approvedByName}` : ""}</StatusBadge>
+            ) : (
+              <StatusBadge variant="warn">รออนุมัติ</StatusBadge>
+            )}
+          </Row>
+
+          {error && <StatusBadge variant="bad">{error}</StatusBadge>}
+
+          {canApprove && !approved && approveAction && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => run(approveAction)}
+              className="mt-1 w-full rounded-[24px] bg-accent py-3 text-sm font-medium text-card transition-transform active:scale-[0.99] disabled:opacity-50"
+            >
+              {busy ? "กำลังอนุมัติ…" : "อนุมัติค่าใช้จ่าย"}
+            </button>
+          )}
+          {canApprove && approved && revokeAction && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => run(revokeAction)}
+              className="mt-1 w-full rounded-[24px] border border-hairline py-2.5 text-sm text-ink-soft disabled:opacity-50"
+            >
+              {busy ? "กำลังถอน…" : "ถอนอนุมัติ"}
+            </button>
+          )}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+function Row({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-muted">{label}</span>
+      <span className="text-ink">{children}</span>
     </div>
   );
 }

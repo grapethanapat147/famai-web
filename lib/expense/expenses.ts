@@ -16,7 +16,14 @@ export type ExpenseRow = {
   taxInvoiceNo: string | null;
   note: string | null;
   createdByName: string | null;
+  approvedAt: string | null; // null = รออนุมัติ
+  approvedByName: string | null;
 };
+
+/** อนุมัติแล้วหรือยัง */
+export function isExpenseApproved(row: Pick<ExpenseRow, "approvedAt">): boolean {
+  return row.approvedAt !== null;
+}
 
 export function filterExpenses(
   list: readonly ExpenseRow[],
@@ -41,24 +48,32 @@ export function filterExpenses(
   });
 }
 
-/** ยอดรวมสำหรับหัวหน้า: รวมทั้งหมด · จำนวนรายการ · ยอด/จำนวนที่ใบเสร็จหาย */
+/** ยอดรวมสำหรับหัวหน้า: รวมทั้งหมด · จำนวนรายการ · ยอด/จำนวนที่ใบเสร็จหาย · ยอด/จำนวนที่รออนุมัติ */
 export function expenseTotals(list: readonly ExpenseRow[]): {
   total: number;
   count: number;
   missingReceiptCount: number;
   missingReceiptAmount: number;
+  pendingCount: number;
+  pendingAmount: number;
 } {
   let total = 0;
   let missingReceiptCount = 0;
   let missingReceiptAmount = 0;
+  let pendingCount = 0;
+  let pendingAmount = 0;
   for (const e of list) {
     total += e.amount;
     if (!e.hasReceipt) {
       missingReceiptCount += 1;
       missingReceiptAmount += e.amount;
     }
+    if (!isExpenseApproved(e)) {
+      pendingCount += 1;
+      pendingAmount += e.amount;
+    }
   }
-  return { total, count: list.length, missingReceiptCount, missingReceiptAmount };
+  return { total, count: list.length, missingReceiptCount, missingReceiptAmount, pendingCount, pendingAmount };
 }
 
 /** ผู้มีสิทธิ์บันทึกค่าใช้จ่าย — ตรงกับ roles ของเมนู expense */
@@ -67,4 +82,9 @@ const EXPENSE_ROLES = ["admin", "manager", "acct"];
 export function canManageExpense(roleCodes: readonly string[]): boolean {
   const roles = new Set(roleCodes);
   return EXPENSE_ROLES.some((r) => roles.has(r));
+}
+
+/** ผู้มีสิทธิ์อนุมัติค่าใช้จ่าย = perm 'approve' (R1: การเงินกดอนุมัติ) — ไม่ใช่แค่ role */
+export function canApproveExpense(perms: { approve: boolean }): boolean {
+  return perms.approve === true;
 }
