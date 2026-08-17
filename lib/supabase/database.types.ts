@@ -361,6 +361,8 @@ type Expense = {
   has_receipt: boolean;
   note: string | null;
   created_by: string | null;
+  approved_by: string | null; // migration 19 — การเงินกดอนุมัติ
+  approved_at: string | null;
 };
 
 type Part = {

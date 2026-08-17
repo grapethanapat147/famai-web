@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { filterExpenses, expenseTotals, canManageExpense, type ExpenseRow } from "@/lib/expense/expenses";
+import {
+  filterExpenses,
+  expenseTotals,
+  canManageExpense,
+  canApproveExpense,
+  isExpenseApproved,
+  type ExpenseRow,
+} from "@/lib/expense/expenses";
 
 function ex(over: Partial<ExpenseRow>): ExpenseRow {
   return {
@@ -13,6 +20,8 @@ function ex(over: Partial<ExpenseRow>): ExpenseRow {
     taxInvoiceNo: null,
     note: null,
     createdByName: "เอ",
+    approvedAt: null,
+    approvedByName: null,
     ...over,
   };
 }
@@ -40,17 +49,32 @@ describe("filterExpenses", () => {
 });
 
 describe("expenseTotals", () => {
-  it("sums total and missing-receipt amount/count", () => {
+  it("sums total, missing-receipt, and pending-approval amount/count", () => {
     const list = [
-      ex({ amount: 1000, hasReceipt: true }),
-      ex({ amount: 250, hasReceipt: false }),
-      ex({ amount: 800, hasReceipt: false }),
+      ex({ amount: 1000, hasReceipt: true, approvedAt: "2026-08-06T00:00:00Z" }),
+      ex({ amount: 250, hasReceipt: false, approvedAt: null }),
+      ex({ amount: 800, hasReceipt: false, approvedAt: null }),
     ];
     const t = expenseTotals(list);
     expect(t.total).toBe(2050);
     expect(t.count).toBe(3);
     expect(t.missingReceiptCount).toBe(2);
     expect(t.missingReceiptAmount).toBe(1050);
+    // สองรายการที่ยังไม่อนุมัติ (250 + 800)
+    expect(t.pendingCount).toBe(2);
+    expect(t.pendingAmount).toBe(1050);
+  });
+});
+
+describe("expense approval (FAM-1030)", () => {
+  it("isExpenseApproved reflects approvedAt", () => {
+    expect(isExpenseApproved(ex({ approvedAt: "2026-08-06T00:00:00Z" }))).toBe(true);
+    expect(isExpenseApproved(ex({ approvedAt: null }))).toBe(false);
+  });
+
+  it("canApproveExpense requires the approve perm", () => {
+    expect(canApproveExpense({ approve: true })).toBe(true);
+    expect(canApproveExpense({ approve: false })).toBe(false);
   });
 });
 
