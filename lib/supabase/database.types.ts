@@ -77,6 +77,7 @@ type ModelVariant = {
   cc: number | null;
   model_year: number | null;
   spec: string | null;
+  photo_url: string | null; // migration 10 — URL รูปปก (สำเนาของ model_photo sort=0)
 };
 
 type ModelColor = {

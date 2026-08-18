@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth";
 import { getSettingsWith } from "@/lib/settings";
+import { canUploadModelPhoto, type ModelPhotoResult } from "@/lib/models/image";
 import type { AddModelResult } from "@/lib/models/rows";
 
 /** แปลง error จาก DB เป็นข้อความไทยที่ผู้ใช้เข้าใจ (ไม่โชว์ internal) */
@@ -86,6 +88,44 @@ export async function addModel(formData: FormData): Promise<AddModelResult> {
   if (error) {
     return { ok: false, error: friendly(error) };
   }
+
+  revalidatePath("/models");
+  return { ok: true };
+}
+
+/**
+ * บันทึกรูปปกรุ่นรถ (FAM-1024) — เรียกหลังฝั่ง client ย่อ+อัปไฟล์ขึ้น bucket แล้ว
+ * ด่านสิทธิ์ admin/manager (ตรงกับ is_manager() ของ bucket) · upsert model_photo(sort=0) + คัด photo_url
+ */
+export async function saveModelPhoto(formData: FormData): Promise<ModelPhotoResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canUploadModelPhoto(user.roleCodes)) {
+    return { ok: false, error: "ไม่มีสิทธิ์จัดการรูป (เฉพาะหัวหน้า/แอดมิน)" };
+  }
+
+  const variantId = String(formData.get("variant_id") ?? "").trim();
+  const pathCard = String(formData.get("path_card") ?? "").trim();
+  const pathFull = String(formData.get("path_full") ?? "").trim();
+  const bytesRaw = String(formData.get("bytes") ?? "").trim();
+  const bytes = bytesRaw !== "" ? Number(bytesRaw) : null;
+
+  if (!variantId || !pathCard || !pathFull) {
+    return { ok: false, error: "ข้อมูลรูปไม่ครบ" };
+  }
+
+  const supabase = await createServerSupabase();
+  const { error: photoError } = await supabase
+    .from("model_photo")
+    .upsert({ variant_id: variantId, sort: 0, path_card: pathCard, path_full: pathFull, bytes }, { onConflict: "variant_id,sort" });
+  if (photoError) {
+    return { ok: false, error: friendly(photoError) };
+  }
+
+  const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/model-photo/${pathCard}`;
+  await supabase.from("model_variant").update({ photo_url: publicUrl }).eq("id", variantId);
 
   revalidatePath("/models");
   return { ok: true };

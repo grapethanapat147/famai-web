@@ -3,8 +3,9 @@ import { getCurrentUser } from "@/lib/auth";
 import { canSeeMoney } from "@/lib/auth/money";
 import { stripMoneyFields } from "@/lib/auth/strip-money";
 import { buildModelRows, type ModelRow } from "@/lib/models/rows";
+import { canUploadModelPhoto } from "@/lib/models/image";
 import { ModelsView } from "@/components/models/ModelsView";
-import { addModel } from "./actions";
+import { addModel, saveModelPhoto } from "./actions";
 
 export const metadata = { title: "รุ่นรถและสี — Famai Motor Group" };
 
@@ -53,6 +54,8 @@ export default async function ModelsPage() {
       canAdd={Boolean(user?.perms.admin)}
       photoBaseUrl={PHOTO_BASE}
       action={addModel}
+      canManagePhoto={canUploadModelPhoto(user?.roleCodes ?? [])}
+      savePhotoAction={saveModelPhoto}
     />
   );
 }
