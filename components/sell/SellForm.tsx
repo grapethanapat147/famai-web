@@ -6,7 +6,7 @@ import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { computeDeal } from "@/lib/sell/deal";
-import type { SellActionResult } from "@/lib/sell/sell";
+import type { SellActionResult, SellInitial } from "@/lib/sell/sell";
 
 export type SellUnit = {
   id: string;
@@ -37,6 +37,7 @@ export function SellForm({
   canSeeMoney,
   sellerBranchCode,
   action,
+  initial,
 }: {
   units: SellUnit[];
   financeCompanies: FinanceCo[];
@@ -48,16 +49,20 @@ export function SellForm({
   canSeeMoney: boolean;
   sellerBranchCode: string | null;
   action?: (formData: FormData) => Promise<SellActionResult>;
+  initial?: SellInitial;
 }) {
-  const [unitId, setUnitId] = useState("");
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [payMethod, setPayMethod] = useState<"cash" | "finance">("cash");
-  const [listPrice, setListPrice] = useState(0);
+  const fromQuote = !!initial && (!!initial.unitId || !!initial.customerName);
+  const initListPrice =
+    initial?.listPrice ?? (initial?.unitId ? (units.find((u) => u.id === initial.unitId)?.retail ?? 0) : 0);
+  const [unitId, setUnitId] = useState(initial?.unitId ?? "");
+  const [customerName, setCustomerName] = useState(initial?.customerName ?? "");
+  const [customerPhone, setCustomerPhone] = useState(initial?.customerPhone ?? "");
+  const [payMethod, setPayMethod] = useState<"cash" | "finance">(initial?.payMethod ?? "cash");
+  const [listPrice, setListPrice] = useState(initListPrice ?? 0);
   const [discount, setDiscount] = useState(0);
-  const [downPayment, setDownPayment] = useState(0);
-  const [financeCoId, setFinanceCoId] = useState("");
-  const [months, setMonths] = useState(financeTerms[0] ?? 12);
+  const [downPayment, setDownPayment] = useState(initial?.downPayment ?? 0);
+  const [financeCoId, setFinanceCoId] = useState(initial?.financeId ?? "");
+  const [months, setMonths] = useState(initial?.months ?? financeTerms[0] ?? 12);
   const [freebies, setFreebies] = useState<string[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -147,6 +152,9 @@ export function SellForm({
   return (
     <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_360px]">
       <div className="flex flex-col gap-4">
+        {fromQuote && (
+          <StatusBadge variant="good">แปลงจากใบเสนอราคา — ตรวจคัน/ราคาแล้วยืนยันบันทึก{unitId ? "" : " (ยังไม่มีรถว่างของรุ่นนี้ — เลือกคันเอง)"}</StatusBadge>
+        )}
         <Field label="เลือกคันจากสต๊อก" full>
           <select value={unitId} onChange={(e) => selectUnit(e.target.value)} className={inputCls}>
             <option value="">— เลือกรถ —</option>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import Link from "next/link";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Money } from "@/components/ui/Money";
@@ -223,6 +224,28 @@ function QuoteBuilder({
   const canSubmit = customerName.trim() !== "" && active.length > 0;
   const printColumns = quotePrintColumns(built);
 
+  // แปลงคันนี้เป็นการขาย (FAM-1029) — พาไป /sell พร้อม prefill ลูกค้า/รุ่น/ไฟแนนซ์
+  function sellHref(o: OptState): string {
+    const params = new URLSearchParams({ variant: o.vehicleId });
+    if (customerName.trim()) {
+      params.set("name", customerName.trim());
+    }
+    if (customerPhone.trim()) {
+      params.set("phone", customerPhone.trim());
+    }
+    params.set("pay", o.financeId ? "finance" : "cash");
+    if (o.financeId) {
+      params.set("finance", o.financeId);
+    }
+    if (o.price) {
+      params.set("price", String(o.price));
+    }
+    if (o.down) {
+      params.set("down", String(o.down));
+    }
+    return `/sell?${params.toString()}`;
+  }
+
   function buildFormData(): FormData {
     const payload = active.map((b, i) => ({
       slot: i + 1,
@@ -401,6 +424,12 @@ function QuoteBuilder({
                 ))}
               </select>
             </Field>
+
+            {canManage && o.vehicleId !== "" && o.price > 0 && customerName.trim() !== "" && (
+              <Link href={sellHref(o)} className="text-sm font-medium text-accent hover:underline">
+                แปลงเป็นการขาย →
+              </Link>
+            )}
           </div>
         ))}
       </div>
