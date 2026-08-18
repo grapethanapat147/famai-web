@@ -2,7 +2,8 @@
 
 export type AccentSet = { accent: string; hover: string; deep: string; wash: string };
 
-const DEFAULT_ACCENT = "#E60012";
+/** สีเน้นเริ่มต้น (แดงยามาฮ่า) — แหล่งเดียว ใช้ร่วมทั้ง theme engine */
+export const DEFAULT_ACCENT = "#E60012";
 
 export function isValidHex(hex: string): boolean {
   return /^#[0-9a-fA-F]{6}$/.test(hex);

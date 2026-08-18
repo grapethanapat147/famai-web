@@ -1,8 +1,10 @@
-import { isValidHex } from "@/lib/theme/derive";
+import { DEFAULT_ACCENT, isValidHex } from "@/lib/theme/derive";
 
 export type ThemeConfig = { accent: string };
 
-export const DEFAULT_THEME: ThemeConfig = { accent: "#E60012" };
+export type ThemeActionResult = { ok: true } | { ok: false; error: string };
+
+export const DEFAULT_THEME: ThemeConfig = { accent: DEFAULT_ACCENT };
 
 /** ตรรกะล้วน — คัดค่า theme จากแถว app_setting (ค่าเสีย/ไม่มี → default) */
 export function parseThemeConfig(rows: ReadonlyArray<{ key: string; value: unknown }>): ThemeConfig {
