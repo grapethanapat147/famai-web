@@ -62,3 +62,43 @@ export async function isManager(client: TypedSupabaseClient): Promise<boolean> {
   }
   return Boolean(data);
 }
+
+export type SellUnitArgs = {
+  unitId: string;
+  customerName: string;
+  customerPhone: string;
+  payMethod: "cash" | "finance";
+  listPrice: number;
+  discount: number;
+  freebieCost: number;
+  downPayment: number | null;
+  termMonths: number | null;
+  financeId: string | null;
+  note: string | null;
+};
+
+export type SellUnitResult = { sale_id: string; doc_no: string | null; customer_id: string };
+
+/**
+ * บันทึกการขายแบบ atomic (migration 20 · sell_unit) — สร้างลูกค้า+บิลขาย+ทะเบียน(+สินเชื่อ)+งานติดตาม
+ * ต้นทุน/กำไรคิดฝั่ง DB · กันขายซ้ำด้วย row lock + unique index · โยน error ให้ action จับ
+ */
+export async function sellUnit(client: TypedSupabaseClient, a: SellUnitArgs): Promise<SellUnitResult> {
+  const { data, error } = await client.rpc("sell_unit", {
+    p_unit_id: a.unitId,
+    p_customer_name: a.customerName,
+    p_customer_phone: a.customerPhone,
+    p_pay_method: a.payMethod,
+    p_list_price: a.listPrice,
+    p_discount: a.discount,
+    p_freebie_cost: a.freebieCost,
+    p_down_payment: a.downPayment,
+    p_term_months: a.termMonths,
+    p_finance_id: a.financeId,
+    p_note: a.note,
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data as SellUnitResult;
+}

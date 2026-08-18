@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeDeal, type DealInput } from "@/lib/sell/deal";
+import { canSell } from "@/lib/sell/sell";
 
 const base: DealInput = {
   listPrice: 46900,
@@ -58,5 +59,16 @@ describe("computeDeal — finance (§6.4)", () => {
   it("เงินดาวน์ลดยอดจัด", () => {
     const d = computeDeal({ ...base, payMethod: "finance", downPayment: 10000, months: 12, monthlyRatePct: 1.35 });
     expect(d.financed).toBe(46900 - 10000);
+  });
+});
+
+describe("canSell (FAM-1023 · ตรงกับด่านสิทธิ์ใน sell_unit RPC)", () => {
+  it("อนุญาต admin/manager/sales · ปฏิเสธที่เหลือ", () => {
+    expect(canSell(["sales"])).toBe(true);
+    expect(canSell(["manager"])).toBe(true);
+    expect(canSell(["admin"])).toBe(true);
+    expect(canSell(["acct"])).toBe(false);
+    expect(canSell(["tech"])).toBe(false);
+    expect(canSell([])).toBe(false);
   });
 });

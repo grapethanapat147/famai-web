@@ -481,6 +481,22 @@ export type Database = {
       is_admin: { Args: Empty; Returns: boolean };
       is_manager: { Args: Empty; Returns: boolean };
       next_doc_no: { Args: { p_branch: string; p_type: string; p_year: number }; Returns: string };
+      sell_unit: {
+        Args: {
+          p_unit_id: string;
+          p_customer_name: string;
+          p_customer_phone: string;
+          p_pay_method: string;
+          p_list_price: number;
+          p_discount: number;
+          p_freebie_cost: number;
+          p_down_payment: number | null;
+          p_term_months: number | null;
+          p_finance_id: string | null;
+          p_note: string | null;
+        };
+        Returns: Json;
+      };
       meters_between: {
         Args: { la1: number; ln1: number; la2: number; ln2: number };
         Returns: number;
