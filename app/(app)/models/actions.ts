@@ -5,11 +5,6 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { getSettingsWith } from "@/lib/settings";
 import type { AddModelResult } from "@/lib/models/rows";
 
-function todayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 /** แปลง error จาก DB เป็นข้อความไทยที่ผู้ใช้เข้าใจ (ไม่โชว์ internal) */
 function friendly(error: { code?: string; message?: string } | null): string {
   if (!error) {
@@ -75,44 +70,21 @@ export async function addModel(formData: FormData): Promise<AddModelResult> {
   const settings = await getSettingsWith(supabase);
   const vat = Math.round(cost * (settings.vat_pct / 100) * 100) / 100;
 
-  const { data: variant, error: variantError } = await supabase
-    .from("model_variant")
-    .insert({
-      code,
-      model_name: modelName,
-      model_th: modelTh || null,
-      category: category || null,
-      cc,
-      model_year: year,
-    })
-    .select("id")
-    .single();
-
-  if (variantError || !variant) {
-    return { ok: false, error: friendly(variantError) };
-  }
-
-  const { error: colorError } = await supabase.from("model_color").insert(
-    colors.map((c) => ({ variant_id: variant.id, color_code: c.code, color_name: c.name })),
-  );
-
-  const { error: priceError } = colorError
-    ? { error: null }
-    : await supabase.from("price_history").insert({
-        variant_id: variant.id,
-        effective_from: todayISO(),
-        cost,
-        vat,
-        retail,
-        source: "เพิ่มด้วยมือ (หน้ารุ่นรถและสี)",
-      });
-
-  if (colorError || priceError) {
-    // cleanup best-effort — ลบลูกก่อนแล้วค่อยลบแม่ (FK ไม่ cascade)
-    await supabase.from("price_history").delete().eq("variant_id", variant.id);
-    await supabase.from("model_color").delete().eq("variant_id", variant.id);
-    await supabase.from("model_variant").delete().eq("id", variant.id);
-    return { ok: false, error: friendly(colorError ?? priceError) };
+  // atomic ผ่าน add_model RPC (variant + colors + price ในทรานแซกชันเดียว · rollback ถ้าพลาด · FAM-1025)
+  const { error } = await supabase.rpc("add_model", {
+    p_code: code,
+    p_model_name: modelName,
+    p_model_th: modelTh,
+    p_category: category,
+    p_cc: cc,
+    p_year: year,
+    p_colors: colors,
+    p_cost: cost,
+    p_vat: vat,
+    p_retail: retail,
+  });
+  if (error) {
+    return { ok: false, error: friendly(error) };
   }
 
   revalidatePath("/models");
