@@ -5,6 +5,7 @@ import { getSettings } from "@/lib/settings";
 import { stripMoneyFields } from "@/lib/auth/strip-money";
 import { computeAgeDays } from "@/lib/stock/units";
 import { SellForm, type FinanceCo, type SellUnit } from "@/components/sell/SellForm";
+import type { SellInitial } from "@/lib/sell/sell";
 import { recordSale } from "./actions";
 
 export const metadata = { title: "ขายรถ — Famai Motor Group" };
@@ -22,7 +23,14 @@ function todayISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export default async function SellPage() {
+export default async function SellPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const str = (k: string): string | undefined => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
+
   const supabase = await createServerSupabase();
 
   const [unitsRes, variantsRes, colorsRes, branchesRes, finRes] = await Promise.all([
@@ -72,6 +80,24 @@ export default async function SellPage() {
   const sellerBranchId = user?.branchIds[0] ?? null;
   const sellerBranchCode = (sellerBranchId && branchMap.get(sellerBranchId)?.code) || null;
 
+  // แปลงใบเสนอราคา→ขาย (FAM-1029): prefill จาก query — หา "คันว่างคันแรก" ของรุ่นที่เสนอไป
+  const variantParam = str("variant");
+  const preUnit = variantParam ? (unitsRes.data ?? []).find((u) => u.variant_id === variantParam) : undefined;
+  const payParam = str("pay");
+  const initial: SellInitial | undefined =
+    variantParam || str("name")
+      ? {
+          unitId: preUnit?.id,
+          customerName: str("name"),
+          customerPhone: str("phone"),
+          payMethod: payParam === "finance" ? "finance" : payParam === "cash" ? "cash" : undefined,
+          listPrice: str("price") ? Number(str("price")) : undefined,
+          downPayment: str("down") ? Number(str("down")) : undefined,
+          financeId: str("finance") || undefined,
+          months: str("months") ? Number(str("months")) : undefined,
+        }
+      : undefined;
+
   return (
     <SellForm
       units={units}
@@ -84,6 +110,7 @@ export default async function SellPage() {
       canSeeMoney={see}
       sellerBranchCode={sellerBranchCode}
       action={recordSale}
+      initial={initial}
     />
   );
 }

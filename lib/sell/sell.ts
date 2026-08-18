@@ -4,6 +4,18 @@ export type SellActionResult =
   | { ok: true; saleId: string; docNo: string | null }
   | { ok: false; error: string };
 
+/** ค่าตั้งต้นของฟอร์มขาย — ใช้ตอนแปลงใบเสนอราคา→ขาย (prefill ผ่าน query params) */
+export type SellInitial = {
+  unitId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  payMethod?: "cash" | "finance";
+  listPrice?: number;
+  downPayment?: number;
+  financeId?: string;
+  months?: number;
+};
+
 /** ผู้มีสิทธิ์บันทึกการขาย — ตรงกับด่านสิทธิ์ใน sell_unit RPC (admin/manager/sales) */
 const SELL_ROLES = ["admin", "manager", "sales"];
 
