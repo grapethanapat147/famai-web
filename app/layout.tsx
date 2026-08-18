@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="th" className={`${notoThai.variable} ${inter.variable} h-full antialiased`}>
+    <html lang="th" suppressHydrationWarning className={`${notoThai.variable} ${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <ThemeStyle />
