@@ -1,6 +1,7 @@
 "use client";
 
 import { ModelsView } from "@/components/models/ModelsView";
+import type { ModelPhotoResult } from "@/lib/models/image";
 import type { AddModelResult, ModelRow } from "@/lib/models/rows";
 
 /** พรีวิวหน้ารุ่นรถและสี (FAM-1009) — sample data · /models จริงต่อ DB ผ่าน RLS */
@@ -65,14 +66,26 @@ async function mockAddModel(formData: FormData): Promise<AddModelResult> {
   return { ok: true };
 }
 
+async function mockSavePhoto(): Promise<ModelPhotoResult> {
+  return { ok: true };
+}
+
 export default function DevModelsPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
       <header className="mb-6">
         <h1 className="font-display text-[28px] font-semibold text-ink">รุ่นรถและสี (preview)</h1>
-        <p className="mt-1 text-ink-soft">FAM-1009 · sample data — ลองกด &ldquo;เพิ่มรุ่น&rdquo; (รหัส BTF200 จะโชว์ error ซ้ำ)</p>
+        <p className="mt-1 text-ink-soft">FAM-1009/1024 · sample data — กด &ldquo;เพิ่มรุ่น&rdquo; หรือกดรูปเพื่ออัปโหลด (ของจริงต้อง Storage+auth)</p>
       </header>
-      <ModelsView rows={ROWS} canSeeMoney canAdd photoBaseUrl="" action={mockAddModel} />
+      <ModelsView
+        rows={ROWS}
+        canSeeMoney
+        canAdd
+        photoBaseUrl=""
+        action={mockAddModel}
+        canManagePhoto
+        savePhotoAction={mockSavePhoto}
+      />
     </main>
   );
 }
