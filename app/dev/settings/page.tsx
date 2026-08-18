@@ -30,7 +30,7 @@ export default function DevSettingsPage() {
       </header>
       <SettingsView settings={SETTING_DEFAULTS} canEdit action={mockSave} />
       <div className="mt-4">
-        <ThemeSettings currentAccent={DEFAULT_ACCENT} canEdit action={mockTheme} />
+        <ThemeSettings currentAccent={DEFAULT_ACCENT} currentFontPair="noto-inter" currentCustomFont="" canEdit action={mockTheme} />
       </div>
     </main>
   );

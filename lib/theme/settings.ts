@@ -9,7 +9,10 @@ export type { ThemeConfig } from "@/lib/theme/config";
 export const getThemeConfig = cache(async (): Promise<ThemeConfig> => {
   try {
     const supabase = await createServerSupabase();
-    const { data, error } = await supabase.from("app_setting").select("key, value").eq("key", "theme_accent");
+    const { data, error } = await supabase
+      .from("app_setting")
+      .select("key, value")
+      .in("key", ["theme_accent", "theme_font_pair", "theme_custom_font"]);
     if (error || !data) {
       return DEFAULT_THEME;
     }
