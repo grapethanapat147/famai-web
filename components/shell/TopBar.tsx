@@ -1,4 +1,5 @@
 import { logout, toggleCustomerMode } from "@/lib/auth/actions";
+import { ThemeControls } from "@/components/theme/ThemeControls";
 
 /** แถบบน — ชื่อหน้า/แบรนด์ + สลับโหมดลูกค้า (ถ้ามีสิทธิ์ money) + ชิปผู้ใช้ + ออกจากระบบ */
 export function TopBar({
@@ -27,6 +28,7 @@ export function TopBar({
       </div>
 
       <div className="flex items-center gap-1.5">
+        <ThemeControls />
         {canToggleMoney && (
           <form action={toggleCustomerMode}>
             <button
