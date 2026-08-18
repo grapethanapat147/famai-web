@@ -17,9 +17,10 @@
 | ไฟล์ | หน้าที่ | สร้าง/แก้ |
 |---|---|---|
 | `lib/theme/derive.ts` | สี pure — hex↔hsl, `deriveAccent(hex,mode)`, `isValidHex` | สร้าง |
-| `lib/theme/settings.ts` | `parseThemeConfig(rows)` pure + `getThemeConfig()` server reader | สร้าง |
+| `lib/theme/config.ts` | **pure** `parseThemeConfig(rows)` + `ThemeConfig` + `DEFAULT_THEME` (ไม่มี server-only → ทดสอบได้ตรง ๆ ตามแบบ `lib/settings/resolve.ts`) | สร้าง |
+| `lib/theme/settings.ts` | `server-only` + `getThemeConfig()` server reader (import จาก config.ts) | สร้าง |
 | `tests/theme-derive.test.ts` | tests ของ derive.ts | สร้าง |
-| `tests/theme-settings.test.ts` | tests ของ parseThemeConfig | สร้าง |
+| `tests/theme-settings.test.ts` | tests ของ parseThemeConfig (import จาก config.ts) | สร้าง |
 | `app/globals.css` | เพิ่มบล็อก `[data-theme=dark]` + `[data-density=compact]` | แก้ |
 | `components/theme/ThemeStyle.tsx` | server component ฉีด `<style>` สีเน้น (light/dark) | สร้าง |
 | `components/theme/theme-init.ts` | ค่าคงที่ no-flash script string | สร้าง |
@@ -180,17 +181,19 @@ git commit -m "feat(FAM-1037): accent-derive (hex→hsl shades, pure) + tests"
 ## Task 2: Theme config reader
 
 **Files:**
-- Create: `lib/theme/settings.ts`
+- Create: `lib/theme/config.ts` (pure — no `server-only`), `lib/theme/settings.ts` (server reader)
 - Test: `tests/theme-settings.test.ts`
 
 Theme config เก็บใน `app_setting` แยกจาก AppSettings ปกติ (คนละระบบกับหน้าตั้งค่าทั่วไป — กัน settings-fields coverage test พัง). อ่านเฉพาะคีย์ `theme_accent`.
+
+> **สำคัญ (แก้จากรอบแรก):** แยก pure logic (`config.ts`) ออกจาก `server-only` reader (`settings.ts`) — เพราะ `import "server-only"` โยน error ตอน vitest import โดยตรง. ตามแบบ `lib/settings/resolve.ts` (pure) vs `lib/settings/index.ts` (server-only).
 
 - [ ] **Step 1: Write the failing test**
 
 ```ts
 // tests/theme-settings.test.ts
 import { describe, it, expect } from "vitest";
-import { parseThemeConfig } from "@/lib/theme/settings";
+import { parseThemeConfig } from "@/lib/theme/config";
 
 describe("parseThemeConfig", () => {
   it("reads theme_accent when a valid hex", () => {
@@ -211,17 +214,15 @@ describe("parseThemeConfig", () => {
 Run: `npx vitest run tests/theme-settings.test.ts`
 Expected: FAIL — cannot find module `@/lib/theme/settings`
 
-- [ ] **Step 3: Write the implementation**
+- [ ] **Step 3: Write the pure module** `lib/theme/config.ts`
 
 ```ts
-// lib/theme/settings.ts
-import "server-only";
-import { createServerSupabase } from "@/lib/supabase/server";
+// lib/theme/config.ts
 import { isValidHex } from "@/lib/theme/derive";
 
 export type ThemeConfig = { accent: string };
 
-const DEFAULT_THEME: ThemeConfig = { accent: "#E60012" };
+export const DEFAULT_THEME: ThemeConfig = { accent: "#E60012" };
 
 /** ตรรกะล้วน — คัดค่า theme จากแถว app_setting (ค่าเสีย/ไม่มี → default) */
 export function parseThemeConfig(rows: ReadonlyArray<{ key: string; value: unknown }>): ThemeConfig {
@@ -229,6 +230,17 @@ export function parseThemeConfig(rows: ReadonlyArray<{ key: string; value: unkno
   const accent = typeof accentRow?.value === "string" && isValidHex(accentRow.value) ? accentRow.value : DEFAULT_THEME.accent;
   return { accent };
 }
+```
+
+- [ ] **Step 4: Write the server reader** `lib/theme/settings.ts`
+
+```ts
+// lib/theme/settings.ts
+import "server-only";
+import { createServerSupabase } from "@/lib/supabase/server";
+import { DEFAULT_THEME, parseThemeConfig, type ThemeConfig } from "@/lib/theme/config";
+
+export type { ThemeConfig } from "@/lib/theme/config";
 
 /** อ่าน theme global จาก DB — resilient (พลาด → default โทนเดิม ไม่พังทั้งแอป) */
 export async function getThemeConfig(): Promise<ThemeConfig> {
@@ -245,15 +257,15 @@ export async function getThemeConfig(): Promise<ThemeConfig> {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 5: Run test to verify it passes**
 
 Run: `npx vitest run tests/theme-settings.test.ts`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add lib/theme/settings.ts tests/theme-settings.test.ts
+git add lib/theme/config.ts lib/theme/settings.ts tests/theme-settings.test.ts
 git commit -m "feat(FAM-1037): theme config reader (parseThemeConfig pure + getThemeConfig)"
 ```
 
@@ -374,60 +386,68 @@ export const THEME_INIT_SCRIPT =
 
 - [ ] **Step 2: ThemeControls client component**
 
+> **แก้จากรอบแรก:** ใช้ `useSyncExternalStore` (ไม่ใช่ useEffect+setState) เพราะ repo ตั้ง `react-hooks/set-state-in-effect` เป็น error + lazy initializer อ่าน localStorage จะพังตอน SSR (client component ยัง render บน server). useSyncExternalStore คือ API ที่ถูกต้องสำหรับ "สะท้อนค่าที่ no-flash script ตั้งไว้ก่อน hydrate" — server snapshot = default, client snapshot = localStorage, subscribe = storage event (ข้ามแท็บ) + notify (แท็บเดียวกัน).
+
 ```tsx
 // components/theme/ThemeControls.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 type Theme = "light" | "dark";
 type Density = "comfortable" | "compact";
 
-function setRoot(attr: string, on: boolean, value: string) {
+const listeners = new Set<() => void>();
+function notify() {
+  listeners.forEach((l) => l());
+}
+function syncDomFromStorage() {
   const el = document.documentElement;
-  if (on) {
-    el.setAttribute(attr, value);
-  } else {
-    el.removeAttribute(attr);
-  }
+  if (localStorage.getItem("fm-theme") === "dark") el.setAttribute("data-theme", "dark");
+  else el.removeAttribute("data-theme");
+  if (localStorage.getItem("fm-density") === "compact") el.setAttribute("data-density", "compact");
+  else el.removeAttribute("data-density");
+}
+function subscribe(cb: () => void) {
+  listeners.add(cb);
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === "fm-theme" || e.key === "fm-density") {
+      syncDomFromStorage();
+      cb();
+    }
+  };
+  window.addEventListener("storage", onStorage);
+  return () => {
+    listeners.delete(cb);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+function getTheme(): Theme {
+  return typeof window !== "undefined" && localStorage.getItem("fm-theme") === "dark" ? "dark" : "light";
+}
+function getDensity(): Density {
+  return typeof window !== "undefined" && localStorage.getItem("fm-density") === "compact" ? "compact" : "comfortable";
+}
+function setThemePref(next: Theme) {
+  localStorage.setItem("fm-theme", next);
+  const el = document.documentElement;
+  if (next === "dark") el.setAttribute("data-theme", "dark");
+  else el.removeAttribute("data-theme");
+  notify();
+}
+function setDensityPref(next: Density) {
+  localStorage.setItem("fm-density", next);
+  const el = document.documentElement;
+  if (next === "compact") el.setAttribute("data-density", "compact");
+  else el.removeAttribute("data-density");
+  notify();
 }
 
 export function ThemeControls() {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [density, setDensity] = useState<Density>("comfortable");
-
-  useEffect(() => {
-    setTheme(localStorage.getItem("fm-theme") === "dark" ? "dark" : "light");
-    setDensity(localStorage.getItem("fm-density") === "compact" ? "compact" : "comfortable");
-    function onStorage(e: StorageEvent) {
-      if (e.key === "fm-theme") {
-        const t: Theme = e.newValue === "dark" ? "dark" : "light";
-        setTheme(t);
-        setRoot("data-theme", t === "dark", "dark");
-      }
-      if (e.key === "fm-density") {
-        const d: Density = e.newValue === "compact" ? "compact" : "comfortable";
-        setDensity(d);
-        setRoot("data-density", d === "compact", "compact");
-      }
-    }
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
-
-  function toggleTheme() {
-    const next: Theme = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    localStorage.setItem("fm-theme", next);
-    setRoot("data-theme", next === "dark", "dark");
-  }
-
-  function toggleDensity() {
-    const next: Density = density === "compact" ? "comfortable" : "compact";
-    setDensity(next);
-    localStorage.setItem("fm-density", next);
-    setRoot("data-density", next === "compact", "compact");
-  }
+  const theme = useSyncExternalStore<Theme>(subscribe, getTheme, () => "light");
+  const density = useSyncExternalStore<Density>(subscribe, getDensity, () => "comfortable");
+  const toggleTheme = () => setThemePref(theme === "dark" ? "light" : "dark");
+  const toggleDensity = () => setDensityPref(density === "compact" ? "comfortable" : "compact");
 
   const btn = "grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-card hover:text-ink";
 
@@ -488,7 +508,7 @@ import { THEME_INIT_SCRIPT } from "@/components/theme/theme-init";
 
 ```tsx
   return (
-    <html lang="th" className={`${notoThai.variable} ${inter.variable} h-full antialiased`}>
+    <html lang="th" suppressHydrationWarning className={`${notoThai.variable} ${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <ThemeStyle />
@@ -499,6 +519,7 @@ import { THEME_INIT_SCRIPT } from "@/components/theme/theme-init";
 ```
 
 > วาง `<script>` เป็นลูกตัวแรกของ `<body>` (App Router ไม่แนะนำ `<head>` เอง) — รัน synchronous ก่อน DOM ส่วนที่เหลือ paint จึงกันกระพริบได้. `<ThemeStyle/>` async server component — RSC รองรับ.
+> **`suppressHydrationWarning` บน `<html>` จำเป็น** — no-flash script ตั้ง `data-theme`/`data-density` บน `<html>` ก่อน hydrate ทำให้ client ≠ SSR → React เตือน hydration mismatch. flag นี้บอก React ให้ข้าม attribute ของ `<html>` (ตั้งใจให้ script เปลี่ยน) — ทุก theme library ทำแบบนี้.
 
 - [ ] **Step 2: เสียบ ThemeControls ใน TopBar**
 
