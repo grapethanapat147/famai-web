@@ -15,7 +15,13 @@ export default async function SettingsPage() {
     <div className="flex flex-col gap-4">
       <SettingsView settings={settings} canEdit={admin} action={updateSettings} />
       <div className="mx-auto w-full max-w-3xl">
-        <ThemeSettings currentAccent={theme.accent} canEdit={admin} action={updateThemeSettings} />
+        <ThemeSettings
+          currentAccent={theme.accent}
+          currentFontPair={theme.fontPair}
+          currentCustomFont={theme.customFont}
+          canEdit={admin}
+          action={updateThemeSettings}
+        />
       </div>
     </div>
   );
