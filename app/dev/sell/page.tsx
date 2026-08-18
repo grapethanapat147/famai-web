@@ -1,7 +1,9 @@
-import { SellForm, type FinanceCo, type FreebieOption, type SellUnit } from "@/components/sell/SellForm";
+"use client";
 
-/** พรีวิวหน้าขาย (FAM-1011) — sample data · /sell จริงต่อ DB ผ่าน RLS */
-export const metadata = { title: "ขายรถ (preview) — Famai" };
+import { SellForm, type FinanceCo, type FreebieOption, type SellUnit } from "@/components/sell/SellForm";
+import type { SellActionResult } from "@/lib/sell/sell";
+
+/** พรีวิวหน้าขาย (FAM-1011/1023) — sample data · /sell จริงต่อ DB ผ่าน sell_unit RPC */
 
 const UNITS: SellUnit[] = [
   { id: "1", modelCode: "B6FU00", modelName: "FINN ล้อแม็ก", colorName: "ฟ้า", engineNo: "E34RE-057401", branchCode: "FMG01", branchName: "Famai Motor Group", ageDays: 12, retail: 46900, cost: 40800 },
@@ -22,12 +24,19 @@ const FREEBIES: FreebieOption[] = [
   { name: "น้ำมันเครื่อง", cost: 180 },
 ];
 
+async function mockSell(formData: FormData): Promise<SellActionResult> {
+  if (!String(formData.get("customer_name") ?? "").trim()) {
+    return { ok: false, error: "กรอกชื่อลูกค้า" };
+  }
+  return { ok: true, saleId: "dev-sale", docNo: "FMG-TAXINV-2569-00042" };
+}
+
 export default function DevSellPage() {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 lg:px-6">
       <header className="mb-6">
         <h1 className="font-display text-[28px] font-semibold text-ink">ขายรถ (preview)</h1>
-        <p className="mt-1 text-ink-soft">FAM-1011 · sample data — sellerBranchCode=FMG01 (โชว์ mismatch เมื่อเลือกคันสาขาอื่น)</p>
+        <p className="mt-1 text-ink-soft">FAM-1011/1023 · sample data — เลือกคัน + ลูกค้า → ยืนยัน → บันทึก (mock) · sellerBranchCode=FMG01</p>
       </header>
       <SellForm
         units={UNITS}
@@ -39,6 +48,7 @@ export default function DevSellPage() {
         financeTerms={[12, 18, 24, 30, 36, 42, 48]}
         canSeeMoney
         sellerBranchCode="FMG01"
+        action={mockSell}
       />
     </main>
   );

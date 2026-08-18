@@ -1,9 +1,11 @@
 import { createServerSupabase } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth";
 import { canSeeMoney } from "@/lib/auth/money";
 import { getSettings } from "@/lib/settings";
 import { stripMoneyFields } from "@/lib/auth/strip-money";
 import { computeAgeDays } from "@/lib/stock/units";
 import { SellForm, type FinanceCo, type SellUnit } from "@/components/sell/SellForm";
+import { recordSale } from "./actions";
 
 export const metadata = { title: "ขายรถ — Famai Motor Group" };
 
@@ -58,6 +60,7 @@ export default async function SellPage() {
 
   const see = await canSeeMoney();
   const settings = await getSettings();
+  const user = await getCurrentUser();
   const units = stripMoneyFields(rawUnits, see, ["cost"]) as SellUnit[];
 
   const financeCompanies: FinanceCo[] = (finRes.data ?? []).map((f) => ({
@@ -65,6 +68,9 @@ export default async function SellPage() {
     name: f.name,
     ratePct: Number(f.flat_rate_pct ?? 0),
   }));
+
+  const sellerBranchId = user?.branchIds[0] ?? null;
+  const sellerBranchCode = (sellerBranchId && branchMap.get(sellerBranchId)?.code) || null;
 
   return (
     <SellForm
@@ -76,7 +82,8 @@ export default async function SellPage() {
       freebieIsCost={settings.freebie_is_cost}
       financeTerms={settings.finance_terms}
       canSeeMoney={see}
-      sellerBranchCode={null}
+      sellerBranchCode={sellerBranchCode}
+      action={recordSale}
     />
   );
 }

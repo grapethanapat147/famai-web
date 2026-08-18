@@ -6,6 +6,7 @@ import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { computeDeal } from "@/lib/sell/deal";
+import type { SellActionResult } from "@/lib/sell/sell";
 
 export type SellUnit = {
   id: string;
@@ -35,6 +36,7 @@ export function SellForm({
   financeTerms,
   canSeeMoney,
   sellerBranchCode,
+  action,
 }: {
   units: SellUnit[];
   financeCompanies: FinanceCo[];
@@ -45,8 +47,11 @@ export function SellForm({
   financeTerms: number[];
   canSeeMoney: boolean;
   sellerBranchCode: string | null;
+  action?: (formData: FormData) => Promise<SellActionResult>;
 }) {
   const [unitId, setUnitId] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [payMethod, setPayMethod] = useState<"cash" | "finance">("cash");
   const [listPrice, setListPrice] = useState(0);
   const [discount, setDiscount] = useState(0);
@@ -55,14 +60,17 @@ export function SellForm({
   const [months, setMonths] = useState(financeTerms[0] ?? 12);
   const [freebies, setFreebies] = useState<string[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [savedDoc, setSavedDoc] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const unit = units.find((u) => u.id === unitId) ?? null;
 
   function selectUnit(id: string) {
     setUnitId(id);
     setListPrice(units.find((x) => x.id === id)?.retail ?? 0);
-    setSaved(false);
+    setSavedDoc(null);
+    setError(null);
   }
 
   const monthlyRatePct = financeCompanies.find((f) => f.id === financeCoId)?.ratePct ?? 0;
@@ -92,6 +100,47 @@ export function SellForm({
   const mismatch = unit && sellerBranchCode ? unit.branchCode !== sellerBranchCode : false;
   const belowCost = canSeeMoney && deal.grossProfit != null && deal.grossProfit < 0;
 
+  async function submitSale() {
+    if (!unit || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    if (!action) {
+      // โหมดพรีวิว (ไม่มี action) — แสดงผลตัวอย่าง
+      setBusy(false);
+      setSavedDoc("ตัวอย่าง");
+      return;
+    }
+    const fd = new FormData();
+    fd.set("unit_id", unit.id);
+    fd.set("customer_name", customerName.trim());
+    fd.set("customer_phone", customerPhone.trim());
+    fd.set("pay_method", payMethod);
+    fd.set("list_price", String(listPrice));
+    fd.set("discount", String(discount));
+    fd.set("freebie_cost", String(freebieCost));
+    if (payMethod === "finance") {
+      fd.set("finance_id", financeCoId);
+      fd.set("down_payment", String(downPayment));
+      fd.set("term_months", String(months));
+    }
+    const res = await action(fd);
+    setBusy(false);
+    if (res.ok) {
+      setSavedDoc(res.docNo ?? "บันทึกแล้ว");
+      // รีเซ็ตฟอร์มกันบันทึกซ้ำ
+      setUnitId("");
+      setCustomerName("");
+      setCustomerPhone("");
+      setDiscount(0);
+      setDownPayment(0);
+      setFreebies([]);
+    } else {
+      setError(res.error);
+    }
+  }
+
   const toggleFreebie = (name: string) =>
     setFreebies((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
 
@@ -119,6 +168,15 @@ export function SellForm({
             )}
           </div>
         )}
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="ชื่อลูกค้า *">
+            <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="ชื่อ-นามสกุล" className={inputCls} />
+          </Field>
+          <Field label="เบอร์โทร">
+            <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} inputMode="tel" className={inputCls} />
+          </Field>
+        </div>
 
         <Field label="วิธีชำระ" full>
           <Chips
@@ -187,15 +245,18 @@ export function SellForm({
 
         <button
           type="button"
-          disabled={!unit || mismatch}
+          disabled={!unit || mismatch || customerName.trim() === "" || busy}
           onClick={() => setConfirmOpen(true)}
           className="mt-2 rounded-[24px] bg-accent py-3 text-sm font-medium text-card transition-transform active:scale-[0.99] disabled:opacity-50"
         >
-          บันทึกการขาย
+          {busy ? "กำลังบันทึก…" : "บันทึกการขาย"}
         </button>
-        {saved && (
-          <StatusBadge variant="good">ยืนยันแล้ว (ตัวอย่าง) — บันทึกลง DB จริงรอ sell RPC (deferred)</StatusBadge>
+        {savedDoc && (
+          <StatusBadge variant="good">
+            บันทึกการขายแล้ว{savedDoc !== "ตัวอย่าง" ? ` — เลขที่ ${savedDoc}` : " (ตัวอย่าง)"}
+          </StatusBadge>
         )}
+        {error && <StatusBadge variant="bad">{error}</StatusBadge>}
       </div>
 
       <aside className="h-max rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)] lg:sticky lg:top-20">
@@ -246,7 +307,7 @@ export function SellForm({
         onCancel={() => setConfirmOpen(false)}
         onConfirm={() => {
           setConfirmOpen(false);
-          setSaved(true);
+          void submitSale();
         }}
       />
     </div>
