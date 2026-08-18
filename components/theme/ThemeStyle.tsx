@@ -1,7 +1,5 @@
-import { deriveAccent } from "@/lib/theme/derive";
+import { DEFAULT_ACCENT, deriveAccent } from "@/lib/theme/derive";
 import { getThemeConfig } from "@/lib/theme/settings";
-
-const DEFAULT_ACCENT = "#E60012";
 
 /** ฉีดสีเน้น global ตอน SSR — light เฉพาะเมื่อไม่ใช่ค่า default (กันหน้าตาเดิมเปลี่ยน) · dark เสมอ */
 export async function ThemeStyle() {
