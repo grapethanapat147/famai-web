@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import localFont from "next/font/local";
 import { Inter } from "next/font/google";
+import { ThemeStyle } from "@/components/theme/ThemeStyle";
+import { THEME_INIT_SCRIPT } from "@/components/theme/theme-init";
 import "./globals.css";
 
 // Noto Sans Thai — self-host จาก woff2 ในโปรเจกต์ (vendored จาก tools/manual/fonts) ไม่มี request ออก Google
@@ -26,7 +28,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="th" className={`${notoThai.variable} ${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <ThemeStyle />
+        {children}
+      </body>
     </html>
   );
 }
