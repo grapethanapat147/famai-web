@@ -96,6 +96,13 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* โฟกัสด้วยคีย์บอร์ด — วงแหวนสีเน้นเดียวทั้งแอป (a11y + ความประณีต) · ไม่ขึ้นตอนคลิกเมาส์
+   ช่องกรอกมีสไตล์โฟกัสของตัวเองอยู่แล้ว จึงไม่รวมที่นี่ (กันวงซ้อน) */
+:where(a, button, summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ── โหมดมืด (per-user · ตั้งโดย data-theme=dark บน <html>) ────────────────
    สลับ neutral ล้วน · สีเน้นถูก override ทีหลังโดย ThemeStyle (derive โหมด dark) */
 :root[data-theme="dark"] {

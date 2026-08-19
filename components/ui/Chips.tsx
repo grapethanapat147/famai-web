@@ -20,10 +20,10 @@ export function Chips<T extends string>({
             type="button"
             onClick={() => onChange(o.value)}
             aria-pressed={active}
-            className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
+            className={`rounded-full px-3 py-1.5 text-sm transition active:scale-95 ${
               active
                 ? "bg-ink text-card"
-                : "border border-hairline bg-card text-ink-soft hover:text-ink"
+                : "border border-hairline bg-card text-ink-soft hover:border-ink/40 hover:text-ink"
             }`}
           >
             {o.label}
