@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { MenuGroup, MenuItem } from "@/lib/nav/menu";
 import { menuItem } from "@/lib/nav/menu";
 import { toggleCustomerMode } from "@/lib/auth/actions";
+import { CaptureButton } from "@/components/capture/CaptureButton";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { MobileNav } from "./MobileNav";
@@ -44,11 +45,14 @@ export function AppShell({
               </svg>
               <span className="truncate">โหมดลูกค้า — ซ่อนต้นทุนและกำไรทุกหน้า</span>
             </span>
-            <form action={toggleCustomerMode}>
-              <button type="submit" className="shrink-0 rounded-full border border-accent/40 px-2.5 py-0.5 text-xs font-medium">
-                ปิดโหมด
-              </button>
-            </form>
+            <div className="flex shrink-0 items-center gap-2">
+              <CaptureButton />
+              <form action={toggleCustomerMode}>
+                <button type="submit" className="shrink-0 rounded-full border border-accent/40 px-2.5 py-0.5 text-xs font-medium">
+                  ปิดโหมด
+                </button>
+              </form>
+            </div>
           </div>
         )}
 
