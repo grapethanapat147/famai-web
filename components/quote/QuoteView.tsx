@@ -434,8 +434,8 @@ function QuoteBuilder({
         ))}
       </div>
 
-      {/* ตารางเทียบ (บนจอ) */}
-      <div className="print:hidden">
+      {/* ตารางเทียบ (บนจอ) — mark ให้แคปเป็นรูปได้ในโหมดลูกค้า (FAM-1040) */}
+      <div className="print:hidden" data-capture="ใบเทียบราคา">
         <CompareTable built={built} active={active.length > 0} financeTerms={financeTerms} />
       </div>
 
