@@ -79,7 +79,9 @@ export function DataTable<T>({
                 key={rowKey(row)}
                 {...activate(onRowClick, row)}
                 className={`border-b border-hairline-2 last:border-0 ${
-                  onRowClick ? "cursor-pointer hover:bg-paper-2" : ""
+                  onRowClick
+                    ? "cursor-pointer transition-colors hover:bg-paper-2 active:bg-[var(--hairline-2)] focus-visible:bg-paper-2 focus-visible:[outline:2px_solid_var(--accent)] focus-visible:[outline-offset:-2px]"
+                    : ""
                 }`}
               >
                 {columns.map((c) => (
@@ -101,7 +103,9 @@ export function DataTable<T>({
           <div
             key={rowKey(row)}
             {...activate(onRowClick, row)}
-            className={`rounded-[12px] bg-card p-3 shadow-[var(--sh-sm)] ${onRowClick ? "cursor-pointer" : ""}`}
+            className={`rounded-[12px] bg-card p-3 shadow-[var(--sh-sm)] ${
+              onRowClick ? "cursor-pointer transition-transform active:scale-[0.99]" : ""
+            }`}
           >
             <div className="font-medium text-ink">{primaryCol.render(row)}</div>
             <dl className="mt-1.5 flex flex-col gap-0.5">

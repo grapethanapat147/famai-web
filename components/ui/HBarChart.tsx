@@ -3,7 +3,7 @@ import type { StatusVariant } from "@/components/ui/StatusBadge";
 const BAR: Record<StatusVariant | "ink", string> = {
   ink: "bg-ink",
   good: "bg-pos",
-  info: "bg-info",
+  info: "bg-ink-soft",
   warn: "bg-attn",
   bad: "bg-accent",
   off: "bg-muted",
@@ -16,10 +16,12 @@ export function HBarChart({ items }: { items: { label: string; value: number; to
     <div className="flex flex-col gap-2">
       {items.map((it) => (
         <div key={it.label} className="flex items-center gap-3 text-sm">
-          <span className="w-28 shrink-0 truncate text-ink-soft">{it.label}</span>
+          <span className="w-32 shrink-0 truncate text-ink-soft" title={it.label}>
+            {it.label}
+          </span>
           <div className="h-2.5 flex-1 rounded-full bg-[var(--hairline-2)]">
             <div
-              className={`h-full rounded-full ${BAR[it.tone ?? "ink"]}`}
+              className={`h-full rounded-full transition-[width] duration-500 ease-[var(--ease)] ${BAR[it.tone ?? "ink"]}`}
               style={{ width: `${(it.value / max) * 100}%` }}
             />
           </div>

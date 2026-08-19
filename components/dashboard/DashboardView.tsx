@@ -57,15 +57,12 @@ export function DashboardView({
         <StatCard label="ขายเดือนนี้" value={String(soldThisMonth)} hint="คัน" />
 
         {/* ยอดค้างจ่าย — R1: ตัวแดง เด่น */}
-        <div className="rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)] ring-1 ring-accent/25">
-          <div className="text-[11px] font-medium uppercase tracking-wider text-muted">ยอดค้างจ่าย</div>
-          <div className="mt-1 whitespace-nowrap font-display text-[clamp(1.375rem,6vw,2rem)] font-semibold leading-none text-accent tabular">
-            <span className="text-accent">
-              <Money value={overdue} canSee={canSeeMoney} />
-            </span>
-          </div>
-          <div className="mt-2 text-xs text-muted">ต้องติดตาม</div>
-        </div>
+        <StatCard
+          label="ยอดค้างจ่าย"
+          value={<Money value={overdue} canSee={canSeeMoney} />}
+          hint="ต้องติดตาม"
+          tone="accent"
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
