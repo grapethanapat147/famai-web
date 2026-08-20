@@ -23,23 +23,27 @@ function thaiDate(): string {
 export default async function DashPage() {
   const supabase = await createServerSupabase();
 
-  const [unitsRes, branchesRes, recRes, saleRes] = await Promise.all([
-    supabase.from("motorcycle_unit").select("branch_id, status, received_at, cost"),
+  const [unitsRes, branchesRes, variantsRes, recRes, saleRes] = await Promise.all([
+    supabase.from("motorcycle_unit").select("id, branch_id, variant_id, status, received_at, cost"),
     supabase.from("branch").select("id, code, name"),
+    supabase.from("model_variant").select("id, model_name"),
     supabase.from("receivable").select("balance, settled_at"),
     supabase.from("sale").select("sold_at"),
   ]);
 
   const branchMap = new Map((branchesRes.data ?? []).map((b) => [b.id, b]));
+  const variantMap = new Map((variantsRes.data ?? []).map((v) => [v.id, v.model_name]));
   const today = todayISO();
   const rawUnits: DashUnit[] = (unitsRes.data ?? []).map((u) => {
     const b = branchMap.get(u.branch_id);
     return {
+      id: u.id,
       branchCode: b?.code ?? "?",
       branchName: b?.name ?? "?",
       status: u.status,
       ageDays: computeAgeDays(u.received_at, today),
       cost: u.cost,
+      model: variantMap.get(u.variant_id) ?? undefined,
     };
   });
 
