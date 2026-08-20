@@ -26,10 +26,7 @@ const SAMPLE: DashUnit[] = [
 export default function DevDashPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
-      <header className="mb-6">
-        <h1 className="font-display text-[28px] font-semibold text-ink">Dashboard (preview)</h1>
-        <p className="mt-1 text-ink-soft">FAM-1017 · sample data — /dash จริงต่อ DB ผ่าน RLS</p>
-      </header>
+      <p className="mb-4 text-xs text-muted">preview · sample data — /dash จริงต่อ DB ผ่าน RLS</p>
       <DashboardView
         units={SAMPLE}
         canSeeMoney
@@ -37,6 +34,7 @@ export default function DevDashPage() {
         buckets={[30, 60, 90]}
         overdue={128400}
         soldThisMonth={0}
+        asOf="19 ส.ค. 2026"
       />
     </main>
   );

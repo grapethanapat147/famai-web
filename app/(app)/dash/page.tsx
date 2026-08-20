@@ -13,6 +13,13 @@ function todayISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+const THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+
+function thaiDate(): string {
+  const d = new Date();
+  return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 export default async function DashPage() {
   const supabase = await createServerSupabase();
 
@@ -57,6 +64,7 @@ export default async function DashPage() {
       buckets={settings.aging_buckets}
       overdue={overdue}
       soldThisMonth={soldThisMonth}
+      asOf={thaiDate()}
     />
   );
 }
