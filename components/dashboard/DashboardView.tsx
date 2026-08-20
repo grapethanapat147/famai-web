@@ -166,15 +166,17 @@ export function DashboardView({
           {aged.length === 0 ? (
             <p className="flex-1 py-8 text-center text-sm text-muted">ไม่มีรถค้างเกิน {agingDays} วัน 👍</p>
           ) : (
-            <ul className="flex flex-col">
+            <ul className="-mx-1.5 flex flex-col">
               {aged.map((u, i) => (
-                <li
-                  key={u.id ?? i}
-                  className="flex items-center justify-between gap-3 border-b border-hairline-2 py-2 text-sm last:border-0"
-                >
-                  <span className="min-w-0 flex-1 truncate text-ink">{u.model ?? "ไม่ระบุรุ่น"}</span>
-                  <span className="max-w-[96px] shrink-0 truncate text-muted">{u.branchName}</span>
-                  <span className="w-16 shrink-0 text-right tabular font-medium text-accent">{u.ageDays} วัน</span>
+                <li key={u.id ?? i} className="border-b border-hairline-2 last:border-0">
+                  <Link
+                    href={u.id ? `/stock?unit=${u.id}` : "/stock"}
+                    className="flex items-center justify-between gap-3 rounded-[8px] px-1.5 py-2 text-sm transition-colors hover:bg-paper-2"
+                  >
+                    <span className="min-w-0 flex-1 truncate text-ink">{u.model ?? "ไม่ระบุรุ่น"}</span>
+                    <span className="max-w-[96px] shrink-0 truncate text-muted">{u.branchName}</span>
+                    <span className="w-16 shrink-0 text-right tabular font-medium text-accent">{u.ageDays} วัน</span>
+                  </Link>
                 </li>
               ))}
             </ul>

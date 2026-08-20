@@ -18,14 +18,15 @@ const SAMPLE: StockUnit[] = [
   unit({ id: "5", modelCode: "D18100", modelName: "PG-1", colorCode: "010B", colorName: "แดง", engineNo: "E5PGE-338101", frameNo: "MLED18100PG133810", status: "in_transfer", receivedAt: "2026-05-15", branchCode: "FCG01", branchName: "Famai Center Group", photoUrl: null, cost: 51000, retail: 55900 }),
 ];
 
-export default function DevStockPage() {
+export default async function DevStockPage({ searchParams }: { searchParams: Promise<{ unit?: string }> }) {
+  const { unit: initialUnitId } = await searchParams;
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
       <header className="mb-6">
         <h1 className="font-display text-[28px] font-semibold text-ink">สต๊อกรถ (preview)</h1>
-        <p className="mt-1 text-ink-soft">FAM-1008 · sample data — หน้าจริง /stock ต่อ DB ผ่าน RLS</p>
+        <p className="mt-1 text-ink-soft">FAM-1008 · sample data — หน้าจริง /stock ต่อ DB ผ่าน RLS · ?unit=&lt;id&gt; เปิดแผงคันนั้น</p>
       </header>
-      <StockView units={SAMPLE} canSeeMoney agingDays={90} />
+      <StockView units={SAMPLE} canSeeMoney agingDays={90} initialUnitId={initialUnitId} />
     </main>
   );
 }
