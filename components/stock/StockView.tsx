@@ -40,6 +40,18 @@ export function StockView({
     () => (initialUnitId ? (units.find((u) => u.id === initialUnitId) ?? null) : null),
   );
 
+  // ปิดแผง + ล้าง ?unit ออกจาก URL (replaceState = cosmetic ล้วน ไม่ re-fetch/reload ตาราง)
+  function closeDrawer() {
+    setSelected(null);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("unit")) {
+        url.searchParams.delete("unit");
+        window.history.replaceState(null, "", url.pathname + url.search);
+      }
+    }
+  }
+
   const branches = useMemo(() => {
     const map = new Map<string, string>();
     for (const u of units) map.set(u.branchCode, u.branchName);
@@ -145,7 +157,7 @@ export function StockView({
 
       <Drawer
         open={selected !== null}
-        onClose={() => setSelected(null)}
+        onClose={closeDrawer}
         title={selected ? `${selected.modelName} · ${selected.colorName}` : ""}
       >
         {selected && (
