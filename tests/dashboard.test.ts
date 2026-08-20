@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { stockStats, type DashUnit } from "@/lib/dashboard/stats";
+import { stockStats, agedUnits, type DashUnit } from "@/lib/dashboard/stats";
 
 const units: DashUnit[] = [
   { branchCode: "FMG01", branchName: "FMG", status: "available", ageDays: 12, cost: 40000 },
@@ -39,5 +39,29 @@ describe("stockStats", () => {
       { label: "FMG", value: 2 },
       { label: "FMM", value: 1 },
     ]);
+  });
+});
+
+describe("agedUnits", () => {
+  it("returns in-stock units over the threshold, oldest first, capped", () => {
+    const list: DashUnit[] = [
+      { branchCode: "A", branchName: "A", status: "available", ageDays: 120, model: "NMAX" },
+      { branchCode: "A", branchName: "A", status: "available", ageDays: 40, model: "Aerox" }, // ไม่เกินเกณฑ์
+      { branchCode: "B", branchName: "B", status: "reserved", ageDays: 300, model: "XMAX" },
+      { branchCode: "B", branchName: "B", status: "sold", ageDays: 400, model: "Grand" }, // ขายแล้ว ไม่นับ
+    ];
+    const aged = agedUnits(list, 90, 5);
+    expect(aged.map((u) => u.model)).toEqual(["XMAX", "NMAX"]);
+  });
+
+  it("respects the limit", () => {
+    const many: DashUnit[] = Array.from({ length: 8 }, (_, i) => ({
+      branchCode: "A",
+      branchName: "A",
+      status: "available",
+      ageDays: 100 + i,
+    }));
+    expect(agedUnits(many, 90, 3)).toHaveLength(3);
+    expect(agedUnits(many, 90, 3)[0].ageDays).toBe(107);
   });
 });

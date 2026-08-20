@@ -6,9 +6,19 @@ export type DashUnit = {
   status: string; // available | reserved | in_transfer | sold | returned
   ageDays: number;
   cost?: number | null; // อาจถูก strip
+  id?: string;
+  model?: string; // ชื่อรุ่น (สำหรับรายการรถค้าง)
 };
 
 const IN_STOCK = new Set(["available", "reserved", "in_transfer"]);
+
+/** คันในสต๊อกที่ค้างเกินเกณฑ์ เรียงจากค้างนานสุด (สำหรับการ์ด "รถค้างนานสุด") */
+export function agedUnits(units: DashUnit[], agingDays: number, limit = 5): DashUnit[] {
+  return units
+    .filter((u) => IN_STOCK.has(u.status) && u.ageDays > agingDays)
+    .sort((a, b) => b.ageDays - a.ageDays)
+    .slice(0, limit);
+}
 
 export type BarItem = { label: string; value: number; tone?: StatusVariant };
 

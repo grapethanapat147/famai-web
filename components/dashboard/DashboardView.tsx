@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { StatCard } from "@/components/ui/StatCard";
 import { Money } from "@/components/ui/Money";
 import { Chips } from "@/components/ui/Chips";
 import { HBarChart } from "@/components/ui/HBarChart";
-import { stockStats, type DashUnit } from "@/lib/dashboard/stats";
+import { stockStats, agedUnits, type DashUnit } from "@/lib/dashboard/stats";
 
 export function DashboardView({
   units,
@@ -44,6 +45,8 @@ export function DashboardView({
   const money = canSeeMoney && stats.stockValue != null;
   const avgCost = money && stats.inStockCount > 0 ? Math.round(stats.stockValue! / stats.inStockCount) : null;
   const branchLabel = branch === "all" ? "ทุกสาขา" : (branches.find((b) => b.code === branch)?.name ?? "ทุกสาขา");
+  const maxBranch = Math.max(1, ...stats.byBranch.map((b) => b.value));
+  const aged = useMemo(() => agedUnits(filtered, agingDays, 5), [filtered, agingDays]);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -67,27 +70,54 @@ export function DashboardView({
       {/* แถบหลัก — มูลค่าสต๊อก (สินทรัพย์ก้อนใหญ่) เด่นเป็นพระเอก + ยอดขายเดือนนี้ */}
       <div className="grid gap-3 lg:grid-cols-3">
         <section className="rounded-[16px] bg-card p-5 shadow-[var(--sh-sm)] lg:col-span-2">
-          <div className="text-[11px] font-medium uppercase tracking-wider text-muted">
-            {money ? "มูลค่าสต๊อกรวม" : "สต๊อกคงเหลือ"}
-          </div>
-          <div className="mt-1 font-display text-[clamp(2rem,7vw,2.75rem)] font-semibold leading-none text-ink tabular">
-            {money ? <Money value={stats.stockValue} canSee /> : stats.inStockCount}
-          </div>
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
-            {money ? (
-              <>
-                <span>
-                  <b className="font-semibold tabular text-ink-soft">{stats.inStockCount}</b> คันคงเหลือ
-                </span>
-                {avgCost != null && (
-                  <span className="inline-flex items-center gap-1">
-                    เฉลี่ย <Money value={avgCost} canSee className="text-ink-soft" />
-                    /คัน
-                  </span>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="text-[11px] font-medium uppercase tracking-wider text-muted">
+                {money ? "มูลค่าสต๊อกรวม" : "สต๊อกคงเหลือ"}
+              </div>
+              <div className="mt-1 font-display text-[clamp(2rem,7vw,2.75rem)] font-semibold leading-none text-ink tabular">
+                {money ? <Money value={stats.stockValue} canSee /> : stats.inStockCount}
+              </div>
+              <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+                {money ? (
+                  <>
+                    <span>
+                      <b className="font-semibold tabular text-ink-soft">{stats.inStockCount}</b> คันคงเหลือ
+                    </span>
+                    {avgCost != null && (
+                      <span className="inline-flex items-center gap-1">
+                        เฉลี่ย <Money value={avgCost} canSee className="text-ink-soft" />
+                        /คัน
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span>คัน</span>
                 )}
-              </>
-            ) : (
-              <span>คัน</span>
+              </div>
+            </div>
+
+            {/* แยกตามสาขา — mini split (แสดงเมื่อมีหลายสาขาในมุมมองปัจจุบัน) */}
+            {stats.byBranch.length >= 2 && (
+              <div className="shrink-0 sm:w-56 sm:border-l sm:border-hairline sm:pl-5">
+                <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted">แยกตามสาขา</div>
+                <div className="flex flex-col gap-1.5">
+                  {stats.byBranch.map((b) => (
+                    <div key={b.label} className="flex items-center gap-2 text-sm">
+                      <span className="min-w-0 flex-1 truncate text-ink-soft" title={b.label}>
+                        {b.label}
+                      </span>
+                      <span className="h-1.5 w-14 shrink-0 rounded-full bg-[var(--hairline-2)]">
+                        <span
+                          className="block h-full rounded-full bg-ink transition-[width] duration-500 ease-[var(--ease)]"
+                          style={{ width: `${(b.value / maxBranch) * 100}%` }}
+                        />
+                      </span>
+                      <span className="w-4 shrink-0 text-right tabular text-ink">{b.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </section>
@@ -122,17 +152,36 @@ export function DashboardView({
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
           <div className="mb-3 flex items-baseline justify-between gap-2">
-            <h2 className="font-display font-semibold text-ink">สต๊อกแยกตามสาขา</h2>
-            <span className="tabular text-sm text-muted">{stats.inStockCount} คัน</span>
-          </div>
-          <HBarChart items={stats.byBranch} />
-        </section>
-        <section className="rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
-          <div className="mb-3 flex items-baseline justify-between gap-2">
             <h2 className="font-display font-semibold text-ink">ช่วงอายุสต๊อก</h2>
             <span className="tabular text-sm text-muted">{stats.inStockCount} คัน</span>
           </div>
           <HBarChart items={stats.buckets} />
+        </section>
+
+        <section className="flex flex-col rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
+          <div className="mb-3 flex items-baseline justify-between gap-2">
+            <h2 className="font-display font-semibold text-ink">รถค้างนานสุด</h2>
+            <span className="tabular text-sm text-muted">{stats.agedCount} คัน</span>
+          </div>
+          {aged.length === 0 ? (
+            <p className="flex-1 py-8 text-center text-sm text-muted">ไม่มีรถค้างเกิน {agingDays} วัน 👍</p>
+          ) : (
+            <ul className="flex flex-col">
+              {aged.map((u, i) => (
+                <li
+                  key={u.id ?? i}
+                  className="flex items-center justify-between gap-3 border-b border-hairline-2 py-2 text-sm last:border-0"
+                >
+                  <span className="min-w-0 flex-1 truncate text-ink">{u.model ?? "ไม่ระบุรุ่น"}</span>
+                  <span className="max-w-[96px] shrink-0 truncate text-muted">{u.branchName}</span>
+                  <span className="w-16 shrink-0 text-right tabular font-medium text-accent">{u.ageDays} วัน</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link href="/stock" className="mt-3 inline-block text-sm font-medium text-accent hover:underline">
+            ดูสต๊อกทั้งหมด →
+          </Link>
         </section>
       </div>
     </div>
