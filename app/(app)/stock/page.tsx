@@ -12,7 +12,8 @@ function todayISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export default async function StockPage() {
+export default async function StockPage({ searchParams }: { searchParams: Promise<{ unit?: string }> }) {
+  const { unit: initialUnitId } = await searchParams;
   const supabase = await createServerSupabase();
 
   // RLS คัดให้เห็นเฉพาะสาขาตัวเอง (เว้น allBranch) — ตารางอ้างอิงเล็ก join ในแอป (Relationships ว่างใน types)
@@ -58,5 +59,5 @@ export default async function StockPage() {
   // ตัดต้นทุนออกฝั่งเซิร์ฟเวอร์ถ้าไม่มีสิทธิ์ — ไม่ส่งค่า cost ไป client เลย
   const safeUnits = stripMoneyFields(units, see, ["cost"]) as StockUnit[];
 
-  return <StockView units={safeUnits} canSeeMoney={see} agingDays={agingDays} />;
+  return <StockView units={safeUnits} canSeeMoney={see} agingDays={agingDays} initialUnitId={initialUnitId} />;
 }

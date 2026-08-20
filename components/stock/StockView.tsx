@@ -24,16 +24,21 @@ export function StockView({
   units,
   canSeeMoney,
   agingDays,
+  initialUnitId,
 }: {
   units: StockUnit[];
   canSeeMoney: boolean;
   agingDays: number;
+  initialUnitId?: string;
 }) {
   const [branch, setBranch] = useState("all");
   const [model, setModel] = useState("all");
   const [status, setStatus] = useState("all");
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<StockUnit | null>(null);
+  // deep-link จาก /stock?unit=<id> (เช่น การ์ด "รถค้างนานสุด" ใน Dashboard) → เปิดแผงคันนั้นเลย
+  const [selected, setSelected] = useState<StockUnit | null>(
+    () => (initialUnitId ? (units.find((u) => u.id === initialUnitId) ?? null) : null),
+  );
 
   const branches = useMemo(() => {
     const map = new Map<string, string>();
