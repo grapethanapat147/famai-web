@@ -166,13 +166,27 @@ export function SellForm({
           </select>
         </Field>
 
-        {unit && (aged || mismatch) && (
-          <div className="flex flex-col gap-1">
-            {aged && <StatusBadge variant="warn">รถค้างสต๊อก {unit.ageDays} วัน — พิจารณาส่วนลดพิเศษ</StatusBadge>}
-            {mismatch && (
-              <StatusBadge variant="bad">
-                เลือกไม่ตรงกับสาขาที่รถอยู่ ({unit.branchName}) — ให้ย้ายรถก่อน
-              </StatusBadge>
+        {unit && (
+          <div className="flex flex-col gap-2 rounded-[12px] border border-hairline bg-paper-2 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="truncate font-display font-semibold text-ink">
+                  {unit.modelName} · {unit.colorName}
+                </div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
+                  <span className="font-mono">{unit.engineNo}</span>
+                  <span>{unit.branchName}</span>
+                </div>
+              </div>
+              <StatusBadge variant={aged ? "warn" : "good"}>{unit.ageDays} วัน</StatusBadge>
+            </div>
+            {(aged || mismatch) && (
+              <div className="flex flex-col gap-1 border-t border-hairline-2 pt-2">
+                {aged && <StatusBadge variant="warn">รถค้างสต๊อก {unit.ageDays} วัน — พิจารณาส่วนลดพิเศษ</StatusBadge>}
+                {mismatch && (
+                  <StatusBadge variant="bad">เลือกไม่ตรงกับสาขาที่รถอยู่ ({unit.branchName}) — ให้ย้ายรถก่อน</StatusBadge>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -242,9 +256,15 @@ export function SellForm({
                   key={f.name}
                   type="button"
                   onClick={() => toggleFreebie(f.name)}
-                  className={`rounded-full px-3 py-1.5 text-sm ${on ? "bg-ink text-card" : "border border-hairline bg-card text-ink-soft"}`}
+                  aria-pressed={on}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition active:scale-95 ${
+                    on ? "bg-ink text-card" : "border border-hairline bg-card text-ink-soft hover:border-ink/40 hover:text-ink"
+                  }`}
                 >
                   {f.name}
+                  {canSeeMoney && (
+                    <span className={on ? "text-card/60" : "text-muted"}>฿{f.cost.toLocaleString("en-US")}</span>
+                  )}
                 </button>
               );
             })}
@@ -269,43 +289,62 @@ export function SellForm({
 
       <aside className="h-max rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)] lg:sticky lg:top-20">
         <h2 className="mb-3 font-display font-semibold text-ink">สรุปดีล</h2>
-        <SummaryRow label="ราคาสุทธิ" value={<Money value={deal.netPrice} />} strong />
-        <SummaryRow label={`มูลค่าก่อน VAT (${vatPct}%)`} value={<Money value={Math.round(deal.valueBeforeVat)} />} />
-        <SummaryRow label="ภาษีมูลค่าเพิ่ม" value={<Money value={Math.round(deal.vat)} />} />
-
-        {payMethod === "finance" && (
+        {!unit ? (
+          <p className="py-8 text-center text-sm leading-relaxed text-muted">
+            เลือกคันจากสต๊อก
+            <br />
+            เพื่อดูสรุปดีล
+          </p>
+        ) : (
           <>
-            <div className="my-2 border-t border-hairline-2" />
-            <SummaryRow label="ยอดจัด" value={<Money value={deal.financed} />} />
-            <SummaryRow
-              label={`ค่างวด × ${months} งวด`}
-              value={<Money value={deal.monthlyPayment != null ? Math.round(deal.monthlyPayment) : null} />}
-              strong
-            />
+            <div className="mb-3">
+              <div className="text-[11px] font-medium uppercase tracking-wider text-muted">ราคาสุทธิ</div>
+              <div className="mt-0.5 font-display text-[26px] font-semibold leading-none text-ink tabular">
+                <Money value={deal.netPrice} />
+              </div>
+            </div>
+            <SummaryRow label={`มูลค่าก่อน VAT (${vatPct}%)`} value={<Money value={Math.round(deal.valueBeforeVat)} />} />
+            <SummaryRow label="ภาษีมูลค่าเพิ่ม" value={<Money value={Math.round(deal.vat)} />} />
+
+            {payMethod === "finance" && (
+              <>
+                <div className="my-3 border-t border-hairline-2" />
+                <SummaryRow label="ยอดจัด" value={<Money value={deal.financed} />} />
+                <div className="mt-1.5">
+                  <div className="text-[11px] font-medium uppercase tracking-wider text-muted">ค่างวด/เดือน</div>
+                  <div className="mt-0.5 flex items-baseline gap-2">
+                    <span className="font-display text-[26px] font-semibold leading-none text-ink tabular">
+                      <Money value={deal.monthlyPayment != null ? Math.round(deal.monthlyPayment) : null} />
+                    </span>
+                    <span className="text-sm text-muted">× {months} งวด</span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {canSeeMoney && (
+              <>
+                <div className="my-3 border-t border-hairline-2" />
+                <SummaryRow label="ต้นทุน" value={<Money value={unit?.cost ?? null} canSee={canSeeMoney} />} />
+                <SummaryRow label="กำไรของดีล" value={<Money value={deal.grossProfit} canSee={canSeeMoney} />} strong />
+                <SummaryRow
+                  label="อัตรากำไร"
+                  value={
+                    <span className={belowCost ? "text-accent" : "text-ink-soft"}>
+                      {deal.marginPct != null ? `${deal.marginPct.toFixed(1)}%` : "—"}
+                    </span>
+                  }
+                />
+              </>
+            )}
+
+            {belowCost && <p className="mt-2 text-xs text-accent">ขายต่ำกว่าทุน — ต้องยืนยันซ้ำ</p>}
+            <p className="mt-3 text-[11px] leading-relaxed text-muted">
+              คิดจาก ราคาสุทธิ = ราคาตั้ง − ส่วนลด
+              {canSeeMoney ? ` · กำไร = สุทธิ − ต้นทุน${freebieIsCost ? " − ของแถม" : ""}` : ""}
+            </p>
           </>
         )}
-
-        {canSeeMoney && (
-          <>
-            <div className="my-2 border-t border-hairline-2" />
-            <SummaryRow label="ต้นทุน" value={<Money value={unit?.cost ?? null} canSee={canSeeMoney} />} />
-            <SummaryRow label="กำไรของดีล" value={<Money value={deal.grossProfit} canSee={canSeeMoney} />} strong />
-            <SummaryRow
-              label="อัตรากำไร"
-              value={
-                <span className={belowCost ? "text-accent" : "text-ink-soft"}>
-                  {deal.marginPct != null ? `${deal.marginPct.toFixed(1)}%` : "—"}
-                </span>
-              }
-            />
-          </>
-        )}
-
-        {belowCost && <p className="mt-2 text-xs text-accent">ขายต่ำกว่าทุน — ต้องยืนยันซ้ำ</p>}
-        <p className="mt-3 text-[11px] leading-relaxed text-muted">
-          คิดจาก ราคาสุทธิ = ราคาตั้ง − ส่วนลด
-          {canSeeMoney ? ` · กำไร = สุทธิ − ต้นทุน${freebieIsCost ? " − ของแถม" : ""}` : ""}
-        </p>
       </aside>
 
       <ConfirmDialog
