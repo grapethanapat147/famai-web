@@ -6,6 +6,7 @@ import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Modal } from "@/components/ui/Modal";
 import { Money } from "@/components/ui/Money";
+import { StatCard } from "@/components/ui/StatCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatThaiDate } from "@/lib/format";
 import {
@@ -91,10 +92,15 @@ export function ArView({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-4 grid grid-cols-3 gap-3">
-        <Stat label="ค้างทั้งหมด" value={<Money value={totals.outstanding} canSee={canSeeMoney} />} />
-        <Stat label="เกินกำหนด" value={<Money value={totals.overdue} canSee={canSeeMoney} />} accent={totals.overdue > 0} />
-        <Stat label="รายการค้าง" value={<span className="tabular">{totals.openCount}</span>} />
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <StatCard label="ค้างทั้งหมด" value={<Money value={totals.outstanding} canSee={canSeeMoney} />} hint={`${totals.openCount} รายการ`} />
+        <StatCard
+          label="เกินกำหนด"
+          value={<Money value={totals.overdue} canSee={canSeeMoney} />}
+          hint={totals.overdueCount > 0 ? `${totals.overdueCount} รายการ · ทวงถามด่วน` : "ไม่มีที่เกินกำหนด"}
+          tone={totals.overdue > 0 ? "accent" : "default"}
+        />
+        <StatCard label="รายการค้าง" value={String(totals.openCount)} hint="รายการ" />
       </div>
 
       <div className="mb-4">
@@ -138,15 +144,6 @@ export function ArView({
       />
 
       {canManage && <PaymentModal receivable={paying} onClose={() => setPaying(null)} action={action} />}
-    </div>
-  );
-}
-
-function Stat({ label, value, accent }: { label: string; value: ReactNode; accent?: boolean }) {
-  return (
-    <div className="rounded-[12px] bg-card p-3 shadow-[var(--sh-sm)]">
-      <p className="text-xs text-muted">{label}</p>
-      <p className={`mt-1 font-display text-lg font-semibold ${accent ? "text-accent" : "text-ink"}`}>{value}</p>
     </div>
   );
 }
