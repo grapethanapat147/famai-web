@@ -393,7 +393,10 @@ function QuoteBuilder({
 
       {/* กรอกแต่ละคัน */}
       <div className="mb-5 grid gap-4 sm:grid-cols-2 print:hidden">
-        {opts.map((o, i) => (
+        {opts.map((o, i) => {
+          const v = vehicles.find((x) => x.variantId === o.vehicleId);
+          const discount = v && o.price > 0 && o.price < v.retail ? v.retail - o.price : 0;
+          return (
           <div key={i} className="flex flex-col gap-3 rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
             <p className="font-display font-semibold text-ink">คันที่ {i + 1}</p>
             <Field label="รุ่นรถ">
@@ -414,6 +417,13 @@ function QuoteBuilder({
                 <input type="number" value={o.down || ""} onChange={(e) => setOpt(i, { down: Number(e.target.value) || 0 })} className={inputCls} />
               </Field>
             </div>
+            {v && (
+              <p className="-mt-1 text-xs text-muted">
+                ราคาตั้ง ฿{v.retail.toLocaleString("en-US")}
+                {discount > 0 && <span className="text-pos"> · ลด ฿{discount.toLocaleString("en-US")}</span>}
+                {o.price > v.retail && <span className="text-attn"> · สูงกว่าราคาตั้ง</span>}
+              </p>
+            )}
             <Field label="บริษัทไฟแนนซ์">
               <select value={o.financeId} onChange={(e) => setOpt(i, { financeId: e.target.value })} className={inputCls}>
                 <option value="">เงินสด (ไม่ผ่อน)</option>
@@ -431,7 +441,8 @@ function QuoteBuilder({
               </Link>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ตารางเทียบ (บนจอ) — mark ให้แคปเป็นรูปได้ในโหมดลูกค้า (FAM-1040) */}
@@ -511,11 +522,12 @@ function CompareTable({
     <div className="overflow-x-auto rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
       <table className="w-full min-w-[360px] text-sm">
         <thead>
-          <tr className="border-b border-hairline text-left">
-            <th className="py-2 pr-3 font-medium text-muted">รายการ</th>
+          <tr className="border-b-2 border-ink/15 text-left align-bottom">
+            <th className="py-2 pr-3 text-xs font-medium uppercase tracking-wide text-muted">รายการ</th>
             {cols.map((b, i) => (
-              <th key={i} className="py-2 pl-3 text-right font-medium text-ink">
-                {b.v!.name}
+              <th key={i} className="py-2 pl-3 text-right">
+                <span className="block text-[10px] font-medium uppercase tracking-wide text-muted">ตัวเลือก {i + 1}</span>
+                <span className="block font-display font-semibold text-ink">{b.v!.name}</span>
               </th>
             ))}
           </tr>
@@ -523,7 +535,7 @@ function CompareTable({
         <tbody className="tabular">
           <CompareRow label="ราคา" cols={cols.map((b) => <Money key="p" value={b.o.price} />)} />
           <CompareRow label="เงินดาวน์" cols={cols.map((b) => <Money key="d" value={b.o.down} />)} />
-          <CompareRow label="ยอดจัด" cols={cols.map((b) => <Money key="f" value={b.financed} />)} strong />
+          <CompareRow label="ยอดจัด" cols={cols.map((b) => <Money key="f" value={b.financed} />)} strong highlight />
           <CompareRow
             label="ไฟแนนซ์"
             cols={cols.map((b, i) => (
@@ -553,9 +565,19 @@ function CompareTable({
   );
 }
 
-function CompareRow({ label, cols, strong }: { label: string; cols: ReactNode[]; strong?: boolean }) {
+function CompareRow({
+  label,
+  cols,
+  strong,
+  highlight,
+}: {
+  label: string;
+  cols: ReactNode[];
+  strong?: boolean;
+  highlight?: boolean;
+}) {
   return (
-    <tr className="border-b border-hairline-2 last:border-0">
+    <tr className={`border-b border-hairline-2 last:border-0 ${highlight ? "bg-paper-2" : ""}`}>
       <td className={`py-1.5 pr-3 ${strong ? "font-medium text-ink" : "text-muted"}`}>{label}</td>
       {cols.map((c, i) => (
         <td key={i} className={`py-1.5 pl-3 text-right ${strong ? "font-semibold text-ink" : "text-ink-soft"}`}>
