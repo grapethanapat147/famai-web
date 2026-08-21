@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { createPublicSupabase } from "@/lib/supabase/public";
 import { CatalogView } from "@/components/catalog/CatalogView";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { catalogItemListJsonLd } from "@/lib/catalog/jsonld";
+import { siteBaseUrl } from "@/lib/site";
 import type { CatalogModel } from "@/lib/catalog/model";
 
 const CATALOG_TITLE = "แคตตาล็อกรถจักรยานยนต์ Yamaha — Famai Motor Group";
@@ -29,5 +32,10 @@ export default async function CatalogPage() {
   const { data } = await supabase.from("model").select("*").order("cat").order("retail", { ascending: true });
   const models = (data ?? []) as CatalogModel[];
 
-  return <CatalogView models={models} supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""} />;
+  return (
+    <>
+      <JsonLd data={catalogItemListJsonLd(siteBaseUrl(), models)} />
+      <CatalogView models={models} supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""} />
+    </>
+  );
 }
