@@ -28,14 +28,28 @@ export function availabilityMeta(a: string): { label: string; variant: "good" | 
   return AVAIL_META[a] ?? AVAIL_META.order;
 }
 
+/** URL ของไฟล์ใน bucket model-photo · ถ้า path เป็น http(s) อยู่แล้วคืนตามเดิม */
+export function modelPhotoUrl(supabaseUrl: string, path: string): string {
+  if (/^https?:\/\//.test(path)) {
+    return path;
+  }
+  return `${supabaseUrl.replace(/\/$/, "")}/storage/v1/object/public/model-photo/${path}`;
+}
+
 /** URL รูปปก: ใช้ photo (ถ้าเป็น url แล้ว) ไม่งั้นประกอบจาก path_card ใน bucket model-photo · null = ไม่มีรูป */
 export function catalogPhotoUrl(supabaseUrl: string, m: Pick<CatalogModel, "photo" | "photos">): string | null {
-  if (m.photo && /^https?:\/\//.test(m.photo)) {
-    return m.photo;
+  const card = m.photos?.[0]?.card ?? m.photo ?? null;
+  return card ? modelPhotoUrl(supabaseUrl, card) : null;
+}
+
+/** รูปทั้งหมดสำหรับแกลเลอรีหน้ารายละเอียด (thumb=card, full=full) · ไม่มีรูป → [] */
+export function galleryImages(
+  supabaseUrl: string,
+  m: Pick<CatalogModel, "photo" | "photos">,
+): Array<{ thumb: string; full: string }> {
+  if (m.photos && m.photos.length > 0) {
+    return m.photos.map((p) => ({ thumb: modelPhotoUrl(supabaseUrl, p.card), full: modelPhotoUrl(supabaseUrl, p.full) }));
   }
-  const card = m.photos?.[0]?.card ?? (m.photo && !/^https?:\/\//.test(m.photo) ? m.photo : null);
-  if (card) {
-    return `${supabaseUrl.replace(/\/$/, "")}/storage/v1/object/public/model-photo/${card}`;
-  }
-  return null;
+  const cover = catalogPhotoUrl(supabaseUrl, m);
+  return cover ? [{ thumb: cover, full: cover }] : [];
 }
