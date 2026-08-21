@@ -1,5 +1,8 @@
 {
-  "crons": [{ "path": "/api/cron/aged-stock", "schedule": "0 2 * * *" }],
+  "crons": [
+    { "path": "/api/cron/aged-stock", "schedule": "0 2 * * *" },
+    { "path": "/api/cron/registration-overdue", "schedule": "0 3 * * *" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
