@@ -12,3 +12,10 @@ export function nowParts(now: Date): { today: string; label: string } {
     label: `${now.getDate()} ${THAI_MONTHS[now.getMonth()]} ${now.getFullYear()}`,
   };
 }
+
+/** บวกวันจากวันที่ ISO (YYYY-MM-DD) → ISO ใหม่ · รองรับข้ามเดือน/ปี */
+export function addDays(iso: string, days: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(y, m - 1, d + days);
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+}
