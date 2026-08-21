@@ -94,11 +94,20 @@ export function CatalogView({ models, supabaseUrl }: { models: CatalogModel[]; s
               const photo = catalogPhotoUrl(supabaseUrl, m);
               const av = availabilityMeta(m.availability);
               return (
-                <article key={m.code} className="flex flex-col overflow-hidden rounded-[14px] bg-card shadow-[var(--sh-sm)]">
-                  <div className="relative aspect-[4/3] bg-paper-2">
+                <Link
+                  key={m.code}
+                  href={`/catalog/${m.code}`}
+                  className="group flex flex-col overflow-hidden rounded-[14px] bg-card shadow-[var(--sh-sm)] transition-shadow hover:shadow-[var(--sh-md)]"
+                >
+                  <div className="relative aspect-[4/3] overflow-hidden bg-paper-2">
                     {photo ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={photo} alt={m.model_th || m.model} loading="lazy" className="h-full w-full object-cover" />
+                      <img
+                        src={photo}
+                        alt={m.model_th || m.model}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                      />
                     ) : (
                       <div className="grid h-full place-items-center text-3xl font-display font-semibold text-muted/40">
                         {(m.model_th || m.model).slice(0, 2)}
@@ -123,7 +132,7 @@ export function CatalogView({ models, supabaseUrl }: { models: CatalogModel[]; s
                       <p className="mt-auto pt-2 text-xs text-muted">{m.colors.length} สี</p>
                     )}
                   </div>
-                </article>
+                </Link>
               );
             })}
           </div>
