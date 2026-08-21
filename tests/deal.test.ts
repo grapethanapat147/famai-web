@@ -9,7 +9,7 @@ import {
   stageTimestampField,
   REG_STAGES,
 } from "@/lib/deal/stage";
-import { filterDeals, stageCounts, openDealCount, offTrackCount, customerDeals, isOffTrack, canManageDeal, canVoidDeal, isVoidableStage, type Deal } from "@/lib/deal/deals";
+import { filterDeals, stageCounts, openDealCount, offTrackCount, customerDeals, customerServices, isOffTrack, canManageDeal, canVoidDeal, isVoidableStage, type Deal, type ServiceHistory } from "@/lib/deal/deals";
 
 describe("deal track (§9g: cash 4 steps, finance 6 steps)", () => {
   it("cash track drops the finance steps", () => {
@@ -103,6 +103,19 @@ describe("deal derivations", () => {
     expect(customerDeals(deals, "cA", "1").map((d) => d.saleId)).toEqual(["2"]);
     expect(customerDeals(deals, "cA").map((d) => d.saleId)).toEqual(["1", "2"]); // ใหม่สุดก่อน
     expect(customerDeals(deals, "")).toEqual([]);
+  });
+
+  it("customerServices: same customer, newest first, empty for blank id", () => {
+    const svc = (customerId: string, checkedInAt: string, serviceType: string): ServiceHistory => ({
+      customerId,
+      checkedInAt,
+      serviceType,
+      status: "ส่งมอบแล้ว",
+      total: 500,
+    });
+    const rows = [svc("cA", "2024-01-01", "เช็กระยะ"), svc("cA", "2026-06-01", "ซ่อม"), svc("cB", "2026-01-01", "เคลม")];
+    expect(customerServices(rows, "cA").map((s) => s.serviceType)).toEqual(["ซ่อม", "เช็กระยะ"]);
+    expect(customerServices(rows, "")).toEqual([]);
   });
 });
 
