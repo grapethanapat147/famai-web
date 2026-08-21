@@ -12,6 +12,7 @@ import { StepBar } from "@/components/ui/StepBar";
 import { formatThaiDate } from "@/lib/format";
 import { dealTrack, regNext, stageIndex, stageVariant, type RegStage } from "@/lib/deal/stage";
 import {
+  customerDeals,
   filterDeals,
   isOffTrack,
   isVoidableStage,
@@ -146,6 +147,7 @@ export function DealView({
 
       <DealDrawer
         deal={selected}
+        history={selected ? customerDeals(deals, selected.customerId, selected.saleId) : []}
         canManage={canManage}
         action={action}
         canManageFinance={canManageFinance}
@@ -161,6 +163,7 @@ export function DealView({
 
 function DealDrawer({
   deal,
+  history,
   canManage,
   action,
   canManageFinance,
@@ -171,6 +174,7 @@ function DealDrawer({
   onAdvanced,
 }: {
   deal: Deal | null;
+  history: Deal[];
   canManage: boolean;
   action: (formData: FormData) => Promise<DealActionResult>;
   canManageFinance: boolean;
@@ -278,6 +282,30 @@ function DealDrawer({
             <Row label="ทะเบียน">{deal.plateNo || "—"}</Row>
             <Row label="วันที่ขาย">{formatThaiDate(deal.soldAt)}</Row>
           </dl>
+
+          {deal.customerId && (
+            <div className="rounded-[12px] bg-paper p-3">
+              <p className="mb-1.5 font-medium text-ink">
+                ประวัติลูกค้า{history.length > 0 ? ` · เคยซื้อรวม ${history.length + 1} คัน` : ""}
+              </p>
+              {history.length === 0 ? (
+                <p className="text-muted">ลูกค้าใหม่ — ยังไม่มีประวัติซื้อก่อนหน้านี้</p>
+              ) : (
+                <ul className="flex flex-col">
+                  {history.map((h) => (
+                    <li
+                      key={h.saleId}
+                      className="flex items-center justify-between gap-3 border-b border-hairline-2 py-1.5 last:border-0"
+                    >
+                      <span className="min-w-0 flex-1 truncate text-ink">{h.vehicle}</span>
+                      <span className="shrink-0 text-xs text-muted">{formatThaiDate(h.soldAt)}</span>
+                      <StatusBadge variant={stageVariant(h.stage)}>{h.stage}</StatusBadge>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           {deal.finance && (
             <div className="rounded-[12px] bg-paper p-3">

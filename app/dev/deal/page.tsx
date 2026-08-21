@@ -9,6 +9,7 @@ const DEALS: Deal[] = [
   {
     saleId: "1",
     regId: "r1",
+    customerId: "c-somchai",
     customerName: "สมชาย ใจดี",
     vehicle: "NMAX · แดง",
     engineNo: "E3X8E-112097",
@@ -22,6 +23,7 @@ const DEALS: Deal[] = [
   {
     saleId: "2",
     regId: "r2",
+    customerId: "c-manee",
     customerName: "มานี รักษ์ดี",
     vehicle: "FINN · ฟ้า",
     engineNo: "E34RE-057401",
@@ -35,6 +37,7 @@ const DEALS: Deal[] = [
   {
     saleId: "3",
     regId: "r3",
+    customerId: "c-prasert",
     customerName: "ประเสริฐ มั่งมี",
     vehicle: "XMAX 300 · ดำ",
     engineNo: "EA71E-900233",
@@ -48,6 +51,7 @@ const DEALS: Deal[] = [
   {
     saleId: "4",
     regId: "r4",
+    customerId: "c-wipha",
     customerName: "วิภา สุขใจ",
     vehicle: "Aerox · น้ำเงิน",
     engineNo: "E3R8E-771020",
@@ -56,6 +60,20 @@ const DEALS: Deal[] = [
     soldAt: "2026-08-05T11:00:00Z",
     stage: "ส่งมอบแล้ว",
     plateNo: "1กก 1234",
+    finance: null,
+  },
+  {
+    saleId: "5",
+    regId: "r5",
+    customerId: "c-somchai", // ลูกค้าเดิม (สมชาย) เคยซื้อคันก่อนหน้า → โชว์เป็นประวัติ
+    customerName: "สมชาย ใจดี",
+    vehicle: "Grand Filano · ขาว",
+    engineNo: "E9L2E-004411",
+    payMethod: "cash",
+    netPrice: 62000,
+    soldAt: "2024-03-15T10:00:00Z",
+    stage: "ส่งมอบแล้ว",
+    plateNo: "2ขข 5678",
     finance: null,
   },
 ];

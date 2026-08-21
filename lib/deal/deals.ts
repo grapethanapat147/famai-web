@@ -40,6 +40,7 @@ export type FinanceInfo = {
 export type Deal = {
   saleId: string;
   regId: string | null;
+  customerId: string; // "" = ลูกค้าทั่วไป/ไม่ผูกโปรไฟล์ (ไม่มีประวัติ)
   customerName: string;
   vehicle: string;
   engineNo: string;
@@ -99,4 +100,14 @@ export function openDealCount(deals: readonly Deal[]): number {
 /** ดีลตกราง (ไฟแนนซ์ปฏิเสธ) ที่ต้องจัดการ */
 export function offTrackCount(deals: readonly Deal[]): number {
   return deals.reduce((n, d) => n + (isOffTrack(d) ? 1 : 0), 0);
+}
+
+/** ดีลอื่นของลูกค้าคนเดียวกัน (ประวัติซื้อซ้ำ) เรียงใหม่สุดก่อน · [] ถ้าไม่มี customerId หรือไม่มีประวัติ */
+export function customerDeals(deals: readonly Deal[], customerId: string, excludeSaleId?: string): Deal[] {
+  if (!customerId) {
+    return [];
+  }
+  return deals
+    .filter((d) => d.customerId === customerId && d.saleId !== excludeSaleId)
+    .sort((a, b) => (a.soldAt < b.soldAt ? 1 : a.soldAt > b.soldAt ? -1 : 0));
 }

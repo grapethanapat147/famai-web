@@ -76,6 +76,7 @@ export default async function DealPage() {
     return {
       saleId: s.id,
       regId: reg?.id ?? null,
+      customerId: s.customer_id ?? "",
       customerName: (s.customer_id && customerName.get(s.customer_id)) || "ลูกค้าทั่วไป",
       vehicle: model ? `${model}${color ? ` · ${color}` : ""}` : "—",
       engineNo: unit?.engine_no ?? "",
