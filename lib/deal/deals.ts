@@ -59,7 +59,7 @@ export function isOffTrack(deal: Deal): boolean {
 /** กรองด้วยขั้น + คำค้น (ลูกค้า/รถ/เลขเครื่อง/ทะเบียน) — จัดเรียงล่าสุดบนทำที่ page (R1) */
 export function filterDeals(
   deals: readonly Deal[],
-  opts: { stage?: RegStage | "all"; search?: string; onlyOpen?: boolean } = {},
+  opts: { stage?: RegStage | "all"; search?: string; onlyOpen?: boolean; onlyOffTrack?: boolean } = {},
 ): Deal[] {
   const q = (opts.search ?? "").trim().toLowerCase();
   return deals.filter((d) => {
@@ -67,6 +67,9 @@ export function filterDeals(
       return false;
     }
     if (opts.onlyOpen && d.stage === "ส่งมอบแล้ว") {
+      return false;
+    }
+    if (opts.onlyOffTrack && !isOffTrack(d)) {
       return false;
     }
     if (q) {
@@ -91,4 +94,9 @@ export function stageCounts(deals: readonly Deal[]): Record<RegStage, number> {
 /** ดีลที่ยังไม่ส่งมอบ (ค้างในไปป์ไลน์) */
 export function openDealCount(deals: readonly Deal[]): number {
   return deals.reduce((n, d) => n + (d.stage === "ส่งมอบแล้ว" ? 0 : 1), 0);
+}
+
+/** ดีลตกราง (ไฟแนนซ์ปฏิเสธ) ที่ต้องจัดการ */
+export function offTrackCount(deals: readonly Deal[]): number {
+  return deals.reduce((n, d) => n + (isOffTrack(d) ? 1 : 0), 0);
 }
