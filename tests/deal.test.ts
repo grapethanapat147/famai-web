@@ -9,7 +9,7 @@ import {
   stageTimestampField,
   REG_STAGES,
 } from "@/lib/deal/stage";
-import { filterDeals, stageCounts, openDealCount, isOffTrack, canManageDeal, canVoidDeal, isVoidableStage, type Deal } from "@/lib/deal/deals";
+import { filterDeals, stageCounts, openDealCount, offTrackCount, isOffTrack, canManageDeal, canVoidDeal, isVoidableStage, type Deal } from "@/lib/deal/deals";
 
 describe("deal track (§9g: cash 4 steps, finance 6 steps)", () => {
   it("cash track drops the finance steps", () => {
@@ -80,6 +80,17 @@ describe("deal derivations", () => {
     const deals = [deal({ stage: "ขายแล้ว" }), deal({ stage: "ขายแล้ว" }), deal({ stage: "ส่งมอบแล้ว" })];
     expect(stageCounts(deals)["ขายแล้ว"]).toBe(2);
     expect(openDealCount(deals)).toBe(2);
+  });
+
+  it("counts and filters off-track (finance rejected) deals", () => {
+    const rejected = { id: "f", companyName: "ก", status: "ปฏิเสธ", amount: 1, rejectReason: "x" };
+    const deals = [
+      deal({ saleId: "1", finance: rejected }),
+      deal({ saleId: "2", finance: { id: "f", companyName: "ก", status: "รอผล", amount: 1, rejectReason: null } }),
+      deal({ saleId: "3", finance: null }),
+    ];
+    expect(offTrackCount(deals)).toBe(1);
+    expect(filterDeals(deals, { onlyOffTrack: true }).map((d) => d.saleId)).toEqual(["1"]);
   });
 });
 

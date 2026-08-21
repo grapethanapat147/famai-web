@@ -7,10 +7,20 @@ import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Drawer } from "@/components/ui/Drawer";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { StatCard } from "@/components/ui/StatCard";
 import { StepBar } from "@/components/ui/StepBar";
 import { formatThaiDate } from "@/lib/format";
 import { dealTrack, regNext, stageIndex, stageVariant, type RegStage } from "@/lib/deal/stage";
-import { filterDeals, isOffTrack, isVoidableStage, stageCounts, type Deal, type DealActionResult } from "@/lib/deal/deals";
+import {
+  filterDeals,
+  isOffTrack,
+  isVoidableStage,
+  offTrackCount,
+  openDealCount,
+  stageCounts,
+  type Deal,
+  type DealActionResult,
+} from "@/lib/deal/deals";
 import { REG_STAGES } from "@/lib/deal/stage";
 import { finNext, financeActionLabel, financeStatusVariant, isFinanceStatus, type FinanceStatus } from "@/lib/deal/finance";
 
@@ -39,11 +49,13 @@ export function DealView({
 }) {
   const [stage, setStage] = useState<RegStage | "all">("all");
   const [search, setSearch] = useState("");
-  const [onlyOpen, setOnlyOpen] = useState(false);
+  const [view, setView] = useState<"all" | "open" | "offtrack">("all");
   const [selected, setSelected] = useState<Deal | null>(null);
 
   const counts = stageCounts(deals);
-  const rows = filterDeals(deals, { stage, search, onlyOpen });
+  const open = openDealCount(deals);
+  const offTrack = offTrackCount(deals);
+  const rows = filterDeals(deals, { stage, search, onlyOpen: view === "open", onlyOffTrack: view === "offtrack" });
 
   const columns: Column<Deal>[] = [
     {
@@ -77,6 +89,17 @@ export function DealView({
 
   return (
     <div className="mx-auto max-w-6xl">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <StatCard label="ดีลทั้งหมด" value={String(deals.length)} hint="ดีล" />
+        <StatCard label="ยังไม่ส่งมอบ" value={String(open)} hint="ค้างในไปป์ไลน์" />
+        <StatCard
+          label="ต้องจัดการ"
+          value={String(offTrack)}
+          hint="ไฟแนนซ์ปฏิเสธ"
+          tone={offTrack > 0 ? "accent" : "default"}
+        />
+      </div>
+
       <div className="mb-4 flex flex-wrap gap-2">
         {REG_STAGES.map((s) => (
           <button
@@ -102,11 +125,12 @@ export function DealView({
             className={`${selectClass} w-full sm:w-56`}
           />
           <Chips
-            value={onlyOpen ? "open" : "all"}
-            onChange={(v) => setOnlyOpen(v === "open")}
+            value={view}
+            onChange={setView}
             options={[
               { value: "all", label: "ทั้งหมด" },
               { value: "open", label: "ยังไม่ส่งมอบ" },
+              { value: "offtrack", label: offTrack > 0 ? `ต้องจัดการ (${offTrack})` : "ต้องจัดการ" },
             ]}
           />
         </FilterBar>
