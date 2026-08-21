@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     locale: "th_TH",
     type: "website",
   },
-  twitter: { card: "summary", title: CATALOG_TITLE, description: CATALOG_DESC },
+  twitter: { card: "summary_large_image", title: CATALOG_TITLE, description: CATALOG_DESC },
 };
 
 // อ่าน pub.model สด ๆ (สาธารณะ ไม่ต้องล็อกอิน) · revalidate เป็นช่วงเพื่อลดโหลด/ให้ CDN cache ได้
