@@ -19,3 +19,14 @@ export function addDays(iso: string, days: number): string {
   const dt = new Date(y, m - 1, d + days);
   return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
 }
+
+/** จำนวนวันเหลือถึงสิ้นเดือน (วันสุดท้ายของเดือน = 0) */
+export function daysUntilMonthEnd(now: Date): number {
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  return lastDay - now.getDate();
+}
+
+/** "YYYY-MM" ของเดือนปัจจุบัน */
+export function yearMonth(now: Date): string {
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+}
