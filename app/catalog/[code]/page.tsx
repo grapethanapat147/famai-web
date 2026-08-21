@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createPublicSupabase } from "@/lib/supabase/public";
 import { ModelDetail } from "@/components/catalog/ModelDetail";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbJsonLd, productJsonLd } from "@/lib/catalog/jsonld";
+import { siteBaseUrl } from "@/lib/site";
 import type { CatalogModel } from "@/lib/catalog/model";
 
 export const revalidate = 300;
@@ -39,5 +42,13 @@ export default async function ModelPage({ params }: { params: Promise<{ code: st
   if (!model) {
     notFound();
   }
-  return <ModelDetail model={model} supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""} />;
+  const base = siteBaseUrl();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  return (
+    <>
+      <JsonLd data={productJsonLd(base, supabaseUrl, model)} />
+      <JsonLd data={breadcrumbJsonLd(base, model)} />
+      <ModelDetail model={model} supabaseUrl={supabaseUrl} />
+    </>
+  );
 }
