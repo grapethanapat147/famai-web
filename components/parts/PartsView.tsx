@@ -5,6 +5,7 @@ import { Chips } from "@/components/ui/Chips";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Money } from "@/components/ui/Money";
+import { StatCard } from "@/components/ui/StatCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
 import { Drawer } from "@/components/ui/Drawer";
@@ -59,6 +60,13 @@ export function PartsView({
     label: t.label,
   }));
 
+  // แถบพาดหัวคลังตามแท็บ (สต๊อก = อะไหล่ · ของแถม = freebies) · เบิก/ขายเป็นฟอร์ม ไม่ต้องมีพาดหัว
+  const showHero = tab === "stock" || tab === "gifts";
+  const inv: Array<PartRow | FreebieRow> = tab === "gifts" ? freebies : parts;
+  const invValue = canSeeMoney ? inv.reduce((s, x) => s + x.qtyOnHand * (x.cost ?? 0), 0) : null;
+  const invLow = tab === "gifts" ? lowGifts : lowParts;
+  const invLabel = tab === "gifts" ? "ของแถม" : "อะไหล่";
+
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -68,10 +76,23 @@ export function PartsView({
         ) : (
           <h2 className="font-display font-semibold text-ink">{tabOptions[0]?.label}</h2>
         )}
-        {badge > 0 && (
+        {badge > 0 && !showHero && (
           <StatusBadge variant="bad">ต่ำกว่าจุดสั่งซื้อ {badge} รายการ</StatusBadge>
         )}
       </div>
+
+      {showHero && (
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <StatCard label={`มูลค่าสต๊อก${invLabel}`} value={<Money value={invValue} canSee={canSeeMoney} />} />
+          <StatCard label="จำนวนรายการ" value={String(inv.length)} hint="รายการ" />
+          <StatCard
+            label="ต่ำกว่าจุดสั่งซื้อ"
+            value={String(invLow)}
+            hint="รายการ"
+            tone={invLow > 0 ? "accent" : "default"}
+          />
+        </div>
+      )}
 
       {tab === "stock" && allowedTabs.includes("stock") && (
         <StockPane
