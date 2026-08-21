@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { Inter, Trirong, Anuphan } from "next/font/google";
 import { ThemeStyle } from "@/components/theme/ThemeStyle";
 import { THEME_INIT_SCRIPT } from "@/components/theme/theme-init";
+import { siteBaseUrl } from "@/lib/site";
 import "./globals.css";
 
 // Noto Sans Thai — self-host จาก woff2 ในโปรเจกต์ (vendored จาก tools/manual/fonts) ไม่มี request ออก Google
@@ -25,6 +26,7 @@ const trirong = Trirong({ variable: "--f-trirong", subsets: ["thai", "latin"], w
 const anuphan = Anuphan({ variable: "--f-anuphan", subsets: ["thai", "latin"], weight: ["400", "500", "600"], display: "swap" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteBaseUrl()),
   title: "Famai Motor Group",
   description: "ระบบจัดการดีลเลอร์รถจักรยานยนต์ Yamaha 3 สาขา",
 };
