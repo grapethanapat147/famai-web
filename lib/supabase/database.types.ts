@@ -273,6 +273,14 @@ type FollowUpTask = {
   note: string | null;
 };
 
+type PayrollPeriod = {
+  id: string;
+  branch_id: string | null;
+  period_start: string;
+  period_end: string;
+  status: string;
+};
+
 type Registration = {
   id: string;
   sale_id: string;
@@ -478,6 +486,7 @@ export type Database = {
       company_event: Table<CompanyEvent>;
       service_reminder: Table<ServiceReminder>;
       follow_up_task: Table<FollowUpTask>;
+      payroll_period: Table<PayrollPeriod>;
       part: Table<Part>;
       part_movement: Table<PartMovement>;
       freebie: Table<Freebie>;

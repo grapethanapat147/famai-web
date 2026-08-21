@@ -41,3 +41,9 @@ export function serviceReminderDigest(due: RemRow[], dateLabel: string): string 
   const more = due.length > MAX_LINES ? `\n…และอีก ${due.length - MAX_LINES} ราย` : "";
   return `🔧 ถึงกำหนดเช็กระยะ — ${due.length} ราย (ณ ${dateLabel})\n${lines.join("\n")}${more}`;
 }
+
+/** ข้อความเตือนปิดงวดเงินเดือน */
+export function payrollReminderMessage(daysLeft: number, dateLabel: string): string {
+  const left = daysLeft <= 0 ? "วันนี้สิ้นเดือนแล้ว" : `เหลืออีก ${daysLeft} วันสิ้นเดือน`;
+  return `💰 ${left} (${dateLabel}) — อย่าลืมปิดงวดเงินเดือนและตรวจ OT/คอมมิชชั่นก่อนจ่าย`;
+}
