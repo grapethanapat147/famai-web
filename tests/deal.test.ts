@@ -9,7 +9,7 @@ import {
   stageTimestampField,
   REG_STAGES,
 } from "@/lib/deal/stage";
-import { filterDeals, stageCounts, openDealCount, offTrackCount, isOffTrack, canManageDeal, canVoidDeal, isVoidableStage, type Deal } from "@/lib/deal/deals";
+import { filterDeals, stageCounts, openDealCount, offTrackCount, customerDeals, isOffTrack, canManageDeal, canVoidDeal, isVoidableStage, type Deal } from "@/lib/deal/deals";
 
 describe("deal track (§9g: cash 4 steps, finance 6 steps)", () => {
   it("cash track drops the finance steps", () => {
@@ -46,6 +46,7 @@ function deal(over: Partial<Deal>): Deal {
   return {
     saleId: "s",
     regId: "r",
+    customerId: "c",
     customerName: "สมชาย",
     vehicle: "NMAX",
     engineNo: "E1",
@@ -91,6 +92,17 @@ describe("deal derivations", () => {
     ];
     expect(offTrackCount(deals)).toBe(1);
     expect(filterDeals(deals, { onlyOffTrack: true }).map((d) => d.saleId)).toEqual(["1"]);
+  });
+
+  it("customerDeals: same customer, excludes current, newest first, empty for blank id", () => {
+    const deals = [
+      deal({ saleId: "1", customerId: "cA", soldAt: "2026-08-01" }),
+      deal({ saleId: "2", customerId: "cA", soldAt: "2024-01-01" }),
+      deal({ saleId: "3", customerId: "cB", soldAt: "2026-01-01" }),
+    ];
+    expect(customerDeals(deals, "cA", "1").map((d) => d.saleId)).toEqual(["2"]);
+    expect(customerDeals(deals, "cA").map((d) => d.saleId)).toEqual(["1", "2"]); // ใหม่สุดก่อน
+    expect(customerDeals(deals, "")).toEqual([]);
   });
 });
 
