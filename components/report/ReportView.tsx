@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Chips } from "@/components/ui/Chips";
 import { Money } from "@/components/ui/Money";
+import { StatCard } from "@/components/ui/StatCard";
 import { formatBaht } from "@/lib/format";
 import { groupAggregate, inRange, monthKeyBE, sumColumn, totalCount, type AggRow } from "@/lib/report/aggregate";
 import { toCsv } from "@/lib/report/csv";
@@ -152,6 +153,20 @@ export function ReportView({
         )}
       </div>
 
+      {rows.length > 0 && (
+        <div className={`mb-4 grid grid-cols-2 gap-3 print:hidden ${metrics.length >= 2 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+          <StatCard label={`จำนวน (${title})`} value={String(grandCount)} hint="รายการ" />
+          {metrics.map((m, i) => (
+            <StatCard
+              key={m.header}
+              label={m.header}
+              value={<Money value={Math.round(totals[i])} canSee={canSeeMoney} />}
+              tone={type === "ar" && i === 0 ? "accent" : "default"}
+            />
+          ))}
+        </div>
+      )}
+
       <div className="rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
         <div className="mb-3 flex items-baseline justify-between">
           <h2 className="font-display font-semibold text-ink">
@@ -181,7 +196,7 @@ export function ReportView({
                 </tr>
               ) : (
                 rows.map((r) => (
-                  <tr key={r.key} className="border-b border-hairline-2">
+                  <tr key={r.key} className="border-b border-hairline-2 transition-colors hover:bg-paper-2">
                     <td className="py-1.5 pr-3 text-ink">{r.key}</td>
                     <td className="py-1.5 px-3 text-right text-ink-soft">{r.count}</td>
                     {r.sums.map((n, i) => (
