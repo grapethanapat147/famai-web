@@ -74,10 +74,11 @@ export function filterReceivables(
 export function arTotals(
   list: readonly Receivable[],
   today: string,
-): { outstanding: number; overdue: number; openCount: number } {
+): { outstanding: number; overdue: number; openCount: number; overdueCount: number } {
   let outstanding = 0;
   let overdue = 0;
   let openCount = 0;
+  let overdueCount = 0;
   for (const r of list) {
     if (isSettled(r)) {
       continue;
@@ -86,9 +87,10 @@ export function arTotals(
     openCount += 1;
     if (isOverdue(r, today)) {
       overdue += r.balance;
+      overdueCount += 1;
     }
   }
-  return { outstanding, overdue, openCount };
+  return { outstanding, overdue, openCount, overdueCount };
 }
 
 /** ผู้มีสิทธิ์จัดการเงินค้างรับ (ลงรับเงิน) — ตรงกับ roles ของเมนู ar */

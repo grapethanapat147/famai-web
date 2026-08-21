@@ -1,7 +1,7 @@
 "use client";
 
 import { DealView } from "@/components/deal/DealView";
-import type { Deal, DealActionResult } from "@/lib/deal/deals";
+import type { Deal, DealActionResult, ServiceHistory } from "@/lib/deal/deals";
 
 /** พรีวิวหน้าลูกค้าและดีล (deal) — sample data · /deal จริงต่อ DB ผ่าน RLS */
 
@@ -78,6 +78,12 @@ const DEALS: Deal[] = [
   },
 ];
 
+const SERVICES: ServiceHistory[] = [
+  { customerId: "c-somchai", serviceType: "เช็กระยะ 1,000 กม.", checkedInAt: "2024-05-20T09:00:00Z", status: "ส่งมอบแล้ว", total: 520 },
+  { customerId: "c-somchai", serviceType: "เปลี่ยนยาง", checkedInAt: "2025-02-10T10:30:00Z", status: "ส่งมอบแล้ว", total: 2400 },
+  { customerId: "c-wipha", serviceType: "ซ่อมเบรก", checkedInAt: "2026-07-01T13:00:00Z", status: "เสร็จ", total: 880 },
+];
+
 async function mockAdvance(formData: FormData): Promise<DealActionResult> {
   const to = String(formData.get("to"));
   return { ok: true, message: `เลื่อนไป ${to}` };
@@ -107,6 +113,7 @@ export default function DevDealPage() {
       </header>
       <DealView
         deals={DEALS}
+        services={SERVICES}
         canManage
         action={mockAdvance}
         canManageFinance

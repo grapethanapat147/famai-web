@@ -111,3 +111,22 @@ export function customerDeals(deals: readonly Deal[], customerId: string, exclud
     .filter((d) => d.customerId === customerId && d.saleId !== excludeSaleId)
     .sort((a, b) => (a.soldAt < b.soldAt ? 1 : a.soldAt > b.soldAt ? -1 : 0));
 }
+
+/** ประวัติบริการของลูกค้า (จาก service_job) */
+export type ServiceHistory = {
+  customerId: string;
+  serviceType: string;
+  checkedInAt: string; // ISO
+  status: string;
+  total: number;
+};
+
+/** งานบริการของลูกค้าคนเดียวกัน เรียงใหม่สุดก่อน · [] ถ้าไม่มี customerId */
+export function customerServices(rows: readonly ServiceHistory[], customerId: string): ServiceHistory[] {
+  if (!customerId) {
+    return [];
+  }
+  return rows
+    .filter((s) => s.customerId === customerId)
+    .sort((a, b) => (a.checkedInAt < b.checkedInAt ? 1 : a.checkedInAt > b.checkedInAt ? -1 : 0));
+}

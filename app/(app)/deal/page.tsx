@@ -1,6 +1,6 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import { canManageDeal, canVoidDeal, type Deal, type FinanceInfo } from "@/lib/deal/deals";
+import { canManageDeal, canVoidDeal, type Deal, type FinanceInfo, type ServiceHistory } from "@/lib/deal/deals";
 import { canManageFinance } from "@/lib/deal/finance";
 import { isRegStage, type PayMethod, type RegStage } from "@/lib/deal/stage";
 import { DealView } from "@/components/deal/DealView";
@@ -89,10 +89,25 @@ export default async function DealPage() {
     };
   });
 
+  // ประวัติบริการของลูกค้า (จาก service_job) — โชว์ในแผงดีล
+  const { data: svcRows } = await supabase
+    .from("service_job")
+    .select("customer_id, service_type, checked_in_at, status, total");
+  const services: ServiceHistory[] = (svcRows ?? [])
+    .filter((s) => s.customer_id != null)
+    .map((s) => ({
+      customerId: s.customer_id as string,
+      serviceType: s.service_type ?? "บริการ",
+      checkedInAt: s.checked_in_at,
+      status: s.status,
+      total: Number(s.total ?? 0),
+    }));
+
   const roleCodes = user?.roleCodes ?? [];
   return (
     <DealView
       deals={deals}
+      services={services}
       canManage={canManageDeal(roleCodes)}
       action={advanceRegistration}
       canManageFinance={canManageFinance(roleCodes)}

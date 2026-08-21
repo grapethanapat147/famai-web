@@ -76,6 +76,7 @@ describe("filterReceivables + arTotals", () => {
     expect(t.outstanding).toBe(89000); // 84000 + 5000 (ตัด settled)
     expect(t.overdue).toBe(84000);
     expect(t.openCount).toBe(2);
+    expect(t.overdueCount).toBe(1); // มีเกินกำหนด 1 รายการ
   });
 });
 
