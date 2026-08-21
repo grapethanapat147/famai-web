@@ -2,7 +2,8 @@
   "crons": [
     { "path": "/api/cron/aged-stock", "schedule": "0 2 * * *" },
     { "path": "/api/cron/registration-overdue", "schedule": "0 3 * * *" },
-    { "path": "/api/cron/service-due", "schedule": "0 4 * * *" }
+    { "path": "/api/cron/service-due", "schedule": "0 4 * * *" },
+    { "path": "/api/cron/sale-followup", "schedule": "0 5 * * *" }
   ],
   "headers": [
     {

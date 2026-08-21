@@ -260,6 +260,19 @@ type ServiceReminder = {
   notified_at: string | null;
 };
 
+type FollowUpTask = {
+  id: string;
+  branch_id: string;
+  customer_id: string;
+  sale_id: string | null;
+  kind: string;
+  due_at: string;
+  done_at: string | null;
+  done_by: string | null;
+  assigned_to: string | null;
+  note: string | null;
+};
+
 type Registration = {
   id: string;
   sale_id: string;
@@ -464,6 +477,7 @@ export type Database = {
       quotation_option: Table<QuotationOption>;
       company_event: Table<CompanyEvent>;
       service_reminder: Table<ServiceReminder>;
+      follow_up_task: Table<FollowUpTask>;
       part: Table<Part>;
       part_movement: Table<PartMovement>;
       freebie: Table<Freebie>;
