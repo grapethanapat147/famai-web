@@ -22,6 +22,16 @@ export function formatThaiDate(iso: string): string {
   return `${Number(m[3])} ${month} ${Number(m[1]) + 543}`;
 }
 
+/** งวดเดือน พ.ศ. เช่น '2567-08' → 'ส.ค. 2567' */
+export function formatThaiMonth(ym: string): string {
+  const m = /^(\d{4})-(\d{2})/.exec(ym);
+  if (!m) {
+    return ym;
+  }
+  const month = TH_MONTHS[Number(m[2]) - 1] ?? m[2];
+  return `${month} ${Number(m[1]) + 543}`;
+}
+
 export type ChangeDirection = "up" | "down" | "flat" | "none";
 
 /** เทียบช่วงก่อน — ถ้าช่วงก่อนไม่มีข้อมูล ต้องไม่โชว์ 0%/∞ (spec §6.7) */

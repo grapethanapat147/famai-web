@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Money } from "@/components/ui/Money";
 import { formatBaht } from "@/lib/format";
 import { toCsv } from "@/lib/report/csv";
 import { payrollTotals, type PayslipRow } from "@/lib/payroll/payroll";
+import { PrintableEmployeePayslip } from "@/components/payroll/PrintableEmployeePayslip";
+import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 
 const selectClass =
   "rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
@@ -22,14 +24,32 @@ function otHint(minutes: number): string {
 export function PayrollView({
   rows,
   month,
+  seller,
   canSeeMoney,
 }: {
   rows: PayslipRow[];
   month: string;
+  seller: QuoteSeller;
   canSeeMoney: boolean;
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [payslipEmp, setPayslipEmp] = useState<PayslipRow | null>(null);
+  const [printTick, setPrintTick] = useState(0);
+
+  // พิมพ์สลิปหลังเอกสารของคนที่เลือก render แล้ว (rAF กันพิมพ์ก่อน paint)
+  useEffect(() => {
+    if (printTick === 0 || !payslipEmp) {
+      return;
+    }
+    const id = requestAnimationFrame(() => window.print());
+    return () => cancelAnimationFrame(id);
+  }, [printTick, payslipEmp]);
+
+  function printPayslip(emp: PayslipRow) {
+    setPayslipEmp(emp);
+    setPrintTick((t) => t + 1);
+  }
 
   const shown = search.trim()
     ? rows.filter((r) => `${r.name} ${r.position}`.toLowerCase().includes(search.trim().toLowerCase()))
@@ -101,12 +121,13 @@ export function PayrollView({
                 <th className="py-2 px-3 text-right font-medium text-muted">คอมมิชชั่น</th>
                 <th className="py-2 px-3 text-right font-medium text-muted">ปกส.</th>
                 <th className="py-2 pl-3 text-right font-medium text-muted">เงินสุทธิ</th>
+                {canSeeMoney && <th className="py-2 pl-3 text-right font-medium text-muted print:hidden">สลิป</th>}
               </tr>
             </thead>
             <tbody className="tabular">
               {shown.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted">
+                  <td colSpan={canSeeMoney ? 7 : 6} className="py-8 text-center text-muted">
                     ยังไม่มีข้อมูลเงินเดือนในงวดนี้ — เลือกงวดอื่น หรือปรับตัวกรอง
                   </td>
                 </tr>
@@ -124,6 +145,17 @@ export function PayrollView({
                     <td className="py-1.5 px-3 text-right"><Money value={r.commission} canSee={canSeeMoney} /></td>
                     <td className="py-1.5 px-3 text-right text-accent">{canSeeMoney ? `(${formatBaht(r.ssn, { withSymbol: false })})` : "—"}</td>
                     <td className="py-1.5 pl-3 text-right font-semibold text-ink"><Money value={r.net} canSee={canSeeMoney} /></td>
+                    {canSeeMoney && (
+                      <td className="py-1.5 pl-3 text-right print:hidden">
+                        <button
+                          type="button"
+                          onClick={() => printPayslip(r)}
+                          className="rounded-full border border-hairline px-3 py-1 text-xs text-ink-soft hover:text-ink"
+                        >
+                          พิมพ์
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -137,6 +169,7 @@ export function PayrollView({
                   <td className="py-2 px-3 text-right tabular">{formatBaht(totals.commission)}</td>
                   <td className="py-2 px-3 text-right tabular text-accent">({formatBaht(totals.ssn, { withSymbol: false })})</td>
                   <td className="py-2 pl-3 text-right tabular">{formatBaht(totals.net)}</td>
+                  <td className="print:hidden" />
                 </tr>
               </tfoot>
             )}
@@ -147,6 +180,8 @@ export function PayrollView({
           · ยังไม่รวมเบี้ยเลี้ยง/หักสาย/ภาษี
         </p>
       </div>
+
+      {payslipEmp && <PrintableEmployeePayslip seller={seller} month={month} row={payslipEmp} />}
     </div>
   );
 }
