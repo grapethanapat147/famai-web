@@ -48,11 +48,13 @@ export function DealView({
   financeAction,
   canVoid = false,
   voidAction,
+  initialSearch = "",
 }: {
   deals: Deal[];
   services?: ServiceHistory[];
   seller: QuoteSeller;
   vatPct: number;
+  initialSearch?: string;
   canManage: boolean;
   action: (formData: FormData) => Promise<DealActionResult>;
   canManageFinance?: boolean;
@@ -61,7 +63,7 @@ export function DealView({
   voidAction?: (formData: FormData) => Promise<DealActionResult>;
 }) {
   const [stage, setStage] = useState<RegStage | "all">("all");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [view, setView] = useState<"all" | "open" | "offtrack">("all");
   const [selected, setSelected] = useState<Deal | null>(null);
 

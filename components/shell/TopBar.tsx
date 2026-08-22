@@ -1,17 +1,20 @@
 import { logout, toggleCustomerMode } from "@/lib/auth/actions";
 import { ThemeControls } from "@/components/theme/ThemeControls";
+import { SearchLauncher } from "@/components/search/SearchLauncher";
 
-/** แถบบน — ชื่อหน้า/แบรนด์ + สลับโหมดลูกค้า (ถ้ามีสิทธิ์ money) + ชิปผู้ใช้ + ออกจากระบบ */
+/** แถบบน — ชื่อหน้า/แบรนด์ + ค้นหา + สลับโหมดลูกค้า (ถ้ามีสิทธิ์ money) + ชิปผู้ใช้ + ออกจากระบบ */
 export function TopBar({
   title,
   user,
   canToggleMoney,
   customerMode,
+  pages,
 }: {
   title: string;
   user: { fullName: string; nickname: string | null };
   canToggleMoney: boolean;
   customerMode: boolean;
+  pages: { title: string; href: string }[];
 }) {
   const label = user.nickname || user.fullName;
 
@@ -28,6 +31,7 @@ export function TopBar({
       </div>
 
       <div className="flex items-center gap-1.5">
+        <SearchLauncher pages={pages} />
         <ThemeControls />
         {canToggleMoney && (
           <form action={toggleCustomerMode}>
