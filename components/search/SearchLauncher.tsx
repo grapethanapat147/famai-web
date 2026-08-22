@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { SearchHit } from "@/app/api/search/route";
 
@@ -122,9 +123,10 @@ export function SearchLauncher({ pages }: { pages: Page[] }) {
         </svg>
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[12vh]" role="dialog" aria-modal="true" aria-label="ค้นหา">
-          <button type="button" aria-label="ปิด" className="absolute inset-0 bg-ink/40" onClick={close} />
+      {open &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[12vh]" role="dialog" aria-modal="true" aria-label="ค้นหา">
+          <button type="button" aria-label="ปิด" className="absolute inset-0 bg-ink/60 backdrop-blur-[2px]" onClick={close} />
           <div className="relative w-full max-w-lg overflow-hidden rounded-[16px] bg-card shadow-[var(--sh-lg)]">
             <div className="flex items-center gap-2 border-b border-hairline px-4">
               <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="text-muted" aria-hidden>
@@ -178,8 +180,9 @@ export function SearchLauncher({ pages }: { pages: Page[] }) {
               </ul>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </>
   );
 }
