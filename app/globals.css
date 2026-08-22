@@ -241,6 +241,16 @@ body {
   text-align: left;
 }
 
+/* ใบขาย: ตารางคีย์–ค่า (ค่าเป็นข้อความชิดซ้าย · ยกเว้นแถวราคาที่ทำเป็น strong ชิดขวา) */
+.qdoc-table--kv td:last-child {
+  text-align: left;
+  font-variant-numeric: normal;
+}
+.qdoc-table--kv .qdoc-row-strong td:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .qdoc-foot {
   display: flex;
   justify-content: flex-end;

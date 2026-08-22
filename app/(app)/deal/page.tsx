@@ -4,6 +4,7 @@ import { canManageDeal, canVoidDeal, type Deal, type FinanceInfo, type ServiceHi
 import { canManageFinance } from "@/lib/deal/finance";
 import { isRegStage, type PayMethod, type RegStage } from "@/lib/deal/stage";
 import { DealView } from "@/components/deal/DealView";
+import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 import { advanceFinance, advanceRegistration, voidDeal } from "./actions";
 
 export const metadata = { title: "ลูกค้าและดีล — Famai Motor Group" };
@@ -21,7 +22,7 @@ export default async function DealPage() {
   const sales = saleRows ?? [];
   const saleIds = sales.map((s) => s.id);
 
-  const [regsRes, finRes, customersRes, companiesRes, unitsRes, variantsRes, colorsRes] = await Promise.all([
+  const [regsRes, finRes, customersRes, companiesRes, unitsRes, variantsRes, colorsRes, branchRes, orgCompanyRes] = await Promise.all([
     saleIds.length
       ? supabase.from("registration").select("id, sale_id, stage, plate_no").in("sale_id", saleIds)
       : Promise.resolve({ data: [] }),
@@ -33,6 +34,8 @@ export default async function DealPage() {
     supabase.from("motorcycle_unit").select("id, variant_id, color_code, engine_no"),
     supabase.from("model_variant").select("id, model_name"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),
+    supabase.from("branch").select("id, name, address, phone, tax_id, company_id").eq("is_active", true),
+    supabase.from("company").select("id, name, address, phone, tax_id"),
   ]);
 
   type FinRow = {
@@ -103,11 +106,26 @@ export default async function DealPage() {
       total: Number(s.total ?? 0),
     }));
 
+  const branches = branchRes.data ?? [];
+  const userBranch = branches.find((b) => user?.branchIds.includes(b.id)) ?? branches[0] ?? null;
+  const org = userBranch?.company_id
+    ? (orgCompanyRes.data ?? []).find((c) => c.id === userBranch.company_id) ?? null
+    : null;
+  const seller: QuoteSeller = {
+    shopName: org?.name ?? "Famai Motor Group",
+    branchName: userBranch?.name ?? "สำนักงานใหญ่",
+    address: userBranch?.address ?? org?.address ?? null,
+    phone: userBranch?.phone ?? org?.phone ?? null,
+    taxId: userBranch?.tax_id ?? org?.tax_id ?? null,
+    sellerName: user?.fullName ?? "",
+  };
+
   const roleCodes = user?.roleCodes ?? [];
   return (
     <DealView
       deals={deals}
       services={services}
+      seller={seller}
       canManage={canManageDeal(roleCodes)}
       action={advanceRegistration}
       canManageFinance={canManageFinance(roleCodes)}

@@ -114,6 +114,14 @@ export default function DevDealPage() {
       <DealView
         deals={DEALS}
         services={SERVICES}
+        seller={{
+          shopName: "Famai Motor Group",
+          branchName: "พะเยา",
+          address: "123 ถ.พหลโยธิน ต.เวียง อ.เมือง จ.พะเยา 56000",
+          phone: "054-000-000",
+          taxId: "0123456789012",
+          sellerName: "เดโม พนักงานขาย",
+        }}
         canManage
         action={mockAdvance}
         canManageFinance
