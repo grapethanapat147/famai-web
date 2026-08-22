@@ -1,24 +1,14 @@
 # Unblock checklist — สิ่งที่ต้องให้เจ้าของ/ลูกค้าทำ ก่อนไปต่อ
 
-สถานะ: พัก dev หน้าจอ · foundation + สต๊อก + Dashboard เสร็จ (9 commit local บน `feat/nextjs-app`)
-เมื่อเคลียร์ครบ ลำดับต่อไป: **push → ทดสอบ login ของจริง → ตอบบริษัท/สาขา → ทำรับรถ/ขาย**
+สถานะ (sync FAM-1070, 2026-08-22): **build ครบทุก epic E01–E12 แล้ว** · AI ถอดออกจาก UI (นอก TOR, โค้ด dormant)
+เหลือปลดบล็อกก่อน go-live: **ทดสอบ login/flow จริง → ตอบบริษัท/สาขา (ปลด FAM-1022) → ไฟล์ลูกค้า R1**
 
 ---
 
-## 1. 🔴 push ขึ้น repo บนบัญชี GrapeThanapat
+## 1. ✅ push ขึ้น repo — เสร็จแล้ว
 
-**พี่ทำ:** สร้าง repo **เปล่า** (ไม่ติ๊ก README/gitignore/license) ที่ github.com/GrapeThanapat เช่น `famai-web`
-
-**แล้วรัน (ผมรันให้ได้เมื่อพี่ให้ URL):**
-```bash
-cd ~/Herd/famai-web
-git remote add origin https://github.com/GrapeThanapat/<repo>.git
-git push -u origin main             # baseline (งานเพื่อน 60 commit)
-git push -u origin feat/nextjs-app  # งาน Next.js ของผม (+9)
-```
-เปิด PR รีวิว (ตามสไตล์พี่): `https://github.com/GrapeThanapat/<repo>/compare/main...feat/nextjs-app`
-
-> `upstream` = repo เพื่อน (push ถูกปิดไว้) — ดึง update ดีไซน์/schema จากเพื่อนภายหลังได้ด้วย `git fetch upstream`
+repo อยู่ที่ **github.com/grapethanapat147/famai-web** · ทุกงาน merge เข้า `main` ครบ
+(workflow: branch ใหม่ต่อ PR → เกรพ merge ในเบราว์เซอร์)
 
 ---
 

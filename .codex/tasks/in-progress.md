@@ -1,10 +1,9 @@
 # In Progress
 
-- [FAM-1001: Scaffold Next.js + Supabase + envs + CI](tickets/FAM-1001.md) — ready for review
-- [FAM-1004: Supabase data layer & RPC wrappers](tickets/FAM-1004.md) — ready for review
-- [FAM-1002: Design tokens + Thai fonts + app shell](tickets/FAM-1002.md) — ready for review
-- [FAM-1003: Core UI components](tickets/FAM-1003.md) — ready for review
-- [FAM-1005: Auth — login & session](tickets/FAM-1005.md) — ready for review
-- [FAM-1006: RBAC menu + server money-strip + customer mode](tickets/FAM-1006.md) — ready for review
-- [FAM-1008: Stock screen (สต๊อกรถ)](tickets/FAM-1008.md) — ready for review
-- [FAM-1017: Dashboard (ภาพรวม)](tickets/FAM-1017.md)
+> sync แล้ว FAM-1070 (2026-08-22)
+
+_ว่าง_ — งาน batch เดิม (FAM-1001–1018: scaffold, data layer, design tokens, UI, auth, RBAC,
+stock, dashboard ฯลฯ) merge เข้า `main` ครบแล้ว พร้อมทุก epic E01–E12
+
+**งานถัดไปที่ actionable:** [FAM-1022 (บริษัท/สาขา)](tickets/FAM-1022.md) — แต่ยัง 🔴 รอลูกค้าตอบก่อน
+(ดู [UNBLOCK.md](../UNBLOCK.md) §3) · ที่เหลือเป็น pre-launch checklist ใน [backlog.md](backlog.md)
