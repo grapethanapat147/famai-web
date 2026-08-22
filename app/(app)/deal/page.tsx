@@ -4,6 +4,7 @@ import { canManageDeal, canVoidDeal, type Deal, type FinanceInfo, type ServiceHi
 import { canManageFinance } from "@/lib/deal/finance";
 import { isRegStage, type PayMethod, type RegStage } from "@/lib/deal/stage";
 import { DealView } from "@/components/deal/DealView";
+import { getSetting } from "@/lib/settings";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 import { advanceFinance, advanceRegistration, voidDeal } from "./actions";
 
@@ -16,7 +17,7 @@ export default async function DealPage() {
   // ดีล = การขายที่ยังไม่ถูกยกเลิก · ล่าสุดขึ้นบน (R1)
   const { data: saleRows } = await supabase
     .from("sale")
-    .select("id, customer_id, unit_id, pay_method, net_price, sold_at")
+    .select("id, customer_id, unit_id, pay_method, net_price, sold_at, doc_no")
     .is("voided_at", null)
     .order("sold_at", { ascending: false });
   const sales = saleRows ?? [];
@@ -29,7 +30,7 @@ export default async function DealPage() {
     saleIds.length
       ? supabase.from("finance_case").select("id, sale_id, company_id, status, amount, reject_reason").in("sale_id", saleIds)
       : Promise.resolve({ data: [] }),
-    supabase.from("customer").select("id, full_name"),
+    supabase.from("customer").select("id, full_name, address, tax_id"),
     supabase.from("finance_company").select("id, name"),
     supabase.from("motorcycle_unit").select("id, variant_id, color_code, engine_no"),
     supabase.from("model_variant").select("id, model_name"),
@@ -54,6 +55,8 @@ export default async function DealPage() {
     }
   }
   const customerName = new Map((customersRes.data ?? []).map((c) => [c.id, c.full_name]));
+  const customerAddr = new Map((customersRes.data ?? []).map((c) => [c.id, c.address ?? null]));
+  const customerTax = new Map((customersRes.data ?? []).map((c) => [c.id, c.tax_id ?? null]));
   const companyName = new Map((companiesRes.data ?? []).map((c) => [c.id, c.name]));
   const variantName = new Map((variantsRes.data ?? []).map((v) => [v.id, v.model_name]));
   const colorName = new Map((colorsRes.data ?? []).map((c) => [`${c.variant_id}:${c.color_code}`, c.color_name]));
@@ -81,6 +84,8 @@ export default async function DealPage() {
       regId: reg?.id ?? null,
       customerId: s.customer_id ?? "",
       customerName: (s.customer_id && customerName.get(s.customer_id)) || "ลูกค้าทั่วไป",
+      customerAddress: s.customer_id ? (customerAddr.get(s.customer_id) ?? null) : null,
+      customerTaxId: s.customer_id ? (customerTax.get(s.customer_id) ?? null) : null,
       vehicle: model ? `${model}${color ? ` · ${color}` : ""}` : "—",
       engineNo: unit?.engine_no ?? "",
       payMethod,
@@ -88,6 +93,7 @@ export default async function DealPage() {
       soldAt: s.sold_at,
       stage,
       plateNo: reg?.plate_no ?? null,
+      docNo: s.doc_no ?? null,
       finance,
     };
   });
@@ -120,12 +126,15 @@ export default async function DealPage() {
     sellerName: user?.fullName ?? "",
   };
 
+  const vatPct = await getSetting("vat_pct");
+
   const roleCodes = user?.roleCodes ?? [];
   return (
     <DealView
       deals={deals}
       services={services}
       seller={seller}
+      vatPct={vatPct}
       canManage={canManageDeal(roleCodes)}
       action={advanceRegistration}
       canManageFinance={canManageFinance(roleCodes)}

@@ -42,6 +42,8 @@ export type Deal = {
   regId: string | null;
   customerId: string; // "" = ลูกค้าทั่วไป/ไม่ผูกโปรไฟล์ (ไม่มีประวัติ)
   customerName: string;
+  customerAddress: string | null; // สำหรับใบกำกับภาษี
+  customerTaxId: string | null; // เลขผู้เสียภาษีผู้ซื้อ (อ่อนไหว — RLS คุม)
   vehicle: string;
   engineNo: string;
   payMethod: PayMethod;
@@ -49,8 +51,15 @@ export type Deal = {
   soldAt: string; // ISO
   stage: RegStage;
   plateNo: string | null;
+  docNo: string | null; // เลขที่ใบกำกับภาษี (ออกตอนขายด้วย next_doc_no 'TAXINV')
   finance: FinanceInfo | null;
 };
+
+/** แยกมูลค่าก่อนภาษี + VAT จากราคาสุทธิ (ราคารวม VAT อยู่แล้ว — spec §6.3) */
+export function vatBreakdown(netPrice: number, vatPct: number): { valueBeforeVat: number; vat: number } {
+  const valueBeforeVat = vatPct > 0 ? netPrice / (1 + vatPct / 100) : netPrice;
+  return { valueBeforeVat, vat: netPrice - valueBeforeVat };
+}
 
 /** ดีลตกราง = เคสสินเชื่อถูกปฏิเสธ (ต้องแจ้ง/ยื่นใหม่) */
 export function isOffTrack(deal: Deal): boolean {

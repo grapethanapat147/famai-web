@@ -16,8 +16,11 @@ const DEALS: Deal[] = [
     payMethod: "finance",
     netPrice: 92000,
     soldAt: "2026-08-11T10:00:00Z",
+    customerAddress: null,
+    customerTaxId: null,
     stage: "ส่งไฟแนนซ์",
     plateNo: null,
+    docNo: "FMG-TAXINV-2569-00001",
     finance: { id: "fc1", companyName: "กรุงศรี ออโต้", status: "รอผล", amount: 84000, rejectReason: null },
   },
   {
@@ -30,8 +33,11 @@ const DEALS: Deal[] = [
     payMethod: "cash",
     netPrice: 46900,
     soldAt: "2026-08-10T09:00:00Z",
+    customerAddress: "99 หมู่ 2 ต.ท่าวังทอง อ.เมือง จ.พะเยา 56000",
+    customerTaxId: "1560100000001",
     stage: "รอทะเบียน",
     plateNo: null,
+    docNo: "FMG-TAXINV-2569-00002",
     finance: null,
   },
   {
@@ -44,8 +50,11 @@ const DEALS: Deal[] = [
     payMethod: "finance",
     netPrice: 189000,
     soldAt: "2026-08-08T14:00:00Z",
+    customerAddress: null,
+    customerTaxId: null,
     stage: "ส่งไฟแนนซ์",
     plateNo: null,
+    docNo: "FMG-TAXINV-2569-00003",
     finance: { id: "fc3", companyName: "ทิสโก้", status: "ปฏิเสธ", amount: 170000, rejectReason: "ประวัติเครดิตไม่ผ่าน" },
   },
   {
@@ -58,8 +67,11 @@ const DEALS: Deal[] = [
     payMethod: "cash",
     netPrice: 78000,
     soldAt: "2026-08-05T11:00:00Z",
+    customerAddress: "12 ถ.ประตูชัย ต.เวียง อ.เมือง จ.พะเยา 56000",
+    customerTaxId: "3560100000002",
     stage: "ส่งมอบแล้ว",
     plateNo: "1กก 1234",
+    docNo: "FMG-TAXINV-2569-00004",
     finance: null,
   },
   {
@@ -72,8 +84,11 @@ const DEALS: Deal[] = [
     payMethod: "cash",
     netPrice: 62000,
     soldAt: "2024-03-15T10:00:00Z",
+    customerAddress: null,
+    customerTaxId: null,
     stage: "ส่งมอบแล้ว",
     plateNo: "2ขข 5678",
+    docNo: null,
     finance: null,
   },
 ];
@@ -122,6 +137,7 @@ export default function DevDealPage() {
           taxId: "0123456789012",
           sellerName: "เดโม พนักงานขาย",
         }}
+        vatPct={7}
         canManage
         action={mockAdvance}
         canManageFinance
