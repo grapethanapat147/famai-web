@@ -9,8 +9,23 @@ import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { StatCard } from "@/components/ui/StatCard";
 import { StepBar } from "@/components/ui/StepBar";
+import { DraftFollowUp } from "@/components/ai/DraftFollowUp";
 import { formatThaiDate } from "@/lib/format";
 import { dealTrack, regNext, stageIndex, stageVariant, type RegStage } from "@/lib/deal/stage";
+
+/** เดาจุดประสงค์ติดตามเริ่มต้นจากขั้นของดีล (ตรงกับ FOLLOWUP_PURPOSES) */
+function followUpSituation(stage: RegStage): string {
+  if (stage === "ส่งมอบแล้ว") {
+    return "ขอบคุณหลังส่งมอบรถ";
+  }
+  if (stage === "รอทะเบียน" || stage === "ป้ายขาว") {
+    return "อัปเดตสถานะทะเบียน";
+  }
+  if (stage === "ส่งไฟแนนซ์" || stage === "อนุมัติ") {
+    return "ติดตามเรื่องไฟแนนซ์";
+  }
+  return "ทักทาย/ดูแลลูกค้าเก่า";
+}
 import {
   customerDeals,
   customerServices,
@@ -334,6 +349,10 @@ function DealDrawer({
                 )}
               </div>
             </div>
+          )}
+
+          {deal.customerId && (
+            <DraftFollowUp customerName={deal.customerName} vehicle={deal.vehicle} defaultSituation={followUpSituation(deal.stage)} />
           )}
 
           {deal.finance && (
