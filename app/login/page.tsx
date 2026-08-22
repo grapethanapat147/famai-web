@@ -8,6 +8,7 @@ export default async function LoginPage() {
   if (await getCurrentUser()) {
     redirect("/dash");
   }
+  const demo = process.env.DEMO_LOGIN === "true";
 
   return (
     <main className="flex min-h-dvh items-center justify-center px-4">
@@ -19,7 +20,7 @@ export default async function LoginPage() {
           </span>
           <p className="mt-1 text-sm text-ink-soft">เข้าสู่ระบบเพื่อจัดการสต๊อกและการขาย</p>
         </div>
-        <LoginForm />
+        <LoginForm demo={demo} />
       </div>
     </main>
   );
