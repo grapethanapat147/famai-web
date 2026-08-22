@@ -9,7 +9,19 @@ import {
   stageTimestampField,
   REG_STAGES,
 } from "@/lib/deal/stage";
-import { filterDeals, stageCounts, openDealCount, offTrackCount, customerDeals, customerServices, isOffTrack, canManageDeal, canVoidDeal, isVoidableStage, type Deal, type ServiceHistory } from "@/lib/deal/deals";
+import { filterDeals, stageCounts, openDealCount, offTrackCount, customerDeals, customerServices, isOffTrack, canManageDeal, canVoidDeal, isVoidableStage, vatBreakdown, type Deal, type ServiceHistory } from "@/lib/deal/deals";
+
+describe("vatBreakdown", () => {
+  it("splits a VAT-inclusive net price into base + vat (7%)", () => {
+    const { valueBeforeVat, vat } = vatBreakdown(107, 7);
+    expect(valueBeforeVat).toBeCloseTo(100, 6);
+    expect(vat).toBeCloseTo(7, 6);
+    expect(valueBeforeVat + vat).toBeCloseTo(107, 6);
+  });
+  it("returns the whole amount as base when vat is 0", () => {
+    expect(vatBreakdown(500, 0)).toEqual({ valueBeforeVat: 500, vat: 0 });
+  });
+});
 
 describe("deal track (§9g: cash 4 steps, finance 6 steps)", () => {
   it("cash track drops the finance steps", () => {
@@ -48,6 +60,8 @@ function deal(over: Partial<Deal>): Deal {
     regId: "r",
     customerId: "c",
     customerName: "สมชาย",
+    customerAddress: null,
+    customerTaxId: null,
     vehicle: "NMAX",
     engineNo: "E1",
     payMethod: "finance",
@@ -55,6 +69,7 @@ function deal(over: Partial<Deal>): Deal {
     soldAt: "2026-08-01T00:00:00Z",
     stage: "ขายแล้ว",
     plateNo: null,
+    docNo: null,
     finance: null,
     ...over,
   };

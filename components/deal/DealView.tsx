@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { StatCard } from "@/components/ui/StatCard";
 import { StepBar } from "@/components/ui/StepBar";
 import { PrintableSaleDoc } from "@/components/deal/PrintableSaleDoc";
+import { PrintableTaxInvoice } from "@/components/deal/PrintableTaxInvoice";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 import { formatThaiDate } from "@/lib/format";
 import { dealTrack, regNext, stageIndex, stageVariant, type RegStage } from "@/lib/deal/stage";
@@ -40,6 +41,7 @@ export function DealView({
   deals,
   services = [],
   seller,
+  vatPct,
   canManage,
   action,
   canManageFinance = false,
@@ -50,6 +52,7 @@ export function DealView({
   deals: Deal[];
   services?: ServiceHistory[];
   seller: QuoteSeller;
+  vatPct: number;
   canManage: boolean;
   action: (formData: FormData) => Promise<DealActionResult>;
   canManageFinance?: boolean;
@@ -181,6 +184,7 @@ export function DealView({
       <DealDrawer
         deal={selected}
         seller={seller}
+        vatPct={vatPct}
         history={selected ? customerDeals(deals, selected.customerId, selected.saleId) : []}
         serviceHistory={selected ? customerServices(services, selected.customerId) : []}
         canManage={canManage}
@@ -199,6 +203,7 @@ export function DealView({
 function DealDrawer({
   deal,
   seller,
+  vatPct,
   history,
   serviceHistory,
   canManage,
@@ -212,6 +217,7 @@ function DealDrawer({
 }: {
   deal: Deal | null;
   seller: QuoteSeller;
+  vatPct: number;
   history: Deal[];
   serviceHistory: ServiceHistory[];
   canManage: boolean;
@@ -229,6 +235,22 @@ function DealDrawer({
   const [voiding, setVoiding] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [current, setCurrent] = useState<string | null>(null);
+  const [printDoc, setPrintDoc] = useState<"sale" | "tax" | null>(null);
+  const [printTick, setPrintTick] = useState(0);
+
+  // พิมพ์หลังเอกสารที่เลือก render แล้ว (มี .print-doc เดียวในหน้า → :has() แสดงตัวถูก)
+  useEffect(() => {
+    if (printTick === 0 || !printDoc) {
+      return;
+    }
+    const id = requestAnimationFrame(() => window.print());
+    return () => cancelAnimationFrame(id);
+  }, [printTick, printDoc]);
+
+  function printAs(which: "sale" | "tax") {
+    setPrintDoc(which);
+    setPrintTick((t) => t + 1);
+  }
 
   // รีเซ็ต error/เหตุผล เมื่อเปิดดีลใหม่ (เทียบ id ระหว่าง render)
   if (deal && deal.saleId !== current) {
@@ -322,16 +344,26 @@ function DealDrawer({
             <Row label="วันที่ขาย">{formatThaiDate(deal.soldAt)}</Row>
           </dl>
 
-          <div className="flex justify-end">
+          <div className="flex flex-wrap justify-end gap-2">
             <button
               type="button"
-              onClick={() => window.print()}
+              onClick={() => printAs("sale")}
               className="inline-flex items-center gap-1.5 rounded-[24px] border border-hairline px-4 py-2 text-sm font-medium text-ink-soft transition-transform active:scale-[0.97]"
             >
               พิมพ์ใบขาย
             </button>
+            {deal.docNo && (
+              <button
+                type="button"
+                onClick={() => printAs("tax")}
+                className="inline-flex items-center gap-1.5 rounded-[24px] border border-hairline px-4 py-2 text-sm font-medium text-ink-soft transition-transform active:scale-[0.97]"
+              >
+                พิมพ์ใบกำกับภาษี
+              </button>
+            )}
           </div>
-          <PrintableSaleDoc seller={seller} deal={deal} />
+          {printDoc === "sale" && <PrintableSaleDoc seller={seller} deal={deal} />}
+          {printDoc === "tax" && <PrintableTaxInvoice seller={seller} deal={deal} vatPct={vatPct} />}
 
           {deal.customerId && (
             <div className="flex flex-col gap-3 rounded-[12px] bg-paper p-3">
