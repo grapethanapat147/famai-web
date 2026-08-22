@@ -81,6 +81,7 @@ export function PayrollView({
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          aria-label="ค้นหาชื่อ / ตำแหน่ง"
           placeholder="ค้นชื่อ / ตำแหน่ง"
           className={`${selectClass} w-full sm:w-64`}
         />

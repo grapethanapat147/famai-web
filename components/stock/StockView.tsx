@@ -124,11 +124,12 @@ export function StockView({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="ค้นหาเลขเครื่อง / รุ่น"
             placeholder="ค้นเลขเครื่อง / รุ่น"
             className={`${selectClass} w-full sm:w-56`}
           />
           {branches.length > 1 && (
-            <select value={branch} onChange={(e) => setBranch(e.target.value)} className={selectClass}>
+            <select aria-label="กรองตามสาขา" value={branch} onChange={(e) => setBranch(e.target.value)} className={selectClass}>
               <option value="all">ทุกสาขา</option>
               {branches.map((b) => (
                 <option key={b.code} value={b.code}>
@@ -137,7 +138,7 @@ export function StockView({
               ))}
             </select>
           )}
-          <select value={model} onChange={(e) => setModel(e.target.value)} className={selectClass}>
+          <select aria-label="กรองตามรุ่น" value={model} onChange={(e) => setModel(e.target.value)} className={selectClass}>
             <option value="all">ทุกรุ่น</option>
             {models.map((m) => (
               <option key={m.code} value={m.code}>

@@ -114,10 +114,11 @@ export function ExpenseView({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="ค้นหาร้าน / หมวด / หมายเหตุ"
             placeholder="ค้นร้าน / หมวด / หมายเหตุ"
             className={`${selectClass} w-full sm:w-52`}
           />
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={selectClass}>
+          <select aria-label="กรองตามหมวด" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={selectClass}>
             <option value="all">ทุกหมวด</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>

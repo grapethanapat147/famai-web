@@ -134,6 +134,7 @@ export function DealView({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="ค้นหาลูกค้า / รถ / ทะเบียน"
             placeholder="ค้นลูกค้า / รถ / ทะเบียน"
             className={`${selectClass} w-full sm:w-56`}
           />

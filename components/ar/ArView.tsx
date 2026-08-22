@@ -116,6 +116,7 @@ export function ArView({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="ค้นหาผู้ค้าง / รถ"
             placeholder="ค้นผู้ค้าง / รถ"
             className={`${selectClass} w-full sm:w-56`}
           />

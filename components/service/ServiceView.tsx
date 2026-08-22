@@ -122,6 +122,7 @@ export function ServiceView({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="ค้นหาเลขงาน / ลูกค้า / รถ"
             placeholder="ค้นเลขงาน / ลูกค้า / รถ"
             className={`${selectClass} w-full sm:w-56`}
           />
