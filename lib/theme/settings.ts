@@ -1,23 +1,11 @@
 import "server-only";
 import { cache } from "react";
-import { createServerSupabase } from "@/lib/supabase/server";
-import { DEFAULT_THEME, parseThemeConfig, type ThemeConfig } from "@/lib/theme/config";
+import { getThemeConfigCached } from "@/lib/reference/cache";
 
 export type { ThemeConfig } from "@/lib/theme/config";
 
-/** อ่าน theme global จาก DB — resilient (พลาด → default โทนเดิม ไม่พังทั้งแอป) · memoized ต่อ request */
-export const getThemeConfig = cache(async (): Promise<ThemeConfig> => {
-  try {
-    const supabase = await createServerSupabase();
-    const { data, error } = await supabase
-      .from("app_setting")
-      .select("key, value")
-      .in("key", ["theme_accent", "theme_font_pair", "theme_custom_font"]);
-    if (error || !data) {
-      return DEFAULT_THEME;
-    }
-    return parseThemeConfig(data);
-  } catch {
-    return DEFAULT_THEME;
-  }
-});
+/**
+ * อ่าน theme global — แคช global ข้ามรีเควสต์ (FAM-1084) ตัด round-trip ออกจาก ThemeStyle ทุกครั้งที่เปลี่ยนหน้า
+ * resilient (พลาด → default โทนเดิม ไม่พังทั้งแอป) · memoized ต่อ request ด้วย React cache
+ */
+export const getThemeConfig = cache(() => getThemeConfigCached());

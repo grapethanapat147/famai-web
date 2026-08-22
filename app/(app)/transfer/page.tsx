@@ -1,5 +1,6 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { getActiveBranches } from "@/lib/reference/cache";
 import { canManageTransfer, type Transfer, type TransferStatus } from "@/lib/transfer/transfers";
 import { TransferView, type TransferBranch, type TransferUnit } from "@/components/transfer/TransferView";
 import { cancelTransfer, receiveTransfer, requestTransfer } from "./actions";
@@ -19,19 +20,19 @@ export default async function TransferPage() {
   const transfersRaw = transferRows ?? [];
   const unitIds = [...new Set(transfersRaw.map((t) => t.unit_id))];
 
-  const [unitsRes, availRes, variantsRes, colorsRes, branchesRes] = await Promise.all([
+  const [unitsRes, availRes, variantsRes, colorsRes, branchRows] = await Promise.all([
     unitIds.length
       ? supabase.from("motorcycle_unit").select("id, variant_id, color_code, engine_no").in("id", unitIds)
       : Promise.resolve({ data: [] }),
     supabase.from("motorcycle_unit").select("id, variant_id, color_code, engine_no, branch_id").eq("status", "available"),
     supabase.from("model_variant").select("id, model_name"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),
-    supabase.from("branch").select("id, name").eq("is_active", true),
+    getActiveBranches(),
   ]);
 
   const variantName = new Map((variantsRes.data ?? []).map((v) => [v.id, v.model_name]));
   const colorName = new Map((colorsRes.data ?? []).map((c) => [`${c.variant_id}:${c.color_code}`, c.color_name]));
-  const branchName = new Map((branchesRes.data ?? []).map((b) => [b.id, b.name]));
+  const branchName = new Map(branchRows.map((b) => [b.id, b.name]));
   const unitMap = new Map((unitsRes.data ?? []).map((u) => [u.id, u]));
 
   function vehicleOf(u: { variant_id: string; color_code: string } | undefined): string {
@@ -69,7 +70,7 @@ export default async function TransferPage() {
     branchName: branchName.get(u.branch_id) ?? "—",
   }));
 
-  const branches: TransferBranch[] = (branchesRes.data ?? []).map((b) => ({ id: b.id, name: b.name }));
+  const branches: TransferBranch[] = branchRows.map((b) => ({ id: b.id, name: b.name }));
 
   const allBranchIds = branches.map((b) => b.id);
   const myBranchIds = user?.allBranch ? allBranchIds : (user?.branchIds ?? []);

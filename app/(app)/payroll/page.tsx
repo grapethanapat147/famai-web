@@ -1,6 +1,7 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { canSeeMoney } from "@/lib/auth/money";
+import { getActiveBranches, getCompaniesCached } from "@/lib/reference/cache";
 import { getSettingsWith } from "@/lib/settings";
 import { canViewPayroll, computePayslip, monthRange, type PayslipRow } from "@/lib/payroll/payroll";
 import { PayrollView } from "@/components/payroll/PayrollView";
@@ -30,13 +31,13 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   const see = await canSeeMoney();
   const settings = await getSettingsWith(supabase);
 
-  const [empRes, usersRes, attRes, salesRes, branchRes, orgCompanyRes] = await Promise.all([
+  const [empRes, usersRes, attRes, salesRes, branches, orgCompanies] = await Promise.all([
     supabase.from("employee").select("id, user_id, position, base_salary").is("resigned_at", null),
     supabase.from("app_user").select("id, full_name"),
     supabase.from("attendance").select("employee_id, ot_minutes").gte("work_date", start).lte("work_date", end),
     supabase.from("sale").select("salesperson_id, gross_profit").is("voided_at", null).gte("sold_at", start).lte("sold_at", end),
-    supabase.from("branch").select("id, name, address, phone, tax_id, company_id").eq("is_active", true),
-    supabase.from("company").select("id, name, address, phone, tax_id"),
+    getActiveBranches(),
+    getCompaniesCached(),
   ]);
 
   const userName = new Map((usersRes.data ?? []).map((u) => [u.id, u.full_name]));
@@ -81,10 +82,9 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
     ? rows
     : rows.map((r) => ({ ...r, base: 0, otAmount: 0, commission: 0, gross: 0, ssn: 0, net: 0, commissionBase: 0 }));
 
-  const branches = branchRes.data ?? [];
   const userBranch = branches.find((b) => me.branchIds.includes(b.id)) ?? branches[0] ?? null;
   const org = userBranch?.company_id
-    ? (orgCompanyRes.data ?? []).find((c) => c.id === userBranch.company_id) ?? null
+    ? orgCompanies.find((c) => c.id === userBranch.company_id) ?? null
     : null;
   const seller: QuoteSeller = {
     shopName: org?.name ?? "Famai Motor Group",

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { REF_TAG, revalidateReference } from "@/lib/reference/cache";
 import { SETTING_FIELDS, parseInput, type SettingsActionResult, type SettingValue } from "@/lib/settings/fields";
 import { isValidHex } from "@/lib/theme/derive";
 import { findFontPair, isValidFontPath } from "@/lib/theme/fonts";
@@ -41,6 +42,7 @@ export async function updateSettings(formData: FormData): Promise<SettingsAction
     return { ok: false, error: "บันทึกไม่สำเร็จ (สิทธิ์ไม่พอ หรือฐานข้อมูลผิดพลาด)" };
   }
 
+  revalidateReference(REF_TAG.settings);
   revalidatePath("/settings");
   return { ok: true };
 }
@@ -87,6 +89,7 @@ export async function updateThemeSettings(formData: FormData): Promise<ThemeActi
     return { ok: false, error: "บันทึกธีมไม่สำเร็จ (สิทธิ์ไม่พอ?)" };
   }
 
+  revalidateReference(REF_TAG.settings);
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -160,6 +163,7 @@ export async function updateOrgInfo(formData: FormData): Promise<OrgInfoActionRe
     }
   }
 
+  revalidateReference(REF_TAG.branches, REF_TAG.companies);
   revalidatePath("/settings");
   return { ok: true };
 }

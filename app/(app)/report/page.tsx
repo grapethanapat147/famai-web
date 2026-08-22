@@ -1,5 +1,6 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { canSeeMoney } from "@/lib/auth/money";
+import { getBranchesCached } from "@/lib/reference/cache";
 import { stripMoneyFields } from "@/lib/auth/strip-money";
 import {
   ReportView,
@@ -18,11 +19,11 @@ function todayISO(): string {
 export default async function ReportPage() {
   const supabase = await createServerSupabase();
 
-  const [salesRes, unitsRes, variantsRes, branchesRes, usersRes, expensesRes, categoriesRes, arRes] = await Promise.all([
+  const [salesRes, unitsRes, variantsRes, branches, usersRes, expensesRes, categoriesRes, arRes] = await Promise.all([
     supabase.from("sale").select("id, sold_at, unit_id, salesperson_id, branch_id, net_price, gross_profit").is("voided_at", null),
     supabase.from("motorcycle_unit").select("id, variant_id"),
     supabase.from("model_variant").select("id, model_name"),
-    supabase.from("branch").select("id, name"),
+    getBranchesCached(),
     supabase.from("app_user").select("id, full_name"),
     supabase.from("expense").select("spent_at, category_id, amount"),
     supabase.from("expense_category").select("id, name"),
@@ -30,7 +31,7 @@ export default async function ReportPage() {
   ]);
 
   const variantName = new Map((variantsRes.data ?? []).map((v) => [v.id, v.model_name]));
-  const branchName = new Map((branchesRes.data ?? []).map((b) => [b.id, b.name]));
+  const branchName = new Map(branches.map((b) => [b.id, b.name]));
   const userName = new Map((usersRes.data ?? []).map((u) => [u.id, u.full_name]));
   const categoryName = new Map((categoriesRes.data ?? []).map((c) => [c.id, c.name]));
   const unitVariant = new Map((unitsRes.data ?? []).map((u) => [u.id, u.variant_id]));

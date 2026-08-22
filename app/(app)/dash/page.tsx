@@ -1,5 +1,6 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { canSeeMoney } from "@/lib/auth/money";
+import { getBranchesCached } from "@/lib/reference/cache";
 import { getSettings } from "@/lib/settings";
 import { stripMoneyFields } from "@/lib/auth/strip-money";
 import { computeAgeDays } from "@/lib/stock/units";
@@ -23,15 +24,15 @@ function thaiDate(): string {
 export default async function DashPage() {
   const supabase = await createServerSupabase();
 
-  const [unitsRes, branchesRes, variantsRes, recRes, saleRes] = await Promise.all([
+  const [unitsRes, branches, variantsRes, recRes, saleRes] = await Promise.all([
     supabase.from("motorcycle_unit").select("id, branch_id, variant_id, status, received_at, cost"),
-    supabase.from("branch").select("id, code, name"),
+    getBranchesCached(),
     supabase.from("model_variant").select("id, model_name"),
     supabase.from("receivable").select("balance, settled_at"),
     supabase.from("sale").select("sold_at"),
   ]);
 
-  const branchMap = new Map((branchesRes.data ?? []).map((b) => [b.id, b]));
+  const branchMap = new Map(branches.map((b) => [b.id, b]));
   const variantMap = new Map((variantsRes.data ?? []).map((v) => [v.id, v.model_name]));
   const today = todayISO();
   const rawUnits: DashUnit[] = (unitsRes.data ?? []).map((u) => {

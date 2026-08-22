@@ -1,5 +1,6 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { getActiveBranches, getCompaniesCached } from "@/lib/reference/cache";
 import { getSetting } from "@/lib/settings";
 import { latestPrice } from "@/lib/models/rows";
 import { parseRateTiers } from "@/lib/quote/finance";
@@ -26,7 +27,7 @@ export default async function QuotePage() {
   const quotesRaw = quoteRows ?? [];
   const quoteIds = quotesRaw.map((q) => q.id);
 
-  const [optsRes, usersRes, variantsRes, pricesRes, finRes, branchRes, companyRes] = await Promise.all([
+  const [optsRes, usersRes, variantsRes, pricesRes, finRes, branches, companies] = await Promise.all([
     quoteIds.length
       ? supabase
           .from("quotation_option")
@@ -37,8 +38,8 @@ export default async function QuotePage() {
     supabase.from("model_variant").select("id, code, model_name, model_th"),
     supabase.from("price_history").select("variant_id, effective_from, retail"),
     supabase.from("finance_company").select("id, name, flat_rate_pct, rate_tiers").eq("is_active", true),
-    supabase.from("branch").select("id, name, address, phone, tax_id, company_id").eq("is_active", true),
-    supabase.from("company").select("id, name, address, phone, tax_id"),
+    getActiveBranches(),
+    getCompaniesCached(),
   ]);
 
   const optionsByQuote = new Map<string, SavedQuoteOption[]>();
@@ -95,10 +96,9 @@ export default async function QuotePage() {
 
   const financeTerms = await getSetting("finance_terms");
 
-  const branches = branchRes.data ?? [];
   const userBranch = branches.find((b) => user?.branchIds.includes(b.id)) ?? branches[0] ?? null;
   const company = userBranch?.company_id
-    ? (companyRes.data ?? []).find((c) => c.id === userBranch.company_id) ?? null
+    ? companies.find((c) => c.id === userBranch.company_id) ?? null
     : null;
   const seller: QuoteSeller = {
     shopName: company?.name ?? "Famai Motor Group",

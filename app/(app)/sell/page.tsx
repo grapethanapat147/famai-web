@@ -1,6 +1,7 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { canSeeMoney } from "@/lib/auth/money";
+import { getBranchesCached } from "@/lib/reference/cache";
 import { getSettings } from "@/lib/settings";
 import { stripMoneyFields } from "@/lib/auth/strip-money";
 import { computeAgeDays } from "@/lib/stock/units";
@@ -33,20 +34,20 @@ export default async function SellPage({
 
   const supabase = await createServerSupabase();
 
-  const [unitsRes, variantsRes, colorsRes, branchesRes, finRes] = await Promise.all([
+  const [unitsRes, variantsRes, colorsRes, branches, finRes] = await Promise.all([
     supabase
       .from("motorcycle_unit")
       .select("id, branch_id, variant_id, color_code, engine_no, received_at, cost, retail")
       .eq("status", "available"),
     supabase.from("model_variant").select("id, code, model_name"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),
-    supabase.from("branch").select("id, code, name"),
+    getBranchesCached(),
     supabase.from("finance_company").select("id, name, flat_rate_pct").eq("is_active", true),
   ]);
 
   const variants = new Map((variantsRes.data ?? []).map((v) => [v.id, v]));
   const colors = new Map((colorsRes.data ?? []).map((c) => [`${c.variant_id}:${c.color_code}`, c.color_name]));
-  const branchMap = new Map((branchesRes.data ?? []).map((b) => [b.id, b]));
+  const branchMap = new Map(branches.map((b) => [b.id, b]));
   const today = todayISO();
 
   const rawUnits: SellUnit[] = (unitsRes.data ?? []).map((u) => {
