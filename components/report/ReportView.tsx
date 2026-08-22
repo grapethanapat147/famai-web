@@ -191,7 +191,7 @@ export function ReportView({
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan={2 + metrics.length} className="py-8 text-center text-muted">
-                    ไม่มีข้อมูลในช่วงนี้ (หรือยังไม่ได้ล็อกอิน)
+                    ไม่มีข้อมูลในช่วงที่เลือก — ลองปรับช่วงวันที่หรือตัวกรอง
                   </td>
                 </tr>
               ) : (

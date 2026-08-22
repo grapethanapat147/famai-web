@@ -106,7 +106,7 @@ export function PayrollView({
               {shown.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-muted">
-                    ไม่มีพนักงานในงวดนี้ (หรือยังไม่ได้ล็อกอิน)
+                    ยังไม่มีข้อมูลเงินเดือนในงวดนี้ — เลือกงวดอื่น หรือปรับตัวกรอง
                   </td>
                 </tr>
               ) : (

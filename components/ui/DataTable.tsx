@@ -44,14 +44,18 @@ export function DataTable<T>({
   rows: T[];
   rowKey: (row: T) => string;
   onRowClick?: (row: T) => void;
-  empty?: string;
+  empty?: ReactNode;
 }) {
   if (rows.length === 0) {
-    return (
-      <div className="rounded-[12px] bg-card p-6 text-center text-sm text-muted shadow-[var(--sh-sm)]">
-        {empty}
-      </div>
-    );
+    // string (หรือค่าเริ่มต้น) = ห่อการ์ด muted เดิม · ReactNode (เช่น <EmptyState/>) = render ตรง ๆ (มีการ์ดของตัวเอง)
+    if (typeof empty === "string") {
+      return (
+        <div className="rounded-[12px] bg-card p-6 text-center text-sm text-muted shadow-[var(--sh-sm)]">
+          {empty}
+        </div>
+      );
+    }
+    return <>{empty}</>;
   }
 
   const primaryCol = columns.find((c) => c.primary) ?? columns[0];

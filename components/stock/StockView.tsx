@@ -5,6 +5,7 @@ import Image from "next/image";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Drawer } from "@/components/ui/Drawer";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -68,6 +69,14 @@ export function StockView({
     () => filterUnits(units, { branch, model, status, search }),
     [units, branch, model, status, search],
   );
+
+  const isFiltered = branch !== "all" || model !== "all" || status !== "all" || search.trim() !== "";
+  function resetFilters() {
+    setBranch("all");
+    setModel("all");
+    setStatus("all");
+    setSearch("");
+  }
 
   const parts = [`${rows.length} คัน`];
   if (branch !== "all") parts.push(branches.find((b) => b.code === branch)?.name ?? branch);
@@ -152,7 +161,23 @@ export function StockView({
         rows={rows}
         rowKey={(u) => u.id}
         onRowClick={setSelected}
-        empty="ไม่พบรถตามเงื่อนไข (หรือยังไม่ได้ล็อกอิน)"
+        empty={
+          units.length > 0 ? (
+            <EmptyState
+              icon="bike"
+              title="ไม่พบรถตามเงื่อนไข"
+              description="ลองปรับตัวกรองหรือคำค้นใหม่"
+              action={isFiltered ? { label: "ล้างตัวกรอง", onClick: resetFilters } : undefined}
+            />
+          ) : (
+            <EmptyState
+              icon="bike"
+              title="ยังไม่มีรถในสต๊อก"
+              description="เริ่มต้นด้วยการรับรถเข้าสต๊อก หรือนำเข้าจากไฟล์ยามาฮ่า"
+              action={{ label: "รับรถเข้าสต๊อก", href: "/recv" }}
+            />
+          )
+        }
       />
 
       <Drawer

@@ -4,6 +4,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { Money } from "@/components/ui/Money";
@@ -55,6 +56,13 @@ export function ServiceView({
 
   const counts = statusCounts(jobs);
   const rows = filterJobs(jobs, { status, search, fromDate });
+
+  const isFiltered = status !== "all" || search.trim() !== "" || fromDate !== "";
+  function resetFilters() {
+    setStatus("all");
+    setSearch("");
+    setFromDate("");
+  }
 
   const columns: Column<ServiceJob>[] = [
     {
@@ -134,7 +142,22 @@ export function ServiceView({
         rows={rows}
         rowKey={(j) => j.id}
         onRowClick={setSelected}
-        empty="ไม่พบใบงาน (หรือยังไม่ได้ล็อกอิน)"
+        empty={
+          jobs.length > 0 ? (
+            <EmptyState
+              icon="wrench"
+              title="ไม่พบใบงานตามเงื่อนไข"
+              description="ลองปรับตัวกรอง คำค้น หรือช่วงวันที่"
+              action={isFiltered ? { label: "ล้างตัวกรอง", onClick: resetFilters } : undefined}
+            />
+          ) : (
+            <EmptyState
+              icon="wrench"
+              title="ยังไม่มีใบงานซ่อม"
+              description="เปิดใบงานเมื่อมีรถเข้าซ่อม เพื่อบันทึกอาการและเช็กระยะ"
+            />
+          )
+        }
       />
 
       <JobDrawer

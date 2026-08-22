@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Drawer } from "@/components/ui/Drawer";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -61,6 +62,13 @@ export function DealView({
   const open = openDealCount(deals);
   const offTrack = offTrackCount(deals);
   const rows = filterDeals(deals, { stage, search, onlyOpen: view === "open", onlyOffTrack: view === "offtrack" });
+
+  const isFiltered = stage !== "all" || search.trim() !== "" || view !== "all";
+  function resetFilters() {
+    setStage("all");
+    setSearch("");
+    setView("all");
+  }
 
   const columns: Column<Deal>[] = [
     {
@@ -146,7 +154,23 @@ export function DealView({
         rows={rows}
         rowKey={(d) => d.saleId}
         onRowClick={setSelected}
-        empty="ไม่พบดีล (หรือยังไม่ได้ล็อกอิน)"
+        empty={
+          deals.length > 0 ? (
+            <EmptyState
+              icon="users"
+              title="ไม่พบดีลตามเงื่อนไข"
+              description="ลองปรับตัวกรองหรือคำค้นใหม่"
+              action={isFiltered ? { label: "ล้างตัวกรอง", onClick: resetFilters } : undefined}
+            />
+          ) : (
+            <EmptyState
+              icon="users"
+              title="ยังไม่มีดีล"
+              description="เปิดการขายเพื่อสร้างดีลแรก แล้วติดตามไฟแนนซ์/ทะเบียนได้จากที่นี่"
+              action={{ label: "เปิดการขาย", href: "/sell" }}
+            />
+          )
+        }
       />
 
       <DealDrawer

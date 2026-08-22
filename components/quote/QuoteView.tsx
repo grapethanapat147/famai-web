@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatThaiDate } from "@/lib/format";
@@ -100,6 +101,7 @@ function QuoteList({
 }) {
   const [search, setSearch] = useState("");
   const rows = filterQuotes(quotes, search) as SavedQuote[];
+  const isFiltered = search.trim() !== "";
 
   const columns: Column<SavedQuote>[] = [
     {
@@ -154,7 +156,29 @@ function QuoteList({
           />
         </FilterBar>
       </div>
-      <DataTable columns={columns} rows={rows} rowKey={(q) => q.id} onRowClick={onOpen} empty="ยังไม่มีใบเสนอราคา (หรือยังไม่ได้ล็อกอิน)" />
+      <DataTable
+        columns={columns}
+        rows={rows}
+        rowKey={(q) => q.id}
+        onRowClick={onOpen}
+        empty={
+          quotes.length > 0 ? (
+            <EmptyState
+              icon="file"
+              title="ไม่พบใบเสนอราคาตามคำค้น"
+              description="ลองปรับคำค้นใหม่"
+              action={isFiltered ? { label: "ล้างคำค้น", onClick: () => setSearch("") } : undefined}
+            />
+          ) : (
+            <EmptyState
+              icon="file"
+              title="ยังไม่มีใบเสนอราคา"
+              description="สร้างใบเสนอราคาใหม่เพื่อเทียบรถและไฟแนนซ์ให้ลูกค้า"
+              action={{ label: "สร้างใบเสนอราคา", onClick: onNew }}
+            />
+          )
+        }
+      />
     </div>
   );
 }

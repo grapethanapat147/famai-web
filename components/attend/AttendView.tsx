@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatThaiDate } from "@/lib/format";
 import {
@@ -37,6 +38,12 @@ export function AttendView({ rows, date }: { rows: AttendRow[]; date: string }) 
 
   const counts = statusCounts(rows);
   const shown = filterRows(rows, { search, status });
+
+  const isFiltered = search.trim() !== "" || status !== "all";
+  function resetFilters() {
+    setSearch("");
+    setStatus("all");
+  }
 
   const columns: Column<AttendRow>[] = [
     {
@@ -108,7 +115,23 @@ export function AttendView({ rows, date }: { rows: AttendRow[]; date: string }) 
         </FilterBar>
       </div>
 
-      <DataTable columns={columns} rows={shown} rowKey={(r) => r.employeeId} empty="ไม่มีพนักงาน (หรือยังไม่ได้ล็อกอิน)" />
+      <DataTable
+        columns={columns}
+        rows={shown}
+        rowKey={(r) => r.employeeId}
+        empty={
+          rows.length > 0 ? (
+            <EmptyState
+              icon="users"
+              title="ไม่พบพนักงานตามเงื่อนไข"
+              description="ลองปรับคำค้นหรือสถานะการเข้างาน"
+              action={isFiltered ? { label: "ล้างตัวกรอง", onClick: resetFilters } : undefined}
+            />
+          ) : (
+            <EmptyState icon="users" title="ไม่มีพนักงาน" description="เพิ่มพนักงานในระบบก่อนบันทึกการเข้างาน" />
+          )
+        }
+      />
     </div>
   );
 }

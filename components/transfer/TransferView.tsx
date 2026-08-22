@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -54,6 +55,13 @@ export function TransferView({
 
   const counts = transferCounts(transfers, myBranchIds);
   const rows = filterTransfers(transfers, { status, direction, search, myBranchIds });
+
+  const isFiltered = status !== "all" || direction !== "all" || search.trim() !== "";
+  function resetFilters() {
+    setStatus("all");
+    setDirection("all");
+    setSearch("");
+  }
 
   const columns: Column<Transfer>[] = [
     {
@@ -136,7 +144,22 @@ export function TransferView({
         rows={rows}
         rowKey={(t) => t.id}
         onRowClick={setSelected}
-        empty="ไม่มีรายการโอน (หรือยังไม่ได้ล็อกอิน)"
+        empty={
+          transfers.length > 0 ? (
+            <EmptyState
+              icon="repeat"
+              title="ไม่พบรายการโอนตามเงื่อนไข"
+              description="ลองปรับสถานะ ทิศทาง หรือคำค้น"
+              action={isFiltered ? { label: "ล้างตัวกรอง", onClick: resetFilters } : undefined}
+            />
+          ) : (
+            <EmptyState
+              icon="repeat"
+              title="ยังไม่มีรายการโอน"
+              description="สร้างคำขอโอนเมื่อต้องย้ายรถระหว่างสาขา"
+            />
+          )
+        }
       />
 
       <TransferDrawer

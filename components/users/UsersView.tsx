@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Drawer } from "@/components/ui/Drawer";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { filterUsers, type UserRow, type UsersActionResult } from "@/lib/users/users";
@@ -35,6 +36,13 @@ export function UsersView({
   const roleName = new Map(roles.map((r) => [r.code, r.name]));
   const branchName = new Map(branches.map((b) => [b.id, b.name]));
   const rows = filterUsers(users, { search, roleCode, status });
+
+  const isFiltered = search.trim() !== "" || roleCode !== "all" || status !== "all";
+  function resetFilters() {
+    setSearch("");
+    setRoleCode("all");
+    setStatus("all");
+  }
 
   const columns: Column<UserRow>[] = [
     {
@@ -119,7 +127,22 @@ export function UsersView({
         rows={rows}
         rowKey={(u) => u.id}
         onRowClick={setSelected}
-        empty="ไม่พบผู้ใช้ (หรือยังไม่ได้ล็อกอิน)"
+        empty={
+          users.length > 0 ? (
+            <EmptyState
+              icon="key"
+              title="ไม่พบผู้ใช้ตามเงื่อนไข"
+              description="ลองปรับคำค้น บทบาท หรือสถานะ (เริ่มต้นแสดงเฉพาะที่ใช้งานอยู่)"
+              action={isFiltered ? { label: "ล้างตัวกรอง", onClick: resetFilters } : undefined}
+            />
+          ) : (
+            <EmptyState
+              icon="key"
+              title="ยังไม่มีผู้ใช้"
+              description="เพิ่มบัญชีผู้ใช้เพื่อกำหนดบทบาทและสิทธิ์การเข้าถึง"
+            />
+          )
+        }
       />
 
       <EditUserDrawer
