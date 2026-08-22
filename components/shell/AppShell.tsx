@@ -32,12 +32,18 @@ export function AppShell({
 
   return (
     <div className="flex min-h-dvh">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-[8px] focus:bg-ink focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-card focus:shadow-[var(--sh-md)]"
+      >
+        ข้ามไปเนื้อหาหลัก
+      </a>
       <Sidebar menu={menu} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar title={title} user={user} canToggleMoney={canToggleMoney} customerMode={customerMode} />
 
         {customerMode && (
-          <div className="flex items-center justify-between gap-3 border-b border-hairline bg-[var(--accent-wash)] px-4 py-2 text-sm text-accent-deep lg:px-6">
+          <div className="flex items-center justify-between gap-3 border-b border-hairline bg-[var(--accent-wash)] px-4 py-2 text-sm text-accent-deep lg:px-6 print:hidden">
             <span className="inline-flex min-w-0 items-center gap-2">
               <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M3 3l14 14" />
@@ -56,7 +62,9 @@ export function AppShell({
           </div>
         )}
 
-        <main className="flex-1 overflow-x-hidden px-4 pb-28 pt-5 lg:px-6 lg:pb-8">{children}</main>
+        <main id="main" tabIndex={-1} className="flex-1 overflow-x-hidden px-4 pb-28 pt-5 outline-none lg:px-6 lg:pb-8">
+          {children}
+        </main>
       </div>
       <MobileNav menu={menu} primary={primary} canSell={canSell} />
     </div>

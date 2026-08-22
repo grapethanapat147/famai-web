@@ -43,13 +43,13 @@ export function MobileNav({
         <Link
           href="/sell"
           aria-label="ขายรถ"
-          className="fixed bottom-[52px] left-1/2 z-40 grid h-14 w-14 -translate-x-1/2 place-items-center rounded-full bg-accent text-card shadow-[var(--sh-md)] lg:hidden"
+          className="fixed bottom-[52px] left-1/2 z-40 grid h-14 w-14 -translate-x-1/2 place-items-center rounded-full bg-accent text-card shadow-[var(--sh-md)] lg:hidden print:hidden"
         >
           <NavIcon name="tag" />
         </Link>
       )}
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-hairline bg-card/95 backdrop-blur lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-hairline bg-card/95 backdrop-blur lg:hidden print:hidden">
         {primary.map((item) => {
           const active = pathname === `/${item.key}`;
           return (

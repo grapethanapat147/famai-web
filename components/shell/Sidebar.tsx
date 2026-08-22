@@ -10,7 +10,7 @@ export function Sidebar({ menu }: { menu: MenuGroup[] }) {
   const pathname = usePathname();
 
   return (
-    <aside className="sticky top-0 hidden h-dvh w-[260px] shrink-0 flex-col overflow-y-auto border-r border-hairline bg-paper-2 lg:flex">
+    <aside className="sticky top-0 hidden h-dvh w-[260px] shrink-0 flex-col overflow-y-auto border-r border-hairline bg-paper-2 lg:flex print:hidden">
       <div className="px-5 py-5">
         <span className="inline-flex items-center gap-2 font-display text-lg font-semibold text-ink">
           <span className="h-2 w-2 rounded-full bg-accent" aria-hidden />

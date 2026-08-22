@@ -272,11 +272,17 @@ body {
   body {
     background: #fff !important;
   }
-  body * {
+  /* ซ่อน chrome/ปุ่มที่ไม่ต้องพิมพ์เสมอ (นอกจาก .no-print แล้ว utility print:hidden ก็ทำงานเองด้วย) */
+  .no-print {
+    display: none !important;
+  }
+  /* โหมดเอกสารเดี่ยว: ใช้ก็ต่อเมื่อหน้ามี .print-doc (เช่น ใบเสนอราคา) → แสดงเฉพาะเอกสาร
+     หน้าที่ไม่มี .print-doc (เช่น รายงาน/เงินเดือน) จะพิมพ์เนื้อหาปกติ โดย chrome ถูกซ่อนด้วย print:hidden */
+  body:has(.print-doc) * {
     visibility: hidden !important;
   }
-  .print-doc,
-  .print-doc * {
+  body:has(.print-doc) .print-doc,
+  body:has(.print-doc) .print-doc * {
     visibility: visible !important;
   }
   .print-doc {

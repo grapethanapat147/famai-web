@@ -114,6 +114,7 @@ export function TransferView({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="ค้นหารถ / เลขเครื่อง / สาขา"
             placeholder="ค้นรถ / เลขเครื่อง / สาขา"
             className={`${selectClass} w-full sm:w-56`}
           />

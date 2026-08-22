@@ -151,6 +151,7 @@ function QuoteList({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="ค้นหาเลขที่ / ลูกค้า"
             placeholder="ค้นเลขที่ / ลูกค้า"
             className={`${selectClass} w-full sm:w-56`}
           />

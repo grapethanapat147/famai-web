@@ -191,6 +191,7 @@ function StockPane({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="ค้นหารหัส / ชื่ออะไหล่"
             placeholder="ค้นรหัส / ชื่ออะไหล่"
             className={`${selectClass} w-full sm:w-56`}
           />

@@ -99,10 +99,11 @@ export function UsersView({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="ค้นหาชื่อ / ชื่อผู้ใช้"
             placeholder="ค้นชื่อ / ชื่อผู้ใช้"
             className={`${selectClass} w-full sm:w-52`}
           />
-          <select value={roleCode} onChange={(e) => setRoleCode(e.target.value)} className={selectClass}>
+          <select aria-label="กรองตามบทบาท" value={roleCode} onChange={(e) => setRoleCode(e.target.value)} className={selectClass}>
             <option value="all">ทุกบทบาท</option>
             {roles.map((r) => (
               <option key={r.id} value={r.code}>
