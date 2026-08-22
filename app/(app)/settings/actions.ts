@@ -7,6 +7,7 @@ import { SETTING_FIELDS, parseInput, type SettingsActionResult, type SettingValu
 import { isValidHex } from "@/lib/theme/derive";
 import { findFontPair, isValidFontPath } from "@/lib/theme/fonts";
 import type { ThemeActionResult } from "@/lib/theme/config";
+import { nullIfBlank, parseTaxId, type OrgInfoActionResult } from "@/lib/org/info";
 import type { Json } from "@/lib/supabase/database.types";
 
 /**
@@ -87,5 +88,78 @@ export async function updateThemeSettings(formData: FormData): Promise<ThemeActi
   }
 
   revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * บันทึกข้อมูลกิจการ/สาขา (FAM-1078) — ชื่อ/เลขภาษี/ที่อยู่/เบอร์ ที่ขึ้นหัวเอกสาร · เฉพาะ admin
+ * company: RLS company_admin = is_admin() · branch: ปิด RLS (ใช้ grant) — action gate ด้วย perms.admin
+ */
+export async function updateOrgInfo(formData: FormData): Promise<OrgInfoActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!user.perms.admin) {
+    return { ok: false, error: "แก้ไขได้เฉพาะผู้ดูแลระบบ (admin)" };
+  }
+
+  function readFields(prefix: string):
+    | { ok: true; value: { name: string; tax_id: string | null; address: string | null; phone: string | null } }
+    | { ok: false; error: string } {
+    const name = String(formData.get(`${prefix}_name`) ?? "").trim();
+    if (name === "") {
+      return { ok: false, error: "ชื่อห้ามว่าง" };
+    }
+    const tax = parseTaxId(String(formData.get(`${prefix}_tax_id`) ?? ""));
+    if (!tax.ok) {
+      return { ok: false, error: tax.error };
+    }
+    return {
+      ok: true,
+      value: {
+        name,
+        tax_id: tax.value,
+        address: nullIfBlank(String(formData.get(`${prefix}_address`) ?? "")),
+        phone: nullIfBlank(String(formData.get(`${prefix}_phone`) ?? "")),
+      },
+    };
+  }
+
+  const companyId = String(formData.get("company_id") ?? "").trim();
+  if (!companyId) {
+    return { ok: false, error: "ไม่พบบริษัท" };
+  }
+  const companyFields = readFields("company");
+  if (!companyFields.ok) {
+    return { ok: false, error: `บริษัท: ${companyFields.error}` };
+  }
+
+  const branchIds = String(formData.get("branch_ids") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const branchUpdates: Array<{ id: string; fields: { name: string; tax_id: string | null; address: string | null; phone: string | null } }> = [];
+  for (const id of branchIds) {
+    const f = readFields(`branch_${id}`);
+    if (!f.ok) {
+      return { ok: false, error: `สาขา: ${f.error}` };
+    }
+    branchUpdates.push({ id, fields: f.value });
+  }
+
+  const supabase = await createServerSupabase();
+  const { error: companyError } = await supabase.from("company").update(companyFields.value).eq("id", companyId);
+  if (companyError) {
+    return { ok: false, error: "บันทึกข้อมูลบริษัทไม่สำเร็จ (สิทธิ์ไม่พอ หรือฐานข้อมูลผิดพลาด)" };
+  }
+  for (const b of branchUpdates) {
+    const { error: branchError } = await supabase.from("branch").update(b.fields).eq("id", b.id);
+    if (branchError) {
+      return { ok: false, error: "บันทึกข้อมูลสาขาไม่สำเร็จ (สิทธิ์ไม่พอ หรือฐานข้อมูลผิดพลาด)" };
+    }
+  }
+
+  revalidatePath("/settings");
   return { ok: true };
 }
