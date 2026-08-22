@@ -26,7 +26,19 @@ export default function DevPayrollPage() {
         <h1 className="font-display text-[28px] font-semibold text-ink">เงินเดือนและ OT (preview)</h1>
         <p className="mt-1 text-ink-soft">sample data — สลิปคำนวณสด (ฐาน + OT + คอม − ปกส.) · เปลี่ยนงวด · ส่งออก CSV / พิมพ์</p>
       </header>
-      <PayrollView rows={ROWS} month="2026-08" canSeeMoney />
+      <PayrollView
+        rows={ROWS}
+        month="2026-08"
+        seller={{
+          shopName: "Famai Motor Group",
+          branchName: "พะเยา",
+          address: "123 ถ.พหลโยธิน ต.เวียง อ.เมือง จ.พะเยา 56000",
+          phone: "054-000-000",
+          taxId: "0123456789012",
+          sellerName: "เดโม ฝ่ายบุคคล",
+        }}
+        canSeeMoney
+      />
     </main>
   );
 }
