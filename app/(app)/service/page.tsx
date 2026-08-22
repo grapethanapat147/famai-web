@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { canManageService, type ServiceJob, type ServiceLine } from "@/lib/service/jobs";
 import { isServiceStatus, type ServiceStatus } from "@/lib/service/status";
 import { ServiceView, type ServiceCreateOptions, type ServiceLineOptions } from "@/components/service/ServiceView";
+import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 import { addServiceLine, advanceStatus, createServiceJob, removeServiceLine } from "./actions";
 
 export const metadata = { title: "ศูนย์ซ่อม — Famai Motor Group" };
@@ -21,7 +22,7 @@ export default async function ServicePage() {
   const jobs = jobRows ?? [];
   const jobIds = jobs.map((j) => j.id);
 
-  const [linesRes, customersRes, techsRes, unitsRes, variantsRes, colorsRes, partsRes] = await Promise.all([
+  const [linesRes, customersRes, techsRes, unitsRes, variantsRes, colorsRes, partsRes, branchRes, orgCompanyRes] = await Promise.all([
     jobIds.length
       ? supabase.from("service_job_line").select("id, job_id, kind, description, qty, unit_price, amount").in("job_id", jobIds)
       : Promise.resolve({ data: [] }),
@@ -31,6 +32,8 @@ export default async function ServicePage() {
     supabase.from("model_variant").select("id, model_name"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),
     supabase.from("part").select("id, name, price, qty_on_hand").order("name"),
+    supabase.from("branch").select("id, name, address, phone, tax_id, company_id").eq("is_active", true),
+    supabase.from("company").select("id, name, address, phone, tax_id"),
   ]);
 
   const customerName = new Map((customersRes.data ?? []).map((c) => [c.id, c.full_name]));
@@ -102,9 +105,24 @@ export default async function ServicePage() {
     })),
   };
 
+  const branches = branchRes.data ?? [];
+  const userBranch = branches.find((b) => user?.branchIds.includes(b.id)) ?? branches[0] ?? null;
+  const org = userBranch?.company_id
+    ? (orgCompanyRes.data ?? []).find((c) => c.id === userBranch.company_id) ?? null
+    : null;
+  const seller: QuoteSeller = {
+    shopName: org?.name ?? "Famai Motor Group",
+    branchName: userBranch?.name ?? "สำนักงานใหญ่",
+    address: userBranch?.address ?? org?.address ?? null,
+    phone: userBranch?.phone ?? org?.phone ?? null,
+    taxId: userBranch?.tax_id ?? org?.tax_id ?? null,
+    sellerName: user?.fullName ?? "",
+  };
+
   return (
     <ServiceView
       jobs={viewJobs}
+      seller={seller}
       canManage={canManageService(user?.roleCodes ?? [])}
       action={advanceStatus}
       createOptions={createOptions}
