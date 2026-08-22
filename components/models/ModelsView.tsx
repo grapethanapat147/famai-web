@@ -4,6 +4,7 @@ import { useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { parseColors } from "@/lib/models/parse";
@@ -57,9 +58,7 @@ export function ModelsView({
       </div>
 
       {rows.length === 0 ? (
-        <p className="rounded-[12px] border border-dashed border-hairline p-8 text-center text-muted">
-          ยังไม่มีรุ่นรถ (หรือยังไม่ได้ล็อกอิน)
-        </p>
+        <EmptyState icon="bike" title="ยังไม่มีรุ่นรถ" description="เพิ่มรุ่นรถและสีเพื่อเริ่มจัดแคตตาล็อก" />
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {rows.map((m) => (

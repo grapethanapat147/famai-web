@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Money } from "@/components/ui/Money";
 import { StatCard } from "@/components/ui/StatCard";
@@ -47,6 +48,13 @@ export function ArView({
 
   const totals = arTotals(receivables, today);
   const rows = filterReceivables(receivables, { kind, search, onlyOpen, onlyOverdue, today });
+
+  const isFiltered = kind !== "all" || search.trim() !== "" || onlyOverdue;
+  function resetFilters() {
+    setKind("all");
+    setSearch("");
+    setOnlyOverdue(false);
+  }
 
   const columns: Column<Receivable>[] = [
     {
@@ -140,7 +148,22 @@ export function ArView({
         rows={rows}
         rowKey={(r) => r.id}
         onRowClick={canManage ? (r) => (!isSettled(r) ? setPaying(r) : undefined) : undefined}
-        empty="ไม่มีรายการค้างรับ (หรือยังไม่ได้ล็อกอิน)"
+        empty={
+          receivables.length > 0 ? (
+            <EmptyState
+              icon="cash"
+              title="ไม่พบรายการตามเงื่อนไข"
+              description="ลองปรับตัวกรองหรือคำค้นใหม่"
+              action={isFiltered ? { label: "ล้างตัวกรอง", onClick: resetFilters } : undefined}
+            />
+          ) : (
+            <EmptyState
+              icon="cash"
+              title="ไม่มียอดค้างรับ"
+              description="เก็บเงินครบทุกรายการแล้ว — ไม่มีลูกหนี้ค้างชำระ"
+            />
+          )
+        }
       />
 
       {canManage && <PaymentModal receivable={paying} onClose={() => setPaying(null)} action={action} />}

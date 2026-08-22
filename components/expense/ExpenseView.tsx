@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -51,6 +52,14 @@ export function ExpenseView({
   const [selected, setSelected] = useState<ExpenseRow | null>(null);
 
   const rows = filterExpenses(expenses, { categoryId, search, fromDate, onlyMissingReceipt: onlyMissing });
+
+  const isFiltered = categoryId !== "all" || search.trim() !== "" || fromDate !== "" || onlyMissing;
+  function resetFilters() {
+    setCategoryId("all");
+    setSearch("");
+    setFromDate("");
+    setOnlyMissing(false);
+  }
   const totals = expenseTotals(rows);
 
   const columns: Column<ExpenseRow>[] = [
@@ -131,7 +140,24 @@ export function ExpenseView({
         </FilterBar>
       </div>
 
-      <DataTable columns={columns} rows={rows} rowKey={(e) => e.id} onRowClick={setSelected} empty="ไม่มีค่าใช้จ่าย (หรือยังไม่ได้ล็อกอิน)" />
+      <DataTable
+        columns={columns}
+        rows={rows}
+        rowKey={(e) => e.id}
+        onRowClick={setSelected}
+        empty={
+          expenses.length > 0 ? (
+            <EmptyState
+              icon="files"
+              title="ไม่พบค่าใช้จ่ายตามเงื่อนไข"
+              description="ลองปรับหมวด คำค้น ช่วงวันที่ หรือตัวกรองใบเสร็จ"
+              action={isFiltered ? { label: "ล้างตัวกรอง", onClick: resetFilters } : undefined}
+            />
+          ) : (
+            <EmptyState icon="files" title="ยังไม่มีค่าใช้จ่าย" description="บันทึกรายจ่ายพร้อมแนบใบเสร็จเพื่อคุมงบประมาณ" />
+          )
+        }
+      />
 
       {canManage && (
         <AddExpenseModal open={adding} categories={categories} today={today} action={action} onClose={() => setAdding(false)} />

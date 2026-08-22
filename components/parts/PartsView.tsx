@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { Chips } from "@/components/ui/Chips";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Money } from "@/components/ui/Money";
 import { StatCard } from "@/components/ui/StatCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -139,6 +140,12 @@ function StockPane({
   const [selected, setSelected] = useState<PartRow | null>(null);
   const rows = filterParts(parts, { search, onlyLow });
 
+  const isFiltered = search.trim() !== "" || onlyLow;
+  function resetFilters() {
+    setSearch("");
+    setOnlyLow(false);
+  }
+
   const columns: Column<PartRow>[] = [
     {
       key: "name",
@@ -211,7 +218,22 @@ function StockPane({
         rows={rows}
         rowKey={(p) => p.id}
         onRowClick={canManage ? setSelected : undefined}
-        empty="ไม่พบอะไหล่ (หรือยังไม่ได้ล็อกอิน)"
+        empty={
+          parts.length > 0 ? (
+            <EmptyState
+              icon="cog"
+              title="ไม่พบอะไหล่ตามเงื่อนไข"
+              description="ลองปรับคำค้น หรือปิดตัวกรอง 'ใกล้หมด'"
+              action={isFiltered ? { label: "ล้างตัวกรอง", onClick: resetFilters } : undefined}
+            />
+          ) : (
+            <EmptyState
+              icon="cog"
+              title="ยังไม่มีอะไหล่ในหมวดนี้"
+              description="เพิ่มอะไหล่ หรือนำเข้าข้อมูลเพื่อเริ่มจัดการสต๊อกอะไหล่"
+            />
+          )
+        }
       />
 
       {canManage && addAction && <AddPartModal open={adding} canSeeMoney={canSeeMoney} action={addAction} onClose={() => setAdding(false)} />}
@@ -571,9 +593,7 @@ function GiftsPane({
 
   if (freebies.length === 0) {
     return (
-      <p className="rounded-[12px] border border-dashed border-hairline p-8 text-center text-muted">
-        ยังไม่มีของแถม (หรือยังไม่ได้ล็อกอิน)
-      </p>
+      <EmptyState icon="tag" title="ยังไม่มีของแถม" description="เพิ่มของแถมเพื่อผูกกับการขายและโปรโมชั่น" />
     );
   }
 
