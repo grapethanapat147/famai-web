@@ -13,6 +13,8 @@ import { formatBaht, formatThaiDate } from "@/lib/format";
 import { SERVICE_STATUSES, nextStatuses, statusVariant, type ServiceStatus } from "@/lib/service/status";
 import { SERVICE_TYPES, filterJobs, statusCounts, type ServiceActionResult, type ServiceJob, type ServiceLine } from "@/lib/service/jobs";
 import { jobTotals, lineAmount, type LineKind } from "@/lib/service/lines";
+import { PrintableServiceDoc } from "@/components/service/PrintableServiceDoc";
+import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 
 export type ServiceCreateOptions = {
   customers: { id: string; name: string }[];
@@ -31,6 +33,7 @@ const selectClass =
 
 export function ServiceView({
   jobs,
+  seller,
   canManage,
   action,
   createOptions,
@@ -40,6 +43,7 @@ export function ServiceView({
   removeLineAction,
 }: {
   jobs: ServiceJob[];
+  seller: QuoteSeller;
   canManage: boolean;
   action: (formData: FormData) => Promise<ServiceActionResult>;
   createOptions?: ServiceCreateOptions;
@@ -163,6 +167,7 @@ export function ServiceView({
 
       <JobDrawer
         job={selected}
+        seller={seller}
         canManage={canManage}
         action={action}
         lineOptions={lineOptions}
@@ -335,6 +340,7 @@ function CreateJobModal({
 
 function JobDrawer({
   job,
+  seller,
   canManage,
   action,
   lineOptions,
@@ -344,6 +350,7 @@ function JobDrawer({
   onAdvanced,
 }: {
   job: ServiceJob | null;
+  seller: QuoteSeller;
   canManage: boolean;
   action: (formData: FormData) => Promise<ServiceActionResult>;
   lineOptions?: ServiceLineOptions;
@@ -504,6 +511,17 @@ function JobDrawer({
             <Row label="ช่างผู้รับผิดชอบ">{job.technicianName || "—"}</Row>
             {job.symptom && <Row label="อาการ/รายละเอียด">{job.symptom}</Row>}
           </dl>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 rounded-[24px] border border-hairline px-4 py-2 text-sm font-medium text-ink-soft transition-transform active:scale-[0.97]"
+            >
+              พิมพ์ใบสั่งซ่อม
+            </button>
+          </div>
+          <PrintableServiceDoc seller={seller} job={job} />
 
           <div>
             <p className="mb-1 font-medium text-ink">รายการ</p>
