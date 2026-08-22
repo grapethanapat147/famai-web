@@ -5,7 +5,6 @@ import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { parseCsv } from "@/lib/import/csv";
 import { basicErrors, duplicateEngines, extractUnits, type ImportActionResult, type ImportUnit } from "@/lib/import/units";
-import { remapHeaders } from "@/lib/import/ai-map";
 
 type Checked = { unit: ImportUnit; errors: string[]; unknownBranch: boolean };
 
@@ -27,17 +26,14 @@ export function ImportView({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ inserted: number; skipped: number } | null>(null);
-  const [aiMap, setAiMap] = useState<Record<string, string>>({});
-  const [aiBusy, setAiBusy] = useState(false);
-  const [aiNote, setAiNote] = useState<string | null>(null);
 
   const branchSet = new Set(branchCodes);
 
-  function check(map: Record<string, string> = aiMap) {
+  function check() {
     setResult(null);
     setError(null);
     const parsed = parseCsv(text);
-    const units = extractUnits(Object.keys(map).length > 0 ? remapHeaders(parsed, map) : parsed);
+    const units = extractUnits(parsed);
     const dups = duplicateEngines(units);
     const rows: Checked[] = units.map((unit) => {
       const errors = [...basicErrors(unit)];
@@ -50,37 +46,6 @@ export function ImportView({
       return { unit, errors, unknownBranch: Boolean(unit.branchCode) && !branchSet.has(unit.branchCode) };
     });
     setChecked(rows);
-  }
-
-  // AI ช่วยจับคู่คอลัมน์เมื่อหัวตารางไม่ตรง (ประมวลเฉพาะหัวตาราง + ตัวอย่าง ไม่แตะ live data)
-  async function aiMapColumns() {
-    const parsed = parseCsv(text);
-    if (parsed.length < 1 || parsed[0].length === 0) {
-      setAiNote("ยังไม่มีข้อมูลให้จับคู่");
-      return;
-    }
-    setAiBusy(true);
-    setAiNote(null);
-    try {
-      const res = await fetch("/api/ai/map-columns", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ headers: parsed[0], sampleRows: parsed.slice(1, 4) }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setAiNote(data.error ?? "จับคู่ไม่สำเร็จ");
-        return;
-      }
-      const map: Record<string, string> = data.mapping ?? {};
-      setAiMap(map);
-      setAiNote(`AI จับคู่ได้ ${data.mappedCount ?? Object.keys(map).length} คอลัมน์ — ตรวจตัวอย่างด้านล่าง`);
-      check(map);
-    } catch {
-      setAiNote("เชื่อมต่อไม่สำเร็จ");
-    } finally {
-      setAiBusy(false);
-    }
   }
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -154,19 +119,9 @@ export function ImportView({
           >
             ตรวจไฟล์
           </button>
-          <button
-            type="button"
-            onClick={aiMapColumns}
-            disabled={text.trim() === "" || aiBusy}
-            className="inline-flex items-center gap-1.5 rounded-[24px] border border-accent/40 px-4 py-2 text-sm font-medium text-accent-deep disabled:opacity-50"
-            title="ให้ AI ช่วยจับคู่คอลัมน์เมื่อหัวตารางไม่ตรงรูปแบบมาตรฐาน"
-          >
-            {aiBusy ? "กำลังจับคู่…" : "✨ ช่วยจับคู่คอลัมน์ (AI)"}
-          </button>
           {result && <StatusBadge variant="good">นำเข้าแล้ว {result.inserted} คัน · ข้าม {result.skipped}</StatusBadge>}
           {error && <StatusBadge variant="bad">{error}</StatusBadge>}
         </div>
-        {aiNote && <p className="mt-2 text-xs text-muted">{aiNote}</p>}
       </div>
 
       {checked && (
