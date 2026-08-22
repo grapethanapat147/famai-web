@@ -10,6 +10,8 @@ import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { StatCard } from "@/components/ui/StatCard";
 import { StepBar } from "@/components/ui/StepBar";
+import { PrintableSaleDoc } from "@/components/deal/PrintableSaleDoc";
+import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 import { formatThaiDate } from "@/lib/format";
 import { dealTrack, regNext, stageIndex, stageVariant, type RegStage } from "@/lib/deal/stage";
 import {
@@ -37,6 +39,7 @@ const selectClass =
 export function DealView({
   deals,
   services = [],
+  seller,
   canManage,
   action,
   canManageFinance = false,
@@ -46,6 +49,7 @@ export function DealView({
 }: {
   deals: Deal[];
   services?: ServiceHistory[];
+  seller: QuoteSeller;
   canManage: boolean;
   action: (formData: FormData) => Promise<DealActionResult>;
   canManageFinance?: boolean;
@@ -176,6 +180,7 @@ export function DealView({
 
       <DealDrawer
         deal={selected}
+        seller={seller}
         history={selected ? customerDeals(deals, selected.customerId, selected.saleId) : []}
         serviceHistory={selected ? customerServices(services, selected.customerId) : []}
         canManage={canManage}
@@ -193,6 +198,7 @@ export function DealView({
 
 function DealDrawer({
   deal,
+  seller,
   history,
   serviceHistory,
   canManage,
@@ -205,6 +211,7 @@ function DealDrawer({
   onAdvanced,
 }: {
   deal: Deal | null;
+  seller: QuoteSeller;
   history: Deal[];
   serviceHistory: ServiceHistory[];
   canManage: boolean;
@@ -314,6 +321,17 @@ function DealDrawer({
             <Row label="ทะเบียน">{deal.plateNo || "—"}</Row>
             <Row label="วันที่ขาย">{formatThaiDate(deal.soldAt)}</Row>
           </dl>
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 rounded-[24px] border border-hairline px-4 py-2 text-sm font-medium text-ink-soft transition-transform active:scale-[0.97]"
+            >
+              พิมพ์ใบขาย
+            </button>
+          </div>
+          <PrintableSaleDoc seller={seller} deal={deal} />
 
           {deal.customerId && (
             <div className="flex flex-col gap-3 rounded-[12px] bg-paper p-3">
