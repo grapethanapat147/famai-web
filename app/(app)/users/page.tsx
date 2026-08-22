@@ -1,5 +1,6 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { getActiveBranches } from "@/lib/reference/cache";
 import { canManageUsers, type UserRow } from "@/lib/users/users";
 import { UsersView, type BranchOption, type RoleOption } from "@/components/users/UsersView";
 import { updateUserAccess } from "./actions";
@@ -18,12 +19,12 @@ export default async function UsersPage() {
     );
   }
 
-  const [usersRes, rolesRes, userRolesRes, userBranchesRes, branchesRes] = await Promise.all([
+  const [usersRes, rolesRes, userRolesRes, userBranchesRes, branchRows] = await Promise.all([
     supabase.from("app_user").select("id, username, full_name, nickname, all_branch, is_active").order("full_name"),
     supabase.from("role").select("id, code, name"),
     supabase.from("app_user_role").select("user_id, role_id"),
     supabase.from("app_user_branch").select("user_id, branch_id"),
-    supabase.from("branch").select("id, name").eq("is_active", true),
+    getActiveBranches(),
   ]);
 
   const roleCodeById = new Map((rolesRes.data ?? []).map((r) => [r.id, r.code]));
@@ -62,7 +63,7 @@ export default async function UsersPage() {
   });
 
   const roles: RoleOption[] = (rolesRes.data ?? []).map((r) => ({ id: r.id, code: r.code, name: r.name }));
-  const branches: BranchOption[] = (branchesRes.data ?? []).map((b) => ({ id: b.id, name: b.name }));
+  const branches: BranchOption[] = branchRows.map((b) => ({ id: b.id, name: b.name }));
 
   return <UsersView users={users} roles={roles} branches={branches} currentUserId={me.id} action={updateUserAccess} />;
 }

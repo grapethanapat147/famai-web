@@ -2,8 +2,8 @@ import "server-only";
 
 import { cache } from "react";
 import type { TypedSupabaseClient } from "@/lib/supabase/client-type";
-import { createServerSupabase } from "@/lib/supabase/server";
 import { resolveSettings, SETTING_DEFAULTS, type AppSettings } from "@/lib/settings/resolve";
+import { getSettingsCached } from "@/lib/reference/cache";
 
 export { SETTING_DEFAULTS, type AppSettings };
 
@@ -16,13 +16,10 @@ async function fetchSettings(client: TypedSupabaseClient): Promise<AppSettings> 
 }
 
 /**
- * โหลด settings ทั้งหมด ผ่าน server client (ตาม RLS ของผู้ใช้) — memoized ต่อ render ด้วย React cache
- * ถ้าไม่มี session/อ่านไม่เจอแถว จะได้ค่า default (ตรงกับ seed) ซึ่งปลอดภัย
+ * โหลด settings ทั้งหมด — แคช global ข้ามรีเควสต์ (FAM-1084) แล้ว memoized ต่อ render ด้วย React cache
+ * app_setting เป็น RLS using(true) = เหมือนกันทุกผู้ใช้ · พลาด → default (ตรงกับ seed)
  */
-export const getSettings = cache(async (): Promise<AppSettings> => {
-  const client = await createServerSupabase();
-  return fetchSettings(client);
-});
+export const getSettings = cache((): Promise<AppSettings> => getSettingsCached());
 
 /** โหลดค่าเดียวแบบ type-safe เช่น await getSetting("vat_pct") -> number */
 export async function getSetting<K extends keyof AppSettings>(key: K): Promise<AppSettings[K]> {

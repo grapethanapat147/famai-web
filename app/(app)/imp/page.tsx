@@ -1,5 +1,6 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { getBranchesCached } from "@/lib/reference/cache";
 import { canManageImport } from "@/lib/import/units";
 import { ImportView } from "@/components/import/ImportView";
 import { importUnits } from "./actions";
@@ -17,16 +18,16 @@ export default async function ImportPage() {
   }
 
   const supabase = await createServerSupabase();
-  const [variantsRes, branchesRes] = await Promise.all([
+  const [variantsRes, branches] = await Promise.all([
     supabase.from("model_variant").select("code, model_name"),
-    supabase.from("branch").select("code"),
+    getBranchesCached(),
   ]);
 
   const variantNames: Record<string, string> = {};
   for (const v of variantsRes.data ?? []) {
     variantNames[v.code] = v.model_name;
   }
-  const branchCodes = (branchesRes.data ?? []).map((b) => b.code);
+  const branchCodes = branches.map((b) => b.code);
 
   return <ImportView variantNames={variantNames} branchCodes={branchCodes} canImport action={importUnits} />;
 }
