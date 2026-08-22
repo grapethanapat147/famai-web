@@ -10,7 +10,8 @@ import { advanceFinance, advanceRegistration, voidDeal } from "./actions";
 
 export const metadata = { title: "ลูกค้าและดีล — Famai Motor Group" };
 
-export default async function DealPage() {
+export default async function DealPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const { q } = await searchParams;
   const supabase = await createServerSupabase();
   const user = await getCurrentUser();
 
@@ -135,6 +136,7 @@ export default async function DealPage() {
       services={services}
       seller={seller}
       vatPct={vatPct}
+      initialSearch={typeof q === "string" ? q : ""}
       canManage={canManageDeal(roleCodes)}
       action={advanceRegistration}
       canManageFinance={canManageFinance(roleCodes)}

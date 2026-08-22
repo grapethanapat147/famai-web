@@ -40,7 +40,13 @@ export function AppShell({
       </a>
       <Sidebar menu={menu} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar title={title} user={user} canToggleMoney={canToggleMoney} customerMode={customerMode} />
+        <TopBar
+          title={title}
+          user={user}
+          canToggleMoney={canToggleMoney}
+          customerMode={customerMode}
+          pages={menu.flatMap((g) => g.items).map((i) => ({ title: i.title, href: `/${i.key}` }))}
+        />
 
         {customerMode && (
           <div className="flex items-center justify-between gap-3 border-b border-hairline bg-[var(--accent-wash)] px-4 py-2 text-sm text-accent-deep lg:px-6 print:hidden">
