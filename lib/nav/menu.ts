@@ -24,7 +24,6 @@ export const MENU: MenuGroup[] = [
       { key: "dash", title: "Dashboard", subtitle: "ภาพรวมทั้งกิจการ", icon: "chart", roles: ["admin", "manager", "acct", "sales", "stock", "hr", "tech"] },
       { key: "cal", title: "ปฏิทิน", subtitle: "ปฏิทินรถ และปฏิทินผู้บริหาร", icon: "calendar", roles: ["admin", "manager", "acct", "sales", "hr"] },
       { key: "report", title: "รายงาน", subtitle: "สรุปแยกประเภท พิมพ์และส่งออกได้", icon: "files", roles: ["admin", "manager", "acct", "stock", "hr"] },
-      { key: "assist", title: "ผู้ช่วย AI", subtitle: "ถามข้อมูลร้านเป็นภาษาไทย", icon: "chart", roles: ["admin", "manager"] },
     ],
   },
   {
