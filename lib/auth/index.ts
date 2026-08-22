@@ -31,28 +31,20 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   } = await supabase.auth.getUser();
   if (authError || !user) return null;
 
-  const { data: appUser } = await supabase
-    .from("app_user")
-    .select("id, username, full_name, nickname, all_branch, is_active")
-    .eq("id", user.id)
-    .maybeSingle();
+  // ทั้ง 4 query ไม่ขึ้นต่อกัน (คีย์ด้วย user.id / role เป็นตารางเล็ก) → ยิงขนานลด round-trip ทุกหน้า
+  const [appUserRes, userRoleRes, branchRes, allRolesRes] = await Promise.all([
+    supabase.from("app_user").select("id, username, full_name, nickname, all_branch, is_active").eq("id", user.id).maybeSingle(),
+    supabase.from("app_user_role").select("role_id").eq("user_id", user.id),
+    supabase.from("app_user_branch").select("branch_id").eq("user_id", user.id),
+    supabase.from("role").select("id, code, perms"),
+  ]);
+
+  const appUser = appUserRes.data;
   if (!appUser || !appUser.is_active) return null;
 
-  const { data: userRoleRows } = await supabase
-    .from("app_user_role")
-    .select("role_id")
-    .eq("user_id", user.id);
-  const roleIds = (userRoleRows ?? []).map((r) => r.role_id);
-
-  const { data: roleRows } = roleIds.length
-    ? await supabase.from("role").select("code, perms").in("id", roleIds)
-    : { data: [] };
-  const roles = roleRows ?? [];
-
-  const { data: branchRows } = await supabase
-    .from("app_user_branch")
-    .select("branch_id")
-    .eq("user_id", user.id);
+  const roleIds = new Set((userRoleRes.data ?? []).map((r) => r.role_id));
+  const roles = (allRolesRes.data ?? []).filter((r) => roleIds.has(r.id));
+  const branchRows = branchRes.data;
 
   return {
     id: appUser.id,
