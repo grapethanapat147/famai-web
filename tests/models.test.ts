@@ -1,6 +1,28 @@
 import { describe, it, expect } from "vitest";
 import { parseColors } from "@/lib/models/parse";
-import { latestPrice, buildModelRows } from "@/lib/models/rows";
+import { latestPrice, buildModelRows, validateModelEdit, type ModelEditInput } from "@/lib/models/rows";
+
+const editBase: ModelEditInput = { modelName: "NMAX", modelTh: "เอ็นแม็กซ์", category: "Automatic", cc: "155", year: "2569", cost: "78000", retail: "92000" };
+
+describe("validateModelEdit", () => {
+  it("accepts a full edit and nulls blank optional fields", () => {
+    const r = validateModelEdit({ ...editBase, modelTh: "", cc: "", year: "", cost: "" });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.value).toEqual({ modelName: "NMAX", modelTh: null, category: "Automatic", cc: null, year: null, cost: 0, retail: 92000 });
+    }
+  });
+  it("requires a name", () => {
+    const r = validateModelEdit({ ...editBase, modelName: "  " });
+    expect(r.ok && r.value).toBeFalsy();
+    if (!r.ok) expect(r.error).toBe("กรอกชื่อรุ่น");
+  });
+  it("rejects non-positive retail and bad numbers", () => {
+    expect(validateModelEdit({ ...editBase, retail: "0" }).ok).toBe(false);
+    expect(validateModelEdit({ ...editBase, cost: "-1" }).ok).toBe(false);
+    expect(validateModelEdit({ ...editBase, cc: "abc" }).ok).toBe(false);
+  });
+});
 
 describe("parseColors", () => {
   it("parses 'code:name' pairs across lines and commas", () => {

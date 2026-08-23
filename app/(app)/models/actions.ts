@@ -5,7 +5,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getSettingsWith } from "@/lib/settings";
 import { canUploadModelPhoto, type ModelPhotoResult } from "@/lib/models/image";
-import type { AddModelResult } from "@/lib/models/rows";
+import { validateModelEdit, type AddModelResult } from "@/lib/models/rows";
 
 /** แปลง error จาก DB เป็นข้อความไทยที่ผู้ใช้เข้าใจ (ไม่โชว์ internal) */
 function friendly(error: { code?: string; message?: string } | null): string {
@@ -87,6 +87,66 @@ export async function addModel(formData: FormData): Promise<AddModelResult> {
   });
   if (error) {
     return { ok: false, error: friendly(error) };
+  }
+
+  revalidatePath("/models");
+  return { ok: true };
+}
+
+/**
+ * แก้ไขข้อมูลรุ่นรถ (FAM-1091) — อัปเดต model_variant + ราคาใหม่ (upsert price_history วันนี้)
+ * เฉพาะแอดมิน (ตรง RLS model_variant/price_history = is_admin()) · รหัสรุ่น/สี ไม่แก้ที่นี่ (คีย์/กระทบยูนิต)
+ */
+export async function editModel(formData: FormData): Promise<AddModelResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!user.perms.admin) {
+    return { ok: false, error: "แก้ไขรุ่นได้เฉพาะผู้ดูแลระบบ (admin)" };
+  }
+
+  const variantId = String(formData.get("variant_id") ?? "").trim();
+  if (!variantId) {
+    return { ok: false, error: "ไม่พบรุ่นที่จะแก้ไข" };
+  }
+
+  const parsed = validateModelEdit({
+    modelName: String(formData.get("model_name") ?? ""),
+    modelTh: String(formData.get("model_th") ?? ""),
+    category: String(formData.get("category") ?? ""),
+    cc: String(formData.get("cc") ?? ""),
+    year: String(formData.get("model_year") ?? ""),
+    cost: String(formData.get("cost") ?? ""),
+    retail: String(formData.get("retail") ?? ""),
+  });
+  if (!parsed.ok) {
+    return { ok: false, error: parsed.error };
+  }
+  const v = parsed.value;
+
+  const supabase = await createServerSupabase();
+
+  const { error: variantError } = await supabase
+    .from("model_variant")
+    .update({ model_name: v.modelName, model_th: v.modelTh, category: v.category, cc: v.cc, model_year: v.year })
+    .eq("id", variantId);
+  if (variantError) {
+    return { ok: false, error: friendly(variantError) };
+  }
+
+  // ราคาใหม่มีผลวันนี้ — upsert (กันชนกับแถวราคาของวันเดียวกัน)
+  const settings = await getSettingsWith(supabase);
+  const vat = Math.round(v.cost * (settings.vat_pct / 100) * 100) / 100;
+  const today = new Date().toISOString().slice(0, 10);
+  const { error: priceError } = await supabase
+    .from("price_history")
+    .upsert(
+      { variant_id: variantId, effective_from: today, cost: v.cost, vat, retail: v.retail, source: "แก้ไขในระบบ" },
+      { onConflict: "variant_id,effective_from" },
+    );
+  if (priceError) {
+    return { ok: false, error: friendly(priceError) };
   }
 
   revalidatePath("/models");
