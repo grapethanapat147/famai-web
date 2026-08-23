@@ -6,7 +6,7 @@ import type { HrActionResult, LeaveRow } from "@/lib/hr/leave";
 
 /** พรีวิวหน้าลงเวลาและลา (hr) — sample data · มุมมองผู้อนุมัติ */
 
-const MY_TODAY: MyToday = { checkIn: "2026-08-12T01:20:00Z", checkOut: null, status: "ปกติ" };
+const MY_TODAY: MyToday = { checkIn: null, checkOut: null, status: null };
 
 const LEAVES: LeaveRow[] = [
   { id: "1", employeeId: "me", employeeName: "ฉัน", leaveType: "ลาพักร้อน", dateFrom: "2026-08-20", dateTo: "2026-08-22", status: "รออนุมัติ", reason: "เที่ยวกับครอบครัว", mine: true },
@@ -16,6 +16,13 @@ const LEAVES: LeaveRow[] = [
 ];
 
 async function mockClock(): Promise<HrActionResult> {
+  return { ok: true };
+}
+async function mockClockIn(formData: FormData): Promise<HrActionResult> {
+  // จำลอง geofence: ถ้ามีพิกัดถือว่าผ่าน (ของจริงเซิร์ฟเวอร์เช็กระยะ)
+  if (!formData.get("lat")) {
+    return { ok: false, error: "ต้องเปิดตำแหน่ง (GPS) เพื่อลงเวลา" };
+  }
   return { ok: true };
 }
 async function mockForm(formData: FormData): Promise<HrActionResult> {
@@ -52,7 +59,8 @@ export default function DevHrPage() {
         leaves={LEAVES}
         canApprove
         today="2026-08-12"
-        clockInAction={mockClock}
+        geofence={{ radiusM: 150 }}
+        clockInAction={mockClockIn}
         clockOutAction={mockClock}
         linkEmployeeAction={mockLink}
         requestLeaveAction={mockForm}

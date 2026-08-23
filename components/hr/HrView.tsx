@@ -36,6 +36,7 @@ export function HrView({
   leaves,
   canApprove,
   today,
+  geofence,
   clockInAction,
   clockOutAction,
   linkEmployeeAction,
@@ -47,7 +48,8 @@ export function HrView({
   leaves: LeaveRow[];
   canApprove: boolean;
   today: string;
-  clockInAction: () => Promise<HrActionResult>;
+  geofence: { radiusM: number } | null;
+  clockInAction: (formData: FormData) => Promise<HrActionResult>;
   clockOutAction: () => Promise<HrActionResult>;
   linkEmployeeAction: () => Promise<HrActionResult>;
   requestLeaveAction: (formData: FormData) => Promise<HrActionResult>;
@@ -66,6 +68,7 @@ export function HrView({
         hasEmployee={hasEmployee}
         myToday={myToday}
         today={today}
+        geofence={geofence}
         clockInAction={clockInAction}
         clockOutAction={clockOutAction}
         linkEmployeeAction={linkEmployeeAction}
@@ -134,10 +137,22 @@ export function HrView({
   );
 }
 
+/** ขอพิกัดปัจจุบันจากเบราว์เซอร์ (โพรมิสครอบ getCurrentPosition) */
+function getPosition(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      reject(new Error("no-geo"));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 });
+  });
+}
+
 function ClockCard({
   hasEmployee,
   myToday,
   today,
+  geofence,
   clockInAction,
   clockOutAction,
   linkEmployeeAction,
@@ -145,11 +160,13 @@ function ClockCard({
   hasEmployee: boolean;
   myToday: MyToday | null;
   today: string;
-  clockInAction: () => Promise<HrActionResult>;
+  geofence: { radiusM: number } | null;
+  clockInAction: (formData: FormData) => Promise<HrActionResult>;
   clockOutAction: () => Promise<HrActionResult>;
   linkEmployeeAction: () => Promise<HrActionResult>;
 }) {
   const [busy, setBusy] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function run(action: () => Promise<HrActionResult>) {
@@ -157,6 +174,30 @@ function ClockCard({
     setBusy(true);
     setError(null);
     const res = await action();
+    setBusy(false);
+    if (!res.ok) setError(res.error);
+  }
+
+  // ลงเวลาเข้า — ถ้ามี geofence ขอ GPS ก่อนแล้วแนบพิกัด
+  async function clockIn() {
+    if (busy || locating) return;
+    setError(null);
+    const fd = new FormData();
+    if (geofence) {
+      setLocating(true);
+      try {
+        const pos = await getPosition();
+        fd.set("lat", String(pos.coords.latitude));
+        fd.set("lng", String(pos.coords.longitude));
+      } catch {
+        setLocating(false);
+        setError("ต้องเปิดตำแหน่ง (GPS) เพื่อลงเวลา — อนุญาตการเข้าถึงตำแหน่งแล้วลองใหม่");
+        return;
+      }
+      setLocating(false);
+    }
+    setBusy(true);
+    const res = await clockInAction(fd);
     setBusy(false);
     if (!res.ok) setError(res.error);
   }
@@ -201,16 +242,22 @@ function ClockCard({
             </div>
           </div>
 
+          {geofence && !checkedIn && (
+            <div className="mb-3">
+              <StatusBadge variant="info">📍 ต้องอยู่ในรัศมี {geofence.radiusM} ม. จากร้าน — ระบบจะขอตำแหน่งตอนลงเวลาเข้า</StatusBadge>
+            </div>
+          )}
+
           {error && <div className="mb-3"><StatusBadge variant="bad">{error}</StatusBadge></div>}
 
           <div className="flex gap-2">
             <button
               type="button"
-              disabled={busy || checkedIn}
-              onClick={() => run(clockInAction)}
+              disabled={busy || locating || checkedIn}
+              onClick={clockIn}
               className="flex-1 rounded-[24px] bg-accent py-3 text-sm font-medium text-card disabled:opacity-50"
             >
-              ลงเวลาเข้า
+              {locating ? "กำลังหาตำแหน่ง…" : "ลงเวลาเข้า"}
             </button>
             <button
               type="button"
