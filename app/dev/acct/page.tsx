@@ -22,6 +22,21 @@ const DOCS: DocDetail[] = [
     voided: false,
   },
   {
+    id: "d3",
+    docType: "TAXINV",
+    docNo: "FMG-TAXINV-2569-00001",
+    date: "2026-08-23T00:00:00Z",
+    seller: { name: "บริษัท ฟ้าใหม่มอเตอร์ จำกัด", address: "1/6-7 หมู่ 2 ถ.ติวานนท์ ต.บ้านกลาง อ.เมืองปทุมธานี จ.ปทุมธานี 12000", taxId: "0135548009531", phone: "086-332-8509" },
+    buyer: { name: "นายวีระ โปร่งนุช", address: "64/5 ซ.อนามัยงามเจริญ 31 แขวงท่าข้าม เขตบางขุนเทียน กรุงเทพฯ 10150", taxId: "1101700200111", phone: "081-234-5678" },
+    base: 100467.29,
+    vat: 7032.71,
+    total: 107500,
+    vehicle: "NMAX · ดำ-เทา",
+    engineNo: "G3V5E-0865055",
+    frameNo: "MH3SG576111027060",
+    voided: false,
+  },
+  {
     id: "d2",
     docType: "RECEIPT",
     docNo: "FMG-RECEIPT-2569-00002",
@@ -38,16 +53,26 @@ const DOCS: DocDetail[] = [
   },
 ];
 
-const ISSUABLE: IssuableSale[] = [
+// การขายที่ยังไม่มีใบเสร็จ → ออกใบเสร็จได้
+const RECEIPT_ISSUABLE: IssuableSale[] = [
   { saleId: "s3", customerName: "ประเสริฐ มั่งมี", vehicle: "XMAX 300 · ดำ", netPrice: 189000, soldAt: "2026-08-20T00:00:00Z", hasReceipt: false },
   { saleId: "s4", customerName: "วิภา สุขใจ", vehicle: "Aerox · น้ำเงิน", netPrice: 78000, soldAt: "2026-08-18T00:00:00Z", hasReceipt: false },
+];
+
+// การขายที่มีใบเสร็จแล้วแต่ยังไม่มีใบกำกับภาษี → ออกใบกำกับได้
+const TAXINV_ISSUABLE: IssuableSale[] = [
+  { saleId: "s2", customerName: "มานี รักษ์ดี", vehicle: "FINN · ฟ้า", netPrice: 46900, soldAt: "2026-08-22T00:00:00Z", hasReceipt: true },
 ];
 
 async function mockIssue(formData: FormData): Promise<AcctActionResult> {
   if (!String(formData.get("sale_id") ?? "").trim()) {
     return { ok: false, error: "เลือกการขายก่อน" };
   }
-  return { ok: true, docNo: "FMG-RECEIPT-2569-00003" };
+  return { ok: true, docNo: "FMG-XXX-2569-00099" };
+}
+
+async function mockOk(): Promise<AcctActionResult> {
+  return { ok: true };
 }
 
 export default function DevAcctPage() {
@@ -55,9 +80,18 @@ export default function DevAcctPage() {
     <main className="mx-auto w-full max-w-5xl px-4 py-8 lg:px-6">
       <header className="mb-6">
         <h1 className="font-display text-[28px] font-semibold text-ink">บัญชี (preview)</h1>
-        <p className="mt-1 text-ink-soft">FAM-1102 · sample data — list เอกสาร + ออกใบเสร็จ (mock) + พิมพ์</p>
+        <p className="mt-1 text-ink-soft">FAM-1102 · sample data — ใบเสร็จ / ใบกำกับภาษี + แก้ไข (ยกเว้นเลข) + ยกเลิก + พิมพ์</p>
       </header>
-      <AcctView docs={DOCS} issuable={ISSUABLE} issueReceiptAction={mockIssue} />
+      <AcctView
+        docs={DOCS}
+        receiptIssuable={RECEIPT_ISSUABLE}
+        taxinvIssuable={TAXINV_ISSUABLE}
+        vatPct={7}
+        issueReceiptAction={mockIssue}
+        issueTaxInvoiceAction={mockIssue}
+        updateDocumentAction={mockOk}
+        voidDocumentAction={mockOk}
+      />
     </main>
   );
 }
