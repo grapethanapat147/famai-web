@@ -55,6 +55,15 @@ export type FinanceInfo = {
   rejectReason: string | null;
 };
 
+/** ข้อมูลต่อขั้น (FAM-1093 P2) — สถานะย่อย + หมายเหตุ + ใครอัปเดตล่าสุดเมื่อไหร่ */
+export type DealStep = {
+  stage: string;
+  subStatus: string | null;
+  note: string | null;
+  updatedAt: string; // ISO
+  updatedByName: string | null;
+};
+
 export type Deal = {
   saleId: string;
   regId: string | null;
@@ -74,6 +83,7 @@ export type Deal = {
   plateNo: string | null;
   docNo: string | null; // เลขที่ใบกำกับภาษี (ออกตอนขายด้วย next_doc_no 'TAXINV')
   finance: FinanceInfo | null;
+  steps: DealStep[]; // ข้อมูลต่อขั้น (สถานะย่อย/หมายเหตุ/เวลาอัปเดต)
 };
 
 /** แยกมูลค่าก่อนภาษี + VAT จากราคาสุทธิ (ราคารวม VAT อยู่แล้ว — spec §6.3) */

@@ -26,6 +26,7 @@ const DEALS: Deal[] = [
     plateNo: null,
     docNo: "FMG-TAXINV-2569-00001",
     finance: { id: "fc1", companyName: "กรุงศรี ออโต้", status: "รอผล", amount: 84000, rejectReason: null },
+    steps: [],
   },
   {
     saleId: "2",
@@ -46,6 +47,7 @@ const DEALS: Deal[] = [
     plateNo: null,
     docNo: "FMG-TAXINV-2569-00002",
     finance: null,
+    steps: [{ stage: "รอทะเบียน", subStatus: "ยื่นขนส่งแล้ว", note: "ยื่น 12 ส.ค.", updatedAt: "2026-08-12T03:00:00Z", updatedByName: "เดโม พนักงาน" }],
   },
   {
     saleId: "3",
@@ -66,6 +68,7 @@ const DEALS: Deal[] = [
     plateNo: null,
     docNo: "FMG-TAXINV-2569-00003",
     finance: { id: "fc3", companyName: "ทิสโก้", status: "ปฏิเสธ", amount: 170000, rejectReason: "ประวัติเครดิตไม่ผ่าน" },
+    steps: [],
   },
   {
     saleId: "4",
@@ -86,6 +89,7 @@ const DEALS: Deal[] = [
     plateNo: "1กก 1234",
     docNo: "FMG-TAXINV-2569-00004",
     finance: null,
+    steps: [],
   },
   {
     saleId: "5",
@@ -106,6 +110,7 @@ const DEALS: Deal[] = [
     plateNo: "2ขข 5678",
     docNo: null,
     finance: null,
+    steps: [],
   },
 ];
 
@@ -144,6 +149,10 @@ async function mockAddCustomer(formData: FormData): Promise<DealActionResult> {
     return { ok: false, error: "กรอกชื่อลูกค้า" };
   }
   return { ok: true, message: "บันทึกลูกค้าแล้ว" };
+}
+
+async function mockStep(formData: FormData): Promise<DealActionResult> {
+  return { ok: true, message: `บันทึกขั้น ${String(formData.get("stage"))}` };
 }
 
 async function mockCustomer(formData: FormData): Promise<DealActionResult> {
@@ -195,6 +204,7 @@ export default function DevDealPage() {
         canVoid
         voidAction={mockVoid}
         customerAction={mockCustomer}
+        stepAction={mockStep}
       />
     </main>
   );

@@ -1,6 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { regPrev } from "@/lib/deal/stage";
+import { regPrev, substatusOptions, STAGE_SUBSTATUS } from "@/lib/deal/stage";
 import { buildLeads, validateLeadInput, type LeadInput } from "@/lib/deal/lead";
+
+describe("substatusOptions", () => {
+  it("returns the options for a known stage", () => {
+    expect(substatusOptions("ส่งไฟแนนซ์")).toEqual(STAGE_SUBSTATUS["ส่งไฟแนนซ์"]);
+    expect(substatusOptions("ส่งไฟแนนซ์")).toContain("รอผลพิจารณา");
+  });
+  it("returns [] for an unknown stage", () => {
+    expect(substatusOptions("ไม่มีขั้นนี้")).toEqual([]);
+  });
+  it("every real stage has at least one option", () => {
+    for (const opts of Object.values(STAGE_SUBSTATUS)) {
+      expect(opts.length).toBeGreaterThan(0);
+    }
+  });
+});
 
 describe("regPrev", () => {
   it("cash track steps back one stage", () => {

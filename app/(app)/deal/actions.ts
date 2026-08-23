@@ -5,7 +5,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveBranches } from "@/lib/reference/cache";
 import { canManageDeal, canVoidDeal, isVoidableStage, validateDealCustomer, type DealActionResult } from "@/lib/deal/deals";
-import { isRegStage, regNext, regPrev, stageTimestampField, type PayMethod } from "@/lib/deal/stage";
+import { isRegStage, regNext, regPrev, stageTimestampField, substatusOptions, type PayMethod } from "@/lib/deal/stage";
 import { validateLeadInput } from "@/lib/deal/lead";
 import { canFinanceTransition, canManageFinance, isFinanceStatus } from "@/lib/deal/finance";
 
@@ -141,6 +141,51 @@ export async function revertRegistration(formData: FormData): Promise<DealAction
 
   revalidatePath("/deal");
   return { ok: true };
+}
+
+/**
+ * บันทึกสถานะย่อย + หมายเหตุ ต่อขั้นของดีล (FAM-1093 P2) — กด step แล้วเลือกสถานะย่อย + โน้ต
+ * ด่านสิทธิ์ deal · upsert registration_step (1 แถวต่อ (ดีล, ขั้น)) + เก็บว่าใครแก้ล่าสุดเมื่อไหร่
+ */
+export async function updateDealStep(formData: FormData): Promise<DealActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canManageDeal(user.roleCodes)) {
+    return { ok: false, error: "ไม่มีสิทธิ์จัดการดีล" };
+  }
+
+  const regId = String(formData.get("reg_id") ?? "").trim();
+  const stage = String(formData.get("stage") ?? "").trim();
+  const subStatus = String(formData.get("sub_status") ?? "").trim();
+  const note = String(formData.get("note") ?? "").trim();
+
+  if (!regId || !isRegStage(stage)) {
+    return { ok: false, error: "ข้อมูลไม่ถูกต้อง" };
+  }
+  if (subStatus !== "" && !substatusOptions(stage).includes(subStatus)) {
+    return { ok: false, error: "สถานะย่อยไม่ถูกต้อง" };
+  }
+
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.from("registration_step").upsert(
+    {
+      registration_id: regId,
+      stage,
+      sub_status: subStatus || null,
+      note: note || null,
+      updated_at: new Date().toISOString(),
+      updated_by: user.id,
+    },
+    { onConflict: "registration_id,stage" },
+  );
+  if (error) {
+    return { ok: false, error: "บันทึกสถานะขั้นไม่สำเร็จ (รัน migration registration_step แล้วหรือยัง?)" };
+  }
+
+  revalidatePath("/deal");
+  return { ok: true, message: "บันทึกแล้ว" };
 }
 
 /**

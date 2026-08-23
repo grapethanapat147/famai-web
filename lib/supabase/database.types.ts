@@ -296,6 +296,15 @@ type Registration = {
   note: string | null;
 };
 
+type RegistrationStep = {
+  registration_id: string;
+  stage: string;
+  sub_status: string | null;
+  note: string | null;
+  updated_at: string;
+  updated_by: string | null;
+};
+
 type ServiceJob = {
   id: string;
   branch_id: string;
@@ -481,6 +490,7 @@ export type Database = {
       finance_case: Table<FinanceCase>;
       finance_case_event: Table<FinanceCaseEvent>;
       registration: Table<Registration>;
+      registration_step: Table<RegistrationStep>;
       quotation: Table<Quotation>;
       quotation_option: Table<QuotationOption>;
       company_event: Table<CompanyEvent>;

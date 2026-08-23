@@ -94,6 +94,7 @@ function deal(over: Partial<Deal>): Deal {
     plateNo: null,
     docNo: null,
     finance: null,
+    steps: [],
     ...over,
   };
 }
