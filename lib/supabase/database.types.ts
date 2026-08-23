@@ -245,6 +245,16 @@ type FinanceCaseEvent = {
   note: string | null;
 };
 
+type RegistrationEvent = {
+  id: number;
+  registration_id: string;
+  from_stage: string | null;
+  to_stage: string;
+  at: string;
+  by_user: string | null;
+  note: string | null;
+};
+
 type FinanceCase = {
   id: string;
   branch_id: string;
@@ -307,6 +317,8 @@ type Registration = {
   stage: string; // ขายแล้ว | ส่งไฟแนนซ์ | อนุมัติ | รอทะเบียน | ป้ายขาว | ส่งมอบแล้ว
   plate_no: string | null;
   book_no: string | null;
+  dlt_request_no: string | null;
+  dlt_submitted_at: string | null;
   submitted_at: string | null;
   approved_at: string | null;
   plate_received_at: string | null;
@@ -508,6 +520,7 @@ export type Database = {
       finance_company: Table<FinanceCompany>;
       finance_case: Table<FinanceCase>;
       finance_case_event: Table<FinanceCaseEvent>;
+      registration_event: Table<RegistrationEvent>;
       registration: Table<Registration>;
       registration_step: Table<RegistrationStep>;
       document: Table<DocumentRow>;
