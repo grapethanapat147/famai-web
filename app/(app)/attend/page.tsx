@@ -1,8 +1,9 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import { canViewAttend, resolveStatus, type AttendRow } from "@/lib/attend/attendance";
+import { canEditAttendance, canViewAttend, resolveStatus, type AttendRow } from "@/lib/attend/attendance";
 import { buildSignedMap, SELFIE_BUCKET } from "@/lib/hr/selfie";
 import { AttendView } from "@/components/attend/AttendView";
+import { editAttendance } from "./actions";
 
 export const metadata = { title: "ภาพรวมการเข้างาน — Famai Motor Group" };
 
@@ -31,7 +32,7 @@ export default async function AttendPage({ searchParams }: { searchParams: Promi
     supabase.from("app_user").select("id, full_name"),
     supabase
       .from("attendance")
-      .select("employee_id, check_in, status, late_minutes, ot_minutes, check_in_selfie, check_in_distance_m")
+      .select("employee_id, check_in, check_out, status, late_minutes, ot_minutes, check_in_selfie, check_in_distance_m")
       .eq("work_date", date),
     supabase
       .from("leave_request")
@@ -61,6 +62,7 @@ export default async function AttendPage({ searchParams }: { searchParams: Promi
       position: e.position ?? "—",
       status,
       checkIn: att?.check_in ?? null,
+      checkOut: att?.check_out ?? null,
       lateMinutes: att?.late_minutes ?? null,
       otMinutes: att?.ot_minutes ?? 0,
       selfieUrl: att?.check_in_selfie ? signedByPath.get(att.check_in_selfie) ?? null : null,
@@ -70,5 +72,5 @@ export default async function AttendPage({ searchParams }: { searchParams: Promi
 
   rows.sort((a, b) => a.name.localeCompare(b.name, "th"));
 
-  return <AttendView rows={rows} date={date} />;
+  return <AttendView rows={rows} date={date} canEdit={canEditAttendance(me.roleCodes)} editAction={editAttendance} />;
 }

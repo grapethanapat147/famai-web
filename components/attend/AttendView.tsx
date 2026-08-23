@@ -19,6 +19,7 @@ import {
   type AttendRow,
   type AttStatus,
 } from "@/lib/attend/attendance";
+import type { HrActionResult } from "@/lib/hr/leave";
 
 const selectClass =
   "rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
@@ -34,11 +35,34 @@ function timeOf(iso: string | null): string {
   }
 }
 
-export function AttendView({ rows, date }: { rows: AttendRow[]; date: string }) {
+/** ISO → "HH:MM" เขตเวลาไทย (เลขอารบิก) สำหรับ prefill ช่อง input · ว่าง = "" */
+function hhmmBangkok(iso: string | null): string {
+  if (!iso) {
+    return "";
+  }
+  try {
+    return new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Bangkok" }).format(new Date(iso));
+  } catch {
+    return "";
+  }
+}
+
+export function AttendView({
+  rows,
+  date,
+  canEdit = false,
+  editAction,
+}: {
+  rows: AttendRow[];
+  date: string;
+  canEdit?: boolean;
+  editAction?: (formData: FormData) => Promise<HrActionResult>;
+}) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<AttStatus | "all">("all");
   const [selfieRow, setSelfieRow] = useState<AttendRow | null>(null);
+  const [editRow, setEditRow] = useState<AttendRow | null>(null);
 
   const counts = statusCounts(rows);
   const shown = filterRows(rows, { search, status });
@@ -90,6 +114,24 @@ export function AttendView({ rows, date }: { rows: AttendRow[]; date: string }) 
         ),
     },
     { key: "ot", header: "OT", align: "right", render: (r) => <span className="tabular text-ink-soft">{r.otMinutes ? `${r.otMinutes} นาที` : "—"}</span> },
+    ...(canEdit && editAction
+      ? [
+          {
+            key: "edit",
+            header: "",
+            align: "right" as const,
+            render: (r: AttendRow) => (
+              <button
+                type="button"
+                onClick={() => setEditRow(r)}
+                className="rounded-[20px] border border-hairline px-3 py-1 text-xs text-ink-soft transition-transform active:scale-[0.97] hover:text-ink"
+              >
+                แก้เวลา
+              </button>
+            ),
+          } as Column<AttendRow>,
+        ]
+      : []),
   ];
 
   return (
@@ -157,7 +199,84 @@ export function AttendView({ rows, date }: { rows: AttendRow[]; date: string }) 
       />
 
       {selfieRow && <SelfieModal row={selfieRow} onClose={() => setSelfieRow(null)} />}
+      {editRow && editAction && (
+        <EditAttendanceModal key={editRow.employeeId} row={editRow} date={date} action={editAction} onClose={() => setEditRow(null)} />
+      )}
     </div>
+  );
+}
+
+function EditAttendanceModal({
+  row,
+  date,
+  action,
+  onClose,
+}: {
+  row: AttendRow;
+  date: string;
+  action: (formData: FormData) => Promise<HrActionResult>;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [checkIn, setCheckIn] = useState(hhmmBangkok(row.checkIn));
+  const [checkOut, setCheckOut] = useState(hhmmBangkok(row.checkOut));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const inputCls = "rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink";
+
+  async function submit() {
+    if (busy || checkIn === "") {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const fd = new FormData();
+    fd.set("employee_id", row.employeeId);
+    fd.set("work_date", date);
+    fd.set("check_in", checkIn);
+    fd.set("check_out", checkOut);
+    const res = await action(fd);
+    setBusy(false);
+    if (res.ok) {
+      router.refresh();
+      onClose();
+    } else {
+      setError(res.error);
+    }
+  }
+
+  return (
+    <Modal open onClose={onClose} title={`แก้เวลา — ${row.name}`}>
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-muted">{formatThaiDate(date)} · {row.position}</p>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex flex-col gap-1 text-xs text-ink-soft">
+            เวลาเข้า
+            <input type="time" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} className={inputCls} />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-ink-soft">
+            เวลาออก (ถ้ามี)
+            <input type="time" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} className={inputCls} />
+          </label>
+        </div>
+        <p className="text-xs text-muted">ระบบคำนวณ “สาย” และชั่วโมงงานใหม่จากเวลาที่กรอก · เว้นเวลาออกว่าง = ยังไม่ออกงาน</p>
+        {error && <StatusBadge variant="bad">{error}</StatusBadge>}
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-[24px] px-4 py-2 text-sm text-ink-soft">
+            ปิด
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={busy || checkIn === ""}
+            className="rounded-[24px] bg-accent px-5 py-2 text-sm font-medium text-card disabled:opacity-50"
+          >
+            {busy ? "กำลังบันทึก…" : "บันทึกเวลา"}
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
