@@ -46,6 +46,14 @@ export function sumColumn(rows: readonly AggRow[], i: number): number {
   return rows.reduce((s, r) => s + (r.sums[i] ?? 0), 0);
 }
 
+/**
+ * สมาชิกดิบของกลุ่ม key สำหรับ drill-down (กดดูรายละเอียดแต่ละกลุ่ม)
+ * ใช้การ normalize key เดียวกับ groupAggregate (ว่าง → '—') เพื่อให้จำนวนตรงกับตารางสรุปเสมอ
+ */
+export function groupMembers<T>(rows: readonly T[], keyOf: (row: T) => string, key: string): T[] {
+  return rows.filter((r) => (keyOf(r) || "—") === key);
+}
+
 /** จำนวนรายการรวมของทุกกลุ่ม */
 export function totalCount(rows: readonly AggRow[]): number {
   return rows.reduce((s, r) => s + r.count, 0);

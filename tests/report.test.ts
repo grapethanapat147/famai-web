@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { inRange, groupAggregate, sumColumn, totalCount, monthKeyBE } from "@/lib/report/aggregate";
+import { inRange, groupAggregate, groupMembers, sumColumn, totalCount, monthKeyBE } from "@/lib/report/aggregate";
 import { toCsv } from "@/lib/report/csv";
 
 describe("inRange", () => {
@@ -34,6 +34,35 @@ describe("groupAggregate", () => {
   it("blank key falls back to em-dash", () => {
     const rows = groupAggregate([{ k: "" }], (r) => r.k, [() => 1]);
     expect(rows[0].key).toBe("—");
+  });
+});
+
+describe("groupMembers (drill-down)", () => {
+  const sales = [
+    { model: "NMAX", net: 92000 },
+    { model: "NMAX", net: 90000 },
+    { model: "FINN", net: 46900 },
+  ];
+
+  it("returns the raw members of a group", () => {
+    expect(groupMembers(sales, (s) => s.model, "NMAX")).toEqual([
+      { model: "NMAX", net: 92000 },
+      { model: "NMAX", net: 90000 },
+    ]);
+    expect(groupMembers(sales, (s) => s.model, "FINN")).toHaveLength(1);
+  });
+
+  it("member count matches each aggregate row count (invariant)", () => {
+    const keyOf = (s: { model: string }) => s.model;
+    const rows = groupAggregate(sales, keyOf, [() => 1]);
+    for (const r of rows) {
+      expect(groupMembers(sales, keyOf, r.key)).toHaveLength(r.count);
+    }
+  });
+
+  it("matches the em-dash bucket for blank keys (same normalize as groupAggregate)", () => {
+    const items = [{ k: "" }, { k: "a" }];
+    expect(groupMembers(items, (r) => r.k, "—")).toEqual([{ k: "" }]);
   });
 });
 
