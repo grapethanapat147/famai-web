@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseColors } from "@/lib/models/parse";
-import { latestPrice, buildModelRows, validateModelEdit, type ModelEditInput } from "@/lib/models/rows";
+import { latestPrice, buildModelRows, modelSpecLine, validateModelEdit, type ModelEditInput } from "@/lib/models/rows";
 
 const editBase: ModelEditInput = { modelName: "NMAX", modelTh: "เอ็นแม็กซ์", category: "Automatic", cc: "155", year: "2569", cost: "78000", retail: "92000" };
 
@@ -104,5 +104,14 @@ describe("buildModelRows", () => {
     const finn = rows.find((r) => r.id === "v1")!;
     expect(finn.cost).toBeNull();
     expect(finn.retail).toBe(46900);
+  });
+});
+
+describe("modelSpecLine", () => {
+  it("joins present specs with · (blank → em-dash)", () => {
+    expect(modelSpecLine({ category: "Automatic", cc: 155, year: 2569 })).toBe("Automatic · 155 cc · ปี 2569");
+    expect(modelSpecLine({ category: "Sport", cc: null, year: null })).toBe("Sport");
+    expect(modelSpecLine({ category: null, cc: 125, year: null })).toBe("125 cc");
+    expect(modelSpecLine({ category: null, cc: null, year: null })).toBe("—");
   });
 });
