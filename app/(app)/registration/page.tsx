@@ -8,9 +8,10 @@ import {
   plateWaitingSince,
   PLATE_STAGES,
   type PlateRow,
+  type StaffOption,
 } from "@/lib/registration/plate";
 import { RegistrationView } from "@/components/registration/RegistrationView";
-import { recordDltSubmission, recordPlateReceived } from "./actions";
+import { recordDelivery, recordDltSubmission, recordPlateReceived } from "./actions";
 
 export const metadata = { title: "งานทะเบียน — Famai Motor Group" };
 
@@ -37,7 +38,7 @@ export default async function RegistrationPage() {
   const rows = regs ?? [];
   const saleIds = rows.map((r) => r.sale_id);
 
-  const [salesRes, unitsRes, variantsRes, colorsRes, customersRes, branches] = await Promise.all([
+  const [salesRes, unitsRes, variantsRes, colorsRes, customersRes, staffRes, branches] = await Promise.all([
     saleIds.length
       ? supabase.from("sale").select("id, unit_id, customer_id, sold_at, voided_at").in("id", saleIds)
       : Promise.resolve({ data: [] as Array<{ id: string; unit_id: string | null; customer_id: string | null; sold_at: string; voided_at: string | null }> }),
@@ -45,8 +46,11 @@ export default async function RegistrationPage() {
     supabase.from("model_variant").select("id, model_name"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),
     supabase.from("customer").select("id, full_name"),
+    supabase.from("app_user").select("id, full_name, is_active").eq("is_active", true).order("full_name"),
     getBranchesCached(),
   ]);
+
+  const staff: StaffOption[] = (staffRes.data ?? []).map((u) => ({ id: u.id, name: u.full_name }));
 
   const saleMap = new Map((salesRes.data ?? []).map((s) => [s.id, s]));
   const unitMap = new Map((unitsRes.data ?? []).map((u) => [u.id, u]));
@@ -89,8 +93,11 @@ export default async function RegistrationPage() {
   return (
     <RegistrationView
       queue={queue}
+      staff={staff}
+      today={today}
       recordSubmissionAction={recordDltSubmission}
       recordPlateAction={recordPlateReceived}
+      recordDeliveryAction={recordDelivery}
     />
   );
 }

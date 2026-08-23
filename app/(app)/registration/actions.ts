@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import { canManagePlate, validateDltRequest, validatePlateReceived, type PlateActionResult } from "@/lib/registration/plate";
+import { canManagePlate, validateDelivery, validateDltRequest, validatePlateReceived, type PlateActionResult } from "@/lib/registration/plate";
 
 function todayISO(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date());
@@ -113,4 +113,67 @@ export async function recordPlateReceived(formData: FormData): Promise<PlateActi
   revalidatePath("/registration");
   revalidatePath("/deal");
   return { ok: true, message: "บันทึกรับเล่ม/ป้ายแล้ว" };
+}
+
+/**
+ * บันทึกส่งมอบรถ (FAM-1105) — เก็บวันที่/สถานที่/ผู้ส่งมอบ แล้วปิดดีล ป้ายขาว → ส่งมอบแล้ว
+ * ปิดวงจรดีล · compare-and-swap กันกดซ้ำ · log registration_event
+ */
+export async function recordDelivery(formData: FormData): Promise<PlateActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canManagePlate(user.roleCodes)) {
+    return { ok: false, error: "ไม่มีสิทธิ์บันทึกการส่งมอบ" };
+  }
+
+  const regId = String(formData.get("reg_id") ?? "").trim();
+  const parsed = validateDelivery({
+    deliveredAt: String(formData.get("delivered_at") ?? ""),
+    place: String(formData.get("delivery_place") ?? ""),
+    deliveredBy: String(formData.get("delivered_by") ?? ""),
+  });
+  if (!regId) {
+    return { ok: false, error: "ไม่พบงานทะเบียน" };
+  }
+  if (!parsed.ok) {
+    return { ok: false, error: parsed.error };
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: reg } = await supabase.from("registration").select("id, stage").eq("id", regId).maybeSingle();
+  if (!reg) {
+    return { ok: false, error: "ไม่พบงานทะเบียน (หรือไม่มีสิทธิ์บริษัทนี้)" };
+  }
+  if (reg.stage !== "ป้ายขาว") {
+    return { ok: false, error: "ต้องได้ป้าย (ขั้นป้ายขาว) ก่อนจึงส่งมอบได้" };
+  }
+
+  const { data: updated, error } = await supabase
+    .from("registration")
+    .update({
+      stage: "ส่งมอบแล้ว",
+      delivered_at: parsed.value.deliveredAt,
+      delivery_place: parsed.value.place,
+      delivered_by: parsed.value.deliveredBy,
+    })
+    .eq("id", regId)
+    .eq("stage", "ป้ายขาว")
+    .select("id");
+  if (error || !updated || updated.length === 0) {
+    return { ok: false, error: "สถานะเพิ่งเปลี่ยน กรุณาลองใหม่" };
+  }
+
+  await supabase.from("registration_event").insert({
+    registration_id: regId,
+    from_stage: "ป้ายขาว",
+    to_stage: "ส่งมอบแล้ว",
+    by_user: user.id,
+    note: parsed.value.place ? `ส่งมอบที่ ${parsed.value.place}` : "ส่งมอบรถ",
+  });
+
+  revalidatePath("/registration");
+  revalidatePath("/deal");
+  return { ok: true, message: "บันทึกการส่งมอบแล้ว — ปิดดีล" };
 }

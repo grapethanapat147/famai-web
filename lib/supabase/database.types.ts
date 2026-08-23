@@ -323,6 +323,8 @@ type Registration = {
   approved_at: string | null;
   plate_received_at: string | null;
   delivered_at: string | null;
+  delivery_place: string | null;
+  delivered_by: string | null;
   due_at: string | null;
   note: string | null;
 };

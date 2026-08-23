@@ -5,6 +5,7 @@ import {
   plateAgeDays,
   platePhase,
   plateWaitingSince,
+  validateDelivery,
   validateDltRequest,
   validatePlateReceived,
 } from "@/lib/registration/plate";
@@ -72,5 +73,19 @@ describe("validatePlateReceived", () => {
     expect(validatePlateReceived("1กก 1234 ปทุมธานี", "ปท-1")).toEqual({ ok: true, value: { plateNo: "1กก 1234 ปทุมธานี", bookNo: "ปท-1" } });
     expect(validatePlateReceived("1กก 1234", "  ")).toEqual({ ok: true, value: { plateNo: "1กก 1234", bookNo: null } });
     expect(validatePlateReceived("", "x")).toEqual({ ok: false, error: "กรอกเลขทะเบียน" });
+  });
+});
+
+describe("validateDelivery", () => {
+  it("requires a valid date; place/person optional (blank → null)", () => {
+    expect(validateDelivery({ deliveredAt: "2026-08-23", place: "หน้าร้าน", deliveredBy: "u1" })).toEqual({
+      ok: true,
+      value: { deliveredAt: "2026-08-23", place: "หน้าร้าน", deliveredBy: "u1" },
+    });
+    expect(validateDelivery({ deliveredAt: "2026-08-23", place: "  ", deliveredBy: "" })).toEqual({
+      ok: true,
+      value: { deliveredAt: "2026-08-23", place: null, deliveredBy: null },
+    });
+    expect(validateDelivery({ deliveredAt: "23/08/2026", place: "x", deliveredBy: "" })).toEqual({ ok: false, error: "วันที่ส่งมอบไม่ถูกต้อง" });
   });
 });
