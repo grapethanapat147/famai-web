@@ -61,6 +61,11 @@ export function validateModelEdit(input: ModelEditInput): { ok: true; value: Mod
 
 export type ModelColorRef = { code: string; name: string };
 
+/** บรรทัดสเปกย่อของรุ่น เช่น "Automatic · 155 cc · ปี 2569" (ว่างทั้งหมด → "—") — ใช้ทั้งการ์ดและตาราง */
+export function modelSpecLine(m: { category: string | null; cc: number | null; year: number | null }): string {
+  return [m.category, m.cc != null ? `${m.cc} cc` : null, m.year ? `ปี ${m.year}` : null].filter(Boolean).join(" · ") || "—";
+}
+
 export type ModelRow = {
   id: string;
   code: string;

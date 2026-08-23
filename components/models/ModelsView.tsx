@@ -4,13 +4,16 @@ import { useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
+import { Chips } from "@/components/ui/Chips";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { parseColors } from "@/lib/models/parse";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { PHOTO_CARD_MAX, PHOTO_FULL_MAX, resizeToWebp, type ModelPhotoResult } from "@/lib/models/image";
-import type { AddModelResult, ModelRow } from "@/lib/models/rows";
+import { modelSpecLine, type AddModelResult, type ModelRow } from "@/lib/models/rows";
+
+type ViewMode = "grid" | "table";
 
 export type { AddModelResult } from "@/lib/models/rows";
 
@@ -41,6 +44,7 @@ export function ModelsView({
   categories?: string[];
 }) {
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<ViewMode>("grid");
   const [photoTarget, setPhotoTarget] = useState<ModelRow | null>(null);
   const [editTarget, setEditTarget] = useState<ModelRow | null>(null);
   const canPhoto = canManagePhoto && !!savePhotoAction;
@@ -48,8 +52,18 @@ export function ModelsView({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <p className="text-sm text-muted">{rows.length} รุ่น</p>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-muted">{rows.length} รุ่น</p>
+          <Chips
+            value={view}
+            onChange={setView}
+            options={[
+              { value: "grid", label: "การ์ด" },
+              { value: "table", label: "ตาราง" },
+            ]}
+          />
+        </div>
         {canAdd && (
           <button
             type="button"
@@ -63,84 +77,23 @@ export function ModelsView({
 
       {rows.length === 0 ? (
         <EmptyState icon="bike" title="ยังไม่มีรุ่นรถ" description="เพิ่มรุ่นรถและสีเพื่อเริ่มจัดแคตตาล็อก" />
-      ) : (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      ) : view === "grid" ? (
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {rows.map((m) => (
-            <li key={m.id} className="flex gap-3 rounded-[12px] bg-card p-3 shadow-[var(--sh-sm)]">
-              {canPhoto ? (
-                <button
-                  type="button"
-                  onClick={() => setPhotoTarget(m)}
-                  aria-label={`เปลี่ยนรูป ${m.modelName}`}
-                  className="group relative shrink-0 overflow-hidden rounded-[8px]"
-                >
-                  <Thumb photoBaseUrl={photoBaseUrl} path={m.photoPath} label={m.modelName} />
-                  <span className="absolute inset-0 flex items-center justify-center bg-ink/45 text-[11px] font-medium text-card opacity-0 transition-opacity group-hover:opacity-100">
-                    เปลี่ยนรูป
-                  </span>
-                </button>
-              ) : (
-                <Thumb photoBaseUrl={photoBaseUrl} path={m.photoPath} label={m.modelName} />
-              )}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate font-display font-semibold text-ink">{m.modelName}</p>
-                    <p className="truncate text-xs text-muted">
-                      {m.code}
-                      {m.modelTh ? ` · ${m.modelTh}` : ""}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <StatusBadge variant={m.stockCount > 0 ? "good" : "off"}>{m.stockCount} คัน</StatusBadge>
-                    {canEdit && (
-                      <button
-                        type="button"
-                        onClick={() => setEditTarget(m)}
-                        className="inline-flex items-center gap-1 text-xs text-ink-soft underline-offset-2 hover:text-ink hover:underline"
-                      >
-                        <svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <path d="M13.5 4.5l2 2L7 15l-2.5.5L5 13z" />
-                        </svg>
-                        แก้ไข
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <p className="mt-1 text-xs text-ink-soft">
-                  {[m.category, m.cc != null ? `${m.cc} cc` : null, m.year ? `ปี ${m.year}` : null]
-                    .filter(Boolean)
-                    .join(" · ") || "—"}
-                </p>
-
-                {m.colors.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {m.colors.map((c) => (
-                      <span
-                        key={c.code}
-                        className="rounded-full border border-hairline px-2 py-0.5 text-[11px] text-ink-soft"
-                      >
-                        {c.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-2 flex items-center justify-between gap-3 border-t border-hairline-2 pt-2 text-sm">
-                  <span className="text-muted">ราคาขาย</span>
-                  <Money value={m.retail} />
-                </div>
-                {canSeeMoney && (
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-muted">ต้นทุน</span>
-                    <Money value={m.cost} canSee={canSeeMoney} />
-                  </div>
-                )}
-              </div>
-            </li>
+            <ModelCard
+              key={m.id}
+              m={m}
+              photoBaseUrl={photoBaseUrl}
+              canSeeMoney={canSeeMoney}
+              canPhoto={canPhoto}
+              canEdit={canEdit}
+              onPhoto={() => setPhotoTarget(m)}
+              onEdit={() => setEditTarget(m)}
+            />
           ))}
         </ul>
+      ) : (
+        <ModelTable rows={rows} canSeeMoney={canSeeMoney} canEdit={canEdit} onEdit={setEditTarget} />
       )}
 
       {canAdd && (
@@ -161,6 +114,173 @@ export function ModelsView({
       )}
     </div>
   );
+}
+
+function ColorChips({ colors }: { colors: ModelRow["colors"] }) {
+  if (colors.length === 0) {
+    return null;
+  }
+  const shown = colors.slice(0, 4);
+  return (
+    <div className="flex flex-wrap gap-1">
+      {shown.map((c) => (
+        <span key={c.code} className="rounded-full border border-hairline px-2 py-0.5 text-[11px] text-ink-soft">
+          {c.name}
+        </span>
+      ))}
+      {colors.length > shown.length && <span className="px-1 py-0.5 text-[11px] text-muted">+{colors.length - shown.length}</span>}
+    </div>
+  );
+}
+
+/** การ์ดแคตตาล็อก (FAM-1092) — รูปด้านบน + ชื่อ/สเปก/สี/สต็อก/ราคา */
+function ModelCard({
+  m,
+  photoBaseUrl,
+  canSeeMoney,
+  canPhoto,
+  canEdit,
+  onPhoto,
+  onEdit,
+}: {
+  m: ModelRow;
+  photoBaseUrl: string;
+  canSeeMoney: boolean;
+  canPhoto: boolean;
+  canEdit: boolean;
+  onPhoto: () => void;
+  onEdit: () => void;
+}) {
+  return (
+    <li className="flex flex-col overflow-hidden rounded-[14px] bg-card shadow-[var(--sh-sm)]">
+      <div className="relative aspect-[4/3] bg-paper">
+        {canPhoto ? (
+          <button type="button" onClick={onPhoto} aria-label={`เปลี่ยนรูป ${m.modelName}`} className="group block h-full w-full">
+            <BigPhoto photoBaseUrl={photoBaseUrl} path={m.photoPath} label={m.modelName} />
+            <span className="absolute inset-x-0 bottom-0 bg-ink/45 py-1 text-center text-[11px] font-medium text-card opacity-0 transition-opacity group-hover:opacity-100">
+              เปลี่ยนรูป
+            </span>
+          </button>
+        ) : (
+          <BigPhoto photoBaseUrl={photoBaseUrl} path={m.photoPath} label={m.modelName} />
+        )}
+        <span className="absolute right-2 top-2">
+          <StatusBadge variant={m.stockCount > 0 ? "good" : "off"}>คง {m.stockCount}</StatusBadge>
+        </span>
+      </div>
+      <div className="flex flex-1 flex-col gap-1.5 p-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate font-display font-semibold text-ink">{m.modelName}</p>
+            <p className="truncate text-xs text-muted">
+              {m.code}
+              {m.modelTh ? ` · ${m.modelTh}` : ""}
+            </p>
+          </div>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label={`แก้ไข ${m.modelName}`}
+              className="shrink-0 text-ink-soft transition-colors hover:text-ink"
+            >
+              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M13.5 4.5l2 2L7 15l-2.5.5L5 13z" />
+              </svg>
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-ink-soft">{modelSpecLine(m)}</p>
+        <ColorChips colors={m.colors} />
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-hairline-2 pt-2 text-sm">
+          <span className="text-muted">ราคา</span>
+          <Money value={m.retail} />
+        </div>
+        {canSeeMoney && (
+          <div className="flex items-center justify-between gap-3 text-xs">
+            <span className="text-muted">ต้นทุน</span>
+            <Money value={m.cost} canSee={canSeeMoney} />
+          </div>
+        )}
+      </div>
+    </li>
+  );
+}
+
+/** มุมมองตารางกระชับ (FAM-1092) — รุ่น/ประเภท/สี/คงเหลือ/ราคา (+ต้นทุน/แก้ไข) */
+function ModelTable({
+  rows,
+  canSeeMoney,
+  canEdit,
+  onEdit,
+}: {
+  rows: ModelRow[];
+  canSeeMoney: boolean;
+  canEdit: boolean;
+  onEdit: (m: ModelRow) => void;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-[12px] bg-card p-1 shadow-[var(--sh-sm)]">
+      <table className="w-full min-w-[560px] text-sm">
+        <thead>
+          <tr className="border-b border-hairline text-left">
+            <th className="px-3 py-2 font-medium text-muted">รุ่น</th>
+            <th className="px-3 py-2 font-medium text-muted">ประเภท</th>
+            <th className="px-3 py-2 text-right font-medium text-muted">สี</th>
+            <th className="px-3 py-2 text-right font-medium text-muted">คงเหลือ</th>
+            <th className="px-3 py-2 text-right font-medium text-muted">ราคาขาย</th>
+            {canSeeMoney && <th className="px-3 py-2 text-right font-medium text-muted">ต้นทุน</th>}
+            {canEdit && <th className="w-10 px-3 py-2" aria-hidden />}
+          </tr>
+        </thead>
+        <tbody className="tabular">
+          {rows.map((m) => (
+            <tr key={m.id} className="border-b border-hairline-2 last:border-0 hover:bg-paper-2">
+              <td className="px-3 py-2">
+                <span className="font-medium text-ink">{m.modelName}</span> <span className="font-mono text-[11px] text-muted">{m.code}</span>
+              </td>
+              <td className="px-3 py-2 text-ink-soft">{modelSpecLine(m)}</td>
+              <td className="px-3 py-2 text-right text-ink-soft">{m.colors.length} สี</td>
+              <td className="px-3 py-2 text-right">
+                <StatusBadge variant={m.stockCount > 0 ? "good" : "off"}>{m.stockCount}</StatusBadge>
+              </td>
+              <td className="px-3 py-2 text-right">
+                <Money value={m.retail} />
+              </td>
+              {canSeeMoney && (
+                <td className="px-3 py-2 text-right">
+                  <Money value={m.cost} canSee={canSeeMoney} />
+                </td>
+              )}
+              {canEdit && (
+                <td className="px-3 py-2 text-right">
+                  <button type="button" onClick={() => onEdit(m)} className="text-xs text-ink-soft underline-offset-2 hover:text-ink hover:underline">
+                    แก้ไข
+                  </button>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function BigPhoto({ photoBaseUrl, path, label }: { photoBaseUrl: string; path: string | null; label: string }) {
+  if (path) {
+    return (
+      <Image
+        src={`${photoBaseUrl}${path}`}
+        alt={label}
+        fill
+        unoptimized
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+        className="object-cover"
+      />
+    );
+  }
+  return <div className="flex h-full w-full items-center justify-center text-3xl font-semibold text-muted">{label.slice(0, 2)}</div>;
 }
 
 function PhotoModal({
@@ -259,26 +379,6 @@ function PhotoModal({
         </div>
       )}
     </Modal>
-  );
-}
-
-function Thumb({ photoBaseUrl, path, label }: { photoBaseUrl: string; path: string | null; label: string }) {
-  if (path) {
-    return (
-      <Image
-        src={`${photoBaseUrl}${path}`}
-        alt={label}
-        width={72}
-        height={72}
-        unoptimized
-        className="h-[72px] w-[72px] shrink-0 rounded-[8px] object-cover"
-      />
-    );
-  }
-  return (
-    <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-[8px] bg-paper text-lg font-semibold text-muted">
-      {label.slice(0, 2)}
-    </div>
   );
 }
 
