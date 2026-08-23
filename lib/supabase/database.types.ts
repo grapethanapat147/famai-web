@@ -193,6 +193,25 @@ type Sale = {
   created_at: string;
 };
 
+type DocumentRow = {
+  id: string;
+  branch_id: string;
+  doc_type: string; // RECEIPT | TAXINV | …
+  doc_no: string;
+  doc_date: string;
+  sale_id: string | null;
+  service_job_id: string | null;
+  customer_id: string | null;
+  amount_base: number | null;
+  amount_vat: number | null;
+  amount_total: number | null;
+  seller_snapshot: Json;
+  buyer_snapshot: Json;
+  printed_count: number;
+  voided_at: string | null;
+  voided_reason: string | null;
+};
+
 type Quotation = {
   id: string;
   branch_id: string;
@@ -491,6 +510,7 @@ export type Database = {
       finance_case_event: Table<FinanceCaseEvent>;
       registration: Table<Registration>;
       registration_step: Table<RegistrationStep>;
+      document: Table<DocumentRow>;
       quotation: Table<Quotation>;
       quotation_option: Table<QuotationOption>;
       company_event: Table<CompanyEvent>;
