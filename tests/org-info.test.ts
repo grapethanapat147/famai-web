@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseTaxId, nullIfBlank } from "@/lib/org/info";
+import { parseTaxId, nullIfBlank, parseCheckbox } from "@/lib/org/info";
 
 describe("parseTaxId", () => {
   it("treats blank as null (not yet filled)", () => {
@@ -21,5 +21,15 @@ describe("nullIfBlank", () => {
     expect(nullIfBlank("")).toBeNull();
     expect(nullIfBlank("  ")).toBeNull();
     expect(nullIfBlank("  123 ถ.พหลโยธิน ")).toBe("123 ถ.พหลโยธิน");
+  });
+});
+
+describe("parseCheckbox", () => {
+  it("true only for a checked checkbox value", () => {
+    expect(parseCheckbox("on")).toBe(true);
+    expect(parseCheckbox("true")).toBe(true);
+    expect(parseCheckbox(null)).toBe(false);
+    expect(parseCheckbox("")).toBe(false);
+    expect(parseCheckbox("off")).toBe(false);
   });
 });

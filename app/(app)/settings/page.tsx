@@ -17,7 +17,11 @@ export default async function SettingsPage() {
   const supabase = await createServerSupabase();
   const [companyRes, branchRes] = await Promise.all([
     supabase.from("company").select("id, code, name, tax_id, address, phone").order("code"),
-    supabase.from("branch").select("id, code, name, tax_id, address, phone").eq("is_active", true).order("code"),
+    supabase
+      .from("branch")
+      .select("id, code, name, tax_id, address, phone, geo_lat, geo_lng, geo_radius_m, require_selfie")
+      .eq("is_active", true)
+      .order("code"),
   ]);
   const toOrg = (r: { id: string; code: string; name: string; tax_id: string | null; address: string | null; phone: string | null }): OrgCompany => ({
     id: r.id,
@@ -28,7 +32,13 @@ export default async function SettingsPage() {
     phone: r.phone ?? "",
   });
   const company = (companyRes.data ?? []).map(toOrg)[0] ?? null;
-  const branches: OrgBranch[] = (branchRes.data ?? []).map(toOrg);
+  const branches: OrgBranch[] = (branchRes.data ?? []).map((r) => ({
+    ...toOrg(r),
+    geoLat: r.geo_lat != null ? String(r.geo_lat) : "",
+    geoLng: r.geo_lng != null ? String(r.geo_lng) : "",
+    geoRadius: r.geo_radius_m != null ? String(r.geo_radius_m) : "",
+    requireSelfie: Boolean(r.require_selfie),
+  }));
 
   return (
     <div className="flex flex-col gap-4">

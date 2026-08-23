@@ -11,7 +11,18 @@ export type OrgCompany = {
   phone: string;
 };
 
-export type OrgBranch = OrgCompany;
+/** บริษัท (สาขา) เพิ่มการตั้งค่าลงเวลา — geofence + บังคับเซลฟี่ (FAM-1101 P3) · เก็บ geo เป็น string เพื่อ prefill input */
+export type OrgBranch = OrgCompany & {
+  geoLat: string;
+  geoLng: string;
+  geoRadius: string;
+  requireSelfie: boolean;
+};
+
+/** ค่าจาก checkbox ในฟอร์ม (มีเมื่อติ๊ก) → boolean */
+export function parseCheckbox(raw: FormDataEntryValue | null): boolean {
+  return raw === "on" || raw === "true";
+}
 
 /** เลขภาษี: ว่าง = null (ยังไม่กรอก) · ถ้ากรอกต้องเป็นตัวเลข 13 หลัก (นิติบุคคลไทย) */
 export function parseTaxId(raw: string): { ok: true; value: string | null } | { ok: false; error: string } {
