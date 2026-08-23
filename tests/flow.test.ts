@@ -1,6 +1,31 @@
 import { describe, it, expect } from "vitest";
-import { FLOWS, isRoleCode, roleLabel, stepInvolvesRole, flowInvolvesRole } from "@/lib/flow/flows";
+import { FLOWS, ROLE_COLOR, isRoleCode, roleColor, roleLabel, stepInvolvesRole, flowInvolvesRole, visibleSteps } from "@/lib/flow/flows";
 import { ALL_MENU_KEYS } from "@/lib/nav/menu";
+
+const saleFlow = FLOWS.find((f) => f.key === "sale")!;
+
+describe("visibleSteps", () => {
+  it("returns all steps (with original index) when onlyMine is off", () => {
+    const all = visibleSteps(saleFlow, ["sales"], false);
+    expect(all).toHaveLength(saleFlow.steps.length);
+    expect(all.map((s) => s.index)).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+  it("keeps only my steps (original numbers preserved) when onlyMine is on", () => {
+    // ขายมอเตอร์ไซค์: sales อยู่ในขั้น เสนอราคา(1) เปิดการขาย(2) ส่งมอบ(5)
+    const mine = visibleSteps(saleFlow, ["sales"], true);
+    expect(mine.map((s) => s.index)).toEqual([1, 2, 5]);
+  });
+  it("admin sees every step even with onlyMine (ดูแลทุกงาน)", () => {
+    expect(visibleSteps(saleFlow, ["admin"], true).map((s) => s.index)).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+});
+
+describe("roleColor", () => {
+  it("maps known roles to their color, falls back for unknown", () => {
+    expect(roleColor("sales")).toBe(ROLE_COLOR.sales);
+    expect(roleColor("nope")).toMatch(/^#[0-9a-f]{6}$/i);
+  });
+});
 
 describe("FLOWS data integrity", () => {
   it("every step has at least one valid role", () => {
