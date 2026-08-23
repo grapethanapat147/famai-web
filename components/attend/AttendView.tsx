@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Modal } from "@/components/ui/Modal";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatThaiDate } from "@/lib/format";
+import { formatDistanceM } from "@/lib/hr/geo";
 import {
   ATT_META,
   ATT_ORDER,
@@ -35,6 +38,7 @@ export function AttendView({ rows, date }: { rows: AttendRow[]; date: string }) 
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<AttStatus | "all">("all");
+  const [selfieRow, setSelfieRow] = useState<AttendRow | null>(null);
 
   const counts = statusCounts(rows);
   const shown = filterRows(rows, { search, status });
@@ -64,8 +68,26 @@ export function AttendView({ rows, date }: { rows: AttendRow[]; date: string }) 
         <span className="tabular text-ink-soft">
           {timeOf(r.checkIn)}
           {r.status === "late" && r.lateMinutes ? <span className="text-accent"> (สาย {r.lateMinutes} นาที)</span> : null}
+          {r.distanceM != null ? <span className="text-muted"> · 📍{formatDistanceM(r.distanceM)}</span> : null}
         </span>
       ),
+    },
+    {
+      key: "selfie",
+      header: "เซลฟี่",
+      render: (r) =>
+        r.selfieUrl ? (
+          <button
+            type="button"
+            onClick={() => setSelfieRow(r)}
+            aria-label={`ดูเซลฟี่ ${r.name}`}
+            className="overflow-hidden rounded-full ring-1 ring-hairline transition-transform active:scale-95 hover:ring-ink"
+          >
+            <Image src={r.selfieUrl} alt="" width={32} height={32} unoptimized className="h-8 w-8 object-cover" />
+          </button>
+        ) : (
+          <span className="text-xs text-muted">—</span>
+        ),
     },
     { key: "ot", header: "OT", align: "right", render: (r) => <span className="tabular text-ink-soft">{r.otMinutes ? `${r.otMinutes} นาที` : "—"}</span> },
   ];
@@ -133,6 +155,30 @@ export function AttendView({ rows, date }: { rows: AttendRow[]; date: string }) 
           )
         }
       />
+
+      {selfieRow && <SelfieModal row={selfieRow} onClose={() => setSelfieRow(null)} />}
     </div>
+  );
+}
+
+function SelfieModal({ row, onClose }: { row: AttendRow; onClose: () => void }) {
+  return (
+    <Modal open onClose={onClose} title={`เซลฟี่ลงเวลา — ${row.name}`}>
+      <div className="flex flex-col items-center gap-3">
+        {row.selfieUrl && (
+          <Image src={row.selfieUrl} alt={`เซลฟี่ ${row.name}`} width={360} height={360} unoptimized className="w-full max-w-[360px] rounded-[12px] object-cover" />
+        )}
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-ink-soft">
+          <span>
+            เข้างาน <b className="text-ink">{timeOf(row.checkIn)}</b>
+          </span>
+          {row.distanceM != null && (
+            <span>
+              ห่างจากจุดร้าน <b className="text-ink">{formatDistanceM(row.distanceM)}</b>
+            </span>
+          )}
+        </div>
+      </div>
+    </Modal>
   );
 }

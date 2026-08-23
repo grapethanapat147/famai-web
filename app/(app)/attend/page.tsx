@@ -1,6 +1,7 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { canViewAttend, resolveStatus, type AttendRow } from "@/lib/attend/attendance";
+import { buildSignedMap, SELFIE_BUCKET } from "@/lib/hr/selfie";
 import { AttendView } from "@/components/attend/AttendView";
 
 export const metadata = { title: "ภาพรวมการเข้างาน — Famai Motor Group" };
@@ -28,7 +29,10 @@ export default async function AttendPage({ searchParams }: { searchParams: Promi
   const [empRes, usersRes, attRes, leaveRes] = await Promise.all([
     supabase.from("employee").select("id, user_id, position").is("resigned_at", null),
     supabase.from("app_user").select("id, full_name"),
-    supabase.from("attendance").select("employee_id, check_in, status, late_minutes, ot_minutes").eq("work_date", date),
+    supabase
+      .from("attendance")
+      .select("employee_id, check_in, status, late_minutes, ot_minutes, check_in_selfie, check_in_distance_m")
+      .eq("work_date", date),
     supabase
       .from("leave_request")
       .select("employee_id, date_from, date_to")
@@ -42,6 +46,12 @@ export default async function AttendPage({ searchParams }: { searchParams: Promi
   const onLeave = new Set((leaveRes.data ?? []).map((l) => l.employee_id));
   const isToday = date === today;
 
+  // ออก signed URL ให้เซลฟี่ (bucket private) ทีเดียวทั้งวัน — หมดอายุใน 1 ชม.
+  const selfiePaths = (attRes.data ?? []).map((a) => a.check_in_selfie).filter((p): p is string => Boolean(p));
+  const signedByPath = selfiePaths.length
+    ? buildSignedMap((await supabase.storage.from(SELFIE_BUCKET).createSignedUrls(selfiePaths, 3600)).data ?? [])
+    : new Map<string, string>();
+
   const rows: AttendRow[] = (empRes.data ?? []).map((e) => {
     const att = attByEmp.get(e.id);
     const status = resolveStatus(att?.status ?? null, Boolean(att?.check_in), onLeave.has(e.id), isToday);
@@ -53,6 +63,8 @@ export default async function AttendPage({ searchParams }: { searchParams: Promi
       checkIn: att?.check_in ?? null,
       lateMinutes: att?.late_minutes ?? null,
       otMinutes: att?.ot_minutes ?? 0,
+      selfieUrl: att?.check_in_selfie ? signedByPath.get(att.check_in_selfie) ?? null : null,
+      distanceM: att?.check_in_distance_m ?? null,
     };
   });
 

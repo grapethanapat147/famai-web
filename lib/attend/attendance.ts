@@ -55,6 +55,8 @@ export type AttendRow = {
   checkIn: string | null; // ISO timestamp หรือ null
   lateMinutes: number | null;
   otMinutes: number;
+  selfieUrl: string | null; // signed URL เซลฟี่ตอนลงเวลา (FAM-1101 P3b)
+  distanceM: number | null; // ระยะห่างจากจุดร้านตอนลงเวลา (เมตร)
 };
 
 export function filterRows(

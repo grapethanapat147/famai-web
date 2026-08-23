@@ -12,3 +12,14 @@ export const SELFIE_BUCKET = "attendance-selfie";
 export function selfieObjectPath(employeeId: string, workDate: string, stampMs: number): string {
   return `${employeeId}/${workDate}-${stampMs}.webp`;
 }
+
+/** แปลงผลลัพธ์ createSignedUrls → map path → signed URL (ข้ามตัวที่ error/ไม่มี url) */
+export function buildSignedMap(results: ReadonlyArray<{ path?: string | null; signedUrl?: string | null }>): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const r of results) {
+    if (r.path && r.signedUrl) {
+      map.set(r.path, r.signedUrl);
+    }
+  }
+  return map;
+}
