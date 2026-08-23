@@ -1,4 +1,24 @@
 import { describe, it, expect } from "vitest";
+import { validateDealCustomer } from "@/lib/deal/deals";
+
+describe("validateDealCustomer", () => {
+  it("accepts a full customer and nulls blanks", () => {
+    const r = validateDealCustomer({ name: "สมชาย ใจดี", phone: "", address: "", taxId: "", note: "" });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.value).toEqual({ name: "สมชาย ใจดี", phone: null, address: null, taxId: null, note: null });
+    }
+  });
+  it("requires a name", () => {
+    const r = validateDealCustomer({ name: "  ", phone: "", address: "", taxId: "", note: "" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("กรอกชื่อลูกค้า");
+  });
+  it("requires a 13-digit national/tax id when provided", () => {
+    expect(validateDealCustomer({ name: "x", phone: "", address: "", taxId: "123", note: "" }).ok).toBe(false);
+    expect(validateDealCustomer({ name: "x", phone: "", address: "", taxId: "1560100000001", note: "" }).ok).toBe(true);
+  });
+});
 import {
   dealTrack,
   stageIndex,
@@ -60,10 +80,13 @@ function deal(over: Partial<Deal>): Deal {
     regId: "r",
     customerId: "c",
     customerName: "สมชาย",
+    customerPhone: null,
     customerAddress: null,
     customerTaxId: null,
     vehicle: "NMAX",
     engineNo: "E1",
+    frameNo: "F1",
+    regNote: null,
     payMethod: "finance",
     netPrice: 90000,
     soldAt: "2026-08-01T00:00:00Z",
