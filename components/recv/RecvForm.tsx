@@ -96,7 +96,7 @@ export function RecvForm({
     setBusy(false);
     if (res.ok) {
       setSaved(res.engineNo);
-      // รับต่อเนื่อง — เคลียร์เลขเครื่อง/ตัวถัง เก็บสาขา/รุ่น/สีไว้
+      // รับต่อเนื่อง — เคลียร์เลขเครื่อง/ตัวถัง เก็บบริษัท/รุ่น/สีไว้
       setEngineNo("");
       setFrameNo("");
       requestAnimationFrame(() => engineRef.current?.focus());
@@ -109,7 +109,7 @@ export function RecvForm({
     <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_320px]">
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="สาขา *">
+          <Field label="บริษัท *">
             <select value={branchId} onChange={(e) => setBranchId(e.target.value)} className={inputCls}>
               {branches.map((b) => (
                 <option key={b.id} value={b.id}>
@@ -208,7 +208,7 @@ export function RecvForm({
             <Row label="รุ่น" value={variant.modelTh || variant.modelName} />
             <Row label="สี" value={color?.name ?? "—"} />
             <Row label="รหัสสินค้า" value={sku || "—"} mono />
-            <Row label="สาขา" value={branches.find((b) => b.id === branchId)?.name ?? "—"} />
+            <Row label="บริษัท" value={branches.find((b) => b.id === branchId)?.name ?? "—"} />
             <Row label="ประเภท" value={unitKind === "ใหม่" ? "รถใหม่" : "รถมือสอง"} />
             <div className="my-1 border-t border-hairline-2" />
             <Row label="เลขเครื่อง" value={engineNo.trim() || "—"} mono />

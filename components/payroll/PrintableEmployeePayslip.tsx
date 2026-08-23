@@ -42,7 +42,7 @@ export function PrintableEmployeePayslip({
             {seller.shopName} <span className="qdoc-brand-accent">Yamaha</span>
           </div>
           <div className="qdoc-seller-line">
-            สาขา{seller.branchName}
+            บริษัท{seller.branchName}
             {sellerLines ? (
               <>
                 <br />

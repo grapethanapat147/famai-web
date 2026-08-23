@@ -53,7 +53,7 @@ export function ReportView({
       salesGroup === "month"
         ? (s: SaleReportRow) => monthKeyBE(s.soldAt)
         : (s: SaleReportRow) => s[salesGroup];
-    groupHeader = { model: "รุ่น", branch: "สาขา", salesperson: "พนักงานขาย", month: "เดือน (พ.ศ.)" }[salesGroup];
+    groupHeader = { model: "รุ่น", branch: "บริษัท", salesperson: "พนักงานขาย", month: "เดือน (พ.ศ.)" }[salesGroup];
     const valueOfs = canSeeMoney
       ? [(s: SaleReportRow) => s.net, (s: SaleReportRow) => s.gross ?? 0]
       : [(s: SaleReportRow) => s.net];
@@ -135,7 +135,7 @@ export function ReportView({
             onChange={setSalesGroup}
             options={[
               { value: "model", label: "ตามรุ่น" },
-              { value: "branch", label: "ตามสาขา" },
+              { value: "branch", label: "ตามบริษัท" },
               { value: "salesperson", label: "ตามพนักงาน" },
               { value: "month", label: "ตามเดือน" },
             ]}

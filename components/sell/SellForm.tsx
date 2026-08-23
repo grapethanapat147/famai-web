@@ -191,7 +191,7 @@ export function SellForm({
               <div className="flex flex-col gap-1 border-t border-hairline-2 pt-2">
                 {aged && <StatusBadge variant="warn">รถค้างสต๊อก {unit.ageDays} วัน — พิจารณาส่วนลดพิเศษ</StatusBadge>}
                 {mismatch && (
-                  <StatusBadge variant="bad">เลือกไม่ตรงกับสาขาที่รถอยู่ ({unit.branchName}) — ให้ย้ายรถก่อน</StatusBadge>
+                  <StatusBadge variant="bad">เลือกไม่ตรงกับบริษัทที่รถอยู่ ({unit.branchName}) — ให้ย้ายรถก่อน</StatusBadge>
                 )}
               </div>
             )}

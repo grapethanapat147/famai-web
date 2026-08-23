@@ -11,7 +11,7 @@ function toKind(raw: string): string {
 
 /**
  * นำเข้ารถเป็นชุดจากไฟล์ยามาฮ่า — ด่านสิทธิ์ + resolve รหัส→id + ข้ามเลขเครื่องซ้ำ + insert ชุดเดียว
- * RLS บังคับสาขา (insert เฉพาะสาขาที่ผู้ใช้เข้าถึง)
+ * RLS บังคับบริษัท (insert เฉพาะบริษัทที่ผู้ใช้เข้าถึง)
  */
 export async function importUnits(formData: FormData): Promise<ImportActionResult> {
   const user = await getCurrentUser();

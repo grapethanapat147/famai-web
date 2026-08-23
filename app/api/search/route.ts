@@ -8,7 +8,7 @@ export type SearchHit = { type: string; label: string; sub: string; href: string
 
 /**
  * ค้นหาทั่วเว็บ (FAM-1081) — รถ (เลขเครื่อง/เลขถัง/รุ่น) + ลูกค้า (ชื่อ/เบอร์)
- * ผ่าน session ผู้ใช้ → RLS คัดเฉพาะสาขาที่เห็นได้ · ไม่คืนข้อมูลเงิน (ต้นทุน/กำไร)
+ * ผ่าน session ผู้ใช้ → RLS คัดเฉพาะบริษัทที่เห็นได้ · ไม่คืนข้อมูลเงิน (ต้นทุน/กำไร)
  */
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();

@@ -3,7 +3,7 @@
 import { TransferView, type TransferBranch, type TransferUnit } from "@/components/transfer/TransferView";
 import type { Transfer, TransferActionResult } from "@/lib/transfer/transfers";
 
-/** พรีวิวหน้าโอนย้ายสาขา (transfer) — sample data · มุมมองสาขา b1 (FMG01) */
+/** พรีวิวหน้าโอนย้ายบริษัท (transfer) — sample data · มุมมองบริษัท b1 (FMG01) */
 
 const MY_BRANCHES = ["b1"];
 
@@ -71,8 +71,8 @@ export default function DevTransferPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
       <header className="mb-6">
-        <h1 className="font-display text-[28px] font-semibold text-ink">โอนย้ายสาขา (preview)</h1>
-        <p className="mt-1 text-ink-soft">sample data — มุมมองสาขา FMG01 (ขาเข้ามีปุ่ม &ldquo;รับรถ&rdquo; · ขาออกมีปุ่ม &ldquo;ยกเลิก&rdquo;)</p>
+        <h1 className="font-display text-[28px] font-semibold text-ink">โอนย้ายบริษัท (preview)</h1>
+        <p className="mt-1 text-ink-soft">sample data — มุมมองบริษัท FMG01 (ขาเข้ามีปุ่ม &ldquo;รับรถ&rdquo; · ขาออกมีปุ่ม &ldquo;ยกเลิก&rdquo;)</p>
       </header>
       <TransferView
         transfers={TRANSFERS}

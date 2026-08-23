@@ -33,7 +33,7 @@ export default function DevRecvPage() {
     <main className="mx-auto w-full max-w-5xl px-4 py-8 lg:px-6">
       <header className="mb-6">
         <h1 className="font-display text-[28px] font-semibold text-ink">รับรถเข้าสต๊อก (preview)</h1>
-        <p className="mt-1 text-ink-soft">FAM-1085 · sample data — เลือกรุ่น/สี/สาขา + เลขเครื่อง/ตัวถัง → ยืนยัน → บันทึก (mock) · พิมพ์ DUP ที่เลขเครื่องเพื่อลองเคสซ้ำ</p>
+        <p className="mt-1 text-ink-soft">FAM-1085 · sample data — เลือกรุ่น/สี/บริษัท + เลขเครื่อง/ตัวถัง → ยืนยัน → บันทึก (mock) · พิมพ์ DUP ที่เลขเครื่องเพื่อลองเคสซ้ำ</p>
       </header>
       <RecvForm variants={VARIANTS} branches={BRANCHES} defaultBranchId="b1" vatPct={7} canSeeMoney action={mockRecv} />
     </main>

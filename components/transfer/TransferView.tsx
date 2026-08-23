@@ -96,7 +96,7 @@ export function TransferView({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-2">
           <Stat label="กำลังโอน" value={counts.inTransit} />
-          <Stat label="รอรับ (สาขาฉัน)" value={counts.incoming} accent={counts.incoming > 0} />
+          <Stat label="รอรับ (บริษัทฉัน)" value={counts.incoming} accent={counts.incoming > 0} />
         </div>
         {canManage && (
           <button
@@ -114,8 +114,8 @@ export function TransferView({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            aria-label="ค้นหารถ / เลขเครื่อง / สาขา"
-            placeholder="ค้นรถ / เลขเครื่อง / สาขา"
+            aria-label="ค้นหารถ / เลขเครื่อง / บริษัท"
+            placeholder="ค้นรถ / เลขเครื่อง / บริษัท"
             className={`${selectClass} w-full sm:w-56`}
           />
           <Chips
@@ -157,7 +157,7 @@ export function TransferView({
             <EmptyState
               icon="repeat"
               title="ยังไม่มีรายการโอน"
-              description="สร้างคำขอโอนเมื่อต้องย้ายรถระหว่างสาขา"
+              description="สร้างคำขอโอนเมื่อต้องย้ายรถระหว่างบริษัท"
             />
           )
         }
@@ -243,8 +243,8 @@ function TransferDrawer({
           <StatusBadge variant={statusVariant(transfer.status)}>{TRANSFER_STATUS_LABEL[transfer.status]}</StatusBadge>
           <dl className="flex flex-col gap-2">
             <Row label="เลขเครื่อง"><span className="font-mono">{transfer.engineNo}</span></Row>
-            <Row label="สาขาต้นทาง">{transfer.fromBranch}</Row>
-            <Row label="สาขาปลายทาง">{transfer.toBranch}</Row>
+            <Row label="บริษัทต้นทาง">{transfer.fromBranch}</Row>
+            <Row label="บริษัทปลายทาง">{transfer.toBranch}</Row>
             <Row label="วันที่ขอโอน">{formatThaiDate(transfer.requestedAt)}</Row>
             {transfer.receivedAt && <Row label="วันที่รับ">{formatThaiDate(transfer.receivedAt)}</Row>}
             {transfer.note && <Row label="หมายเหตุ">{transfer.note}</Row>}
@@ -259,7 +259,7 @@ function TransferDrawer({
               onClick={() => run(receiveAction)}
               className="rounded-[24px] bg-accent py-3 text-sm font-medium text-card disabled:opacity-50"
             >
-              {busy ? "กำลังบันทึก…" : "รับรถเข้าสาขา"}
+              {busy ? "กำลังบันทึก…" : "รับรถเข้าบริษัท"}
             </button>
           )}
           {canCancel && (
@@ -322,7 +322,7 @@ function RequestModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="ขอโอนรถไปสาขาอื่น">
+    <Modal open={open} onClose={onClose} title="ขอโอนรถไปบริษัทอื่น">
       <div className="flex flex-col gap-3">
         <Field label="เลือกรถ (เฉพาะที่ว่าง)">
           <select value={unitId} onChange={(e) => setUnitId(e.target.value)} className={inputCls}>
@@ -334,9 +334,9 @@ function RequestModal({
             ))}
           </select>
         </Field>
-        <Field label="สาขาปลายทาง">
+        <Field label="บริษัทปลายทาง">
           <select value={toBranch} onChange={(e) => setToBranch(e.target.value)} className={inputCls}>
-            <option value="">— เลือกสาขา —</option>
+            <option value="">— เลือกบริษัท —</option>
             {branches.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}

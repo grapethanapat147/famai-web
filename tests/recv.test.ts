@@ -71,7 +71,7 @@ describe("validateRecvInput", () => {
   });
 
   it.each([
-    [{ branchId: "" }, "เลือกสาขา"],
+    [{ branchId: "" }, "เลือกบริษัท"],
     [{ variantId: "" }, "เลือกรุ่นรถ"],
     [{ colorCode: "" }, "เลือกสี"],
     [{ engineNo: "  " }, "กรอกเลขเครื่อง"],

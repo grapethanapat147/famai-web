@@ -95,7 +95,7 @@ export async function updateThemeSettings(formData: FormData): Promise<ThemeActi
 }
 
 /**
- * บันทึกข้อมูลกิจการ/สาขา (FAM-1078) — ชื่อ/เลขภาษี/ที่อยู่/เบอร์ ที่ขึ้นหัวเอกสาร · เฉพาะ admin
+ * บันทึกข้อมูลกิจการ/บริษัท (FAM-1078) — ชื่อ/เลขภาษี/ที่อยู่/เบอร์ ที่ขึ้นหัวเอกสาร · เฉพาะ admin
  * company: RLS company_admin = is_admin() · branch: ปิด RLS (ใช้ grant) — action gate ด้วย perms.admin
  */
 export async function updateOrgInfo(formData: FormData): Promise<OrgInfoActionResult> {
@@ -146,7 +146,7 @@ export async function updateOrgInfo(formData: FormData): Promise<OrgInfoActionRe
   for (const id of branchIds) {
     const f = readFields(`branch_${id}`);
     if (!f.ok) {
-      return { ok: false, error: `สาขา: ${f.error}` };
+      return { ok: false, error: `บริษัท: ${f.error}` };
     }
     branchUpdates.push({ id, fields: f.value });
   }
@@ -159,7 +159,7 @@ export async function updateOrgInfo(formData: FormData): Promise<OrgInfoActionRe
   for (const b of branchUpdates) {
     const { error: branchError } = await supabase.from("branch").update(b.fields).eq("id", b.id);
     if (branchError) {
-      return { ok: false, error: "บันทึกข้อมูลสาขาไม่สำเร็จ (สิทธิ์ไม่พอ หรือฐานข้อมูลผิดพลาด)" };
+      return { ok: false, error: "บันทึกข้อมูลบริษัทไม่สำเร็จ (สิทธิ์ไม่พอ หรือฐานข้อมูลผิดพลาด)" };
     }
   }
 

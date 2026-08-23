@@ -52,7 +52,7 @@ export async function issuePart(formData: FormData): Promise<PartsActionResult> 
     .eq("id", partId)
     .maybeSingle();
   if (readError || !part) {
-    return { ok: false, error: "ไม่พบอะไหล่ (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "ไม่พบอะไหล่ (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
   if (part.qty_on_hand < qty) {
     return { ok: false, error: `สต๊อกไม่พอ — เหลือ ${part.qty_on_hand}` };
@@ -146,7 +146,7 @@ export async function updateFreebie(formData: FormData): Promise<PartsActionResu
   const supabase = await createServerSupabase();
   const { data: updated, error } = await supabase.from("freebie").update(patch).eq("id", freebieId).select("id");
   if (error || !updated || updated.length === 0) {
-    return { ok: false, error: "บันทึกไม่สำเร็จ (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "บันทึกไม่สำเร็จ (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
 
   revalidatePath("/parts");
@@ -154,7 +154,7 @@ export async function updateFreebie(formData: FormData): Promise<PartsActionResu
 }
 
 /**
- * เพิ่มอะไหล่ใหม่เข้าคลัง (FAM-1026) — ด่าน canManageParts (admin/manager/stock) + RLS สาขา
+ * เพิ่มอะไหล่ใหม่เข้าคลัง (FAM-1026) — ด่าน canManageParts (admin/manager/stock) + RLS บริษัท
  * ต้นทุนตั้งได้เฉพาะผู้มีสิทธิ์ money · unique (branch, code)
  */
 export async function addPart(formData: FormData): Promise<PartsActionResult> {
@@ -186,7 +186,7 @@ export async function addPart(formData: FormData): Promise<PartsActionResult> {
   const supabase = await createServerSupabase();
   const branchId = user.branchIds[0] ?? (await supabase.from("branch").select("id").limit(1).maybeSingle()).data?.id;
   if (!branchId) {
-    return { ok: false, error: "ไม่พบสาขา" };
+    return { ok: false, error: "ไม่พบบริษัท" };
   }
 
   const { error } = await supabase
@@ -248,7 +248,7 @@ export async function updatePart(formData: FormData): Promise<PartsActionResult>
   const supabase = await createServerSupabase();
   const { data, error } = await supabase.from("part").update(patch).eq("id", partId).select("id");
   if (error || !data || data.length === 0) {
-    return { ok: false, error: "บันทึกไม่สำเร็จ (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "บันทึกไม่สำเร็จ (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
   revalidatePath("/parts");
   return { ok: true };
@@ -282,7 +282,7 @@ export async function receivePart(formData: FormData): Promise<PartsActionResult
     .eq("id", partId)
     .maybeSingle();
   if (readError || !part) {
-    return { ok: false, error: "ไม่พบอะไหล่ (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "ไม่พบอะไหล่ (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
 
   const { data: updated, error: casError } = await supabase

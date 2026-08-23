@@ -6,7 +6,7 @@ import { computeAgeDays } from "@/lib/stock/units";
 
 /**
  * เครื่องมือของผู้ช่วยวิเคราะห์ (E12 FAM-1067)
- * ⚠️ ทุก executor ดึงข้อมูลผ่าน createServerSupabase() = เซสชัน user จริง → RLS แยกสาขาบังคับที่ DB
+ * ⚠️ ทุก executor ดึงข้อมูลผ่าน createServerSupabase() = เซสชัน user จริง → RLS แยกบริษัทบังคับที่ DB
  * และคืน "ค่ารวม" ที่ money-strip แล้ว (มูลค่า/ยอดเงิน = null ถ้า role ไม่มีสิทธิ์) — AI ไม่เห็นตัวเลขต่อคัน
  */
 export const ASSIST_TOOLS: Anthropic.Tool[] = [
@@ -18,7 +18,7 @@ export const ASSIST_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "aged_units",
-    description: "รายการรถที่ค้างสต๊อกนานสุด (รุ่น สาขา จำนวนวันที่ค้าง) เรียงจากค้างนานสุด",
+    description: "รายการรถที่ค้างสต๊อกนานสุด (รุ่น บริษัท จำนวนวันที่ค้าง) เรียงจากค้างนานสุด",
     input_schema: {
       type: "object",
       properties: { limit: { type: "number", description: "จำนวนรายการสูงสุด (ค่าเริ่มต้น 5)" } },

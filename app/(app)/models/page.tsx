@@ -14,7 +14,7 @@ const PHOTO_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/pu
 export default async function ModelsPage() {
   const supabase = await createServerSupabase();
 
-  // ตารางอ้างอิง (variant/color/price/photo) อ่านได้ทุกคนที่ล็อกอิน — จำนวนคันถูกกรองด้วย RLS สาขา
+  // ตารางอ้างอิง (variant/color/price/photo) อ่านได้ทุกคนที่ล็อกอิน — จำนวนคันถูกกรองด้วย RLS บริษัท
   const [variantsRes, colorsRes, pricesRes, photosRes, unitsRes] = await Promise.all([
     supabase.from("model_variant").select("id, code, model_name, model_th, category, cc, model_year"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),

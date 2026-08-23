@@ -159,7 +159,7 @@ export function ImportView({
                   <tr key={i} className="border-b border-hairline-2 align-top">
                     <td className="py-1.5 pr-3">
                       {(variantNames[r.unit.variantCode] ?? r.unit.variantCode) || "—"} · <span className="text-ink-soft">{r.unit.colorName}</span>
-                      {r.unknownBranch && <span className="ml-1 text-[11px] text-attn">(สาขา {r.unit.branchCode}?)</span>}
+                      {r.unknownBranch && <span className="ml-1 text-[11px] text-attn">(บริษัท {r.unit.branchCode}?)</span>}
                     </td>
                     <td className="py-1.5 px-3 font-mono text-xs">{r.unit.engineNo || "—"}</td>
                     <td className="py-1.5 px-3 text-right"><Money value={r.unit.cost} /></td>

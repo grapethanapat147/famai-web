@@ -9,7 +9,7 @@ import type { TypedSupabaseClient } from "@/lib/supabase/client-type";
  * - punch_clock() (ลงเวลา, พารามิเตอร์เยอะ) wrap ในงานฝั่ง HR/attendance (FAM-E09) ไม่ใช่ที่นี่
  */
 
-/** เลขเอกสารกันซ้ำ แยกสาขา × ประเภท × ปี พ.ศ. → เช่น "FMG-TAXINV-2569-00001" */
+/** เลขเอกสารกันซ้ำ แยกบริษัท × ประเภท × ปี พ.ศ. → เช่น "FMG-TAXINV-2569-00001" */
 export async function nextDocNo(
   client: TypedSupabaseClient,
   branchId: string,
@@ -27,7 +27,7 @@ export async function nextDocNo(
   return data;
 }
 
-/** id ของสาขาที่ผู้ใช้ปัจจุบันเข้าถึงได้ (ตาม app_user_branch) */
+/** id ของบริษัทที่ผู้ใช้ปัจจุบันเข้าถึงได้ (ตาม app_user_branch) */
 export async function myBranches(client: TypedSupabaseClient): Promise<string[]> {
   const { data, error } = await client.rpc("my_branches");
   if (error) {
@@ -36,7 +36,7 @@ export async function myBranches(client: TypedSupabaseClient): Promise<string[]>
   return data ?? [];
 }
 
-/** ผู้ใช้ปัจจุบันมีสิทธิ์เห็นทุกสาขาหรือไม่ (app_user.all_branch) */
+/** ผู้ใช้ปัจจุบันมีสิทธิ์เห็นทุกบริษัทหรือไม่ (app_user.all_branch) */
 export async function isAllBranch(client: TypedSupabaseClient): Promise<boolean> {
   const { data, error } = await client.rpc("is_all_branch");
   if (error) {

@@ -129,8 +129,8 @@ export function StockView({
             className={`${selectClass} w-full sm:w-56`}
           />
           {branches.length > 1 && (
-            <select aria-label="กรองตามสาขา" value={branch} onChange={(e) => setBranch(e.target.value)} className={selectClass}>
-              <option value="all">ทุกสาขา</option>
+            <select aria-label="กรองตามบริษัท" value={branch} onChange={(e) => setBranch(e.target.value)} className={selectClass}>
+              <option value="all">ทุกบริษัท</option>
               {branches.map((b) => (
                 <option key={b.code} value={b.code}>
                   {b.name}
@@ -199,7 +199,7 @@ export function StockView({
               />
             )}
             <Row label="รหัสรุ่น">{selected.modelCode}</Row>
-            <Row label="สาขา">{selected.branchName}</Row>
+            <Row label="บริษัท">{selected.branchName}</Row>
             <Row label="เลขเครื่อง"><span className="font-mono">{selected.engineNo}</span></Row>
             <Row label="เลขตัวถัง"><span className="font-mono">{selected.frameNo}</span></Row>
             <Row label="วันที่รับเข้า">{formatThaiDate(selected.receivedAt)}</Row>

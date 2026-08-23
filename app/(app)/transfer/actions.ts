@@ -10,7 +10,7 @@ function canReachBranch(user: CurrentUser, branchId: string): boolean {
 }
 
 /**
- * ขอโอนรถไปสาขาอื่น (ต้นทาง) — ด่านสิทธิ์ + รถต้อง available + ในบริษัทเดียวกัน (R1 B1)
+ * ขอโอนรถไปบริษัทอื่น (ต้นทาง) — ด่านสิทธิ์ + รถต้อง available + ในบริษัทเดียวกัน (R1 B1)
  * CAS unit available→in_transfer แล้วค่อยสร้าง unit_transfer · revert ถ้าสร้างไม่สำเร็จ
  */
 export async function requestTransfer(formData: FormData): Promise<TransferActionResult> {
@@ -26,7 +26,7 @@ export async function requestTransfer(formData: FormData): Promise<TransferActio
   const toBranch = String(formData.get("to_branch") ?? "").trim();
   const note = String(formData.get("note") ?? "").trim();
   if (!unitId || !toBranch) {
-    return { ok: false, error: "เลือกรถและสาขาปลายทาง" };
+    return { ok: false, error: "เลือกรถและบริษัทปลายทาง" };
   }
 
   const supabase = await createServerSupabase();
@@ -36,13 +36,13 @@ export async function requestTransfer(formData: FormData): Promise<TransferActio
     .eq("id", unitId)
     .maybeSingle();
   if (unitError || !unit) {
-    return { ok: false, error: "ไม่พบรถ (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "ไม่พบรถ (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
   if (unit.status !== "available") {
     return { ok: false, error: "รถคันนี้ไม่พร้อมโอน (ไม่ว่าง)" };
   }
   if (unit.branch_id === toBranch) {
-    return { ok: false, error: "สาขาปลายทางต้องต่างจากสาขาต้นทาง" };
+    return { ok: false, error: "บริษัทปลายทางต้องต่างจากบริษัทต้นทาง" };
   }
 
   const { data: branches } = await supabase.from("branch").select("id, company_id").in("id", [unit.branch_id, toBranch]);
@@ -79,8 +79,8 @@ export async function requestTransfer(formData: FormData): Promise<TransferActio
 }
 
 /**
- * รับรถเข้าสาขาปลายทาง — เฉพาะสาขาปลายทาง · CAS transfer in_transit→received
- * แล้วย้าย unit ไปสาขาปลายทาง + กลับเป็น available · revert ถ้าย้าย unit ไม่ได้
+ * รับรถเข้าบริษัทปลายทาง — เฉพาะบริษัทปลายทาง · CAS transfer in_transit→received
+ * แล้วย้าย unit ไปบริษัทปลายทาง + กลับเป็น available · revert ถ้าย้าย unit ไม่ได้
  */
 export async function receiveTransfer(formData: FormData): Promise<TransferActionResult> {
   const user = await getCurrentUser();
@@ -109,7 +109,7 @@ export async function receiveTransfer(formData: FormData): Promise<TransferActio
     return { ok: false, error: "รายการนี้ไม่ได้อยู่ระหว่างโอน" };
   }
   if (!canReachBranch(user, transfer.to_branch)) {
-    return { ok: false, error: "รับได้เฉพาะสาขาปลายทาง" };
+    return { ok: false, error: "รับได้เฉพาะบริษัทปลายทาง" };
   }
 
   const now = new Date().toISOString();
@@ -130,14 +130,14 @@ export async function receiveTransfer(formData: FormData): Promise<TransferActio
     .eq("status", "in_transfer");
   if (unitError) {
     await supabase.from("unit_transfer").update({ status: "in_transit", received_at: null }).eq("id", transferId);
-    return { ok: false, error: "ย้ายรถเข้าสาขาไม่สำเร็จ กรุณาลองใหม่" };
+    return { ok: false, error: "ย้ายรถเข้าบริษัทไม่สำเร็จ กรุณาลองใหม่" };
   }
 
   revalidatePath("/transfer");
   return { ok: true };
 }
 
-/** ยกเลิกการโอน (ต้นทาง) — คืนรถเป็น available ที่สาขาเดิม */
+/** ยกเลิกการโอน (ต้นทาง) — คืนรถเป็น available ที่บริษัทเดิม */
 export async function cancelTransfer(formData: FormData): Promise<TransferActionResult> {
   const user = await getCurrentUser();
   if (!user) {
@@ -165,7 +165,7 @@ export async function cancelTransfer(formData: FormData): Promise<TransferAction
     return { ok: false, error: "รายการนี้ยกเลิกไม่ได้แล้ว" };
   }
   if (!canReachBranch(user, transfer.from_branch)) {
-    return { ok: false, error: "ยกเลิกได้เฉพาะสาขาต้นทาง" };
+    return { ok: false, error: "ยกเลิกได้เฉพาะบริษัทต้นทาง" };
   }
 
   const { data: done, error: casError } = await supabase

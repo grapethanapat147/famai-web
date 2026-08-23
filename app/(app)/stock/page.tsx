@@ -17,7 +17,7 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
   const { unit: initialUnitId } = await searchParams;
   const supabase = await createServerSupabase();
 
-  // RLS คัดให้เห็นเฉพาะสาขาตัวเอง (เว้น allBranch) — ตารางอ้างอิงเล็ก join ในแอป (Relationships ว่างใน types)
+  // RLS คัดให้เห็นเฉพาะบริษัทตัวเอง (เว้น allBranch) — ตารางอ้างอิงเล็ก join ในแอป (Relationships ว่างใน types)
   const [unitsRes, variantsRes, colorsRes, branches] = await Promise.all([
     supabase
       .from("motorcycle_unit")

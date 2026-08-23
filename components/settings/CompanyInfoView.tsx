@@ -7,7 +7,7 @@ import type { OrgBranch, OrgCompany, OrgInfoActionResult } from "@/lib/org/info"
 const fieldCls =
   "w-full rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
 
-/** ชุดช่องกรอกของ 1 หน่วย (บริษัท/สาขา) — module-level กัน react-hooks/static-components */
+/** ชุดช่องกรอกของ 1 บริษัท — module-level กัน react-hooks/static-components */
 function OrgFields({ prefix, row, canEdit }: { prefix: string; row: OrgCompany; canEdit: boolean }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
@@ -40,7 +40,7 @@ function OrgFields({ prefix, row, canEdit }: { prefix: string; row: OrgCompany; 
 }
 
 /**
- * ข้อมูลกิจการ/สาขา (FAM-1078) — ชื่อ/เลขภาษี/ที่อยู่/เบอร์ ที่ขึ้นหัวเอกสารทุกใบ
+ * ข้อมูลกิจการ/บริษัท (FAM-1078) — ชื่อ/เลขภาษี/ที่อยู่/เบอร์ ที่ขึ้นหัวเอกสารทุกใบ
  * (ใบเสนอราคา/ใบขาย/ใบสั่งซ่อม/สลิป/ใบกำกับภาษี ดึงจาก branch โดยมี company เป็น fallback)
  * แก้ได้เฉพาะ admin — ตรงกับสิทธิ์ของ action ฝั่ง server
  */
@@ -80,7 +80,7 @@ export function CompanyInfoView({
   return (
     <div className="mx-auto w-full max-w-3xl rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)] sm:p-5">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display font-semibold text-ink">ข้อมูลกิจการ / สาขา</h2>
+        <h2 className="font-display font-semibold text-ink">ข้อมูลกิจการ / บริษัท</h2>
         {!canEdit && <span className="text-xs text-muted">ดูได้อย่างเดียว — แก้ได้เฉพาะผู้ดูแลระบบ</span>}
       </div>
       <p className="mb-4 text-sm text-muted">
@@ -100,7 +100,7 @@ export function CompanyInfoView({
 
         {branches.map((b) => (
           <section key={b.id} className="border-t border-hairline-2 pt-4">
-            <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted">สาขา {b.code}</p>
+            <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted">บริษัท {b.code}</p>
             <OrgFields prefix={`branch_${b.id}`} row={b} canEdit={canEdit} />
           </section>
         ))}
