@@ -1,5 +1,6 @@
 import { logout, toggleCustomerMode } from "@/lib/auth/actions";
 import { ThemeControls } from "@/components/theme/ThemeControls";
+import { SupportCapture } from "@/components/support/SupportCapture";
 import { SearchLauncher } from "@/components/search/SearchLauncher";
 
 /** แถบบน — ชื่อหน้า/แบรนด์ + ค้นหา + สลับโหมดลูกค้า (ถ้ามีสิทธิ์ money) + ชิปผู้ใช้ + ออกจากระบบ */
@@ -32,6 +33,7 @@ export function TopBar({
 
       <div className="flex items-center gap-1.5">
         <SearchLauncher pages={pages} />
+        <SupportCapture />
         <ThemeControls />
         {canToggleMoney && (
           <form action={toggleCustomerMode}>
