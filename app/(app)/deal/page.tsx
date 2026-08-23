@@ -1,14 +1,14 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveBranches, getCompaniesCached } from "@/lib/reference/cache";
-import { canManageDeal, canVoidDeal, type Deal, type FinanceInfo, type ServiceHistory } from "@/lib/deal/deals";
+import { canManageDeal, canVoidDeal, type Deal, type DealStep, type FinanceInfo, type ServiceHistory } from "@/lib/deal/deals";
 import { canManageFinance } from "@/lib/deal/finance";
 import { isRegStage, type PayMethod, type RegStage } from "@/lib/deal/stage";
 import { buildLeads } from "@/lib/deal/lead";
 import { DealView } from "@/components/deal/DealView";
 import { getSetting } from "@/lib/settings";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
-import { addCustomer, advanceFinance, advanceRegistration, revertRegistration, updateDealCustomer, voidDeal } from "./actions";
+import { addCustomer, advanceFinance, advanceRegistration, revertRegistration, updateDealCustomer, updateDealStep, voidDeal } from "./actions";
 
 export const metadata = { title: "ลูกค้าและดีล — Famai Motor Group" };
 
@@ -26,7 +26,7 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
   const sales = saleRows ?? [];
   const saleIds = sales.map((s) => s.id);
 
-  const [regsRes, finRes, customersRes, companiesRes, unitsRes, variantsRes, colorsRes, branches, orgCompanies] = await Promise.all([
+  const [regsRes, finRes, customersRes, companiesRes, unitsRes, variantsRes, colorsRes, branches, orgCompanies, stepsRes, usersRes] = await Promise.all([
     saleIds.length
       ? supabase.from("registration").select("id, sale_id, stage, plate_no, note").in("sale_id", saleIds)
       : Promise.resolve({ data: [] }),
@@ -40,6 +40,9 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
     supabase.from("model_color").select("variant_id, color_code, color_name"),
     getActiveBranches(),
     getCompaniesCached(),
+    // ข้อมูลต่อขั้น (P2) — resilient: ถ้ายังไม่ได้รัน migration จะได้ [] (ไม่พังหน้า)
+    supabase.from("registration_step").select("registration_id, stage, sub_status, note, updated_at, updated_by"),
+    supabase.from("app_user").select("id, full_name"),
   ]);
 
   type FinRow = {
@@ -65,6 +68,21 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
   const variantName = new Map((variantsRes.data ?? []).map((v) => [v.id, v.model_name]));
   const colorName = new Map((colorsRes.data ?? []).map((c) => [`${c.variant_id}:${c.color_code}`, c.color_name]));
   const unitMap = new Map((unitsRes.data ?? []).map((u) => [u.id, u]));
+
+  // ข้อมูลต่อขั้น (P2) — จัดกลุ่มตามงานทะเบียน + resolve ชื่อผู้แก้ล่าสุด
+  const dealUserName = new Map((usersRes.data ?? []).map((u) => [u.id, u.full_name]));
+  const stepsByReg = new Map<string, DealStep[]>();
+  for (const st of stepsRes.data ?? []) {
+    const list = stepsByReg.get(st.registration_id) ?? [];
+    list.push({
+      stage: st.stage,
+      subStatus: st.sub_status,
+      note: st.note,
+      updatedAt: st.updated_at,
+      updatedByName: st.updated_by ? (dealUserName.get(st.updated_by) ?? null) : null,
+    });
+    stepsByReg.set(st.registration_id, list);
+  }
 
   const deals: Deal[] = sales.map((s) => {
     const reg = s.id ? regBySale.get(s.id) : undefined;
@@ -102,6 +120,7 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
       plateNo: reg?.plate_no ?? null,
       docNo: s.doc_no ?? null,
       finance,
+      steps: reg ? (stepsByReg.get(reg.id) ?? []) : [],
     };
   });
 
@@ -158,6 +177,7 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
       canVoid={canVoidDeal(roleCodes)}
       voidAction={voidDeal}
       customerAction={updateDealCustomer}
+      stepAction={updateDealStep}
     />
   );
 }

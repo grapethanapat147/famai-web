@@ -6,10 +6,14 @@ export function StepBar({
   track,
   currentIndex,
   offTrack = false,
+  onStepClick,
+  activeIndex,
 }: {
   track: readonly string[];
   currentIndex: number;
   offTrack?: boolean;
+  onStepClick?: (index: number) => void;
+  activeIndex?: number;
 }) {
   return (
     <div className="overflow-x-auto">
@@ -25,12 +29,14 @@ export function StepBar({
               ? "border-ink bg-ink text-card"
               : "border-hairline bg-card text-muted";
           const lineDone = i <= currentIndex && !(current && offTrack);
-          return (
-            <li key={label} className="flex min-w-[68px] flex-1 flex-col items-center">
+          const inner = (
+            <>
               <div className="flex w-full items-center">
                 <span className={`h-0.5 flex-1 ${i === 0 ? "invisible" : done || current ? "bg-ink" : "bg-hairline"}`} />
                 <span
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold tabular ${circle}`}
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold tabular ${circle} ${
+                    activeIndex === i ? "ring-2 ring-accent ring-offset-1 ring-offset-card" : ""
+                  }`}
                 >
                   {i + 1}
                 </span>
@@ -45,6 +51,17 @@ export function StepBar({
               >
                 {label}
               </span>
+            </>
+          );
+          return (
+            <li key={label} className="flex min-w-[68px] flex-1 flex-col items-center">
+              {onStepClick ? (
+                <button type="button" onClick={() => onStepClick(i)} className="flex w-full flex-col items-center rounded-[8px] py-1 hover:bg-paper-2" aria-label={`ขั้น ${label}`}>
+                  {inner}
+                </button>
+              ) : (
+                inner
+              )}
             </li>
           );
         })}

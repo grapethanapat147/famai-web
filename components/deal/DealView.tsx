@@ -14,7 +14,7 @@ import { PrintableSaleDoc } from "@/components/deal/PrintableSaleDoc";
 import { PrintableTaxInvoice } from "@/components/deal/PrintableTaxInvoice";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 import { formatThaiDate } from "@/lib/format";
-import { dealTrack, regNext, regPrev, stageIndex, stageVariant, type RegStage } from "@/lib/deal/stage";
+import { dealTrack, regNext, regPrev, stageIndex, stageVariant, substatusOptions, type RegStage } from "@/lib/deal/stage";
 import { LEAD_SOURCES, type LeadRow } from "@/lib/deal/lead";
 import {
   customerDeals,
@@ -54,6 +54,7 @@ export function DealView({
   canVoid = false,
   voidAction,
   customerAction,
+  stepAction,
   initialSearch = "",
 }: {
   deals: Deal[];
@@ -72,6 +73,7 @@ export function DealView({
   canVoid?: boolean;
   voidAction?: (formData: FormData) => Promise<DealActionResult>;
   customerAction?: (formData: FormData) => Promise<DealActionResult>;
+  stepAction?: (formData: FormData) => Promise<DealActionResult>;
 }) {
   const [stage, setStage] = useState<RegStage | "all">("all");
   const [search, setSearch] = useState(initialSearch);
@@ -232,6 +234,7 @@ export function DealView({
         canVoid={canVoid}
         voidAction={voidAction}
         customerAction={customerAction}
+        stepAction={stepAction}
         onClose={() => setSelected(null)}
         onAdvanced={() => setSelected(null)}
       />
@@ -257,6 +260,7 @@ function DealDrawer({
   canVoid,
   voidAction,
   customerAction,
+  stepAction,
   onClose,
   onAdvanced,
 }: {
@@ -273,6 +277,7 @@ function DealDrawer({
   canVoid: boolean;
   voidAction?: (formData: FormData) => Promise<DealActionResult>;
   customerAction?: (formData: FormData) => Promise<DealActionResult>;
+  stepAction?: (formData: FormData) => Promise<DealActionResult>;
   onClose: () => void;
   onAdvanced: () => void;
 }) {
@@ -284,6 +289,7 @@ function DealDrawer({
   const [current, setCurrent] = useState<string | null>(null);
   const [printDoc, setPrintDoc] = useState<"sale" | "tax" | null>(null);
   const [printTick, setPrintTick] = useState(0);
+  const [activeStep, setActiveStep] = useState<number | null>(null);
 
   // พิมพ์หลังเอกสารที่เลือก render แล้ว (มี .print-doc เดียวในหน้า → :has() แสดงตัวถูก)
   useEffect(() => {
@@ -306,6 +312,7 @@ function DealDrawer({
     setRejectReason("");
     setVoiding(false);
     setVoidReason("");
+    setActiveStep(null);
   }
 
   async function doVoid() {
@@ -400,7 +407,28 @@ function DealDrawer({
     <Modal open={deal !== null} onClose={onClose} size="lg" title={deal ? `${deal.customerName} · ${deal.vehicle}` : ""}>
       {deal && (
         <div className="flex flex-col gap-4 text-sm">
-          <StepBar track={track} currentIndex={Math.max(0, idx)} offTrack={offTrack} />
+          <StepBar
+            track={track}
+            currentIndex={Math.max(0, idx)}
+            offTrack={offTrack}
+            onStepClick={stepAction && canManage ? (i) => setActiveStep((cur) => (cur === i ? null : i)) : undefined}
+            activeIndex={activeStep ?? undefined}
+          />
+
+          {stepAction && canManage && activeStep !== null && track[activeStep] && (
+            <StepEditor
+              deal={deal}
+              stage={track[activeStep]}
+              action={stepAction}
+              onSaved={() => {
+                setActiveStep(null);
+                onAdvanced();
+              }}
+            />
+          )}
+          {stepAction && canManage && activeStep === null && (
+            <p className="-mt-1 text-center text-[11px] text-muted">แตะแต่ละขั้นเพื่อใส่สถานะย่อย/บันทึก</p>
+          )}
 
           {customerAction && canManage && <CustomerEditSection deal={deal} action={customerAction} onSaved={onAdvanced} />}
 
@@ -599,6 +627,91 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
       <dt className="text-muted">{label}</dt>
       <dd className="text-ink">{children}</dd>
     </div>
+  );
+}
+
+/** เวลาอัปเดตล่าสุด — วันที่ + เวลา (เขตเวลาไทย) */
+function updatedStamp(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" }).format(new Date(iso));
+  } catch {
+    return formatThaiDate(iso);
+  }
+}
+
+/** แก้สถานะย่อย + หมายเหตุ ของขั้นที่กดเลือก (FAM-1093 P2) */
+function StepEditor({ deal, stage, action, onSaved }: { deal: Deal; stage: string; action: (fd: FormData) => Promise<DealActionResult>; onSaved: () => void }) {
+  const [currentKey, setCurrentKey] = useState<string | null>(null);
+  const [subStatus, setSubStatus] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const existing = deal.steps.find((s) => s.stage === stage) ?? null;
+  const key = `${deal.saleId}:${stage}`;
+  if (key !== currentKey) {
+    setCurrentKey(key);
+    setSubStatus(existing?.subStatus ?? "");
+    setNote(existing?.note ?? "");
+    setError(null);
+  }
+
+  const options = substatusOptions(stage);
+
+  async function save(): Promise<void> {
+    if (!deal.regId || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const fd = new FormData();
+    fd.set("reg_id", deal.regId);
+    fd.set("stage", stage);
+    fd.set("sub_status", subStatus);
+    fd.set("note", note.trim());
+    const res = await action(fd);
+    setBusy(false);
+    if (res.ok) {
+      onSaved();
+    } else {
+      setError(res.error);
+    }
+  }
+
+  return (
+    <section className="rounded-[12px] border border-accent/40 bg-paper p-3">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <span className="font-medium text-ink">ขั้น: {stage}</span>
+        {existing && (
+          <span className="text-[11px] text-muted">อัปเดตล่าสุด {updatedStamp(existing.updatedAt)}{existing.updatedByName ? ` · ${existing.updatedByName}` : ""}</span>
+        )}
+      </div>
+      {!deal.regId ? (
+        <p className="text-xs text-muted">ดีลนี้ยังไม่มีงานทะเบียน — บันทึกสถานะย่อยไม่ได้</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {options.length > 0 && (
+            <Field label="สถานะย่อย">
+              <select value={subStatus} onChange={(e) => setSubStatus(e.target.value)} className={inputCls}>
+                <option value="">— ไม่ระบุ —</option>
+                {options.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+          <Field label="หมายเหตุขั้นนี้">
+            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="เช่น รอลูกค้าส่งสำเนาบัตร" className={inputCls} />
+          </Field>
+          {error && <StatusBadge variant="bad">{error}</StatusBadge>}
+          <button type="button" onClick={save} disabled={busy} className="self-end rounded-[24px] bg-accent px-5 py-2 text-sm font-medium text-card disabled:opacity-50">
+            {busy ? "กำลังบันทึก…" : "บันทึกขั้นนี้"}
+          </button>
+        </div>
+      )}
+    </section>
   );
 }
 

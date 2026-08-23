@@ -49,6 +49,21 @@ export function isDelivered(stage: RegStage): boolean {
   return stage === "ส่งมอบแล้ว";
 }
 
+/** ตัวเลือกสถานะย่อยต่อขั้น (FAM-1093 P2) — กด step แล้วเลือกได้ว่าตอนนี้อยู่จุดไหนของขั้นนั้น */
+export const STAGE_SUBSTATUS: Record<RegStage, readonly string[]> = {
+  ขายแล้ว: ["รอเอกสารลูกค้า", "เอกสารครบ", "ลูกค้าขอเลื่อนรับรถ"],
+  ส่งไฟแนนซ์: ["ส่งเรื่องแล้ว", "รอผลพิจารณา", "ขอเอกสารเพิ่ม"],
+  อนุมัติ: ["อนุมัติแล้ว", "รอทำสัญญา"],
+  รอทะเบียน: ["ยื่นขนส่งแล้ว", "รอเล่มทะเบียน", "รอป้าย"],
+  ป้ายขาว: ["ติดป้ายขาวแล้ว", "นัดลูกค้ารับรถ"],
+  ส่งมอบแล้ว: ["ส่งมอบครบ", "รอป้ายจริง"],
+};
+
+/** ตัวเลือกสถานะย่อยของขั้นที่ระบุ (คืน [] ถ้าไม่รู้จัก) */
+export function substatusOptions(stage: string): readonly string[] {
+  return isRegStage(stage) ? STAGE_SUBSTATUS[stage] : [];
+}
+
 export type BadgeVariant = "good" | "warn" | "bad" | "info" | "off";
 
 /** จุดสีบนป้ายขั้น */
