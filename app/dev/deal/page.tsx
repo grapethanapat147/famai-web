@@ -2,6 +2,7 @@
 
 import { DealView } from "@/components/deal/DealView";
 import type { Deal, DealActionResult, ServiceHistory } from "@/lib/deal/deals";
+import type { LeadRow } from "@/lib/deal/lead";
 
 /** พรีวิวหน้าลูกค้าและดีล (deal) — sample data · /deal จริงต่อ DB ผ่าน RLS */
 
@@ -119,12 +120,34 @@ async function mockVoid(formData: FormData): Promise<DealActionResult> {
   return { ok: true, message: "ยกเลิกดีลแล้ว" };
 }
 
+async function mockRevert(formData: FormData): Promise<DealActionResult> {
+  return { ok: true, message: `ย้อนไป ${String(formData.get("to"))}` };
+}
+
+async function mockAddCustomer(formData: FormData): Promise<DealActionResult> {
+  if (!String(formData.get("name")).trim()) {
+    return { ok: false, error: "กรอกชื่อลูกค้า" };
+  }
+  return { ok: true, message: "บันทึกลูกค้าแล้ว" };
+}
+
+const LEAD_VARIANTS = [
+  { id: "v-nmax", name: "NMAX" },
+  { id: "v-finn", name: "FINN" },
+  { id: "v-xmax", name: "XMAX 300" },
+];
+
+const LEADS: LeadRow[] = [
+  { id: "l1", name: "กานดา ทองคำ", phone: "081-111-2222", interestedVariantId: "v-nmax", interestedModel: "NMAX", source: "Facebook", createdAt: "2026-08-22T09:00:00Z" },
+  { id: "l2", name: "ธนา วงศ์ไทย", phone: "089-333-4444", interestedVariantId: "v-xmax", interestedModel: "XMAX 300", source: "เดินเข้าร้าน", createdAt: "2026-08-20T13:30:00Z" },
+];
+
 export default function DevDealPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
       <header className="mb-6">
         <h1 className="font-display text-[28px] font-semibold text-ink">ลูกค้าและดีล (preview)</h1>
-        <p className="mt-1 text-ink-soft">sample data — กดดีลเพื่อดูแถบขั้น + เลื่อนขั้น · จัดการงานสินเชื่อ (รอผล→อนุมัติ/ปฏิเสธ · ปฏิเสธ→ยื่นใหม่) · ลูกค้าเท (ยกเลิกดีล)</p>
+        <p className="mt-1 text-ink-soft">sample data — เพิ่มลูกค้า (ลีด) · กดดีลเพื่อเลื่อน/ย้อนขั้น · จัดการสินเชื่อ · ลูกค้าเท</p>
       </header>
       <DealView
         deals={DEALS}
@@ -140,6 +163,10 @@ export default function DevDealPage() {
         vatPct={7}
         canManage
         action={mockAdvance}
+        revertAction={mockRevert}
+        leads={LEADS}
+        leadVariants={LEAD_VARIANTS}
+        addCustomerAction={mockAddCustomer}
         canManageFinance
         financeAction={mockFinance}
         canVoid

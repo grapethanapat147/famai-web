@@ -6,6 +6,7 @@ import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Drawer } from "@/components/ui/Drawer";
+import { Modal } from "@/components/ui/Modal";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { StatCard } from "@/components/ui/StatCard";
@@ -14,7 +15,8 @@ import { PrintableSaleDoc } from "@/components/deal/PrintableSaleDoc";
 import { PrintableTaxInvoice } from "@/components/deal/PrintableTaxInvoice";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 import { formatThaiDate } from "@/lib/format";
-import { dealTrack, regNext, stageIndex, stageVariant, type RegStage } from "@/lib/deal/stage";
+import { dealTrack, regNext, regPrev, stageIndex, stageVariant, type RegStage } from "@/lib/deal/stage";
+import { LEAD_SOURCES, type LeadRow } from "@/lib/deal/lead";
 import {
   customerDeals,
   customerServices,
@@ -44,6 +46,10 @@ export function DealView({
   vatPct,
   canManage,
   action,
+  revertAction,
+  leads = [],
+  leadVariants = [],
+  addCustomerAction,
   canManageFinance = false,
   financeAction,
   canVoid = false,
@@ -57,6 +63,10 @@ export function DealView({
   initialSearch?: string;
   canManage: boolean;
   action: (formData: FormData) => Promise<DealActionResult>;
+  revertAction?: (formData: FormData) => Promise<DealActionResult>;
+  leads?: LeadRow[];
+  leadVariants?: { id: string; name: string }[];
+  addCustomerAction?: (formData: FormData) => Promise<DealActionResult>;
   canManageFinance?: boolean;
   financeAction?: (formData: FormData) => Promise<DealActionResult>;
   canVoid?: boolean;
@@ -64,13 +74,19 @@ export function DealView({
 }) {
   const [stage, setStage] = useState<RegStage | "all">("all");
   const [search, setSearch] = useState(initialSearch);
-  const [view, setView] = useState<"all" | "open" | "offtrack">("all");
+  const [view, setView] = useState<"all" | "open" | "offtrack" | "leads">("all");
   const [selected, setSelected] = useState<Deal | null>(null);
+  const [adding, setAdding] = useState(false);
 
   const counts = stageCounts(deals);
   const open = openDealCount(deals);
   const offTrack = offTrackCount(deals);
   const rows = filterDeals(deals, { stage, search, onlyOpen: view === "open", onlyOffTrack: view === "offtrack" });
+
+  const leadQuery = search.trim().toLowerCase();
+  const filteredLeads = leadQuery
+    ? leads.filter((l) => `${l.name} ${l.phone ?? ""} ${l.interestedModel ?? ""}`.toLowerCase().includes(leadQuery))
+    : leads;
 
   const isFiltered = stage !== "all" || search.trim() !== "" || view !== "all";
   function resetFilters() {
@@ -111,6 +127,17 @@ export function DealView({
 
   return (
     <div className="mx-auto max-w-6xl">
+      {addCustomerAction && (
+        <div className="mb-3 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="rounded-[24px] bg-ink px-4 py-2 text-sm font-medium text-card transition-transform active:scale-[0.98]"
+          >
+            + เพิ่มลูกค้า
+          </button>
+        </div>
+      )}
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatCard label="ดีลทั้งหมด" value={String(deals.length)} hint="ดีล" />
         <StatCard label="ยังไม่ส่งมอบ" value={String(open)} hint="ค้างในไปป์ไลน์" />
@@ -122,29 +149,31 @@ export function DealView({
         />
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {REG_STAGES.map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setStage((cur) => (cur === s ? "all" : s))}
-            className={`flex items-center gap-2 rounded-[10px] border px-3 py-2 text-sm ${
-              stage === s ? "border-ink bg-card" : "border-hairline bg-card"
-            }`}
-          >
-            <StatusBadge variant={stageVariant(s)}>{s}</StatusBadge>
-            <span className="tabular font-semibold text-ink">{counts[s]}</span>
-          </button>
-        ))}
-      </div>
+      {view !== "leads" && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {REG_STAGES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStage((cur) => (cur === s ? "all" : s))}
+              className={`flex items-center gap-2 rounded-[10px] border px-3 py-2 text-sm ${
+                stage === s ? "border-ink bg-card" : "border-hairline bg-card"
+              }`}
+            >
+              <StatusBadge variant={stageVariant(s)}>{s}</StatusBadge>
+              <span className="tabular font-semibold text-ink">{counts[s]}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="mb-4">
-        <FilterBar summary={`กำลังดู: ${rows.length} ดีล`}>
+        <FilterBar summary={view === "leads" ? `ลีด ${filteredLeads.length} ราย` : `กำลังดู: ${rows.length} ดีล`}>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="ค้นหาลูกค้า / รถ / ทะเบียน"
-            placeholder="ค้นลูกค้า / รถ / ทะเบียน"
+            placeholder={view === "leads" ? "ค้นชื่อ / เบอร์ / รุ่น" : "ค้นลูกค้า / รถ / ทะเบียน"}
             className={`${selectClass} w-full sm:w-56`}
           />
           <Chips
@@ -154,34 +183,39 @@ export function DealView({
               { value: "all", label: "ทั้งหมด" },
               { value: "open", label: "ยังไม่ส่งมอบ" },
               { value: "offtrack", label: offTrack > 0 ? `ต้องจัดการ (${offTrack})` : "ต้องจัดการ" },
+              { value: "leads", label: leads.length ? `ลีด (${leads.length})` : "ลีด" },
             ]}
           />
         </FilterBar>
       </div>
 
-      <DataTable
-        columns={columns}
-        rows={rows}
-        rowKey={(d) => d.saleId}
-        onRowClick={setSelected}
-        empty={
-          deals.length > 0 ? (
-            <EmptyState
-              icon="users"
-              title="ไม่พบดีลตามเงื่อนไข"
-              description="ลองปรับตัวกรองหรือคำค้นใหม่"
-              action={isFiltered ? { label: "ล้างตัวกรอง", onClick: resetFilters } : undefined}
-            />
-          ) : (
-            <EmptyState
-              icon="users"
-              title="ยังไม่มีดีล"
-              description="เปิดการขายเพื่อสร้างดีลแรก แล้วติดตามไฟแนนซ์/ทะเบียนได้จากที่นี่"
-              action={{ label: "เปิดการขาย", href: "/sell" }}
-            />
-          )
-        }
-      />
+      {view === "leads" ? (
+        <LeadsList leads={filteredLeads} hasAny={leads.length > 0} onAdd={addCustomerAction ? () => setAdding(true) : undefined} />
+      ) : (
+        <DataTable
+          columns={columns}
+          rows={rows}
+          rowKey={(d) => d.saleId}
+          onRowClick={setSelected}
+          empty={
+            deals.length > 0 ? (
+              <EmptyState
+                icon="users"
+                title="ไม่พบดีลตามเงื่อนไข"
+                description="ลองปรับตัวกรองหรือคำค้นใหม่"
+                action={isFiltered ? { label: "ล้างตัวกรอง", onClick: resetFilters } : undefined}
+              />
+            ) : (
+              <EmptyState
+                icon="users"
+                title="ยังไม่มีดีล"
+                description="เปิดการขายเพื่อสร้างดีลแรก แล้วติดตามไฟแนนซ์/ทะเบียนได้จากที่นี่"
+                action={{ label: "เปิดการขาย", href: "/sell" }}
+              />
+            )
+          }
+        />
+      )}
 
       <DealDrawer
         deal={selected}
@@ -191,6 +225,7 @@ export function DealView({
         serviceHistory={selected ? customerServices(services, selected.customerId) : []}
         canManage={canManage}
         action={action}
+        revertAction={revertAction}
         canManageFinance={canManageFinance}
         financeAction={financeAction}
         canVoid={canVoid}
@@ -198,6 +233,10 @@ export function DealView({
         onClose={() => setSelected(null)}
         onAdvanced={() => setSelected(null)}
       />
+
+      {addCustomerAction && (
+        <AddCustomerModal open={adding} variants={leadVariants} action={addCustomerAction} onClose={() => setAdding(false)} />
+      )}
     </div>
   );
 }
@@ -210,6 +249,7 @@ function DealDrawer({
   serviceHistory,
   canManage,
   action,
+  revertAction,
   canManageFinance,
   financeAction,
   canVoid,
@@ -224,6 +264,7 @@ function DealDrawer({
   serviceHistory: ServiceHistory[];
   canManage: boolean;
   action: (formData: FormData) => Promise<DealActionResult>;
+  revertAction?: (formData: FormData) => Promise<DealActionResult>;
   canManageFinance: boolean;
   financeAction?: (formData: FormData) => Promise<DealActionResult>;
   canVoid: boolean;
@@ -327,10 +368,29 @@ function DealDrawer({
     }
   }
 
+  async function revert(to: RegStage) {
+    if (!deal || !deal.regId || !revertAction || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const fd = new FormData();
+    fd.set("reg_id", deal.regId);
+    fd.set("to", to);
+    const res = await revertAction(fd);
+    setBusy(false);
+    if (res.ok) {
+      onAdvanced();
+    } else {
+      setError(res.error);
+    }
+  }
+
   const track = deal ? dealTrack(deal.payMethod) : [];
   const idx = deal ? stageIndex(deal.stage, deal.payMethod) : -1;
   const offTrack = deal ? isOffTrack(deal) : false;
   const next = deal && !offTrack ? regNext(deal.stage, deal.payMethod) : null;
+  const prev = deal && !offTrack ? regPrev(deal.stage, deal.payMethod) : null;
 
   return (
     <Drawer open={deal !== null} onClose={onClose} title={deal ? `${deal.customerName} · ${deal.vehicle}` : ""}>
@@ -443,17 +503,35 @@ function DealDrawer({
           )}
           {error && <StatusBadge variant="bad">{error}</StatusBadge>}
 
-          {canManage && next && (
+          {canManage && !offTrack && (next || (prev && revertAction)) && (
             <div>
               <p className="mb-2 text-xs text-muted">ต้องทำต่อ</p>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => advance(next)}
-                className="w-full rounded-[24px] bg-accent py-3 text-sm font-medium text-card transition-transform active:scale-[0.99] disabled:opacity-50"
-              >
-                {busy ? "กำลังบันทึก…" : `ไป: ${next} →`}
-              </button>
+              <div className="flex gap-2">
+                {prev && revertAction && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => revert(prev)}
+                    title={`ย้อนกลับไป: ${prev}`}
+                    className="rounded-[24px] border border-hairline px-4 py-3 text-sm font-medium text-ink-soft transition-transform active:scale-[0.98] disabled:opacity-50"
+                  >
+                    ← ย้อนกลับ
+                  </button>
+                )}
+                {next && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => advance(next)}
+                    className="flex-1 rounded-[24px] bg-accent py-3 text-sm font-medium text-card transition-transform active:scale-[0.99] disabled:opacity-50"
+                  >
+                    {busy ? "กำลังบันทึก…" : `ไป: ${next} →`}
+                  </button>
+                )}
+              </div>
+              {prev && revertAction && !next && (
+                <p className="mt-2 text-xs text-muted">ดีลนี้ถึงขั้นสุดท้ายแล้ว — กด “ย้อนกลับ” ได้หากเผลอกดไปต่อ</p>
+              )}
             </div>
           )}
 
@@ -514,6 +592,163 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
       <dt className="text-muted">{label}</dt>
       <dd className="text-ink">{children}</dd>
     </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1 text-sm text-ink-soft">
+      {label}
+      {children}
+    </label>
+  );
+}
+
+/** ลิสต์ลีด (ลูกค้าที่ยังไม่ปิดการขาย) — ปุ่มเปิดการขาย prefill ชื่อ/เบอร์/รุ่นที่สนใจ */
+function LeadsList({ leads, hasAny, onAdd }: { leads: LeadRow[]; hasAny: boolean; onAdd?: () => void }) {
+  if (leads.length === 0) {
+    return (
+      <EmptyState
+        icon="users"
+        title={hasAny ? "ไม่พบลีดตามคำค้น" : "ยังไม่มีลีด"}
+        description={hasAny ? "ลองปรับคำค้นใหม่" : "กด “เพิ่มลูกค้า” เพื่อเก็บข้อมูลลูกค้าไว้ติดตามการขายในอนาคต"}
+        action={!hasAny && onAdd ? { label: "เพิ่มลูกค้า", onClick: onAdd } : undefined}
+      />
+    );
+  }
+  return (
+    <ul className="flex flex-col gap-2">
+      {leads.map((l) => {
+        const params = new URLSearchParams({ name: l.name });
+        if (l.phone) {
+          params.set("phone", l.phone);
+        }
+        if (l.interestedVariantId) {
+          params.set("variant", l.interestedVariantId);
+        }
+        return (
+          <li key={l.id} className="flex items-center justify-between gap-3 rounded-[12px] bg-card p-3 shadow-[var(--sh-sm)]">
+            <div className="min-w-0">
+              <p className="truncate font-medium text-ink">
+                {l.name}
+                {l.phone && <span className="ml-2 font-mono text-xs text-muted">{l.phone}</span>}
+              </p>
+              <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted">
+                {l.interestedModel && <span>สนใจ {l.interestedModel}</span>}
+                {l.source && <span>· {l.source}</span>}
+                <span>· เพิ่ม {formatThaiDate(l.createdAt)}</span>
+              </p>
+            </div>
+            <a
+              href={`/sell?${params.toString()}`}
+              className="shrink-0 rounded-[24px] bg-accent px-4 py-2 text-sm font-medium text-card transition-transform active:scale-[0.98]"
+            >
+              เปิดการขาย
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function AddCustomerModal({
+  open,
+  variants,
+  action,
+  onClose,
+}: {
+  open: boolean;
+  variants: { id: string; name: string }[];
+  action: (formData: FormData) => Promise<DealActionResult>;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [variantId, setVariantId] = useState("");
+  const [source, setSource] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    if (name.trim() === "" || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const fd = new FormData();
+    fd.set("name", name.trim());
+    fd.set("phone", phone.trim());
+    fd.set("interested_variant_id", variantId);
+    fd.set("source", source);
+    fd.set("note", note.trim());
+    const res = await action(fd);
+    setBusy(false);
+    if (res.ok) {
+      setName("");
+      setPhone("");
+      setVariantId("");
+      setSource("");
+      setNote("");
+      onClose();
+    } else {
+      setError(res.error);
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="เพิ่มลูกค้า">
+      <div className="flex flex-col gap-3">
+        <Field label="ชื่อลูกค้า *">
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="ชื่อ-นามสกุล" className={inputCls} />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="เบอร์โทร">
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" className={inputCls} />
+          </Field>
+          <Field label="ช่องทาง">
+            <select value={source} onChange={(e) => setSource(e.target.value)} className={inputCls}>
+              <option value="">— ไม่ระบุ —</option>
+              {LEAD_SOURCES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <Field label="รุ่นที่สนใจ">
+          <select value={variantId} onChange={(e) => setVariantId(e.target.value)} className={inputCls}>
+            <option value="">— ไม่ระบุ —</option>
+            {variants.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="หมายเหตุ">
+          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="เช่น งบประมาณ / นัดติดตาม" className={inputCls} />
+        </Field>
+
+        {error && <StatusBadge variant="bad">{error}</StatusBadge>}
+
+        <div className="mt-1 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-[24px] px-4 py-2 text-sm text-ink-soft">
+            ยกเลิก
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={name.trim() === "" || busy}
+            className="rounded-[24px] bg-accent px-5 py-2 text-sm font-medium text-card disabled:opacity-50"
+          >
+            {busy ? "กำลังบันทึก…" : "บันทึกลูกค้า"}
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
