@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toBlob } from "html-to-image";
 import { Modal } from "@/components/ui/Modal";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { supportContextLines, supportFileName, type SupportInfo } from "@/lib/support/context";
@@ -25,6 +24,8 @@ export function SupportCapture() {
     setBusy(true);
     setMsg(null);
     try {
+      // โหลด html-to-image เฉพาะตอนกด (dynamic) — ไม่ถ่วง bundle ของทุกหน้า (ปุ่มอยู่บน TopBar)
+      const { toBlob } = await import("html-to-image");
       const blob = await toBlob(document.body, {
         backgroundColor: getComputedStyle(document.body).backgroundColor || "#ffffff",
         pixelRatio: Math.min(2, window.devicePixelRatio || 1),
