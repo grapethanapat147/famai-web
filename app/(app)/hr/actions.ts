@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { getActiveBranches } from "@/lib/reference/cache";
 import { getSettingsWith } from "@/lib/settings";
 import type { TypedSupabaseClient } from "@/lib/supabase/client-type";
+import { positionFromRoles } from "@/lib/hr/employee";
 import { lateMinutes, workMinutes } from "@/lib/hr/time";
 import { canApproveLeave, isLeaveType, leaveDays, type HrActionResult } from "@/lib/hr/leave";
 
@@ -20,6 +22,45 @@ function bangkokHHMM(iso?: string): string {
 async function myEmployeeId(supabase: TypedSupabaseClient, userId: string): Promise<string | null> {
   const { data } = await supabase.from("employee").select("id").eq("user_id", userId).maybeSingle();
   return data?.id ?? null;
+}
+
+/**
+ * เชื่อมบัญชีปัจจุบันกับข้อมูลพนักงาน (opt-in) — ปลดล็อกลงเวลา/ลา เมื่อบัญชียังไม่ผูก employee
+ * สร้าง employee ผูก user_id · สาขา = สาขาผู้ใช้ (ไม่มี → สาขาแรก) · ตำแหน่งจาก role · เงินเดือน/emp_code ให้ HR เติมภายหลัง
+ */
+export async function linkMyEmployee(): Promise<HrActionResult> {
+  const me = await getCurrentUser();
+  if (!me) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  const supabase = await createServerSupabase();
+  if (await myEmployeeId(supabase, me.id)) {
+    return { ok: true, message: "บัญชีนี้ผูกกับข้อมูลพนักงานอยู่แล้ว" };
+  }
+
+  let branchId = me.branchIds[0] ?? null;
+  if (!branchId) {
+    branchId = (await getActiveBranches())[0]?.id ?? null;
+  }
+  if (!branchId) {
+    return { ok: false, error: "ยังไม่มีสาขาในระบบ — เพิ่มสาขาก่อน" };
+  }
+
+  const { error } = await supabase.from("employee").insert({
+    user_id: me.id,
+    branch_id: branchId,
+    position: positionFromRoles(me.roleCodes),
+    hired_at: bangkokDate(),
+  });
+  if (error) {
+    if (error.code === "23505") {
+      return { ok: true }; // มีอยู่แล้ว (race) — ถือว่าสำเร็จ
+    }
+    return { ok: false, error: "เชื่อมข้อมูลพนักงานไม่สำเร็จ (สิทธิ์สาขาไม่พอ?)" };
+  }
+
+  revalidatePath("/hr");
+  return { ok: true, message: "เชื่อมข้อมูลพนักงานแล้ว — เริ่มลงเวลาได้เลย" };
 }
 
 /** ลงเวลาเข้า (ตัวเอง) — คำนวณสาย/สถานะจาก work_start */

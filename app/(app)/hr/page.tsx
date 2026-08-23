@@ -2,7 +2,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { canApproveLeave, isLeaveStatus, type LeaveRow, type LeaveStatus } from "@/lib/hr/leave";
 import { HrView, type MyToday } from "@/components/hr/HrView";
-import { clockIn, clockOut, decideLeave, requestLeave } from "./actions";
+import { clockIn, clockOut, decideLeave, linkMyEmployee, requestLeave } from "./actions";
 
 export const metadata = { title: "ลงเวลาและลา — Famai Motor Group" };
 
@@ -63,6 +63,7 @@ export default async function HrPage() {
       today={today}
       clockInAction={clockIn}
       clockOutAction={clockOut}
+      linkEmployeeAction={linkMyEmployee}
       requestLeaveAction={requestLeave}
       decideLeaveAction={decideLeave}
     />

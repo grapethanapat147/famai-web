@@ -38,6 +38,7 @@ export function HrView({
   today,
   clockInAction,
   clockOutAction,
+  linkEmployeeAction,
   requestLeaveAction,
   decideLeaveAction,
 }: {
@@ -48,6 +49,7 @@ export function HrView({
   today: string;
   clockInAction: () => Promise<HrActionResult>;
   clockOutAction: () => Promise<HrActionResult>;
+  linkEmployeeAction: () => Promise<HrActionResult>;
   requestLeaveAction: (formData: FormData) => Promise<HrActionResult>;
   decideLeaveAction: (formData: FormData) => Promise<HrActionResult>;
 }) {
@@ -60,7 +62,14 @@ export function HrView({
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <ClockCard hasEmployee={hasEmployee} myToday={myToday} today={today} clockInAction={clockInAction} clockOutAction={clockOutAction} />
+      <ClockCard
+        hasEmployee={hasEmployee}
+        myToday={myToday}
+        today={today}
+        clockInAction={clockInAction}
+        clockOutAction={clockOutAction}
+        linkEmployeeAction={linkEmployeeAction}
+      />
 
       <section>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -131,12 +140,14 @@ function ClockCard({
   today,
   clockInAction,
   clockOutAction,
+  linkEmployeeAction,
 }: {
   hasEmployee: boolean;
   myToday: MyToday | null;
   today: string;
   clockInAction: () => Promise<HrActionResult>;
   clockOutAction: () => Promise<HrActionResult>;
+  linkEmployeeAction: () => Promise<HrActionResult>;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -161,7 +172,21 @@ function ClockCard({
       </div>
 
       {!hasEmployee ? (
-        <StatusBadge variant="info">บัญชีนี้ยังไม่ผูกกับข้อมูลพนักงาน — ลงเวลาไม่ได้</StatusBadge>
+        <div className="flex flex-col gap-3">
+          <StatusBadge variant="info">บัญชีนี้ยังไม่ผูกกับข้อมูลพนักงาน</StatusBadge>
+          <p className="text-sm leading-relaxed text-muted">
+            เชื่อมบัญชีของคุณกับข้อมูลพนักงานเพื่อเริ่มลงเวลาเข้า–ออกและขอลา — ฝ่ายบุคคลกำหนดตำแหน่ง/เงินเดือนเพิ่มเติมได้ภายหลัง
+          </p>
+          {error && <StatusBadge variant="bad">{error}</StatusBadge>}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => run(linkEmployeeAction)}
+            className="self-start rounded-[24px] bg-accent px-5 py-2.5 text-sm font-medium text-card disabled:opacity-50"
+          >
+            {busy ? "กำลังเชื่อม…" : "เชื่อมบัญชีกับข้อมูลพนักงาน"}
+          </button>
+        </div>
       ) : (
         <>
           <div className="mb-3 flex gap-6 text-sm">

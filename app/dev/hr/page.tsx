@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { HrView, type MyToday } from "@/components/hr/HrView";
 import type { HrActionResult, LeaveRow } from "@/lib/hr/leave";
 
@@ -26,20 +27,34 @@ async function mockForm(formData: FormData): Promise<HrActionResult> {
 }
 
 export default function DevHrPage() {
+  const [linked, setLinked] = useState(true);
+  const mockLink: () => Promise<HrActionResult> = async () => {
+    setLinked(true); // จำลอง revalidate: หลังเชื่อมสำเร็จ การ์ดเปลี่ยนเป็นลงเวลาได้
+    return { ok: true, message: "เชื่อมข้อมูลพนักงานแล้ว" };
+  };
+
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-8 lg:px-6">
       <header className="mb-6">
         <h1 className="font-display text-[28px] font-semibold text-ink">ลงเวลาและลา (preview)</h1>
-        <p className="mt-1 text-ink-soft">sample data — ลงเวลาเข้า/ออก · ขอลา · อนุมัติใบลาที่รออนุมัติ (คลิกใบที่รออนุมัติ)</p>
+        <p className="mt-1 text-ink-soft">sample data — ลงเวลาเข้า/ออก · ขอลา · อนุมัติใบลา · FAM-1086 เชื่อมบัญชีกับข้อมูลพนักงาน</p>
+        <button
+          type="button"
+          onClick={() => setLinked((v) => !v)}
+          className="mt-3 rounded-full border border-hairline px-3 py-1.5 text-sm text-ink-soft"
+        >
+          จำลองสถานะ: {linked ? "ผูกพนักงานแล้ว" : "ยังไม่ผูกพนักงาน"} (กดสลับ)
+        </button>
       </header>
       <HrView
-        hasEmployee
-        myToday={MY_TODAY}
+        hasEmployee={linked}
+        myToday={linked ? MY_TODAY : null}
         leaves={LEAVES}
         canApprove
         today="2026-08-12"
         clockInAction={mockClock}
         clockOutAction={mockClock}
+        linkEmployeeAction={mockLink}
         requestLeaveAction={mockForm}
         decideLeaveAction={mockForm}
       />
