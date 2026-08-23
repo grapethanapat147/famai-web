@@ -72,7 +72,7 @@ export type ModelRow = {
   colors: ModelColorRef[];
   cost: number | null; // อาจถูกตัดออก (money-strip) → null
   retail: number | null;
-  stockCount: number; // จำนวนคัน status = available ในสาขาที่เห็นได้
+  stockCount: number; // จำนวนคัน status = available ในบริษัทที่เห็นได้
   photoPath: string | null; // path_card ใน bucket 'model-photo' (public)
 };
 

@@ -45,7 +45,7 @@ export async function recordPayment(formData: FormData): Promise<ArActionResult>
     .eq("id", receivableId)
     .maybeSingle();
   if (readError || !rec) {
-    return { ok: false, error: "ไม่พบรายการค้างรับ (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "ไม่พบรายการค้างรับ (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
   if (rec.settled_at) {
     return { ok: false, error: "รายการนี้ปิดยอดแล้ว" };

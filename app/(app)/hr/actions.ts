@@ -26,7 +26,7 @@ async function myEmployeeId(supabase: TypedSupabaseClient, userId: string): Prom
 
 /**
  * เชื่อมบัญชีปัจจุบันกับข้อมูลพนักงาน (opt-in) — ปลดล็อกลงเวลา/ลา เมื่อบัญชียังไม่ผูก employee
- * สร้าง employee ผูก user_id · สาขา = สาขาผู้ใช้ (ไม่มี → สาขาแรก) · ตำแหน่งจาก role · เงินเดือน/emp_code ให้ HR เติมภายหลัง
+ * สร้าง employee ผูก user_id · บริษัท = บริษัทผู้ใช้ (ไม่มี → บริษัทแรก) · ตำแหน่งจาก role · เงินเดือน/emp_code ให้ HR เติมภายหลัง
  */
 export async function linkMyEmployee(): Promise<HrActionResult> {
   const me = await getCurrentUser();
@@ -43,7 +43,7 @@ export async function linkMyEmployee(): Promise<HrActionResult> {
     branchId = (await getActiveBranches())[0]?.id ?? null;
   }
   if (!branchId) {
-    return { ok: false, error: "ยังไม่มีสาขาในระบบ — เพิ่มสาขาก่อน" };
+    return { ok: false, error: "ยังไม่มีบริษัทในระบบ — เพิ่มบริษัทก่อน" };
   }
 
   const { error } = await supabase.from("employee").insert({
@@ -56,7 +56,7 @@ export async function linkMyEmployee(): Promise<HrActionResult> {
     if (error.code === "23505") {
       return { ok: true }; // มีอยู่แล้ว (race) — ถือว่าสำเร็จ
     }
-    return { ok: false, error: "เชื่อมข้อมูลพนักงานไม่สำเร็จ (สิทธิ์สาขาไม่พอ?)" };
+    return { ok: false, error: "เชื่อมข้อมูลพนักงานไม่สำเร็จ (สิทธิ์บริษัทไม่พอ?)" };
   }
 
   revalidatePath("/hr");

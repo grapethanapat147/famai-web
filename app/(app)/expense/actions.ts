@@ -11,7 +11,7 @@ function todayISO(): string {
 }
 
 /**
- * บันทึกค่าใช้จ่าย — ด่านสิทธิ์ + RLS สาขา · insert เดียว (ตารางเดียว)
+ * บันทึกค่าใช้จ่าย — ด่านสิทธิ์ + RLS บริษัท · insert เดียว (ตารางเดียว)
  * vendor = "ซื้อกับใคร" (R1) · has_receipt=false = ธงใบเสร็จหาย
  */
 export async function recordExpense(formData: FormData): Promise<ExpenseActionResult> {
@@ -46,7 +46,7 @@ export async function recordExpense(formData: FormData): Promise<ExpenseActionRe
     branchId = anyBranch?.id ?? "";
   }
   if (!branchId) {
-    return { ok: false, error: "ไม่พบสาขาสำหรับบันทึก" };
+    return { ok: false, error: "ไม่พบบริษัทสำหรับบันทึก" };
   }
 
   const { error } = await supabase.from("expense").insert({
@@ -94,7 +94,7 @@ export async function approveExpense(formData: FormData): Promise<ExpenseActionR
     .is("approved_at", null)
     .select("id");
   if (error || !updated || updated.length === 0) {
-    return { ok: false, error: "อนุมัติไม่สำเร็จ (อาจถูกอนุมัติไปแล้ว หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "อนุมัติไม่สำเร็จ (อาจถูกอนุมัติไปแล้ว หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
 
   revalidatePath("/expense");

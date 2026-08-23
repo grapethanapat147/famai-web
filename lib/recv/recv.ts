@@ -76,7 +76,7 @@ export function validateRecvInput(input: RecvInput): { ok: true; value: RecvVali
   const unitKind = input.unitKind.includes("มือสอง") ? "มือสอง" : "ใหม่";
 
   if (!branchId) {
-    return { ok: false, error: "เลือกสาขา" };
+    return { ok: false, error: "เลือกบริษัท" };
   }
   if (!variantId) {
     return { ok: false, error: "เลือกรุ่นรถ" };

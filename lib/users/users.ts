@@ -1,6 +1,6 @@
 /**
  * โครงข้อมูล + ตรรกะจัดการบัญชีผู้ใช้/สิทธิ์ (ฟังก์ชันบริสุทธิ์ ทดสอบได้)
- * แก้ role/สาขา = เขียน app_user_role / app_user_branch (RLS: admin เท่านั้น)
+ * แก้ role/บริษัท = เขียน app_user_role / app_user_branch (RLS: admin เท่านั้น)
  */
 
 export type UsersActionResult = { ok: true; message?: string } | { ok: false; error: string };

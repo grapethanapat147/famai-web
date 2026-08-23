@@ -1,6 +1,6 @@
 /**
- * โครงข้อมูล + ตรรกะโอนย้ายรถระหว่างสาขา (ฟังก์ชันบริสุทธิ์ ทดสอบได้)
- * unit_transfer มองเห็นได้ทั้งสาขาต้นทางและปลายทาง (RLS §5)
+ * โครงข้อมูล + ตรรกะโอนย้ายรถระหว่างบริษัท (ฟังก์ชันบริสุทธิ์ ทดสอบได้)
+ * unit_transfer มองเห็นได้ทั้งบริษัทต้นทางและปลายทาง (RLS §5)
  */
 
 export type TransferActionResult = { ok: true; message?: string } | { ok: false; error: string };
@@ -43,7 +43,7 @@ export type Transfer = {
 
 export type Direction = "in" | "out" | "both" | "other";
 
-/** ทิศเทียบกับสาขาของฉัน — เข้า (ปลายทางฉัน) / ออก (ต้นทางฉัน) */
+/** ทิศเทียบกับบริษัทของฉัน — เข้า (ปลายทางฉัน) / ออก (ต้นทางฉัน) */
 export function directionOf(
   t: Pick<Transfer, "fromBranchId" | "toBranchId">,
   myBranchIds: readonly string[],

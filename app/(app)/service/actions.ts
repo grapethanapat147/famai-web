@@ -51,7 +51,7 @@ export async function advanceStatus(formData: FormData): Promise<ServiceActionRe
     .eq("id", jobId)
     .maybeSingle();
   if (readError || !jobRow) {
-    return { ok: false, error: "ไม่พบใบงาน (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "ไม่พบใบงาน (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
   if (jobRow.status !== from) {
     return { ok: false, error: "สถานะเพิ่งเปลี่ยน กรุณาลองใหม่" };
@@ -119,7 +119,7 @@ export async function createServiceJob(formData: FormData): Promise<ServiceActio
     branchId = (await supabase.from("branch").select("id").limit(1).maybeSingle()).data?.id ?? "";
   }
   if (!branchId) {
-    return { ok: false, error: "ไม่พบสาขา" };
+    return { ok: false, error: "ไม่พบบริษัท" };
   }
 
   const yearBE = new Date().getFullYear() + 543;
@@ -186,7 +186,7 @@ export async function addServiceLine(formData: FormData): Promise<ServiceActionR
 
   const { data: job } = await supabase.from("service_job").select("id, status").eq("id", jobId).maybeSingle();
   if (!job) {
-    return { ok: false, error: "ไม่พบใบงาน (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "ไม่พบใบงาน (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
   if (job.status === "ส่งมอบแล้ว") {
     return { ok: false, error: "ใบงานส่งมอบแล้ว แก้รายการไม่ได้" };
@@ -205,7 +205,7 @@ export async function addServiceLine(formData: FormData): Promise<ServiceActionR
       .eq("id", partId)
       .maybeSingle();
     if (!p) {
-      return { ok: false, error: "ไม่พบอะไหล่ (หรือไม่มีสิทธิ์สาขานี้)" };
+      return { ok: false, error: "ไม่พบอะไหล่ (หรือไม่มีสิทธิ์บริษัทนี้)" };
     }
     part = { id: p.id, branch_id: p.branch_id, qty_on_hand: p.qty_on_hand, price: Number(p.price), name: p.name };
     if (part.qty_on_hand < qty) {
@@ -304,7 +304,7 @@ export async function removeServiceLine(formData: FormData): Promise<ServiceActi
     .eq("id", lineId)
     .maybeSingle();
   if (!line) {
-    return { ok: false, error: "ไม่พบรายการ (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "ไม่พบรายการ (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
 
   const { data: job } = await supabase.from("service_job").select("id, status").eq("id", line.job_id).maybeSingle();

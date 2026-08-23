@@ -13,7 +13,7 @@ export default async function ServicePage() {
   const supabase = await createServerSupabase();
   const user = await getCurrentUser();
 
-  // RLS คัดให้เห็นเฉพาะสาขาที่เข้าถึงได้ (เว้น allBranch)
+  // RLS คัดให้เห็นเฉพาะบริษัทที่เข้าถึงได้ (เว้น allBranch)
   const { data: jobRows } = await supabase
     .from("service_job")
     .select(

@@ -8,7 +8,7 @@ import { canReceiveStock, computeCostVat, deriveSku, validateRecvInput, type Rec
 
 /**
  * รับรถเข้าสต๊อกทีละคัน — ด่านสิทธิ์ + ตรวจฟอร์ม + resolve รหัสรุ่น/สี + เช็คเลขเครื่อง/ตัวถังซ้ำ + insert 1 แถว
- * RLS บังคับสาขา (insert เฉพาะสาขาที่เข้าถึงได้) · ต้นทุนรับเฉพาะผู้มีสิทธิ์ money (คนอื่น = 0 รอกำหนด)
+ * RLS บังคับบริษัท (insert เฉพาะบริษัทที่เข้าถึงได้) · ต้นทุนรับเฉพาะผู้มีสิทธิ์ money (คนอื่น = 0 รอกำหนด)
  */
 export async function receiveUnit(formData: FormData): Promise<RecvActionResult> {
   const user = await getCurrentUser();
@@ -38,7 +38,7 @@ export async function receiveUnit(formData: FormData): Promise<RecvActionResult>
 
   const supabase = await createServerSupabase();
 
-  // resolve รหัสรุ่น (ไว้ทำ sku) + ยืนยันว่าสีนั้นเป็นของรุ่นนี้จริง + เช็คเลขเครื่อง/ตัวถังซ้ำ (ในสาขาที่เห็นได้)
+  // resolve รหัสรุ่น (ไว้ทำ sku) + ยืนยันว่าสีนั้นเป็นของรุ่นนี้จริง + เช็คเลขเครื่อง/ตัวถังซ้ำ (ในบริษัทที่เห็นได้)
   const [variantRes, colorRes, engineDup, frameDup] = await Promise.all([
     supabase.from("model_variant").select("code").eq("id", v.variantId).maybeSingle(),
     supabase.from("model_color").select("color_code").eq("variant_id", v.variantId).eq("color_code", v.colorCode).maybeSingle(),
@@ -85,7 +85,7 @@ export async function receiveUnit(formData: FormData): Promise<RecvActionResult>
     if (error.code === "23505") {
       return { ok: false, error: "เลขเครื่องหรือเลขตัวถังนี้มีอยู่แล้ว" };
     }
-    return { ok: false, error: "บันทึกไม่สำเร็จ (สิทธิ์สาขาไม่พอ หรือข้อมูลผิด)" };
+    return { ok: false, error: "บันทึกไม่สำเร็จ (สิทธิ์บริษัทไม่พอ หรือข้อมูลผิด)" };
   }
 
   revalidatePath("/recv");

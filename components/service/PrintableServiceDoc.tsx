@@ -23,7 +23,7 @@ export function PrintableServiceDoc({ seller, job }: { seller: QuoteSeller; job:
             {seller.shopName} <span className="qdoc-brand-accent">Yamaha</span>
           </div>
           <div className="qdoc-seller-line">
-            สาขา{seller.branchName}
+            บริษัท{seller.branchName}
             {sellerLines ? (
               <>
                 <br />

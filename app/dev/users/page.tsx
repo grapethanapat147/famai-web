@@ -37,7 +37,7 @@ export default function DevUsersPage() {
     <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
       <header className="mb-6">
         <h1 className="font-display text-[28px] font-semibold text-ink">บัญชีผู้ใช้ (preview)</h1>
-        <p className="mt-1 text-ink-soft">sample data — กดผู้ใช้เพื่อแก้บทบาท/สาขา (บัญชี &ldquo;คุณ&rdquo; ถอดสิทธิ์ตัวเองไม่ได้)</p>
+        <p className="mt-1 text-ink-soft">sample data — กดผู้ใช้เพื่อแก้บทบาท/บริษัท (บัญชี &ldquo;คุณ&rdquo; ถอดสิทธิ์ตัวเองไม่ได้)</p>
       </header>
       <UsersView users={USERS} roles={ROLES} branches={BRANCHES} currentUserId="me" action={mockSave} />
     </main>

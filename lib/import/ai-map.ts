@@ -10,7 +10,7 @@ export const AI_IMPORT_FIELDS: ReadonlyArray<{ field: keyof ImportUnit; canonica
   { field: "engineNo", canonical: "หมายเลขเครื่อง", label: "เลขเครื่อง" },
   { field: "frameNo", canonical: "หมายเลขตัวถัง", label: "เลขตัวถัง/เฟรม" },
   { field: "cost", canonical: "ต้นทุนต่อหน่วย", label: "ต้นทุนต่อคัน" },
-  { field: "branchCode", canonical: "DOC_BRANCH_CODE", label: "รหัสสาขา" },
+  { field: "branchCode", canonical: "DOC_BRANCH_CODE", label: "รหัสบริษัท" },
   { field: "receivedAt", canonical: "วันที่ใบรับ", label: "วันที่รับเข้า" },
   { field: "sku", canonical: "รหัสผลิตภัณฑ์", label: "รหัสผลิตภัณฑ์/SKU" },
 ];

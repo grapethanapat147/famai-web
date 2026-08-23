@@ -13,7 +13,7 @@ const CATEGORIES: ExpenseCategoryOption[] = [
 ];
 
 const EXPENSES: ExpenseRow[] = [
-  { id: "1", categoryId: "c1", categoryName: "ค่าน้ำมัน", vendor: "ปตท. สาขาบางนา", amount: 1200, spentAt: "2026-08-11", hasReceipt: true, taxInvoiceNo: "INV-8842", note: null, createdByName: "เอ", approvedAt: null, approvedByName: null },
+  { id: "1", categoryId: "c1", categoryName: "ค่าน้ำมัน", vendor: "ปตท. บริษัทบางนา", amount: 1200, spentAt: "2026-08-11", hasReceipt: true, taxInvoiceNo: "INV-8842", note: null, createdByName: "เอ", approvedAt: null, approvedByName: null },
   { id: "2", categoryId: "c2", categoryName: "ค่ารับรอง", vendor: "Starbucks", amount: 320, spentAt: "2026-08-10", hasReceipt: false, taxInvoiceNo: null, note: "เลี้ยงลูกค้า", createdByName: "บี", approvedAt: null, approvedByName: null },
   { id: "3", categoryId: "c3", categoryName: "ค่าสาธารณูปโภค", vendor: "การไฟฟ้า", amount: 8600, spentAt: "2026-08-05", hasReceipt: true, taxInvoiceNo: "EA-2569-08", note: null, createdByName: "เอ", approvedAt: "2026-08-06T03:00:00Z", approvedByName: "เกรพ" },
   { id: "4", categoryId: "c4", categoryName: "ค่าซ่อมบำรุง", vendor: "ร้านช่างแอร์", amount: 2500, spentAt: "2026-08-03", hasReceipt: false, taxInvoiceNo: null, note: "ซ่อมแอร์โชว์รูม", createdByName: "บี", approvedAt: null, approvedByName: null },

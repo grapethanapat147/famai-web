@@ -115,7 +115,7 @@ const fetchBranchesCached = unstable_cache(
   { tags: [REF_TAG.branches], revalidate: TTL_SECONDS },
 );
 
-/** ทุกสาขา (รวม inactive) เรียงตามรหัส — แคช global พร้อม fallback อ่านสด */
+/** ทุกบริษัท (รวม inactive) เรียงตามรหัส — แคช global พร้อม fallback อ่านสด */
 export async function getBranchesCached(): Promise<BranchRef[]> {
   try {
     return await fetchBranchesCached();
@@ -133,7 +133,7 @@ export async function getBranchesCached(): Promise<BranchRef[]> {
   }
 }
 
-/** เฉพาะสาขาที่เปิดใช้งาน (is_active) — ใช้กับดรอปดาวน์/หัวเอกสาร */
+/** เฉพาะบริษัทที่เปิดใช้งาน (is_active) — ใช้กับดรอปดาวน์/หัวเอกสาร */
 export async function getActiveBranches(): Promise<BranchRef[]> {
   return (await getBranchesCached()).filter((b) => b.is_active);
 }
@@ -175,7 +175,7 @@ export async function getCompaniesCached(): Promise<CompanyRef[]> {
 }
 
 /**
- * ล้างแคชข้อมูลอ้างอิงตาม tag — เรียกหลังบันทึก settings/theme/บริษัท/สาขา
+ * ล้างแคชข้อมูลอ้างอิงตาม tag — เรียกหลังบันทึก settings/theme/บริษัท
  * Next 16: revalidateTag ต้องมี profile arg — ใส่ "max" (แค่สั่ง purge tag ส่วน TTL ของ entry คุมด้วย revalidate ในตัว getter)
  */
 export function revalidateReference(...tags: RefTag[]): void {

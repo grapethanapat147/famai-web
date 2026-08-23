@@ -5,7 +5,7 @@ import { canManageTransfer, type Transfer, type TransferStatus } from "@/lib/tra
 import { TransferView, type TransferBranch, type TransferUnit } from "@/components/transfer/TransferView";
 import { cancelTransfer, receiveTransfer, requestTransfer } from "./actions";
 
-export const metadata = { title: "โอนย้ายสาขา — Famai Motor Group" };
+export const metadata = { title: "โอนย้ายบริษัท — Famai Motor Group" };
 
 const KNOWN_STATUS = new Set<TransferStatus>(["in_transit", "received", "cancelled"]);
 
@@ -37,7 +37,7 @@ export default async function TransferPage() {
 
   function vehicleOf(u: { variant_id: string; color_code: string } | undefined): string {
     if (!u) {
-      return "รถโอน (ดูรายละเอียดได้เมื่อรับเข้าสาขา)";
+      return "รถโอน (ดูรายละเอียดได้เมื่อรับเข้าบริษัท)";
     }
     const model = variantName.get(u.variant_id);
     const color = colorName.get(`${u.variant_id}:${u.color_code}`);

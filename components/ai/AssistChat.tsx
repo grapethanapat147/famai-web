@@ -47,7 +47,7 @@ export function AssistChat() {
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       <div>
         <h1 className="font-display text-2xl font-semibold text-ink">ผู้ช่วยวิเคราะห์</h1>
-        <p className="mt-0.5 text-sm text-muted">ถามภาษาไทยเกี่ยวกับสต๊อก/ยอดขาย — ตอบจากข้อมูลจริงตามสิทธิ์และสาขาของคุณ</p>
+        <p className="mt-0.5 text-sm text-muted">ถามภาษาไทยเกี่ยวกับสต๊อก/ยอดขาย — ตอบจากข้อมูลจริงตามสิทธิ์และบริษัทของคุณ</p>
       </div>
 
       <div className="flex flex-wrap gap-1.5">
@@ -97,7 +97,7 @@ export function AssistChat() {
         </div>
       )}
 
-      <p className="text-[11px] text-muted">AI อาจผิดพลาด — ตรวจสอบก่อนตัดสินใจ · เห็นเฉพาะข้อมูลตามสิทธิ์และสาขาของคุณ</p>
+      <p className="text-[11px] text-muted">AI อาจผิดพลาด — ตรวจสอบก่อนตัดสินใจ · เห็นเฉพาะข้อมูลตามสิทธิ์และบริษัทของคุณ</p>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { formatBaht, formatThaiDate } from "@/lib/format";
 import { monthlyFor, type PrintColumn } from "@/lib/quote/print";
 
-/** ข้อมูลผู้ขาย/สาขา บนหัวกระดาษ (R1 ขายรถ: ชื่อร้าน + เบอร์ + ผู้เสนอราคา) */
+/** ข้อมูลผู้ขาย/บริษัท บนหัวกระดาษ (R1 ขายรถ: ชื่อร้าน + เบอร์ + ผู้เสนอราคา) */
 export type QuoteSeller = {
   shopName: string;
   branchName: string;
@@ -48,7 +48,7 @@ export function PrintableQuoteDoc({
             {seller.shopName} <span className="qdoc-brand-accent">Yamaha</span>
           </div>
           <div className="qdoc-seller-line">
-            สาขา{seller.branchName}
+            บริษัท{seller.branchName}
             {sellerLines ? (
               <>
                 <br />

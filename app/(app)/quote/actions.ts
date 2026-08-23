@@ -22,7 +22,7 @@ function todayISO(): string {
 
 /**
  * บันทึกใบเสนอราคา — quotation + quotation_option[] (doc_no ผ่าน next_doc_no 'QUOTE')
- * ด่านสิทธิ์ + RLS สาขา · หลายตารางไม่ atomic → cleanup best-effort กันใบค้างครึ่ง
+ * ด่านสิทธิ์ + RLS บริษัท · หลายตารางไม่ atomic → cleanup best-effort กันใบค้างครึ่ง
  */
 export async function createQuote(formData: FormData): Promise<QuoteActionResult> {
   const user = await getCurrentUser();
@@ -64,7 +64,7 @@ export async function createQuote(formData: FormData): Promise<QuoteActionResult
     branchId = anyBranch?.id ?? "";
   }
   if (!branchId) {
-    return { ok: false, error: "ไม่พบสาขาสำหรับออกเอกสาร" };
+    return { ok: false, error: "ไม่พบบริษัทสำหรับออกเอกสาร" };
   }
 
   const yearBE = new Date().getFullYear() + 543;
@@ -159,7 +159,7 @@ export async function updateQuote(formData: FormData): Promise<QuoteActionResult
 
   const { data: existing } = await supabase.from("quotation").select("id, doc_no").eq("id", quoteId).maybeSingle();
   if (!existing) {
-    return { ok: false, error: "ไม่พบใบเสนอราคา (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "ไม่พบใบเสนอราคา (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
 
   const { error: updateError } = await supabase
@@ -221,7 +221,7 @@ export async function deleteQuote(formData: FormData): Promise<QuoteActionResult
   await supabase.from("quotation_option").delete().eq("quotation_id", quoteId);
   const { data: deleted, error } = await supabase.from("quotation").delete().eq("id", quoteId).select("id");
   if (error || !deleted || deleted.length === 0) {
-    return { ok: false, error: "ลบไม่สำเร็จ (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "ลบไม่สำเร็จ (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
 
   revalidatePath("/quote");

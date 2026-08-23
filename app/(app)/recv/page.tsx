@@ -49,7 +49,7 @@ export default async function RecvPage() {
     <div className="mx-auto max-w-5xl">
       <header className="mb-6">
         <h1 className="font-display text-[28px] font-semibold leading-tight text-ink">รับรถเข้าสต๊อก</h1>
-        <p className="mt-1 text-ink-soft">บันทึกรถทีละคัน — เลือกรุ่น/สี/สาขา แล้วกรอกเลขเครื่อง/เลขตัวถัง</p>
+        <p className="mt-1 text-ink-soft">บันทึกรถทีละคัน — เลือกรุ่น/สี/บริษัท แล้วกรอกเลขเครื่อง/เลขตัวถัง</p>
       </header>
       <RecvForm
         variants={variants}

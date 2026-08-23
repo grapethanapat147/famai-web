@@ -77,10 +77,10 @@ export function UsersView({
     },
     {
       key: "branch",
-      header: "สาขา",
+      header: "บริษัท",
       render: (u) =>
         u.allBranch ? (
-          <StatusBadge variant="info">ทุกสาขา</StatusBadge>
+          <StatusBadge variant="info">ทุกบริษัท</StatusBadge>
         ) : (
           <span className="text-ink-soft">{u.branchIds.map((id) => branchName.get(id) ?? id).join(", ") || "—"}</span>
         ),
@@ -223,7 +223,7 @@ function EditUserDrawer({
           {isSelf && <StatusBadge variant="warn">นี่คือบัญชีของคุณ — ถอดสิทธิ์แอดมิน/ปิดใช้งานตัวเองไม่ได้</StatusBadge>}
 
           <ToggleRow label="เปิดใช้งานบัญชี" on={isActive} onToggle={() => setIsActive((v) => !v)} />
-          <ToggleRow label="เห็นทุกสาขา (ผู้บริหาร/แอดมิน)" on={allBranch} onToggle={() => setAllBranch((v) => !v)} />
+          <ToggleRow label="เห็นทุกบริษัท (ผู้บริหาร/แอดมิน)" on={allBranch} onToggle={() => setAllBranch((v) => !v)} />
 
           <div>
             <p className="mb-2 font-medium text-ink">บทบาท</p>
@@ -245,7 +245,7 @@ function EditUserDrawer({
           </div>
 
           <div className={allBranch ? "opacity-50" : ""}>
-            <p className="mb-2 font-medium text-ink">สาขาที่เข้าถึง {allBranch && <span className="text-xs text-muted">(ข้ามเพราะเห็นทุกสาขา)</span>}</p>
+            <p className="mb-2 font-medium text-ink">บริษัทที่เข้าถึง {allBranch && <span className="text-xs text-muted">(ข้ามเพราะเห็นทุกบริษัท)</span>}</p>
             <div className="flex flex-wrap gap-1.5">
               {branches.map((b) => {
                 const on = branchIds.includes(b.id);

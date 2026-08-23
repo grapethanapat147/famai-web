@@ -44,7 +44,7 @@ export function DashboardView({
 
   const money = canSeeMoney && stats.stockValue != null;
   const avgCost = money && stats.inStockCount > 0 ? Math.round(stats.stockValue! / stats.inStockCount) : null;
-  const branchLabel = branch === "all" ? "ทุกสาขา" : (branches.find((b) => b.code === branch)?.name ?? "ทุกสาขา");
+  const branchLabel = branch === "all" ? "ทุกบริษัท" : (branches.find((b) => b.code === branch)?.name ?? "ทุกบริษัท");
   const maxBranch = Math.max(1, ...stats.byBranch.map((b) => b.value));
   const aged = useMemo(() => agedUnits(filtered, agingDays, 5), [filtered, agingDays]);
 
@@ -62,7 +62,7 @@ export function DashboardView({
           <Chips
             value={branch}
             onChange={setBranch}
-            options={[{ value: "all", label: "ทุกสาขา" }, ...branches.map((b) => ({ value: b.code, label: b.name }))]}
+            options={[{ value: "all", label: "ทุกบริษัท" }, ...branches.map((b) => ({ value: b.code, label: b.name }))]}
           />
         )}
       </div>
@@ -97,10 +97,10 @@ export function DashboardView({
               </div>
             </div>
 
-            {/* แยกตามสาขา — mini split (แสดงเมื่อมีหลายสาขาในมุมมองปัจจุบัน) */}
+            {/* แยกตามบริษัท — mini split (แสดงเมื่อมีหลายบริษัทในมุมมองปัจจุบัน) */}
             {stats.byBranch.length >= 2 && (
               <div className="shrink-0 sm:w-56 sm:border-l sm:border-hairline sm:pl-5">
-                <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted">แยกตามสาขา</div>
+                <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted">แยกตามบริษัท</div>
                 <div className="flex flex-col gap-1.5">
                   {stats.byBranch.map((b) => (
                     <div key={b.label} className="flex items-center gap-2 text-sm">

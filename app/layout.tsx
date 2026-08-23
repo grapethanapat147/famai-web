@@ -28,7 +28,7 @@ const anuphan = Anuphan({ variable: "--f-anuphan", subsets: ["thai", "latin"], w
 export const metadata: Metadata = {
   metadataBase: new URL(siteBaseUrl()),
   title: "Famai Motor Group",
-  description: "ระบบจัดการดีลเลอร์รถจักรยานยนต์ Yamaha 3 สาขา",
+  description: "ระบบจัดการดีลเลอร์รถจักรยานยนต์ Yamaha 3 บริษัท",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

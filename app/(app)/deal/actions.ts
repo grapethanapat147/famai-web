@@ -36,7 +36,7 @@ export async function advanceRegistration(formData: FormData): Promise<DealActio
     .eq("id", regId)
     .maybeSingle();
   if (regError || !reg) {
-    return { ok: false, error: "ไม่พบงานทะเบียน (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "ไม่พบงานทะเบียน (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
   if (!isRegStage(reg.stage)) {
     return { ok: false, error: "สถานะทะเบียนไม่ถูกต้อง" };
@@ -103,7 +103,7 @@ export async function revertRegistration(formData: FormData): Promise<DealAction
     .eq("id", regId)
     .maybeSingle();
   if (regError || !reg) {
-    return { ok: false, error: "ไม่พบงานทะเบียน (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "ไม่พบงานทะเบียน (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
   if (!isRegStage(reg.stage)) {
     return { ok: false, error: "สถานะทะเบียนไม่ถูกต้อง" };
@@ -190,7 +190,7 @@ export async function updateDealStep(formData: FormData): Promise<DealActionResu
 
 /**
  * แก้ข้อมูลลูกค้า/บันทึกในดีล (FAM-1093) — ชื่อ/เบอร์/ที่อยู่(ตามบัตร)/เลขบัตร + โน้ตงานทะเบียน
- * ด่านสิทธิ์ deal (รวม sales) · update customer + registration.note (RLS สาขาคุมอยู่แล้ว)
+ * ด่านสิทธิ์ deal (รวม sales) · update customer + registration.note (RLS บริษัทคุมอยู่แล้ว)
  */
 export async function updateDealCustomer(formData: FormData): Promise<DealActionResult> {
   const user = await getCurrentUser();
@@ -222,7 +222,7 @@ export async function updateDealCustomer(formData: FormData): Promise<DealAction
       .update({ full_name: v.name, phone: v.phone, address: v.address, tax_id: v.taxId })
       .eq("id", customerId);
     if (error) {
-      return { ok: false, error: "บันทึกข้อมูลลูกค้าไม่สำเร็จ (สิทธิ์สาขา?)" };
+      return { ok: false, error: "บันทึกข้อมูลลูกค้าไม่สำเร็จ (สิทธิ์บริษัท?)" };
     }
   }
   if (regId) {
@@ -238,7 +238,7 @@ export async function updateDealCustomer(formData: FormData): Promise<DealAction
 
 /**
  * เพิ่มลูกค้า (ลีด) — เก็บข้อมูลไว้ก่อนเพื่อติดตามการขายในอนาคต · ด่านสิทธิ์ deal (รวม sales)
- * insert customer (owner = ผู้เพิ่ม, สาขาผู้ใช้) + สร้าง follow_up_task ติดตาม (best-effort) → เข้าระบบเตือน
+ * insert customer (owner = ผู้เพิ่ม, บริษัทผู้ใช้) + สร้าง follow_up_task ติดตาม (best-effort) → เข้าระบบเตือน
  */
 export async function addCustomer(formData: FormData): Promise<DealActionResult> {
   const user = await getCurrentUser();
@@ -264,7 +264,7 @@ export async function addCustomer(formData: FormData): Promise<DealActionResult>
   const supabase = await createServerSupabase();
   const branchId = user.branchIds[0] ?? (await getActiveBranches())[0]?.id ?? null;
   if (!branchId) {
-    return { ok: false, error: "ยังไม่มีสาขาในระบบ — เพิ่มสาขาก่อน" };
+    return { ok: false, error: "ยังไม่มีบริษัทในระบบ — เพิ่มบริษัทก่อน" };
   }
 
   const { data: cust, error } = await supabase
@@ -280,7 +280,7 @@ export async function addCustomer(formData: FormData): Promise<DealActionResult>
     .select("id")
     .single();
   if (error || !cust) {
-    return { ok: false, error: "บันทึกลูกค้าไม่สำเร็จ (สิทธิ์สาขาไม่พอ?)" };
+    return { ok: false, error: "บันทึกลูกค้าไม่สำเร็จ (สิทธิ์บริษัทไม่พอ?)" };
   }
 
   // งานติดตาม 3 วัน (best-effort — ไม่ล้มการเพิ่มลูกค้าถ้าสร้างไม่ได้)
@@ -329,7 +329,7 @@ export async function advanceFinance(formData: FormData): Promise<DealActionResu
     .eq("id", caseId)
     .maybeSingle();
   if (readError || !fc) {
-    return { ok: false, error: "ไม่พบงานสินเชื่อ (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "ไม่พบงานสินเชื่อ (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
   if (!isFinanceStatus(fc.status) || !canFinanceTransition(fc.status, to)) {
     return { ok: false, error: "เปลี่ยนสถานะแบบนี้ไม่ได้" };
@@ -401,7 +401,7 @@ export async function voidDeal(formData: FormData): Promise<DealActionResult> {
     .eq("id", saleId)
     .maybeSingle();
   if (readError || !sale) {
-    return { ok: false, error: "ไม่พบดีล (หรือไม่มีสิทธิ์สาขานี้)" };
+    return { ok: false, error: "ไม่พบดีล (หรือไม่มีสิทธิ์บริษัทนี้)" };
   }
   if (sale.voided_at) {
     return { ok: false, error: "ดีลนี้ถูกยกเลิกไปแล้ว" };

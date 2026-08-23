@@ -15,7 +15,7 @@ function parseIds(formData: FormData, key: string): string[] {
 }
 
 /**
- * แก้สิทธิ์ผู้ใช้ (role/สาขา/เห็นทุกสาขา/เปิดใช้งาน) — เฉพาะ admin (ตรงกับ RLS)
+ * แก้สิทธิ์ผู้ใช้ (role/บริษัท/เห็นทุกบริษัท/เปิดใช้งาน) — เฉพาะ admin (ตรงกับ RLS)
  * กันแอดมินล็อกตัวเอง · sync แบบเพิ่มก่อนลบทีหลัง (กันช่วงว่างสิทธิ์)
  */
 export async function updateUserAccess(formData: FormData): Promise<UsersActionResult> {
@@ -81,7 +81,7 @@ export async function updateUserAccess(formData: FormData): Promise<UsersActionR
   if (branchDiff.toAdd.length) {
     const { error } = await supabase.from("app_user_branch").insert(branchDiff.toAdd.map((branch_id) => ({ user_id: userId, branch_id })));
     if (error) {
-      return { ok: false, error: "เพิ่มสาขาไม่สำเร็จ" };
+      return { ok: false, error: "เพิ่มบริษัทไม่สำเร็จ" };
     }
   }
   for (const branchId of branchDiff.toRemove) {
