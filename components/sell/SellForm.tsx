@@ -64,6 +64,7 @@ export function SellForm({
   const [listPrice, setListPrice] = useState(initListPrice ?? 0);
   const [discount, setDiscount] = useState(0);
   const [downPayment, setDownPayment] = useState(initial?.downPayment ?? 0);
+  const [note, setNote] = useState("");
   const [financeCoId, setFinanceCoId] = useState(initial?.financeId ?? "");
   const [months, setMonths] = useState(initial?.months ?? financeTerms[0] ?? 12);
   const [freebies, setFreebies] = useState<string[]>([]);
@@ -128,6 +129,7 @@ export function SellForm({
     fd.set("list_price", String(listPrice));
     fd.set("discount", String(discount));
     fd.set("freebie_cost", String(freebieCost));
+    fd.set("note", note);
     if (payMethod === "finance") {
       fd.set("finance_id", financeCoId);
       fd.set("down_payment", String(downPayment));
@@ -138,6 +140,7 @@ export function SellForm({
     if (res.ok) {
       setSavedDoc(res.docNo ?? "บันทึกแล้ว");
       // รีเซ็ตฟอร์มกันบันทึกซ้ำ
+      setNote("");
       setUnitId("");
       setCustomerName("");
       setCustomerPhone("");
@@ -277,6 +280,16 @@ export function SellForm({
               );
             })}
           </div>
+        </Field>
+
+        <Field label="หมายเหตุ (ถ้ามี)" full>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            placeholder="เงื่อนไขพิเศษ / ข้อตกลง / สิ่งที่ต้องจำ"
+            className={inputCls}
+          />
         </Field>
 
         <button
