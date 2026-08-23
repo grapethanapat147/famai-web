@@ -1,17 +1,18 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
 import { Chips } from "@/components/ui/Chips";
+import { FilterBar } from "@/components/ui/FilterBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { parseColors } from "@/lib/models/parse";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { PHOTO_CARD_MAX, PHOTO_FULL_MAX, resizeToWebp, type ModelPhotoResult } from "@/lib/models/image";
-import { modelSpecLine, type AddModelResult, type ModelRow } from "@/lib/models/rows";
+import { filterModels, modelCategories, modelSpecLine, sortModels, type AddModelResult, type ModelRow, type ModelSort } from "@/lib/models/rows";
 
 type ViewMode = "grid" | "table";
 
@@ -45,10 +46,19 @@ export function ModelsView({
 }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<ViewMode>("grid");
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
+  const [sort, setSort] = useState<ModelSort>("name");
   const [photoTarget, setPhotoTarget] = useState<ModelRow | null>(null);
   const [editTarget, setEditTarget] = useState<ModelRow | null>(null);
   const canPhoto = canManagePhoto && !!savePhotoAction;
   const canEdit = canAdd && !!editAction;
+
+  const cats = useMemo(() => modelCategories(rows), [rows]);
+  const shown = useMemo(() => sortModels(filterModels(rows, { search, category }), sort), [rows, search, category, sort]);
+  const isFiltered = search.trim() !== "" || category !== "all";
+
+  const selectClass = "rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -75,11 +85,45 @@ export function ModelsView({
         )}
       </div>
 
+      {rows.length > 0 && (
+        <div className="mb-4">
+          <FilterBar summary={`กำลังดู: ${shown.length} รุ่น`}>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="ค้นหารุ่น / รหัส / สี"
+              placeholder="ค้นชื่อรุ่น / รหัส / สี"
+              className={`${selectClass} w-full sm:w-56`}
+            />
+            {cats.length > 1 && (
+              <Chips
+                value={category}
+                onChange={setCategory}
+                options={[{ value: "all", label: "ทุกประเภท" }, ...cats.map((c) => ({ value: c, label: c }))]}
+              />
+            )}
+            <select aria-label="เรียงลำดับ" value={sort} onChange={(e) => setSort(e.target.value as ModelSort)} className={selectClass}>
+              <option value="name">เรียงตามชื่อ</option>
+              <option value="price-desc">ราคา มาก→น้อย</option>
+              <option value="price-asc">ราคา น้อย→มาก</option>
+              <option value="stock-desc">คงเหลือมากสุด</option>
+            </select>
+          </FilterBar>
+        </div>
+      )}
+
       {rows.length === 0 ? (
         <EmptyState icon="bike" title="ยังไม่มีรุ่นรถ" description="เพิ่มรุ่นรถและสีเพื่อเริ่มจัดแคตตาล็อก" />
+      ) : shown.length === 0 ? (
+        <EmptyState
+          icon="bike"
+          title="ไม่พบรุ่นตามเงื่อนไข"
+          description="ลองปรับคำค้นหรือประเภท"
+          action={isFiltered ? { label: "ล้างตัวกรอง", onClick: () => { setSearch(""); setCategory("all"); } } : undefined}
+        />
       ) : view === "grid" ? (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {rows.map((m) => (
+          {shown.map((m) => (
             <ModelCard
               key={m.id}
               m={m}
@@ -93,7 +137,7 @@ export function ModelsView({
           ))}
         </ul>
       ) : (
-        <ModelTable rows={rows} canSeeMoney={canSeeMoney} canEdit={canEdit} onEdit={setEditTarget} />
+        <ModelTable rows={shown} canSeeMoney={canSeeMoney} canEdit={canEdit} onEdit={setEditTarget} />
       )}
 
       {canAdd && (
