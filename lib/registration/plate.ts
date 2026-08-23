@@ -77,6 +77,23 @@ export function validatePlateReceived(
   return { ok: true, value: { plateNo: p, bookNo: b === "" ? null : b } };
 }
 
+/** พนักงานสำหรับดรอปดาวน์ "ผู้ส่งมอบ" */
+export type StaffOption = { id: string; name: string };
+
+/** ตรวจฟอร์มส่งมอบ (FAM-1105) — วันที่บังคับ (ISO), สถานที่/ผู้ส่งมอบ ไม่บังคับ (ว่าง → null) */
+export function validateDelivery(input: {
+  deliveredAt: string;
+  place: string;
+  deliveredBy: string;
+}): { ok: true; value: { deliveredAt: string; place: string | null; deliveredBy: string | null } } | { ok: false; error: string } {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.deliveredAt)) {
+    return { ok: false, error: "วันที่ส่งมอบไม่ถูกต้อง" };
+  }
+  const place = input.place.trim();
+  const by = input.deliveredBy.trim();
+  return { ok: true, value: { deliveredAt: input.deliveredAt, place: place === "" ? null : place, deliveredBy: by === "" ? null : by } };
+}
+
 /** แถวในคิวทะเบียน (ประกอบฝั่งเซิร์ฟเวอร์แล้วส่งให้ view) */
 export type PlateRow = {
   regId: string;

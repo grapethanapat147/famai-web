@@ -57,14 +57,26 @@ async function mockOk(): Promise<PlateActionResult> {
   return { ok: true };
 }
 
+const STAFF = [
+  { id: "u1", name: "สมชาย ใจดี" },
+  { id: "u2", name: "มานี รักษ์ดี" },
+];
+
 export default function DevRegistrationPage() {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 lg:px-6">
       <header className="mb-6">
         <h1 className="font-display text-[28px] font-semibold text-ink">งานทะเบียน (preview)</h1>
-        <p className="mt-1 text-ink-soft">FAM-1100 · sample data — คิวป้าย เรียงตามค้างนาน + บันทึกเลขคำขอ / รับเล่ม (mock)</p>
+        <p className="mt-1 text-ink-soft">FAM-1100/1105 · sample — คิวป้าย + บันทึกเลขคำขอ / รับเล่ม / ส่งมอบ (mock)</p>
       </header>
-      <RegistrationView queue={QUEUE} recordSubmissionAction={mockOk} recordPlateAction={mockOk} />
+      <RegistrationView
+        queue={QUEUE}
+        staff={STAFF}
+        today="2026-08-23"
+        recordSubmissionAction={mockOk}
+        recordPlateAction={mockOk}
+        recordDeliveryAction={mockOk}
+      />
     </main>
   );
 }
