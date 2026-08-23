@@ -9,6 +9,7 @@ import type { TypedSupabaseClient } from "@/lib/supabase/client-type";
 import { positionFromRoles } from "@/lib/hr/employee";
 import { lateMinutes, workMinutes } from "@/lib/hr/time";
 import { canApproveLeave, isLeaveType, leaveDays, type HrActionResult } from "@/lib/hr/leave";
+import { branchGeofence, formatDistanceM, haversineMeters, withinGeofence } from "@/lib/hr/geo";
 
 /** วันที่/เวลาปัจจุบันตามเขตเวลาไทย */
 function bangkokDate(): string {
@@ -63,17 +64,21 @@ export async function linkMyEmployee(): Promise<HrActionResult> {
   return { ok: true, message: "เชื่อมข้อมูลพนักงานแล้ว — เริ่มลงเวลาได้เลย" };
 }
 
-/** ลงเวลาเข้า (ตัวเอง) — คำนวณสาย/สถานะจาก work_start */
-export async function clockIn(): Promise<HrActionResult> {
+/**
+ * ลงเวลาเข้า (ตัวเอง) — คำนวณสาย/สถานะจาก work_start
+ * ถ้าบริษัทตั้ง geofence ไว้ ต้องส่งพิกัด (lat/lng) + อยู่ในรัศมี จึงลงเวลาได้ (FAM-1101) · เก็บพิกัด+ระยะไว้
+ */
+export async function clockIn(formData: FormData): Promise<HrActionResult> {
   const me = await getCurrentUser();
   if (!me) {
     return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
   }
   const supabase = await createServerSupabase();
-  const empId = await myEmployeeId(supabase, me.id);
-  if (!empId) {
+  const { data: emp } = await supabase.from("employee").select("id, branch_id").eq("user_id", me.id).maybeSingle();
+  if (!emp) {
     return { ok: false, error: "ไม่มีข้อมูลพนักงานของบัญชีนี้" };
   }
+  const empId = emp.id;
 
   const today = bangkokDate();
   const { data: existing } = await supabase
@@ -86,11 +91,28 @@ export async function clockIn(): Promise<HrActionResult> {
     return { ok: false, error: "ลงเวลาเข้าแล้ววันนี้" };
   }
 
+  // ตรวจพิกัด (geofence) เฉพาะบริษัทที่ตั้งค่าไว้ — ต้องมีพิกัดและอยู่ในรัศมี
+  let geoFields: { check_in_lat?: number; check_in_lng?: number; check_in_distance_m?: number } = {};
+  const { data: branch } = await supabase.from("branch").select("geo_lat, geo_lng, geo_radius_m").eq("id", emp.branch_id).maybeSingle();
+  const fence = branch ? branchGeofence(branch) : null;
+  if (fence) {
+    const lat = Number(formData.get("lat"));
+    const lng = Number(formData.get("lng"));
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return { ok: false, error: "ต้องเปิดตำแหน่ง (GPS) เพื่อลงเวลา — อนุญาตการเข้าถึงตำแหน่งแล้วลองใหม่" };
+    }
+    const distance = Math.round(haversineMeters(lat, lng, fence.lat, fence.lng));
+    if (!withinGeofence(distance, fence.radiusM)) {
+      return { ok: false, error: `อยู่นอกพื้นที่ร้าน (${formatDistanceM(distance)} จากจุดลงเวลา) — เข้าใกล้ร้านแล้วลองใหม่` };
+    }
+    geoFields = { check_in_lat: lat, check_in_lng: lng, check_in_distance_m: distance };
+  }
+
   const settings = await getSettingsWith(supabase);
   const nowIso = new Date().toISOString();
   const late = lateMinutes(bangkokHHMM(), settings.work_start);
   const { error } = await supabase.from("attendance").upsert(
-    { employee_id: empId, work_date: today, check_in: nowIso, status: late > 0 ? "สาย" : "ปกติ", late_minutes: late },
+    { employee_id: empId, work_date: today, check_in: nowIso, status: late > 0 ? "สาย" : "ปกติ", late_minutes: late, ...geoFields },
     { onConflict: "employee_id,work_date" },
   );
   if (error) {

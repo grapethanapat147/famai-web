@@ -38,6 +38,9 @@ type Branch = {
   phone: string | null;
   is_active: boolean;
   company_id: string | null; // R1: บริษัทแม่ (migration 16)
+  geo_lat: number | null; // FAM-1101 geofence ลงเวลา
+  geo_lng: number | null;
+  geo_radius_m: number | null;
 };
 
 type Company = {
@@ -395,6 +398,9 @@ type Attendance = {
   late_minutes: number | null;
   work_minutes: number | null;
   ot_minutes: number;
+  check_in_lat: number | null; // FAM-1101 พิกัดตอนลงเวลา
+  check_in_lng: number | null;
+  check_in_distance_m: number | null;
 };
 
 type LeaveRequest = {

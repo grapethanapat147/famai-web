@@ -1,6 +1,7 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { canApproveLeave, isLeaveStatus, type LeaveRow, type LeaveStatus } from "@/lib/hr/leave";
+import { branchGeofence } from "@/lib/hr/geo";
 import { HrView, type MyToday } from "@/components/hr/HrView";
 import { clockIn, clockOut, decideLeave, linkMyEmployee, requestLeave } from "./actions";
 
@@ -16,9 +17,15 @@ export default async function HrPage() {
   const today = todayISO();
 
   const myEmp = me
-    ? (await supabase.from("employee").select("id").eq("user_id", me.id).maybeSingle()).data
+    ? (await supabase.from("employee").select("id, branch_id").eq("user_id", me.id).maybeSingle()).data
     : null;
   const myEmpId = myEmp?.id ?? null;
+
+  // geofence ของบริษัทพนักงาน (ถ้าตั้งไว้) — บอก client ให้ขอ GPS ก่อนลงเวลา
+  const branchGeo = myEmp?.branch_id
+    ? (await supabase.from("branch").select("geo_lat, geo_lng, geo_radius_m").eq("id", myEmp.branch_id).maybeSingle()).data
+    : null;
+  const fence = branchGeo ? branchGeofence(branchGeo) : null;
 
   const [attRes, leavesRes, employeesRes, usersRes] = await Promise.all([
     myEmpId
@@ -61,6 +68,7 @@ export default async function HrPage() {
       leaves={leaves}
       canApprove={Boolean(me && canApproveLeave(me.perms))}
       today={today}
+      geofence={fence ? { radiusM: fence.radiusM } : null}
       clockInAction={clockIn}
       clockOutAction={clockOut}
       linkEmployeeAction={linkMyEmployee}
