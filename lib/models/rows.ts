@@ -66,6 +66,50 @@ export function modelSpecLine(m: { category: string | null; cc: number | null; y
   return [m.category, m.cc != null ? `${m.cc} cc` : null, m.year ? `ปี ${m.year}` : null].filter(Boolean).join(" · ") || "—";
 }
 
+/** กรองรุ่นตามคำค้น (ชื่อ/รหัส/ชื่อไทย/สี) + หมวด (FAM-1097) */
+export function filterModels(rows: readonly ModelRow[], opts: { search?: string; category?: string } = {}): ModelRow[] {
+  const q = (opts.search ?? "").trim().toLowerCase();
+  const category = opts.category ?? "all";
+  return rows.filter((m) => {
+    if (category !== "all" && m.category !== category) {
+      return false;
+    }
+    if (q === "") {
+      return true;
+    }
+    const hay = `${m.modelName} ${m.code} ${m.modelTh ?? ""} ${m.colors.map((c) => c.name).join(" ")}`.toLowerCase();
+    return hay.includes(q);
+  });
+}
+
+export type ModelSort = "name" | "price-desc" | "price-asc" | "stock-desc";
+
+/** เรียงรุ่น — ชื่อ (ก-ฮ) · ราคามาก→น้อย/น้อย→มาก · คงเหลือมาก→น้อย (FAM-1097) */
+export function sortModels(rows: readonly ModelRow[], sort: ModelSort): ModelRow[] {
+  const copy = [...rows];
+  switch (sort) {
+    case "price-desc":
+      return copy.sort((a, b) => (b.retail ?? 0) - (a.retail ?? 0) || a.modelName.localeCompare(b.modelName, "th"));
+    case "price-asc":
+      return copy.sort((a, b) => (a.retail ?? 0) - (b.retail ?? 0) || a.modelName.localeCompare(b.modelName, "th"));
+    case "stock-desc":
+      return copy.sort((a, b) => b.stockCount - a.stockCount || a.modelName.localeCompare(b.modelName, "th"));
+    default:
+      return copy.sort((a, b) => a.modelName.localeCompare(b.modelName, "th") || a.code.localeCompare(b.code));
+  }
+}
+
+/** หมวดที่มีในรายการ (สำหรับตัวกรอง) — เรียง + ไม่ซ้ำ */
+export function modelCategories(rows: readonly ModelRow[]): string[] {
+  const set = new Set<string>();
+  for (const m of rows) {
+    if (m.category) {
+      set.add(m.category);
+    }
+  }
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+
 export type ModelRow = {
   id: string;
   code: string;

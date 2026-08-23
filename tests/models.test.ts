@@ -1,6 +1,16 @@
 import { describe, it, expect } from "vitest";
 import { parseColors } from "@/lib/models/parse";
-import { latestPrice, buildModelRows, modelSpecLine, validateModelEdit, type ModelEditInput } from "@/lib/models/rows";
+import {
+  latestPrice,
+  buildModelRows,
+  modelSpecLine,
+  filterModels,
+  sortModels,
+  modelCategories,
+  validateModelEdit,
+  type ModelEditInput,
+  type ModelRow,
+} from "@/lib/models/rows";
 
 const editBase: ModelEditInput = { modelName: "NMAX", modelTh: "เอ็นแม็กซ์", category: "Automatic", cc: "155", year: "2569", cost: "78000", retail: "92000" };
 
@@ -104,6 +114,64 @@ describe("buildModelRows", () => {
     const finn = rows.find((r) => r.id === "v1")!;
     expect(finn.cost).toBeNull();
     expect(finn.retail).toBe(46900);
+  });
+});
+
+function m(over: Partial<ModelRow>): ModelRow {
+  return {
+    id: "x",
+    code: "C1",
+    modelName: "NMAX",
+    modelTh: null,
+    category: "Automatic",
+    cc: 155,
+    year: 2569,
+    colors: [{ code: "K", name: "ดำ" }],
+    cost: null,
+    retail: 68900,
+    stockCount: 3,
+    photoPath: null,
+    ...over,
+  };
+}
+
+describe("filterModels", () => {
+  const rows = [
+    m({ id: "1", modelName: "NMAX", code: "BTF200", category: "Automatic", colors: [{ code: "K", name: "ดำ" }] }),
+    m({ id: "2", modelName: "XMAX", code: "DR9200", category: "Big Bike", colors: [{ code: "B", name: "น้ำเงิน" }] }),
+    m({ id: "3", modelName: "FINN", code: "B6FU00", category: "Moped", colors: [{ code: "R", name: "แดง" }] }),
+  ];
+  it("searches name / code / colour", () => {
+    expect(filterModels(rows, { search: "nmax" }).map((r) => r.id)).toEqual(["1"]);
+    expect(filterModels(rows, { search: "DR92" }).map((r) => r.id)).toEqual(["2"]);
+    expect(filterModels(rows, { search: "แดง" }).map((r) => r.id)).toEqual(["3"]);
+  });
+  it("filters by category", () => {
+    expect(filterModels(rows, { category: "Moped" }).map((r) => r.id)).toEqual(["3"]);
+    expect(filterModels(rows, { category: "all" })).toHaveLength(3);
+  });
+});
+
+describe("sortModels", () => {
+  const rows = [
+    m({ id: "1", modelName: "NMAX", retail: 68900, stockCount: 2 }),
+    m({ id: "2", modelName: "XMAX", retail: 189000, stockCount: 5 }),
+    m({ id: "3", modelName: "AEROX", retail: 78000, stockCount: 9 }),
+  ];
+  it("sorts by name / price / stock", () => {
+    expect(sortModels(rows, "name").map((r) => r.modelName)).toEqual(["AEROX", "NMAX", "XMAX"]);
+    expect(sortModels(rows, "price-desc").map((r) => r.id)).toEqual(["2", "3", "1"]);
+    expect(sortModels(rows, "price-asc").map((r) => r.id)).toEqual(["1", "3", "2"]);
+    expect(sortModels(rows, "stock-desc").map((r) => r.id)).toEqual(["3", "2", "1"]);
+  });
+});
+
+describe("modelCategories", () => {
+  it("returns distinct sorted categories, skipping null", () => {
+    expect(modelCategories([m({ category: "Sport" }), m({ category: "Automatic" }), m({ category: "Sport" }), m({ category: null })])).toEqual([
+      "Automatic",
+      "Sport",
+    ]);
   });
 });
 
