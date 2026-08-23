@@ -23,7 +23,7 @@ export default async function HrPage() {
 
   // geofence ของบริษัทพนักงาน (ถ้าตั้งไว้) — บอก client ให้ขอ GPS ก่อนลงเวลา
   const branchGeo = myEmp?.branch_id
-    ? (await supabase.from("branch").select("geo_lat, geo_lng, geo_radius_m").eq("id", myEmp.branch_id).maybeSingle()).data
+    ? (await supabase.from("branch").select("geo_lat, geo_lng, geo_radius_m, require_selfie").eq("id", myEmp.branch_id).maybeSingle()).data
     : null;
   const fence = branchGeo ? branchGeofence(branchGeo) : null;
 
@@ -69,6 +69,8 @@ export default async function HrPage() {
       canApprove={Boolean(me && canApproveLeave(me.perms))}
       today={today}
       geofence={fence ? { radiusM: fence.radiusM } : null}
+      requireSelfie={Boolean(branchGeo?.require_selfie)}
+      employeeId={myEmpId}
       clockInAction={clockIn}
       clockOutAction={clockOut}
       linkEmployeeAction={linkMyEmployee}

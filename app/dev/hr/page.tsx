@@ -60,6 +60,8 @@ export default function DevHrPage() {
         canApprove
         today="2026-08-12"
         geofence={{ radiusM: 150 }}
+        requireSelfie
+        employeeId="dev-emp"
         clockInAction={mockClockIn}
         clockOutAction={mockClock}
         linkEmployeeAction={mockLink}

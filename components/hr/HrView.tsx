@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Chips } from "@/components/ui/Chips";
 import { Modal } from "@/components/ui/Modal";
 import { Drawer } from "@/components/ui/Drawer";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatThaiDate } from "@/lib/format";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { resizeToWebp } from "@/lib/models/image";
+import { SELFIE_BUCKET, SELFIE_MAX, selfieObjectPath } from "@/lib/hr/selfie";
 import {
   LEAVE_STATUS_VARIANT,
   LEAVE_TYPES,
@@ -37,6 +40,8 @@ export function HrView({
   canApprove,
   today,
   geofence,
+  requireSelfie,
+  employeeId,
   clockInAction,
   clockOutAction,
   linkEmployeeAction,
@@ -49,6 +54,8 @@ export function HrView({
   canApprove: boolean;
   today: string;
   geofence: { radiusM: number } | null;
+  requireSelfie: boolean;
+  employeeId: string | null;
   clockInAction: (formData: FormData) => Promise<HrActionResult>;
   clockOutAction: () => Promise<HrActionResult>;
   linkEmployeeAction: () => Promise<HrActionResult>;
@@ -69,6 +76,8 @@ export function HrView({
         myToday={myToday}
         today={today}
         geofence={geofence}
+        requireSelfie={requireSelfie}
+        employeeId={employeeId}
         clockInAction={clockInAction}
         clockOutAction={clockOutAction}
         linkEmployeeAction={linkEmployeeAction}
@@ -153,6 +162,8 @@ function ClockCard({
   myToday,
   today,
   geofence,
+  requireSelfie,
+  employeeId,
   clockInAction,
   clockOutAction,
   linkEmployeeAction,
@@ -161,12 +172,15 @@ function ClockCard({
   myToday: MyToday | null;
   today: string;
   geofence: { radiusM: number } | null;
+  requireSelfie: boolean;
+  employeeId: string | null;
   clockInAction: (formData: FormData) => Promise<HrActionResult>;
   clockOutAction: () => Promise<HrActionResult>;
   linkEmployeeAction: () => Promise<HrActionResult>;
 }) {
+  const selfieInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const [locating, setLocating] = useState(false);
+  const [phase, setPhase] = useState<"" | "locating" | "selfie" | "saving">("");
   const [error, setError] = useState<string | null>(null);
 
   async function run(action: () => Promise<HrActionResult>) {
@@ -178,32 +192,80 @@ function ClockCard({
     if (!res.ok) setError(res.error);
   }
 
-  // ลงเวลาเข้า — ถ้ามี geofence ขอ GPS ก่อนแล้วแนบพิกัด
-  async function clockIn() {
-    if (busy || locating) return;
+  // ปุ่มลงเวลาเข้า — ต้องถ่ายเซลฟี่ → เปิดกล้องก่อน · ไม่งั้นทำต่อเลย
+  function onClockInClick() {
+    if (busy) return;
+    setError(null);
+    if (requireSelfie) {
+      selfieInput.current?.click();
+    } else {
+      void doClockIn(null);
+    }
+  }
+
+  function onSelfiePicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    if (selfieInput.current) {
+      selfieInput.current.value = "";
+    }
+    if (file) {
+      void doClockIn(file);
+    }
+  }
+
+  // ประกอบ: (GPS ถ้ามี geofence) + (อัปโหลดเซลฟี่ถ้ามีไฟล์) → ลงเวลา
+  async function doClockIn(selfieFile: File | null) {
+    if (busy) return;
+    setBusy(true);
     setError(null);
     const fd = new FormData();
+
     if (geofence) {
-      setLocating(true);
+      setPhase("locating");
       try {
         const pos = await getPosition();
         fd.set("lat", String(pos.coords.latitude));
         fd.set("lng", String(pos.coords.longitude));
       } catch {
-        setLocating(false);
+        setPhase("");
+        setBusy(false);
         setError("ต้องเปิดตำแหน่ง (GPS) เพื่อลงเวลา — อนุญาตการเข้าถึงตำแหน่งแล้วลองใหม่");
         return;
       }
-      setLocating(false);
     }
-    setBusy(true);
+
+    if (selfieFile) {
+      setPhase("selfie");
+      try {
+        const blob = await resizeToWebp(selfieFile, SELFIE_MAX);
+        const path = selfieObjectPath(employeeId ?? "unknown", today, Date.now());
+        const supabase = createBrowserSupabase();
+        const up = await supabase.storage.from(SELFIE_BUCKET).upload(path, blob, { contentType: "image/webp", upsert: true });
+        if (up.error) {
+          throw new Error(up.error.message);
+        }
+        fd.set("selfie_path", path);
+      } catch {
+        setPhase("");
+        setBusy(false);
+        setError("อัปโหลดเซลฟี่ไม่สำเร็จ — ลองใหม่อีกครั้ง");
+        return;
+      }
+    }
+
+    setPhase("saving");
     const res = await clockInAction(fd);
+    setPhase("");
     setBusy(false);
-    if (!res.ok) setError(res.error);
+    if (!res.ok) {
+      setError(res.error);
+    }
   }
 
   const checkedIn = Boolean(myToday?.checkIn);
   const checkedOut = Boolean(myToday?.checkOut);
+  const clockInLabel =
+    phase === "locating" ? "กำลังหาตำแหน่ง…" : phase === "selfie" ? "กำลังอัปโหลดเซลฟี่…" : phase === "saving" ? "กำลังลงเวลา…" : "ลงเวลาเข้า";
 
   return (
     <section className="rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
@@ -242,22 +304,25 @@ function ClockCard({
             </div>
           </div>
 
-          {geofence && !checkedIn && (
-            <div className="mb-3">
-              <StatusBadge variant="info">📍 ต้องอยู่ในรัศมี {geofence.radiusM} ม. จากร้าน — ระบบจะขอตำแหน่งตอนลงเวลาเข้า</StatusBadge>
+          {(geofence || requireSelfie) && !checkedIn && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {geofence && <StatusBadge variant="info">📍 ต้องอยู่ในรัศมี {geofence.radiusM} ม. จากร้าน</StatusBadge>}
+              {requireSelfie && <StatusBadge variant="info">🤳 ต้องถ่ายเซลฟี่ยืนยัน</StatusBadge>}
             </div>
           )}
 
           {error && <div className="mb-3"><StatusBadge variant="bad">{error}</StatusBadge></div>}
 
+          <input ref={selfieInput} type="file" accept="image/*" capture="user" onChange={onSelfiePicked} className="hidden" aria-hidden />
+
           <div className="flex gap-2">
             <button
               type="button"
-              disabled={busy || locating || checkedIn}
-              onClick={clockIn}
+              disabled={busy || checkedIn}
+              onClick={onClockInClick}
               className="flex-1 rounded-[24px] bg-accent py-3 text-sm font-medium text-card disabled:opacity-50"
             >
-              {locating ? "กำลังหาตำแหน่ง…" : "ลงเวลาเข้า"}
+              {clockInLabel}
             </button>
             <button
               type="button"

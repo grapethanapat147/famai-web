@@ -91,9 +91,14 @@ export async function clockIn(formData: FormData): Promise<HrActionResult> {
     return { ok: false, error: "ลงเวลาเข้าแล้ววันนี้" };
   }
 
+  const { data: branch } = await supabase
+    .from("branch")
+    .select("geo_lat, geo_lng, geo_radius_m, require_selfie")
+    .eq("id", emp.branch_id)
+    .maybeSingle();
+
   // ตรวจพิกัด (geofence) เฉพาะบริษัทที่ตั้งค่าไว้ — ต้องมีพิกัดและอยู่ในรัศมี
   let geoFields: { check_in_lat?: number; check_in_lng?: number; check_in_distance_m?: number } = {};
-  const { data: branch } = await supabase.from("branch").select("geo_lat, geo_lng, geo_radius_m").eq("id", emp.branch_id).maybeSingle();
   const fence = branch ? branchGeofence(branch) : null;
   if (fence) {
     const lat = Number(formData.get("lat"));
@@ -108,11 +113,25 @@ export async function clockIn(formData: FormData): Promise<HrActionResult> {
     geoFields = { check_in_lat: lat, check_in_lng: lng, check_in_distance_m: distance };
   }
 
+  // เซลฟี่ยืนยัน เฉพาะบริษัทที่เปิด require_selfie — client อัปโหลดแล้วส่ง path มา
+  const selfiePath = String(formData.get("selfie_path") ?? "").trim();
+  if (branch?.require_selfie && !selfiePath) {
+    return { ok: false, error: "ต้องถ่ายเซลฟี่ยืนยันก่อนลงเวลา" };
+  }
+
   const settings = await getSettingsWith(supabase);
   const nowIso = new Date().toISOString();
   const late = lateMinutes(bangkokHHMM(), settings.work_start);
   const { error } = await supabase.from("attendance").upsert(
-    { employee_id: empId, work_date: today, check_in: nowIso, status: late > 0 ? "สาย" : "ปกติ", late_minutes: late, ...geoFields },
+    {
+      employee_id: empId,
+      work_date: today,
+      check_in: nowIso,
+      status: late > 0 ? "สาย" : "ปกติ",
+      late_minutes: late,
+      ...geoFields,
+      ...(selfiePath ? { check_in_selfie: selfiePath } : {}),
+    },
     { onConflict: "employee_id,work_date" },
   );
   if (error) {
