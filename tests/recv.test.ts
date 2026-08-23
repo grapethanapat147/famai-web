@@ -12,6 +12,7 @@ const base: RecvInput = {
   retail: "46900",
   cost: "40800",
   costVat: "",
+  note: "",
 };
 
 describe("canReceiveStock", () => {
@@ -58,6 +59,13 @@ describe("validateRecvInput", () => {
   it("maps a มือสอง kind", () => {
     const r = validateRecvInput({ ...base, unitKind: "รถมือสอง" });
     expect(r.ok && r.value.unitKind).toBe("มือสอง");
+  });
+
+  it("trims note, blank → null", () => {
+    const withNote = validateRecvInput({ ...base, note: "  รถสภาพดี  " });
+    expect(withNote.ok && withNote.value.note).toBe("รถสภาพดี");
+    const blank = validateRecvInput({ ...base, note: "   " });
+    expect(blank.ok && blank.value.note).toBeNull();
   });
 
   it("treats blank retail/cost as null/0 (defer pricing)", () => {

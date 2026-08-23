@@ -30,6 +30,7 @@ export async function receiveUnit(formData: FormData): Promise<RecvActionResult>
     retail: String(formData.get("retail") ?? ""),
     cost: String(formData.get("cost") ?? ""),
     costVat: String(formData.get("cost_vat") ?? ""),
+    note: String(formData.get("note") ?? ""),
   });
   if (!parsed.ok) {
     return { ok: false, error: parsed.error };
@@ -80,6 +81,7 @@ export async function receiveUnit(formData: FormData): Promise<RecvActionResult>
     cost,
     cost_vat: costVat,
     retail: v.retail,
+    note: v.note,
   });
   if (error) {
     if (error.code === "23505") {

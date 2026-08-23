@@ -141,6 +141,7 @@ type MotorcycleUnit = {
   priced_by: string | null;
   priced_at: string | null;
   photo_url: string | null;
+  note: string | null; // FAM-1094 หมายเหตุตอนรับรถ
   src_file: string | null;
   recv_no: string | null;
   po_no: string | null;

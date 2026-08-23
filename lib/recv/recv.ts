@@ -19,6 +19,7 @@ export type RecvInput = {
   retail: string;
   cost: string;
   costVat: string;
+  note: string;
 };
 
 /** ค่าที่ผ่านการตรวจแล้ว พร้อม insert (ยังไม่มี sku/branch_id ที่ resolve — action เติมต่อ) */
@@ -33,6 +34,7 @@ export type RecvValid = {
   retail: number | null;
   cost: number;
   costVat: number;
+  note: string | null;
 };
 
 /** ผู้มีสิทธิ์รับรถเข้าสต๊อก — ตรงกับเมนู recv (admin/manager/stock) */
@@ -121,6 +123,7 @@ export function validateRecvInput(input: RecvInput): { ok: true; value: RecvVali
       retail: retailNum,
       cost: costNum,
       costVat: costVatNum,
+      note: input.note.trim() === "" ? null : input.note.trim(),
     },
   };
 }

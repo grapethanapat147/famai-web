@@ -40,6 +40,7 @@ export function RecvForm({
   const [cost, setCost] = useState("");
   const [costVat, setCostVat] = useState("");
   const [costVatTouched, setCostVatTouched] = useState(false);
+  const [note, setNote] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
@@ -88,6 +89,7 @@ export function RecvForm({
     fd.set("frame_no", frameNo.trim());
     fd.set("received_at", receivedAt);
     fd.set("retail", retail.trim());
+    fd.set("note", note.trim());
     if (canSeeMoney) {
       fd.set("cost", cost.trim());
       fd.set("cost_vat", effectiveCostVat.trim());
@@ -96,9 +98,10 @@ export function RecvForm({
     setBusy(false);
     if (res.ok) {
       setSaved(res.engineNo);
-      // รับต่อเนื่อง — เคลียร์เลขเครื่อง/ตัวถัง เก็บบริษัท/รุ่น/สีไว้
+      // รับต่อเนื่อง — เคลียร์เลขเครื่อง/ตัวถัง/หมายเหตุ เก็บบริษัท/รุ่น/สีไว้
       setEngineNo("");
       setFrameNo("");
+      setNote("");
       requestAnimationFrame(() => engineRef.current?.focus());
     } else {
       setError(res.error);
@@ -182,6 +185,10 @@ export function RecvForm({
             <p className="col-span-2 text-[11px] leading-relaxed text-muted">VAT คิดอัตโนมัติจากต้นทุน × {vatPct}% (แก้เองได้) · ต้นทุนเห็นเฉพาะผู้มีสิทธิ์การเงิน</p>
           </div>
         )}
+
+        <Field label="หมายเหตุ (ถ้ามี)" full>
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="สภาพรถ / ที่มา / ข้อสังเกต" className={inputCls} />
+        </Field>
 
         <button
           type="button"
