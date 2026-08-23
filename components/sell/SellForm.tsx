@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Chips } from "@/components/ui/Chips";
 import { Combobox } from "@/components/ui/Combobox";
 import { Money } from "@/components/ui/Money";
+import { MoneyStepInput } from "@/components/ui/MoneyStepInput";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { computeDeal } from "@/lib/sell/deal";
@@ -220,17 +221,17 @@ export function SellForm({
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="ราคาตั้ง">
-            <input type="number" value={listPrice || ""} onChange={(e) => setListPrice(Number(e.target.value) || 0)} className={inputCls} />
+            <MoneyStepInput value={listPrice} onChange={setListPrice} ariaLabel="ราคาตั้ง" />
           </Field>
           <Field label="ส่วนลด / โปรโมชั่น">
-            <input type="number" value={discount || ""} onChange={(e) => setDiscount(Number(e.target.value) || 0)} className={inputCls} />
+            <MoneyStepInput value={discount} onChange={setDiscount} ariaLabel="ส่วนลด" />
           </Field>
         </div>
 
         {payMethod === "finance" && (
           <div className="grid grid-cols-2 gap-3">
             <Field label="เงินดาวน์">
-              <input type="number" value={downPayment || ""} onChange={(e) => setDownPayment(Number(e.target.value) || 0)} className={inputCls} />
+              <MoneyStepInput value={downPayment} onChange={setDownPayment} ariaLabel="เงินดาวน์" />
             </Field>
             <Field label="จำนวนงวด">
               <select value={months} onChange={(e) => setMonths(Number(e.target.value))} className={inputCls}>
