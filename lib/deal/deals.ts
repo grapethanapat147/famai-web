@@ -28,6 +28,24 @@ export function isVoidableStage(stage: RegStage): boolean {
   return stage !== "ส่งมอบแล้ว";
 }
 
+/** ค่าดิบ/ค่าที่ผ่านการตรวจ ของฟอร์มแก้ข้อมูลลูกค้าในดีล (FAM-1093) */
+export type DealCustomerInput = { name: string; phone: string; address: string; taxId: string; note: string };
+export type DealCustomerValid = { name: string; phone: string | null; address: string | null; taxId: string | null; note: string | null };
+
+/** ตรวจฟอร์มข้อมูลลูกค้า/ดีล — ชื่อบังคับ · เลขบัตร ปชช./ผู้เสียภาษี ถ้ากรอกต้องเป็นเลข 13 หลัก */
+export function validateDealCustomer(input: DealCustomerInput): { ok: true; value: DealCustomerValid } | { ok: false; error: string } {
+  const name = input.name.trim();
+  if (name === "") {
+    return { ok: false, error: "กรอกชื่อลูกค้า" };
+  }
+  const tax = input.taxId.trim();
+  if (tax !== "" && !/^\d{13}$/.test(tax)) {
+    return { ok: false, error: "เลขบัตรประชาชน/ผู้เสียภาษีต้องเป็นตัวเลข 13 หลัก" };
+  }
+  const blank = (s: string): string | null => (s.trim() === "" ? null : s.trim());
+  return { ok: true, value: { name, phone: blank(input.phone), address: blank(input.address), taxId: tax || null, note: blank(input.note) } };
+}
+
 /** สถานะเคสสินเชื่อ (ธ.) — ปฏิเสธ = ดีลตกราง */
 export type FinanceInfo = {
   id: string;
@@ -42,10 +60,13 @@ export type Deal = {
   regId: string | null;
   customerId: string; // "" = ลูกค้าทั่วไป/ไม่ผูกโปรไฟล์ (ไม่มีประวัติ)
   customerName: string;
+  customerPhone: string | null;
   customerAddress: string | null; // สำหรับใบกำกับภาษี
-  customerTaxId: string | null; // เลขผู้เสียภาษีผู้ซื้อ (อ่อนไหว — RLS คุม)
+  customerTaxId: string | null; // เลขบัตร ปชช./ผู้เสียภาษีผู้ซื้อ (อ่อนไหว — RLS คุม)
   vehicle: string;
   engineNo: string;
+  frameNo: string; // เลขถัง — คีย์เชื่อมข้อมูลรถคันนี้
+  regNote: string | null; // บันทึกงานทะเบียน/ดีล
   payMethod: PayMethod;
   netPrice: number;
   soldAt: string; // ISO

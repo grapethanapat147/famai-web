@@ -8,7 +8,7 @@ import { buildLeads } from "@/lib/deal/lead";
 import { DealView } from "@/components/deal/DealView";
 import { getSetting } from "@/lib/settings";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
-import { addCustomer, advanceFinance, advanceRegistration, revertRegistration, voidDeal } from "./actions";
+import { addCustomer, advanceFinance, advanceRegistration, revertRegistration, updateDealCustomer, voidDeal } from "./actions";
 
 export const metadata = { title: "ลูกค้าและดีล — Famai Motor Group" };
 
@@ -28,14 +28,14 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
 
   const [regsRes, finRes, customersRes, companiesRes, unitsRes, variantsRes, colorsRes, branches, orgCompanies] = await Promise.all([
     saleIds.length
-      ? supabase.from("registration").select("id, sale_id, stage, plate_no").in("sale_id", saleIds)
+      ? supabase.from("registration").select("id, sale_id, stage, plate_no, note").in("sale_id", saleIds)
       : Promise.resolve({ data: [] }),
     saleIds.length
       ? supabase.from("finance_case").select("id, sale_id, company_id, status, amount, reject_reason").in("sale_id", saleIds)
       : Promise.resolve({ data: [] }),
     supabase.from("customer").select("id, full_name, phone, address, tax_id, source, interested_variant_id, created_at"),
     supabase.from("finance_company").select("id, name"),
-    supabase.from("motorcycle_unit").select("id, variant_id, color_code, engine_no"),
+    supabase.from("motorcycle_unit").select("id, variant_id, color_code, engine_no, frame_no"),
     supabase.from("model_variant").select("id, model_name"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),
     getActiveBranches(),
@@ -58,6 +58,7 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
     }
   }
   const customerName = new Map((customersRes.data ?? []).map((c) => [c.id, c.full_name]));
+  const customerPhone = new Map((customersRes.data ?? []).map((c) => [c.id, c.phone ?? null]));
   const customerAddr = new Map((customersRes.data ?? []).map((c) => [c.id, c.address ?? null]));
   const customerTax = new Map((customersRes.data ?? []).map((c) => [c.id, c.tax_id ?? null]));
   const companyName = new Map((companiesRes.data ?? []).map((c) => [c.id, c.name]));
@@ -87,10 +88,13 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
       regId: reg?.id ?? null,
       customerId: s.customer_id ?? "",
       customerName: (s.customer_id && customerName.get(s.customer_id)) || "ลูกค้าทั่วไป",
+      customerPhone: s.customer_id ? (customerPhone.get(s.customer_id) ?? null) : null,
       customerAddress: s.customer_id ? (customerAddr.get(s.customer_id) ?? null) : null,
       customerTaxId: s.customer_id ? (customerTax.get(s.customer_id) ?? null) : null,
       vehicle: model ? `${model}${color ? ` · ${color}` : ""}` : "—",
       engineNo: unit?.engine_no ?? "",
+      frameNo: unit?.frame_no ?? "",
+      regNote: reg?.note ?? null,
       payMethod,
       netPrice: Number(s.net_price),
       soldAt: s.sold_at,
@@ -153,6 +157,7 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
       financeAction={advanceFinance}
       canVoid={canVoidDeal(roleCodes)}
       voidAction={voidDeal}
+      customerAction={updateDealCustomer}
     />
   );
 }

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveBranches } from "@/lib/reference/cache";
-import { canManageDeal, canVoidDeal, isVoidableStage, type DealActionResult } from "@/lib/deal/deals";
+import { canManageDeal, canVoidDeal, isVoidableStage, validateDealCustomer, type DealActionResult } from "@/lib/deal/deals";
 import { isRegStage, regNext, regPrev, stageTimestampField, type PayMethod } from "@/lib/deal/stage";
 import { validateLeadInput } from "@/lib/deal/lead";
 import { canFinanceTransition, canManageFinance, isFinanceStatus } from "@/lib/deal/finance";
@@ -141,6 +141,54 @@ export async function revertRegistration(formData: FormData): Promise<DealAction
 
   revalidatePath("/deal");
   return { ok: true };
+}
+
+/**
+ * แก้ข้อมูลลูกค้า/บันทึกในดีล (FAM-1093) — ชื่อ/เบอร์/ที่อยู่(ตามบัตร)/เลขบัตร + โน้ตงานทะเบียน
+ * ด่านสิทธิ์ deal (รวม sales) · update customer + registration.note (RLS สาขาคุมอยู่แล้ว)
+ */
+export async function updateDealCustomer(formData: FormData): Promise<DealActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canManageDeal(user.roleCodes)) {
+    return { ok: false, error: "ไม่มีสิทธิ์จัดการดีล" };
+  }
+
+  const customerId = String(formData.get("customer_id") ?? "").trim();
+  const regId = String(formData.get("reg_id") ?? "").trim();
+  const parsed = validateDealCustomer({
+    name: String(formData.get("name") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
+    address: String(formData.get("address") ?? ""),
+    taxId: String(formData.get("tax_id") ?? ""),
+    note: String(formData.get("note") ?? ""),
+  });
+  if (!parsed.ok) {
+    return { ok: false, error: parsed.error };
+  }
+  const v = parsed.value;
+
+  const supabase = await createServerSupabase();
+  if (customerId) {
+    const { error } = await supabase
+      .from("customer")
+      .update({ full_name: v.name, phone: v.phone, address: v.address, tax_id: v.taxId })
+      .eq("id", customerId);
+    if (error) {
+      return { ok: false, error: "บันทึกข้อมูลลูกค้าไม่สำเร็จ (สิทธิ์สาขา?)" };
+    }
+  }
+  if (regId) {
+    const { error } = await supabase.from("registration").update({ note: v.note }).eq("id", regId);
+    if (error) {
+      return { ok: false, error: "บันทึกโน้ตไม่สำเร็จ" };
+    }
+  }
+
+  revalidatePath("/deal");
+  return { ok: true, message: "บันทึกข้อมูลลูกค้าแล้ว" };
 }
 
 /**

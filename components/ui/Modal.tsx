@@ -8,11 +8,13 @@ export function Modal({
   open,
   onClose,
   title,
+  size = "default",
   children,
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
+  size?: "default" | "lg";
   children: ReactNode;
 }) {
   useEffect(() => {
@@ -38,7 +40,11 @@ export function Modal({
       aria-label={title}
     >
       <button type="button" aria-label="ปิด" className="absolute inset-0 bg-ink/30" onClick={onClose} />
-      <div className="relative w-full max-h-[85dvh] overflow-y-auto rounded-t-[16px] bg-card p-5 shadow-[var(--sh-lg)] sm:m-4 sm:w-[440px] sm:rounded-[16px]">
+      <div
+        className={`relative w-full max-h-[85dvh] overflow-y-auto rounded-t-[16px] bg-card p-5 shadow-[var(--sh-lg)] sm:m-4 sm:rounded-[16px] ${
+          size === "lg" ? "sm:w-[640px]" : "sm:w-[440px]"
+        }`}
+      >
         {title && <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>}
         <div className={title ? "mt-3" : ""}>{children}</div>
       </div>

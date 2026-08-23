@@ -5,7 +5,6 @@ import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -54,6 +53,7 @@ export function DealView({
   financeAction,
   canVoid = false,
   voidAction,
+  customerAction,
   initialSearch = "",
 }: {
   deals: Deal[];
@@ -71,6 +71,7 @@ export function DealView({
   financeAction?: (formData: FormData) => Promise<DealActionResult>;
   canVoid?: boolean;
   voidAction?: (formData: FormData) => Promise<DealActionResult>;
+  customerAction?: (formData: FormData) => Promise<DealActionResult>;
 }) {
   const [stage, setStage] = useState<RegStage | "all">("all");
   const [search, setSearch] = useState(initialSearch);
@@ -230,6 +231,7 @@ export function DealView({
         financeAction={financeAction}
         canVoid={canVoid}
         voidAction={voidAction}
+        customerAction={customerAction}
         onClose={() => setSelected(null)}
         onAdvanced={() => setSelected(null)}
       />
@@ -254,6 +256,7 @@ function DealDrawer({
   financeAction,
   canVoid,
   voidAction,
+  customerAction,
   onClose,
   onAdvanced,
 }: {
@@ -269,6 +272,7 @@ function DealDrawer({
   financeAction?: (formData: FormData) => Promise<DealActionResult>;
   canVoid: boolean;
   voidAction?: (formData: FormData) => Promise<DealActionResult>;
+  customerAction?: (formData: FormData) => Promise<DealActionResult>;
   onClose: () => void;
   onAdvanced: () => void;
 }) {
@@ -393,15 +397,18 @@ function DealDrawer({
   const prev = deal && !offTrack ? regPrev(deal.stage, deal.payMethod) : null;
 
   return (
-    <Drawer open={deal !== null} onClose={onClose} title={deal ? `${deal.customerName} · ${deal.vehicle}` : ""}>
+    <Modal open={deal !== null} onClose={onClose} size="lg" title={deal ? `${deal.customerName} · ${deal.vehicle}` : ""}>
       {deal && (
         <div className="flex flex-col gap-4 text-sm">
           <StepBar track={track} currentIndex={Math.max(0, idx)} offTrack={offTrack} />
+
+          {customerAction && canManage && <CustomerEditSection deal={deal} action={customerAction} onSaved={onAdvanced} />}
 
           <dl className="flex flex-col gap-2">
             <Row label="วิธีชำระ">{deal.payMethod === "finance" ? "เงินผ่อน" : "เงินสด"}</Row>
             <Row label="ยอดสุทธิ"><Money value={deal.netPrice} /></Row>
             <Row label="เลขเครื่อง"><span className="font-mono">{deal.engineNo || "—"}</span></Row>
+            <Row label="เลขถัง"><span className="font-mono">{deal.frameNo || "—"}</span></Row>
             <Row label="ทะเบียน">{deal.plateNo || "—"}</Row>
             <Row label="วันที่ขาย">{formatThaiDate(deal.soldAt)}</Row>
           </dl>
@@ -582,7 +589,7 @@ function DealDrawer({
           )}
         </div>
       )}
-    </Drawer>
+    </Modal>
   );
 }
 
@@ -592,6 +599,146 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
       <dt className="text-muted">{label}</dt>
       <dd className="text-ink">{children}</dd>
     </div>
+  );
+}
+
+type CustomerDraft = { name: string; phone: string; address: string; taxId: string; note: string };
+
+function draftKey(saleId: string): string {
+  return `fam-deal-draft-${saleId}`;
+}
+
+/**
+ * แก้ข้อมูลลูกค้า/บันทึกในดีล (FAM-1093) — ชื่อ/เบอร์/ที่อยู่(บัตร)/เลขบัตร + โน้ต
+ * จำ draft ใน localStorage อัตโนมัติ → เผลอปิด/ย้อนกลับมาแก้ต่อได้โดยไม่ต้องเริ่มใหม่
+ */
+function CustomerEditSection({ deal, action, onSaved }: { deal: Deal; action: (fd: FormData) => Promise<DealActionResult>; onSaved: () => void }) {
+  const [current, setCurrent] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
+  const [f, setF] = useState<CustomerDraft>({ name: "", phone: "", address: "", taxId: "", note: "" });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // เปิดดีลใหม่ → prefill · ถ้ามี draft ค้าง ใช้ต่อ + เปิดให้เห็นเลย
+  if (deal.saleId !== current) {
+    setCurrent(deal.saleId);
+    const base: CustomerDraft = {
+      name: deal.customerName === "ลูกค้าทั่วไป" ? "" : deal.customerName,
+      phone: deal.customerPhone ?? "",
+      address: deal.customerAddress ?? "",
+      taxId: deal.customerTaxId ?? "",
+      note: deal.regNote ?? "",
+    };
+    let draft: CustomerDraft | null = null;
+    if (typeof window !== "undefined") {
+      try {
+        const raw = window.localStorage.getItem(draftKey(deal.saleId));
+        if (raw) {
+          draft = JSON.parse(raw) as CustomerDraft;
+        }
+      } catch {
+        draft = null;
+      }
+    }
+    setF(draft ?? base);
+    setHasDraft(draft !== null);
+    setOpen(draft !== null);
+    setError(null);
+  }
+
+  function update(patch: Partial<CustomerDraft>): void {
+    const next = { ...f, ...patch };
+    setF(next);
+    setHasDraft(true);
+    setError(null);
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(draftKey(deal.saleId), JSON.stringify(next));
+      } catch {
+        /* storage เต็ม/ปิด — ข้ามได้ */
+      }
+    }
+  }
+
+  async function save(): Promise<void> {
+    if (f.name.trim() === "" || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const fd = new FormData();
+    fd.set("customer_id", deal.customerId);
+    if (deal.regId) {
+      fd.set("reg_id", deal.regId);
+    }
+    fd.set("name", f.name.trim());
+    fd.set("phone", f.phone.trim());
+    fd.set("address", f.address.trim());
+    fd.set("tax_id", f.taxId.trim());
+    fd.set("note", f.note.trim());
+    const res = await action(fd);
+    setBusy(false);
+    if (res.ok) {
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.removeItem(draftKey(deal.saleId));
+        } catch {
+          /* ข้าม */
+        }
+      }
+      setHasDraft(false);
+      onSaved();
+    } else {
+      setError(res.error);
+    }
+  }
+
+  return (
+    <section className="rounded-[12px] border border-hairline bg-paper p-3">
+      <button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between gap-2">
+        <span className="font-medium text-ink">ข้อมูลลูกค้า / บันทึก</span>
+        <span className="flex items-center gap-2 text-xs">
+          {hasDraft && <span className="rounded-full bg-attn/15 px-2 py-0.5 text-attn">ร่างยังไม่บันทึก</span>}
+          <span className="text-ink-soft">{open ? "ย่อ ▲" : "แก้ไข ▼"}</span>
+        </span>
+      </button>
+
+      {open && (
+        <div className="mt-3 flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="ชื่อ-นามสกุล *">
+              <input value={f.name} onChange={(e) => update({ name: e.target.value })} className={inputCls} />
+            </Field>
+            <Field label="เบอร์โทร">
+              <input value={f.phone} onChange={(e) => update({ phone: e.target.value })} inputMode="tel" className={inputCls} />
+            </Field>
+          </div>
+          <Field label="ที่อยู่ (ตามบัตร)">
+            <input value={f.address} onChange={(e) => update({ address: e.target.value })} className={inputCls} />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="เลขบัตรประชาชน">
+              <input value={f.taxId} onChange={(e) => update({ taxId: e.target.value })} inputMode="numeric" placeholder="13 หลัก" className={inputCls} />
+            </Field>
+            <Field label="หมายเหตุ">
+              <input value={f.note} onChange={(e) => update({ note: e.target.value })} className={inputCls} />
+            </Field>
+          </div>
+
+          {error && <StatusBadge variant="bad">{error}</StatusBadge>}
+          <p className="text-[11px] text-muted">ระบบจำสิ่งที่พิมพ์ไว้อัตโนมัติ — เผลอปิดแล้วเปิดใหม่ยังกรอกต่อได้</p>
+          <button
+            type="button"
+            onClick={save}
+            disabled={f.name.trim() === "" || busy}
+            className="self-end rounded-[24px] bg-accent px-5 py-2 text-sm font-medium text-card disabled:opacity-50"
+          >
+            {busy ? "กำลังบันทึก…" : "บันทึกข้อมูลลูกค้า"}
+          </button>
+        </div>
+      )}
+    </section>
   );
 }
 
