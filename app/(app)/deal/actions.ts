@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { getActiveBranches } from "@/lib/reference/cache";
 import { canManageDeal, canVoidDeal, isVoidableStage, type DealActionResult } from "@/lib/deal/deals";
-import { isRegStage, regNext, stageTimestampField, type PayMethod } from "@/lib/deal/stage";
+import { isRegStage, regNext, regPrev, stageTimestampField, type PayMethod } from "@/lib/deal/stage";
+import { validateLeadInput } from "@/lib/deal/lead";
 import { canFinanceTransition, canManageFinance, isFinanceStatus } from "@/lib/deal/finance";
 
 /**
@@ -72,6 +74,135 @@ export async function advanceRegistration(formData: FormData): Promise<DealActio
 
   revalidatePath("/deal");
   return { ok: true };
+}
+
+/**
+ * ย้อนขั้นทะเบียน 1 ขั้น (เผลอกดไปต่อ) — ด่านสิทธิ์เดียวกับเลื่อนขั้น · วิธีชำระอ่านจากการขายจริง
+ * อนุญาตเฉพาะขั้นก่อนหน้าเดียวใน track · เคลียร์ timestamp ของขั้นที่ออก · compare-and-swap กันแข่ง
+ */
+export async function revertRegistration(formData: FormData): Promise<DealActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canManageDeal(user.roleCodes)) {
+    return { ok: false, error: "ไม่มีสิทธิ์จัดการดีล" };
+  }
+
+  const regId = String(formData.get("reg_id") ?? "").trim();
+  const to = String(formData.get("to") ?? "").trim();
+  if (!regId || !isRegStage(to)) {
+    return { ok: false, error: "ข้อมูลไม่ถูกต้อง" };
+  }
+
+  const supabase = await createServerSupabase();
+
+  const { data: reg, error: regError } = await supabase
+    .from("registration")
+    .select("id, stage, sale_id")
+    .eq("id", regId)
+    .maybeSingle();
+  if (regError || !reg) {
+    return { ok: false, error: "ไม่พบงานทะเบียน (หรือไม่มีสิทธิ์สาขานี้)" };
+  }
+  if (!isRegStage(reg.stage)) {
+    return { ok: false, error: "สถานะทะเบียนไม่ถูกต้อง" };
+  }
+
+  const { data: sale } = await supabase.from("sale").select("pay_method").eq("id", reg.sale_id).maybeSingle();
+  const payMethod: PayMethod = sale?.pay_method === "finance" ? "finance" : "cash";
+
+  if (regPrev(reg.stage, payMethod) !== to) {
+    return { ok: false, error: "ย้อนขั้นแบบนี้ไม่ได้" };
+  }
+
+  // เคลียร์วันที่ของขั้นที่กำลังออก (เช่น ย้อนจาก 'ส่งมอบแล้ว' → ล้าง delivered_at)
+  const patch: {
+    stage: string;
+    submitted_at?: null;
+    approved_at?: null;
+    plate_received_at?: null;
+    delivered_at?: null;
+  } = { stage: to };
+  const leftField = stageTimestampField(reg.stage);
+  if (leftField) {
+    patch[leftField] = null;
+  }
+
+  const { data: updated, error: casError } = await supabase
+    .from("registration")
+    .update(patch)
+    .eq("id", regId)
+    .eq("stage", reg.stage)
+    .select("id");
+  if (casError || !updated || updated.length === 0) {
+    return { ok: false, error: "สถานะเพิ่งเปลี่ยน กรุณาลองใหม่" };
+  }
+
+  revalidatePath("/deal");
+  return { ok: true };
+}
+
+/**
+ * เพิ่มลูกค้า (ลีด) — เก็บข้อมูลไว้ก่อนเพื่อติดตามการขายในอนาคต · ด่านสิทธิ์ deal (รวม sales)
+ * insert customer (owner = ผู้เพิ่ม, สาขาผู้ใช้) + สร้าง follow_up_task ติดตาม (best-effort) → เข้าระบบเตือน
+ */
+export async function addCustomer(formData: FormData): Promise<DealActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canManageDeal(user.roleCodes)) {
+    return { ok: false, error: "ไม่มีสิทธิ์เพิ่มลูกค้า" };
+  }
+
+  const parsed = validateLeadInput({
+    name: String(formData.get("name") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
+    interestedVariantId: String(formData.get("interested_variant_id") ?? ""),
+    source: String(formData.get("source") ?? ""),
+    note: String(formData.get("note") ?? ""),
+  });
+  if (!parsed.ok) {
+    return { ok: false, error: parsed.error };
+  }
+  const v = parsed.value;
+
+  const supabase = await createServerSupabase();
+  const branchId = user.branchIds[0] ?? (await getActiveBranches())[0]?.id ?? null;
+  if (!branchId) {
+    return { ok: false, error: "ยังไม่มีสาขาในระบบ — เพิ่มสาขาก่อน" };
+  }
+
+  const { data: cust, error } = await supabase
+    .from("customer")
+    .insert({
+      branch_id: branchId,
+      full_name: v.name,
+      phone: v.phone,
+      source: v.source,
+      interested_variant_id: v.interestedVariantId,
+      owner_id: user.id,
+    })
+    .select("id")
+    .single();
+  if (error || !cust) {
+    return { ok: false, error: "บันทึกลูกค้าไม่สำเร็จ (สิทธิ์สาขาไม่พอ?)" };
+  }
+
+  // งานติดตาม 3 วัน (best-effort — ไม่ล้มการเพิ่มลูกค้าถ้าสร้างไม่ได้)
+  const dueAt = new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
+  await supabase.from("follow_up_task").insert({
+    branch_id: branchId,
+    customer_id: cust.id,
+    kind: "ติดตามลูกค้าใหม่",
+    due_at: dueAt,
+    assigned_to: user.id,
+    note: v.note,
+  });
+
+  revalidatePath("/deal");
+  return { ok: true, message: "บันทึกลูกค้าแล้ว — ตั้งงานติดตามใน 3 วัน" };
 }
 
 /**

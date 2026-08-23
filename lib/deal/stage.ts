@@ -35,6 +35,16 @@ export function regNext(stage: RegStage, payMethod: PayMethod): RegStage | null 
   return track[i + 1];
 }
 
+/** ขั้นก่อนหน้า (สำหรับย้อนกลับเมื่อเผลอกดไปต่อ) — null = ขั้นแรก หรืออยู่นอก track */
+export function regPrev(stage: RegStage, payMethod: PayMethod): RegStage | null {
+  const track = dealTrack(payMethod);
+  const i = track.indexOf(stage);
+  if (i <= 0) {
+    return null;
+  }
+  return track[i - 1];
+}
+
 export function isDelivered(stage: RegStage): boolean {
   return stage === "ส่งมอบแล้ว";
 }

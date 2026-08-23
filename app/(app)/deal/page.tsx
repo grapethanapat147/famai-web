@@ -4,10 +4,11 @@ import { getActiveBranches, getCompaniesCached } from "@/lib/reference/cache";
 import { canManageDeal, canVoidDeal, type Deal, type FinanceInfo, type ServiceHistory } from "@/lib/deal/deals";
 import { canManageFinance } from "@/lib/deal/finance";
 import { isRegStage, type PayMethod, type RegStage } from "@/lib/deal/stage";
+import { buildLeads } from "@/lib/deal/lead";
 import { DealView } from "@/components/deal/DealView";
 import { getSetting } from "@/lib/settings";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
-import { advanceFinance, advanceRegistration, voidDeal } from "./actions";
+import { addCustomer, advanceFinance, advanceRegistration, revertRegistration, voidDeal } from "./actions";
 
 export const metadata = { title: "ลูกค้าและดีล — Famai Motor Group" };
 
@@ -32,7 +33,7 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
     saleIds.length
       ? supabase.from("finance_case").select("id, sale_id, company_id, status, amount, reject_reason").in("sale_id", saleIds)
       : Promise.resolve({ data: [] }),
-    supabase.from("customer").select("id, full_name, address, tax_id"),
+    supabase.from("customer").select("id, full_name, phone, address, tax_id, source, interested_variant_id, created_at"),
     supabase.from("finance_company").select("id, name"),
     supabase.from("motorcycle_unit").select("id, variant_id, color_code, engine_no"),
     supabase.from("model_variant").select("id, model_name"),
@@ -100,6 +101,11 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
     };
   });
 
+  // ลีด = ลูกค้าที่ยังไม่มีการขาย (เก็บไว้ติดตาม) · รุ่นที่สนใจ + เมนูในฟอร์มเพิ่มลูกค้า
+  const dealCustomerIds = new Set(deals.map((d) => d.customerId).filter(Boolean));
+  const leads = buildLeads(customersRes.data ?? [], variantName, dealCustomerIds);
+  const leadVariants = (variantsRes.data ?? []).map((v) => ({ id: v.id, name: v.model_name }));
+
   // ประวัติบริการของลูกค้า (จาก service_job) — โชว์ในแผงดีล
   const { data: svcRows } = await supabase
     .from("service_job")
@@ -139,6 +145,10 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
       initialSearch={typeof q === "string" ? q : ""}
       canManage={canManageDeal(roleCodes)}
       action={advanceRegistration}
+      revertAction={revertRegistration}
+      leads={leads}
+      leadVariants={leadVariants}
+      addCustomerAction={addCustomer}
       canManageFinance={canManageFinance(roleCodes)}
       financeAction={advanceFinance}
       canVoid={canVoidDeal(roleCodes)}
