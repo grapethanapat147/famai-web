@@ -1,12 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { StatCard } from "@/components/ui/StatCard";
 import { Money } from "@/components/ui/Money";
 import { Chips } from "@/components/ui/Chips";
 import { HBarChart } from "@/components/ui/HBarChart";
 import { stockStats, agedUnits, type DashUnit } from "@/lib/dashboard/stats";
+import {
+  DEFAULT_WIDGETS,
+  moveWidget,
+  normalizeWidgets,
+  toggleWidget,
+  WIDGET_LABEL,
+  type WidgetConfig,
+  type WidgetKey,
+} from "@/lib/dashboard/widgets";
+
+const WIDGETS_STORAGE_KEY = "fam-dash-widgets";
 
 export function DashboardView({
   units,
@@ -26,6 +37,28 @@ export function DashboardView({
   asOf?: string;
 }) {
   const [branch, setBranch] = useState("all");
+  // โหลดค่าที่ผู้ใช้ตั้งไว้จาก localStorage ใน initializer (client) — server ใช้ default
+  const [config, setConfig] = useState<WidgetConfig[]>(() => {
+    if (typeof window === "undefined") {
+      return DEFAULT_WIDGETS;
+    }
+    try {
+      const raw = window.localStorage.getItem(WIDGETS_STORAGE_KEY);
+      return raw ? normalizeWidgets(JSON.parse(raw)) : DEFAULT_WIDGETS;
+    } catch {
+      return DEFAULT_WIDGETS;
+    }
+  });
+  const [customizing, setCustomizing] = useState(false);
+
+  function updateConfig(next: WidgetConfig[]) {
+    setConfig(next);
+    try {
+      window.localStorage.setItem(WIDGETS_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* localStorage ปิด/เต็ม — ข้าม */
+    }
+  }
 
   const branches = useMemo(() => {
     const m = new Map<string, string>();
@@ -48,6 +81,65 @@ export function DashboardView({
   const maxBranch = Math.max(1, ...stats.byBranch.map((b) => b.value));
   const aged = useMemo(() => agedUnits(filtered, agingDays, 5), [filtered, agingDays]);
 
+  function renderWidget(key: WidgetKey): ReactNode {
+    switch (key) {
+      case "watch":
+        return (
+          <section>
+            <h2 className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted">
+              <span className="h-1.5 w-1.5 rounded-full bg-attn" aria-hidden />
+              ต้องจับตา
+            </h2>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+              <StatCard label={`ค้างเกิน ${agingDays} วัน`} value={String(stats.agedCount)} hint="คัน" />
+              <StatCard label="ทุนจมรถค้าง" value={<Money value={stats.agedValue} canSee={canSeeMoney} />} />
+              <StatCard label="ยอดค้างจ่าย" value={<Money value={overdue} canSee={canSeeMoney} />} hint="ต้องติดตาม" tone="accent" />
+            </div>
+          </section>
+        );
+      case "aging":
+        return (
+          <section className="rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <h2 className="font-display font-semibold text-ink">ช่วงอายุสต๊อก</h2>
+              <span className="tabular text-sm text-muted">{stats.inStockCount} คัน</span>
+            </div>
+            <HBarChart items={stats.buckets} />
+          </section>
+        );
+      case "oldest":
+        return (
+          <section className="flex flex-col rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <h2 className="font-display font-semibold text-ink">รถค้างนานสุด</h2>
+              <span className="tabular text-sm text-muted">{stats.agedCount} คัน</span>
+            </div>
+            {aged.length === 0 ? (
+              <p className="flex-1 py-8 text-center text-sm text-muted">ไม่มีรถค้างเกิน {agingDays} วัน 👍</p>
+            ) : (
+              <ul className="-mx-1.5 flex flex-col">
+                {aged.map((u, i) => (
+                  <li key={u.id ?? i} className="border-b border-hairline-2 last:border-0">
+                    <Link
+                      href={u.id ? `/stock?unit=${u.id}` : "/stock"}
+                      className="flex items-center justify-between gap-3 rounded-[8px] px-1.5 py-2 text-sm transition-colors hover:bg-paper-2"
+                    >
+                      <span className="min-w-0 flex-1 truncate text-ink">{u.model ?? "ไม่ระบุรุ่น"}</span>
+                      <span className="max-w-[96px] shrink-0 truncate text-muted">{u.branchName}</span>
+                      <span className="w-16 shrink-0 text-right tabular font-medium text-accent">{u.ageDays} วัน</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link href="/stock" className="mt-3 inline-block text-sm font-medium text-accent hover:underline">
+              ดูสต๊อกทั้งหมด →
+            </Link>
+          </section>
+        );
+    }
+  }
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -58,14 +150,68 @@ export function DashboardView({
             {asOf ? ` · ข้อมูล ณ ${asOf}` : ""}
           </p>
         </div>
-        {branches.length > 1 && (
-          <Chips
-            value={branch}
-            onChange={setBranch}
-            options={[{ value: "all", label: "ทุกบริษัท" }, ...branches.map((b) => ({ value: b.code, label: b.name }))]}
-          />
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {branches.length > 1 && (
+            <Chips
+              value={branch}
+              onChange={setBranch}
+              options={[{ value: "all", label: "ทุกบริษัท" }, ...branches.map((b) => ({ value: b.code, label: b.name }))]}
+            />
+          )}
+          <button
+            type="button"
+            onClick={() => setCustomizing((v) => !v)}
+            aria-pressed={customizing}
+            className={`rounded-[20px] border px-3 py-1.5 text-sm transition-colors ${customizing ? "border-ink bg-ink text-card" : "border-hairline text-ink-soft hover:text-ink"}`}
+          >
+            {customizing ? "เสร็จ" : "⚙ ปรับแต่ง"}
+          </button>
+        </div>
       </div>
+
+      {customizing && (
+        <div className="rounded-[12px] border border-hairline bg-card p-4 shadow-[var(--sh-sm)]">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted">ปรับแต่งการ์ด (เลือกแสดง + สลับตำแหน่ง)</span>
+            <button type="button" onClick={() => updateConfig(DEFAULT_WIDGETS)} className="text-xs text-muted transition-colors hover:text-accent">
+              คืนค่าเริ่มต้น
+            </button>
+          </div>
+          <ul className="flex flex-col gap-1">
+            {config.map((w, i) => (
+              <li key={w.key} className="flex items-center gap-2 rounded-[8px] px-2 py-1.5 hover:bg-paper-2">
+                <label className="flex flex-1 items-center gap-2 text-sm text-ink">
+                  <input
+                    type="checkbox"
+                    checked={w.visible}
+                    onChange={() => updateConfig(toggleWidget(config, w.key))}
+                    className="h-4 w-4 accent-[var(--accent)]"
+                  />
+                  {WIDGET_LABEL[w.key]}
+                </label>
+                <button
+                  type="button"
+                  disabled={i === 0}
+                  onClick={() => updateConfig(moveWidget(config, w.key, -1))}
+                  aria-label="เลื่อนขึ้น"
+                  className="rounded px-1.5 py-0.5 text-ink-soft transition-colors hover:text-ink disabled:opacity-30"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  disabled={i === config.length - 1}
+                  onClick={() => updateConfig(moveWidget(config, w.key, 1))}
+                  aria-label="เลื่อนลง"
+                  className="rounded px-1.5 py-0.5 text-ink-soft transition-colors hover:text-ink disabled:opacity-30"
+                >
+                  ↓
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* แถบหลัก — มูลค่าสต๊อก (สินทรัพย์ก้อนใหญ่) เด่นเป็นพระเอก + ยอดขายเดือนนี้ */}
       <div className="grid gap-3 lg:grid-cols-3">
@@ -131,61 +277,10 @@ export function DashboardView({
         </section>
       </div>
 
-      {/* ต้องจับตา — ความเสี่ยง/สิ่งที่ต้องตาม รวมเป็นกลุ่มให้กวาดตาเจอง่าย */}
-      <section>
-        <h2 className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted">
-          <span className="h-1.5 w-1.5 rounded-full bg-attn" aria-hidden />
-          ต้องจับตา
-        </h2>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label={`ค้างเกิน ${agingDays} วัน`} value={String(stats.agedCount)} hint="คัน" />
-          <StatCard label="ทุนจมรถค้าง" value={<Money value={stats.agedValue} canSee={canSeeMoney} />} />
-          <StatCard
-            label="ยอดค้างจ่าย"
-            value={<Money value={overdue} canSee={canSeeMoney} />}
-            hint="ต้องติดตาม"
-            tone="accent"
-          />
-        </div>
-      </section>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
-          <div className="mb-3 flex items-baseline justify-between gap-2">
-            <h2 className="font-display font-semibold text-ink">ช่วงอายุสต๊อก</h2>
-            <span className="tabular text-sm text-muted">{stats.inStockCount} คัน</span>
-          </div>
-          <HBarChart items={stats.buckets} />
-        </section>
-
-        <section className="flex flex-col rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
-          <div className="mb-3 flex items-baseline justify-between gap-2">
-            <h2 className="font-display font-semibold text-ink">รถค้างนานสุด</h2>
-            <span className="tabular text-sm text-muted">{stats.agedCount} คัน</span>
-          </div>
-          {aged.length === 0 ? (
-            <p className="flex-1 py-8 text-center text-sm text-muted">ไม่มีรถค้างเกิน {agingDays} วัน 👍</p>
-          ) : (
-            <ul className="-mx-1.5 flex flex-col">
-              {aged.map((u, i) => (
-                <li key={u.id ?? i} className="border-b border-hairline-2 last:border-0">
-                  <Link
-                    href={u.id ? `/stock?unit=${u.id}` : "/stock"}
-                    className="flex items-center justify-between gap-3 rounded-[8px] px-1.5 py-2 text-sm transition-colors hover:bg-paper-2"
-                  >
-                    <span className="min-w-0 flex-1 truncate text-ink">{u.model ?? "ไม่ระบุรุ่น"}</span>
-                    <span className="max-w-[96px] shrink-0 truncate text-muted">{u.branchName}</span>
-                    <span className="w-16 shrink-0 text-right tabular font-medium text-accent">{u.ageDays} วัน</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Link href="/stock" className="mt-3 inline-block text-sm font-medium text-accent hover:underline">
-            ดูสต๊อกทั้งหมด →
-          </Link>
-        </section>
-      </div>
+      {/* การ์ดปรับแต่งได้ (FAM-1096) — เรียง/ซ่อนตามที่ผู้ใช้ตั้ง */}
+      {config.filter((w) => w.visible).map((w) => (
+        <div key={w.key}>{renderWidget(w.key)}</div>
+      ))}
     </div>
   );
 }
