@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeAgeDays, agingVariant, filterUnits, type StockUnit } from "@/lib/stock/units";
+import { computeAgeDays, agingVariant, filterUnits, modelOptions, type StockUnit } from "@/lib/stock/units";
 
 function u(partial: Partial<StockUnit>): StockUnit {
   return {
@@ -21,6 +21,22 @@ function u(partial: Partial<StockUnit>): StockUnit {
     ...partial,
   };
 }
+
+describe("modelOptions", () => {
+  it("dedupes by code and separates same-named models by code, sorted", () => {
+    const opts = modelOptions([
+      u({ modelCode: "B6FV00", modelName: "FINN" }),
+      u({ modelCode: "B6FU00", modelName: "FINN" }),
+      u({ modelCode: "B6FU00", modelName: "FINN" }), // ซ้ำ → รวม
+      u({ modelCode: "DR9200", modelName: "XMAX 300" }),
+    ]);
+    expect(opts).toEqual([
+      { code: "B6FU00", name: "FINN" },
+      { code: "B6FV00", name: "FINN" },
+      { code: "DR9200", name: "XMAX 300" },
+    ]);
+  });
+});
 
 describe("computeAgeDays", () => {
   it("counts days tz-safely from date-only strings", () => {

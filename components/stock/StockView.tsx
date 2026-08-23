@@ -15,6 +15,7 @@ import {
   STATUS_FILTER_ORDER,
   agingVariant,
   filterUnits,
+  modelOptions,
   type StockUnit,
 } from "@/lib/stock/units";
 
@@ -59,11 +60,7 @@ export function StockView({
     return [...map].map(([code, name]) => ({ code, name }));
   }, [units]);
 
-  const models = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const u of units) map.set(u.modelCode, u.modelName);
-    return [...map].map(([code, name]) => ({ code, name })).sort((a, b) => a.name.localeCompare(b.name, "th"));
-  }, [units]);
+  const models = useMemo(() => modelOptions(units), [units]);
 
   const rows = useMemo(
     () => filterUnits(units, { branch, model, status, search }),
@@ -80,7 +77,10 @@ export function StockView({
 
   const parts = [`${rows.length} คัน`];
   if (branch !== "all") parts.push(branches.find((b) => b.code === branch)?.name ?? branch);
-  if (model !== "all") parts.push(models.find((m) => m.code === model)?.name ?? model);
+  if (model !== "all") {
+    const m = models.find((x) => x.code === model);
+    parts.push(m ? `${m.name} · ${m.code}` : model);
+  }
   if (status !== "all") parts.push(STATUS_META[status as keyof typeof STATUS_META]?.label ?? status);
   const summary = `กำลังดู: ${parts.join(" · ")}`;
 
@@ -95,7 +95,7 @@ export function StockView({
             <Image src={u.photoUrl} alt="" width={28} height={28} className="h-7 w-7 rounded-[6px] object-cover" unoptimized />
           )}
           <span>
-            {u.modelName} · {u.colorName}
+            {u.modelName} <span className="font-mono text-[11px] text-muted">{u.modelCode}</span> · {u.colorName}
           </span>
         </span>
       ),
@@ -142,7 +142,7 @@ export function StockView({
             <option value="all">ทุกรุ่น</option>
             {models.map((m) => (
               <option key={m.code} value={m.code}>
-                {m.name}
+                {m.name} · {m.code}
               </option>
             ))}
           </select>

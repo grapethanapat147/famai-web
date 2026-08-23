@@ -47,6 +47,20 @@ export function agingVariant(ageDays: number, agingDays: number): StatusVariant 
   return "bad";
 }
 
+/**
+ * ตัวเลือกรุ่นสำหรับดรอปดาวน์กรอง — รวมตามรหัสรุ่น (code) เรียงตามชื่อแล้วรหัส
+ * รุ่นชื่อซ้ำ (เช่น FINN หลายรหัส) จะแยกกันด้วยรหัส → เลือกได้ตรงตัว
+ */
+export function modelOptions(units: readonly StockUnit[]): { code: string; name: string }[] {
+  const map = new Map<string, string>();
+  for (const u of units) {
+    map.set(u.modelCode, u.modelName);
+  }
+  return [...map]
+    .map(([code, name]) => ({ code, name }))
+    .sort((a, b) => a.name.localeCompare(b.name, "th") || a.code.localeCompare(b.code));
+}
+
 export type StockFilters = { branch: string; model: string; status: string; search: string };
 
 export function filterUnits(units: StockUnit[], f: StockFilters): StockUnit[] {
