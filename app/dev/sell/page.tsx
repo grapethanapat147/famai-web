@@ -6,9 +6,9 @@ import type { SellActionResult } from "@/lib/sell/sell";
 /** พรีวิวหน้าขาย (FAM-1011/1023) — sample data · /sell จริงต่อ DB ผ่าน sell_unit RPC */
 
 const UNITS: SellUnit[] = [
-  { id: "1", modelCode: "B6FU00", modelName: "FINN ล้อแม็ก", colorName: "ฟ้า", engineNo: "E34RE-057401", branchCode: "FMG01", branchName: "Famai Motor Group", ageDays: 12, retail: 46900, cost: 40800 },
-  { id: "2", modelCode: "BTF200", modelName: "NMAX สแตนดาร์ด", colorName: "แดง", engineNo: "E3X8E-112097", branchCode: "FMM01", branchName: "Famai Motor", ageDays: 95, retail: 92000, cost: 78000 },
-  { id: "3", modelCode: "DR9200", modelName: "XMAX 300", colorName: "ดำ/เทา", engineNo: "EA71E-900233", branchCode: "FMG01", branchName: "Famai Motor Group", ageDays: 5, retail: 189000, cost: 175000 },
+  { id: "1", modelCode: "B6FU00", modelName: "FINN ล้อแม็ก", colorName: "ฟ้า", engineNo: "E34RE-057401", frameNo: "MLEUE364111399878", branchCode: "FMG01", branchName: "Famai Motor Group", ageDays: 12, retail: 46900, cost: 40800 },
+  { id: "2", modelCode: "BTF200", modelName: "NMAX สแตนดาร์ด", colorName: "แดง", engineNo: "E3X8E-112097", frameNo: "MLERG583XPG200145", branchCode: "FMM01", branchName: "Famai Motor", ageDays: 95, retail: 92000, cost: 78000 },
+  { id: "3", modelCode: "DR9200", modelName: "XMAX 300", colorName: "ดำ/เทา", engineNo: "EA71E-900233", frameNo: "MLDSG897XPB900233", branchCode: "FMG01", branchName: "Famai Motor Group", ageDays: 5, retail: 189000, cost: 175000 },
 ];
 
 const FINANCE: FinanceCo[] = [

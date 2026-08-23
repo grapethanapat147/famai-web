@@ -37,7 +37,7 @@ export default async function SellPage({
   const [unitsRes, variantsRes, colorsRes, branches, finRes] = await Promise.all([
     supabase
       .from("motorcycle_unit")
-      .select("id, branch_id, variant_id, color_code, engine_no, received_at, cost, retail")
+      .select("id, branch_id, variant_id, color_code, engine_no, frame_no, received_at, cost, retail")
       .eq("status", "available"),
     supabase.from("model_variant").select("id, code, model_name"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),
@@ -59,6 +59,7 @@ export default async function SellPage({
       modelName: v?.model_name ?? "?",
       colorName: colors.get(`${u.variant_id}:${u.color_code}`) ?? u.color_code,
       engineNo: u.engine_no,
+      frameNo: u.frame_no,
       branchCode: b?.code ?? "?",
       branchName: b?.name ?? "?",
       ageDays: computeAgeDays(u.received_at, today),

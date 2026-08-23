@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { Chips } from "@/components/ui/Chips";
+import { Combobox } from "@/components/ui/Combobox";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -14,6 +15,7 @@ export type SellUnit = {
   modelName: string;
   colorName: string;
   engineNo: string;
+  frameNo: string;
   branchCode: string;
   branchName: string;
   ageDays: number;
@@ -155,15 +157,20 @@ export function SellForm({
         {fromQuote && (
           <StatusBadge variant="good">แปลงจากใบเสนอราคา — ตรวจคัน/ราคาแล้วยืนยันบันทึก{unitId ? "" : " (ยังไม่มีรถว่างของรุ่นนี้ — เลือกคันเอง)"}</StatusBadge>
         )}
-        <Field label="เลือกคันจากสต๊อก" full>
-          <select value={unitId} onChange={(e) => selectUnit(e.target.value)} className={inputCls}>
-            <option value="">— เลือกรถ —</option>
-            {units.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.modelName} · {u.colorName} · {u.engineNo} ({u.branchName})
-              </option>
-            ))}
-          </select>
+        <Field label="เลือกคันจากสต๊อก (พิมพ์ค้นได้)" full>
+          <Combobox
+            ariaLabel="เลือกคันจากสต๊อก"
+            placeholder="พิมพ์รุ่น / สี / รหัสรุ่น / เลขถัง / เลขเครื่อง…"
+            value={unitId}
+            onChange={selectUnit}
+            emptyText="ไม่พบรถในสต๊อก"
+            options={units.map((u) => ({
+              value: u.id,
+              label: `${u.modelName} · ${u.colorName}`,
+              sub: `${u.modelCode} · ถัง ${u.frameNo}`,
+              keywords: `${u.modelCode} ${u.frameNo} ${u.engineNo} ${u.branchName}`,
+            }))}
+          />
         </Field>
 
         {unit && (
