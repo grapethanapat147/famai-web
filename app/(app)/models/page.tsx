@@ -5,7 +5,7 @@ import { stripMoneyFields } from "@/lib/auth/strip-money";
 import { buildModelRows, type ModelRow } from "@/lib/models/rows";
 import { canUploadModelPhoto } from "@/lib/models/image";
 import { ModelsView } from "@/components/models/ModelsView";
-import { addModel, saveModelPhoto } from "./actions";
+import { addModel, editModel, saveModelPhoto } from "./actions";
 
 export const metadata = { title: "รุ่นรถและสี — Famai Motor Group" };
 
@@ -54,6 +54,7 @@ export default async function ModelsPage() {
       canAdd={Boolean(user?.perms.admin)}
       photoBaseUrl={PHOTO_BASE}
       action={addModel}
+      editAction={editModel}
       canManagePhoto={canUploadModelPhoto(user?.roleCodes ?? [])}
       savePhotoAction={saveModelPhoto}
     />

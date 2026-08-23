@@ -25,6 +25,7 @@ export function ModelsView({
   canAdd,
   photoBaseUrl,
   action,
+  editAction,
   canManagePhoto = false,
   savePhotoAction,
   categories = DEFAULT_CATEGORIES,
@@ -34,13 +35,16 @@ export function ModelsView({
   canAdd: boolean;
   photoBaseUrl: string;
   action: (formData: FormData) => Promise<AddModelResult>;
+  editAction?: (formData: FormData) => Promise<AddModelResult>;
   canManagePhoto?: boolean;
   savePhotoAction?: (formData: FormData) => Promise<ModelPhotoResult>;
   categories?: string[];
 }) {
   const [open, setOpen] = useState(false);
   const [photoTarget, setPhotoTarget] = useState<ModelRow | null>(null);
+  const [editTarget, setEditTarget] = useState<ModelRow | null>(null);
   const canPhoto = canManagePhoto && !!savePhotoAction;
+  const canEdit = canAdd && !!editAction;
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -87,7 +91,21 @@ export function ModelsView({
                       {m.modelTh ? ` · ${m.modelTh}` : ""}
                     </p>
                   </div>
-                  <StatusBadge variant={m.stockCount > 0 ? "good" : "off"}>{m.stockCount} คัน</StatusBadge>
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <StatusBadge variant={m.stockCount > 0 ? "good" : "off"}>{m.stockCount} คัน</StatusBadge>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => setEditTarget(m)}
+                        className="inline-flex items-center gap-1 text-xs text-ink-soft underline-offset-2 hover:text-ink hover:underline"
+                      >
+                        <svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M13.5 4.5l2 2L7 15l-2.5.5L5 13z" />
+                        </svg>
+                        แก้ไข
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <p className="mt-1 text-xs text-ink-soft">
@@ -127,6 +145,10 @@ export function ModelsView({
 
       {canAdd && (
         <AddModelModal open={open} onClose={() => setOpen(false)} action={action} categories={categories} />
+      )}
+
+      {canEdit && (
+        <EditModelModal model={editTarget} action={editAction!} categories={categories} canSeeMoney={canSeeMoney} onClose={() => setEditTarget(null)} />
       )}
 
       {canPhoto && (
@@ -398,6 +420,141 @@ function AddModelModal({
           </button>
         </div>
       </div>
+    </Modal>
+  );
+}
+
+function EditModelModal({
+  model,
+  action,
+  categories,
+  canSeeMoney,
+  onClose,
+}: {
+  model: ModelRow | null;
+  action: (formData: FormData) => Promise<AddModelResult>;
+  categories: string[];
+  canSeeMoney: boolean;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [current, setCurrent] = useState<string | null>(null);
+  const [modelName, setModelName] = useState("");
+  const [modelTh, setModelTh] = useState("");
+  const [category, setCategory] = useState("");
+  const [cc, setCc] = useState("");
+  const [year, setYear] = useState("");
+  const [cost, setCost] = useState("");
+  const [retail, setRetail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // prefill เมื่อเปิดรุ่นใหม่ (เทียบ id ระหว่าง render — ปลอดภัยกว่า effect)
+  if (model && model.id !== current) {
+    setCurrent(model.id);
+    setModelName(model.modelName);
+    setModelTh(model.modelTh ?? "");
+    setCategory(model.category ?? categories[0] ?? "");
+    setCc(model.cc != null ? String(model.cc) : "");
+    setYear(model.year != null ? String(model.year) : "");
+    setCost(model.cost != null ? String(model.cost) : "");
+    setRetail(model.retail != null ? String(model.retail) : "");
+    setError(null);
+  }
+
+  const canSubmit = modelName.trim() !== "" && retail.trim() !== "";
+  const catOptions = category && !categories.includes(category) ? [category, ...categories] : categories;
+
+  async function submit() {
+    if (!model || !canSubmit || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const fd = new FormData();
+    fd.set("variant_id", model.id);
+    fd.set("model_name", modelName.trim());
+    fd.set("model_th", modelTh.trim());
+    fd.set("category", category);
+    fd.set("cc", cc);
+    fd.set("model_year", year);
+    fd.set("cost", cost);
+    fd.set("retail", retail);
+    const res = await action(fd);
+    setBusy(false);
+    if (res.ok) {
+      router.refresh();
+      onClose();
+    } else {
+      setError(res.error);
+    }
+  }
+
+  return (
+    <Modal open={model !== null} onClose={onClose} title={model ? `แก้ไขรุ่น ${model.code}` : ""}>
+      {model && (
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="รหัสรุ่น (แก้ไม่ได้)">
+              <input value={model.code} disabled className={`${inputCls} opacity-60`} />
+            </Field>
+            <Field label="ชื่อรุ่น *">
+              <input value={modelName} onChange={(e) => setModelName(e.target.value)} className={inputCls} />
+            </Field>
+          </div>
+
+          <Field label="ชื่อไทย">
+            <input value={modelTh} onChange={(e) => setModelTh(e.target.value)} className={inputCls} />
+          </Field>
+
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="ประเภท">
+              <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls}>
+                {catOptions.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="cc">
+              <input value={cc} onChange={(e) => setCc(e.target.value)} inputMode="decimal" className={inputCls} />
+            </Field>
+            <Field label="ปี (พ.ศ.)">
+              <input value={year} onChange={(e) => setYear(e.target.value)} inputMode="numeric" className={inputCls} />
+            </Field>
+          </div>
+
+          {canSeeMoney && (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="ต้นทุน (ก่อน VAT)">
+                <input value={cost} onChange={(e) => setCost(e.target.value)} inputMode="numeric" className={inputCls} />
+              </Field>
+              <Field label="ราคาขายปลีก *">
+                <input value={retail} onChange={(e) => setRetail(e.target.value)} inputMode="numeric" className={inputCls} />
+              </Field>
+            </div>
+          )}
+
+          <p className="text-xs text-muted">แก้ราคา = บันทึกราคาใหม่มีผลวันนี้ (เก็บประวัติราคาเดิมไว้) · สี/รูป แก้จากการ์ดรุ่นแยกต่างหาก</p>
+
+          {error && <StatusBadge variant="bad">{error}</StatusBadge>}
+
+          <div className="mt-1 flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="rounded-[24px] px-4 py-2 text-sm text-ink-soft">
+              ยกเลิก
+            </button>
+            <button
+              type="button"
+              onClick={submit}
+              disabled={!canSubmit || busy}
+              className="rounded-[24px] bg-accent px-5 py-2 text-sm font-medium text-card transition-transform active:scale-[0.99] disabled:opacity-50"
+            >
+              {busy ? "กำลังบันทึก…" : "บันทึกการแก้ไข"}
+            </button>
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }

@@ -5,6 +5,60 @@
 
 export type AddModelResult = { ok: true; message?: string } | { ok: false; error: string };
 
+/** ค่าดิบจากฟอร์มแก้ไขรุ่น (ตัวเลขเป็น string จาก FormData) — รหัสรุ่น/สี ไม่แก้ที่นี่ */
+export type ModelEditInput = {
+  modelName: string;
+  modelTh: string;
+  category: string;
+  cc: string;
+  year: string;
+  cost: string;
+  retail: string;
+};
+
+export type ModelEditValid = {
+  modelName: string;
+  modelTh: string | null;
+  category: string | null;
+  cc: number | null;
+  year: number | null;
+  cost: number;
+  retail: number;
+};
+
+/** ตรวจฟอร์มแก้ไขรุ่น — ชื่อบังคับ · ราคาขาย > 0 · ต้นทุน/cc/ปี ถ้ากรอกต้องเป็นตัวเลข */
+export function validateModelEdit(input: ModelEditInput): { ok: true; value: ModelEditValid } | { ok: false; error: string } {
+  const modelName = input.modelName.trim();
+  if (modelName === "") {
+    return { ok: false, error: "กรอกชื่อรุ่น" };
+  }
+  const retail = Number(input.retail);
+  if (!Number.isFinite(retail) || retail <= 0) {
+    return { ok: false, error: "ราคาขายไม่ถูกต้อง" };
+  }
+  const cost = input.cost.trim() === "" ? 0 : Number(input.cost);
+  if (!Number.isFinite(cost) || cost < 0) {
+    return { ok: false, error: "ต้นทุนไม่ถูกต้อง" };
+  }
+  const cc = input.cc.trim() === "" ? null : Number(input.cc);
+  const year = input.year.trim() === "" ? null : Number(input.year);
+  if ((cc !== null && !Number.isFinite(cc)) || (year !== null && !Number.isFinite(year))) {
+    return { ok: false, error: "ค่า cc / ปี ไม่ถูกต้อง" };
+  }
+  return {
+    ok: true,
+    value: {
+      modelName,
+      modelTh: input.modelTh.trim() || null,
+      category: input.category.trim() || null,
+      cc,
+      year,
+      cost,
+      retail,
+    },
+  };
+}
+
 export type ModelColorRef = { code: string; name: string };
 
 export type ModelRow = {

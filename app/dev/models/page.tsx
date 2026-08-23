@@ -70,6 +70,13 @@ async function mockSavePhoto(): Promise<ModelPhotoResult> {
   return { ok: true };
 }
 
+async function mockEditModel(formData: FormData): Promise<AddModelResult> {
+  if (!String(formData.get("model_name") ?? "").trim()) {
+    return { ok: false, error: "กรอกชื่อรุ่น" };
+  }
+  return { ok: true };
+}
+
 export default function DevModelsPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
@@ -83,6 +90,7 @@ export default function DevModelsPage() {
         canAdd
         photoBaseUrl=""
         action={mockAddModel}
+        editAction={mockEditModel}
         canManagePhoto
         savePhotoAction={mockSavePhoto}
       />
