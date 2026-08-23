@@ -41,6 +41,7 @@ type Branch = {
   geo_lat: number | null; // FAM-1101 geofence ลงเวลา
   geo_lng: number | null;
   geo_radius_m: number | null;
+  require_selfie: boolean; // FAM-1101 P2 บังคับถ่ายเซลฟี่ตอนลงเวลา
 };
 
 type Company = {
@@ -401,6 +402,7 @@ type Attendance = {
   check_in_lat: number | null; // FAM-1101 พิกัดตอนลงเวลา
   check_in_lng: number | null;
   check_in_distance_m: number | null;
+  check_in_selfie: string | null; // FAM-1101 P2 path เซลฟี่
 };
 
 type LeaveRequest = {
