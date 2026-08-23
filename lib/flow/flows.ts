@@ -15,6 +15,21 @@ export const ROLE_LABEL: Record<RoleCode, string> = {
   tech: "ช่าง",
 };
 
+/** สีประจำตำแหน่ง (hex) — ใช้ทำชิปให้แยกตำแหน่งด้วยสายตา (อ่านได้ทั้งธีมสว่าง/มืดด้วย tint + ตัวอักษรสีเข้ม) */
+export const ROLE_COLOR: Record<RoleCode, string> = {
+  admin: "#64748b", // slate
+  manager: "#2563eb", // blue
+  sales: "#059669", // emerald
+  stock: "#d97706", // amber
+  acct: "#7c3aed", // violet
+  hr: "#db2777", // pink
+  tech: "#0891b2", // cyan
+};
+
+export function roleColor(code: string): string {
+  return isRoleCode(code) ? ROLE_COLOR[code] : "#64748b";
+}
+
 export type FlowStep = {
   title: string;
   roles: RoleCode[];
@@ -108,4 +123,18 @@ export function stepInvolvesRole(step: FlowStep, roleCodes: readonly string[]): 
 /** กระบวนการนี้มีขั้นที่เป็นของฉันไหม */
 export function flowInvolvesRole(flow: Flow, roleCodes: readonly string[]): boolean {
   return flow.steps.some((s) => stepInvolvesRole(s, roleCodes));
+}
+
+/**
+ * ขั้นที่ต้องแสดง (พร้อมเลขขั้นเดิม) — onlyMine=true คืนเฉพาะขั้นของฉัน (คงเลขขั้นจริงไว้)
+ * ใช้กับปุ่ม "เฉพาะงานของฉัน" ให้ตัดขั้นที่ไม่ใช่ของเราออกจริง ไม่ใช่แค่ซ่อนทั้งกระบวนการ
+ */
+export function visibleSteps(
+  flow: Flow,
+  roleCodes: readonly string[],
+  onlyMine: boolean,
+): { step: FlowStep; index: number }[] {
+  return flow.steps
+    .map((step, index) => ({ step, index }))
+    .filter(({ step }) => !onlyMine || stepInvolvesRole(step, roleCodes));
 }

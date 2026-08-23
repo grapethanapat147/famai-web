@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { menuItem } from "@/lib/nav/menu";
 import {
   FLOWS,
   ROLE_LABEL,
   flowInvolvesRole,
+  roleColor,
   roleLabel,
   stepInvolvesRole,
+  visibleSteps,
   type Flow,
   type FlowStep,
   type RoleCode,
@@ -16,9 +18,20 @@ import {
 
 const ROLE_ORDER: RoleCode[] = ["manager", "sales", "stock", "acct", "hr", "tech"];
 
+/** ชิปสีประจำตำแหน่ง — tint จาง + ตัวอักษรสีเข้ม (อ่านได้ทั้งธีมสว่าง/มืด) · ตำแหน่งของฉันเน้นด้วยเส้นขอบ */
+function chipStyle(role: string, mine: boolean): CSSProperties {
+  const c = roleColor(role);
+  return {
+    backgroundColor: `${c}1a`,
+    color: c,
+    ...(mine ? { boxShadow: `inset 0 0 0 1px ${c}` } : {}),
+  };
+}
+
 export function FlowView({ roleCodes }: { roleCodes: string[] }) {
   const [onlyMine, setOnlyMine] = useState(false);
   const hasRoles = roleCodes.length > 0;
+  const isAdmin = roleCodes.includes("admin");
 
   const flows = onlyMine ? FLOWS.filter((f) => flowInvolvesRole(f, roleCodes)) : FLOWS;
 
@@ -38,13 +51,16 @@ export function FlowView({ roleCodes }: { roleCodes: string[] }) {
         )}
       </div>
 
-      {/* legend บทบาท */}
+      {onlyMine && isAdmin && (
+        <p className="mb-4 rounded-[10px] bg-paper-2 px-3 py-2 text-xs text-muted">
+          คุณเป็นผู้ดูแลระบบ — เห็นทุกงานในทุกกระบวนการ
+        </p>
+      )}
+
+      {/* legend — สีตามตำแหน่ง (ตำแหน่งของฉันมีเส้นขอบ) */}
       <div className="mb-5 flex flex-wrap gap-1.5">
         {ROLE_ORDER.map((r) => (
-          <span
-            key={r}
-            className={`rounded-full px-2.5 py-1 text-xs ${roleCodes.includes(r) || roleCodes.includes("admin") ? "bg-accent/10 text-accent" : "border border-hairline text-muted"}`}
-          >
+          <span key={r} className="rounded-full px-2.5 py-1 text-xs font-medium" style={chipStyle(r, roleCodes.includes(r))}>
             {ROLE_LABEL[r]}
           </span>
         ))}
@@ -56,42 +72,43 @@ export function FlowView({ roleCodes }: { roleCodes: string[] }) {
             ไม่มีกระบวนการที่เกี่ยวกับบทบาทของคุณ
           </p>
         ) : (
-          flows.map((flow) => <FlowCard key={flow.key} flow={flow} roleCodes={roleCodes} />)
+          flows.map((flow) => <FlowCard key={flow.key} flow={flow} roleCodes={roleCodes} onlyMine={onlyMine} />)
         )}
       </div>
     </div>
   );
 }
 
-function FlowCard({ flow, roleCodes }: { flow: Flow; roleCodes: string[] }) {
+function FlowCard({ flow, roleCodes, onlyMine }: { flow: Flow; roleCodes: string[]; onlyMine: boolean }) {
+  const steps = visibleSteps(flow, roleCodes, onlyMine);
   return (
     <section className="rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
       <h2 className="font-display font-semibold text-ink">{flow.title}</h2>
       <p className="mb-4 text-sm text-muted">{flow.description}</p>
 
       <ol className="flex flex-col">
-        {flow.steps.map((step, i) => (
-          <StepRow key={i} step={step} index={i} last={i === flow.steps.length - 1} roleCodes={roleCodes} />
+        {steps.map(({ step, index }, pos) => (
+          <StepRow key={index} step={step} stepNumber={index + 1} last={pos === steps.length - 1} roleCodes={roleCodes} />
         ))}
       </ol>
     </section>
   );
 }
 
-function StepRow({ step, index, last, roleCodes }: { step: FlowStep; index: number; last: boolean; roleCodes: string[] }) {
+function StepRow({ step, stepNumber, last, roleCodes }: { step: FlowStep; stepNumber: number; last: boolean; roleCodes: string[] }) {
   const mine = stepInvolvesRole(step, roleCodes);
   const item = step.screen ? menuItem(step.screen) : undefined;
 
   return (
     <li className="flex gap-3">
-      {/* เลขขั้น + เส้นเชื่อม */}
+      {/* เลขขั้น (คงเลขจริงไว้แม้กรองเฉพาะงานของฉัน) + เส้นเชื่อม */}
       <div className="flex flex-col items-center">
         <span
           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold tabular ${
             mine ? "border-accent bg-accent text-card" : "border-hairline bg-card text-muted"
           }`}
         >
-          {index + 1}
+          {stepNumber}
         </span>
         {!last && <span className="w-0.5 flex-1 bg-hairline-2" />}
       </div>
@@ -105,12 +122,7 @@ function StepRow({ step, index, last, roleCodes }: { step: FlowStep; index: numb
 
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
           {step.roles.map((r) => (
-            <span
-              key={r}
-              className={`rounded-full px-2 py-0.5 text-[11px] ${
-                roleCodes.includes(r) || roleCodes.includes("admin") ? "bg-accent/10 text-accent" : "border border-hairline text-muted"
-              }`}
-            >
+            <span key={r} className="rounded-full px-2 py-0.5 text-[11px] font-medium" style={chipStyle(r, roleCodes.includes(r))}>
               {roleLabel(r)}
             </span>
           ))}
