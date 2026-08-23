@@ -21,6 +21,31 @@ export type PartySnapshot = {
   phone: string | null;
 };
 
+/**
+ * รายการรถบนเอกสาร — แช่ไว้ใน `buyer_snapshot.item` (ตาราง document ไม่มีคอลัมน์ item แยก)
+ * เก็บใน snapshot เพื่อให้ **แก้ไขได้** ต่อเอกสาร โดยไม่กระทบข้อมูลการขาย/สต็อกจริง (FAM-1102 P2)
+ */
+export type DocItem = {
+  vehicle: string;
+  frameNo: string;
+  engineNo: string;
+};
+
+/** อ่าน item ที่แช่ใน buyer_snapshot (เอกสารรุ่นเก่าที่ไม่มี → null เพื่อ fallback ไปดึงจาก sale) */
+export function parseDocItem(buyerSnapshot: unknown): DocItem | null {
+  const s = (buyerSnapshot ?? {}) as Record<string, unknown>;
+  const item = s.item;
+  if (!item || typeof item !== "object") {
+    return null;
+  }
+  const it = item as Record<string, unknown>;
+  return {
+    vehicle: typeof it.vehicle === "string" ? it.vehicle : "",
+    frameNo: typeof it.frameNo === "string" ? it.frameNo : "",
+    engineNo: typeof it.engineNo === "string" ? it.engineNo : "",
+  };
+}
+
 /** แถวเอกสารในลิสต์หน้าบัญชี */
 export type DocRow = {
   id: string;
@@ -76,4 +101,135 @@ export function amountBreakdown(total: number, vatPct: number): { base: number; 
   }
   const base = Math.round((total / (1 + vatPct / 100)) * 100) / 100;
   return { base, vat: Math.round((total - base) * 100) / 100, total };
+}
+
+// ── จำนวนเงินเป็นตัวอักษร (ไทย) — ใบกำกับภาษีต้องมีบรรทัด "ตัวอักษร" ────────────────
+
+const TH_DIGIT = ["ศูนย์", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
+const TH_PLACE = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน"];
+
+/** อ่านเลขกลุ่มไม่เกิน 6 หลักเป็นคำไทย (จัดการ เอ็ด/ยี่สิบ/สิบ) — precededByHigher: มีหลักสูงกว่าในกลุ่มก่อนหน้า (เช่น ล้าน) */
+function readGroup6(s: string, precededByHigher = false): string {
+  const digits = s.split("").map(Number);
+  const len = digits.length;
+  const hasHigher = precededByHigher || digits.slice(0, len - 1).some((d) => d > 0);
+  let out = "";
+  for (let i = 0; i < len; i++) {
+    const d = digits[i];
+    const place = len - i - 1;
+    if (d === 0) {
+      continue;
+    }
+    if (place === 0 && d === 1 && hasHigher) {
+      out += "เอ็ด";
+    } else if (place === 1 && d === 2) {
+      out += "ยี่สิบ";
+    } else if (place === 1 && d === 1) {
+      out += "สิบ";
+    } else {
+      out += TH_DIGIT[d] + TH_PLACE[place];
+    }
+  }
+  return out;
+}
+
+/** อ่านจำนวนเต็มเป็นคำไทย — แบ่งกลุ่มละ 6 หลักด้วย "ล้าน" */
+function readInteger(intStr: string): string {
+  const n = intStr.replace(/^0+/, "");
+  if (n === "") {
+    return "ศูนย์";
+  }
+  if (n.length > 6) {
+    return readInteger(n.slice(0, n.length - 6)) + "ล้าน" + readGroup6(n.slice(n.length - 6), true);
+  }
+  return readGroup6(n);
+}
+
+/**
+ * แปลงจำนวนเงินเป็นข้อความภาษาไทย เช่น 107500 → "หนึ่งแสนเจ็ดพันห้าร้อยบาทถ้วน"
+ * ปัดเป็นสตางค์ · ค่าติดลบ/ไม่ใช่ตัวเลข → ว่าง
+ */
+export function bahtText(amount: number): string {
+  if (!Number.isFinite(amount) || amount < 0) {
+    return "";
+  }
+  const cents = Math.round(amount * 100);
+  const baht = Math.floor(cents / 100);
+  const satang = cents % 100;
+  const bahtWords = readInteger(String(baht));
+  if (satang === 0) {
+    return `${bahtWords}บาทถ้วน`;
+  }
+  return `${bahtWords}บาท${readGroup6(String(satang))}สตางค์`;
+}
+
+// ── แก้ไขเอกสาร (ทุกช่อง ยกเว้นเลข) — FAM-1102 P2 ─────────────────────────────────
+
+/** ค่าดิบจากฟอร์มแก้ไขเอกสาร (ตัวเลขเป็น string) — เลขที่/ประเภทเอกสารแก้ไม่ได้ */
+export type DocEditInput = {
+  sellerName: string;
+  sellerAddress: string;
+  sellerTaxId: string;
+  sellerPhone: string;
+  buyerName: string;
+  buyerAddress: string;
+  buyerTaxId: string;
+  buyerPhone: string;
+  vehicle: string;
+  frameNo: string;
+  engineNo: string;
+  base: string;
+  vat: string;
+  docDate: string;
+};
+
+export type DocEditValid = {
+  seller: PartySnapshot;
+  buyer: PartySnapshot;
+  item: DocItem;
+  base: number;
+  vat: number;
+  total: number;
+  docDate: string;
+};
+
+function blankToNull(s: string): string | null {
+  const t = s.trim();
+  return t === "" ? null : t;
+}
+
+/** ตรวจฟอร์มแก้ไขเอกสาร — ชื่อผู้ขาย/ผู้ซื้อบังคับ · มูลค่า/VAT เป็นเลข ≥ 0 · วันที่ ISO */
+export function validateDocEdit(input: DocEditInput): { ok: true; value: DocEditValid } | { ok: false; error: string } {
+  const sellerName = input.sellerName.trim();
+  if (sellerName === "") {
+    return { ok: false, error: "กรอกชื่อผู้ขาย" };
+  }
+  const buyerName = input.buyerName.trim();
+  if (buyerName === "") {
+    return { ok: false, error: "กรอกชื่อผู้ซื้อ" };
+  }
+  const base = Number(input.base);
+  if (!Number.isFinite(base) || base < 0) {
+    return { ok: false, error: "มูลค่าก่อนภาษีไม่ถูกต้อง" };
+  }
+  const vat = Number(input.vat);
+  if (!Number.isFinite(vat) || vat < 0) {
+    return { ok: false, error: "ภาษีมูลค่าเพิ่มไม่ถูกต้อง" };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.docDate)) {
+    return { ok: false, error: "วันที่ไม่ถูกต้อง" };
+  }
+  const round2 = (n: number): number => Math.round(n * 100) / 100;
+  return {
+    ok: true,
+    value: {
+      seller: { name: sellerName, address: blankToNull(input.sellerAddress), taxId: blankToNull(input.sellerTaxId), phone: blankToNull(input.sellerPhone) },
+      buyer: { name: buyerName, address: blankToNull(input.buyerAddress), taxId: blankToNull(input.buyerTaxId), phone: blankToNull(input.buyerPhone) },
+      item: { vehicle: input.vehicle.trim(), frameNo: input.frameNo.trim(), engineNo: input.engineNo.trim() },
+      base: round2(base),
+      vat: round2(vat),
+      total: round2(base + vat),
+      docDate: input.docDate,
+    },
+  };
 }

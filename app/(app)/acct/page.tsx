@@ -1,8 +1,9 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import { canManageAccount, type DocDetail, type IssuableSale, type PartySnapshot } from "@/lib/acct/documents";
+import { getSettingsCached } from "@/lib/reference/cache";
+import { canManageAccount, parseDocItem, type DocDetail, type IssuableSale, type PartySnapshot } from "@/lib/acct/documents";
 import { AcctView } from "@/components/acct/AcctView";
-import { issueReceipt } from "./actions";
+import { issueReceipt, issueTaxInvoice, updateDocument, voidDocument } from "./actions";
 
 export const metadata = { title: "บัญชี — Famai Motor Group" };
 
@@ -27,7 +28,8 @@ export default async function AcctPage() {
   }
 
   const supabase = await createServerSupabase();
-  const [docsRes, salesRes, unitsRes, variantsRes, colorsRes, customersRes] = await Promise.all([
+  const [settings, docsRes, salesRes, unitsRes, variantsRes, colorsRes, customersRes] = await Promise.all([
+    getSettingsCached(),
     supabase
       .from("document")
       .select("id, doc_type, doc_no, doc_date, sale_id, amount_base, amount_vat, amount_total, seller_snapshot, buyer_snapshot, voided_at")
@@ -55,35 +57,58 @@ export default async function AcctPage() {
     return { vehicle: model ? `${model}${color ? ` · ${color}` : ""}` : "—", engineNo: unit.engine_no, frameNo: unit.frame_no };
   }
 
-  const docs: DocDetail[] = (docsRes.data ?? []).map((d) => ({
-    id: d.id,
-    docType: d.doc_type,
-    docNo: d.doc_no,
-    date: d.doc_date,
-    seller: party(d.seller_snapshot),
-    buyer: party(d.buyer_snapshot),
-    base: Number(d.amount_base ?? 0),
-    vat: Number(d.amount_vat ?? 0),
-    total: Number(d.amount_total ?? 0),
-    voided: d.voided_at != null,
-    ...vehicleOf(d.sale_id),
-  }));
+  const docs: DocDetail[] = (docsRes.data ?? []).map((d) => {
+    // รายการรถ: ใช้ snapshot ที่แช่ไว้ (แก้ไขได้) ก่อน — เอกสารเก่าที่ไม่มี fallback ไปดึงจากการขาย
+    const stored = parseDocItem(d.buyer_snapshot);
+    const item = stored && stored.vehicle ? stored : vehicleOf(d.sale_id);
+    return {
+      id: d.id,
+      docType: d.doc_type,
+      docNo: d.doc_no,
+      date: d.doc_date,
+      seller: party(d.seller_snapshot),
+      buyer: party(d.buyer_snapshot),
+      base: Number(d.amount_base ?? 0),
+      vat: Number(d.amount_vat ?? 0),
+      total: Number(d.amount_total ?? 0),
+      voided: d.voided_at != null,
+      vehicle: item.vehicle || "—",
+      engineNo: item.engineNo,
+      frameNo: item.frameNo,
+    };
+  });
 
-  // การขายที่ยังไม่มีใบเสร็จ → ออกได้
   const receiptSaleIds = new Set((docsRes.data ?? []).filter((d) => d.doc_type === "RECEIPT" && d.sale_id).map((d) => d.sale_id));
-  const issuable: IssuableSale[] = (salesRes.data ?? [])
-    .filter((s) => !receiptSaleIds.has(s.id))
-    .map((s) => {
-      const v = vehicleOf(s.id);
-      return {
-        saleId: s.id,
-        customerName: (s.customer_id && customerName.get(s.customer_id)) || "ลูกค้าทั่วไป",
-        vehicle: v.vehicle,
-        netPrice: Number(s.net_price),
-        soldAt: s.sold_at,
-        hasReceipt: false,
-      };
-    });
+  const taxinvSaleIds = new Set((docsRes.data ?? []).filter((d) => d.doc_type === "TAXINV" && d.sale_id).map((d) => d.sale_id));
 
-  return <AcctView docs={docs} issuable={issuable} issueReceiptAction={issueReceipt} />;
+  function issuableSale(saleId: string): IssuableSale {
+    const s = (salesRes.data ?? []).find((x) => x.id === saleId)!;
+    return {
+      saleId: s.id,
+      customerName: (s.customer_id && customerName.get(s.customer_id)) || "ลูกค้าทั่วไป",
+      vehicle: vehicleOf(s.id).vehicle,
+      netPrice: Number(s.net_price),
+      soldAt: s.sold_at,
+      hasReceipt: receiptSaleIds.has(s.id),
+    };
+  }
+
+  // ใบเสร็จ: การขายที่ยังไม่มีใบเสร็จ · ใบกำกับภาษี: การขายที่มีใบเสร็จแล้วแต่ยังไม่มีใบกำกับ
+  const receiptIssuable: IssuableSale[] = (salesRes.data ?? []).filter((s) => !receiptSaleIds.has(s.id)).map((s) => issuableSale(s.id));
+  const taxinvIssuable: IssuableSale[] = (salesRes.data ?? [])
+    .filter((s) => receiptSaleIds.has(s.id) && !taxinvSaleIds.has(s.id))
+    .map((s) => issuableSale(s.id));
+
+  return (
+    <AcctView
+      docs={docs}
+      receiptIssuable={receiptIssuable}
+      taxinvIssuable={taxinvIssuable}
+      vatPct={settings.vat_pct}
+      issueReceiptAction={issueReceipt}
+      issueTaxInvoiceAction={issueTaxInvoice}
+      updateDocumentAction={updateDocument}
+      voidDocumentAction={voidDocument}
+    />
+  );
 }
