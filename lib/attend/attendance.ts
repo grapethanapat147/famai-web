@@ -53,6 +53,7 @@ export type AttendRow = {
   position: string;
   status: AttStatus;
   checkIn: string | null; // ISO timestamp หรือ null
+  checkOut: string | null; // ISO timestamp หรือ null (FAM-1101 P4 — prefill ตอนแก้เวลา)
   lateMinutes: number | null;
   otMinutes: number;
   selfieUrl: string | null; // signed URL เซลฟี่ตอนลงเวลา (FAM-1101 P3b)
@@ -90,4 +91,39 @@ const ATTEND_ROLES = ["admin", "manager", "hr"];
 export function canViewAttend(roleCodes: readonly string[]): boolean {
   const roles = new Set(roleCodes);
   return ATTEND_ROLES.some((r) => roles.has(r));
+}
+
+/** ผู้มีสิทธิ์แก้เวลาย้อนหลัง (FAM-1101 P4) — เท่ากับผู้ดูภาพรวม (admin/manager/hr) */
+export function canEditAttendance(roleCodes: readonly string[]): boolean {
+  return canViewAttend(roleCodes);
+}
+
+/** ประกอบ timestamptz จากวันที่ + เวลา (HH:MM) ตามเขตเวลาไทย (+07:00, ไม่มี DST) */
+export function bangkokTimestamp(workDate: string, hhmm: string): string {
+  return `${workDate}T${hhmm}:00+07:00`;
+}
+
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** ตรวจฟอร์มแก้เวลา — เวลาเข้าบังคับ (HH:MM), เวลาออกไม่บังคับ (ว่าง = ยังไม่ออก) · ออกต้องไม่ก่อนเข้า */
+export function validateAttendanceEdit(input: {
+  workDate: string;
+  checkIn: string;
+  checkOut: string;
+}): { ok: true; value: { checkIn: string; checkOut: string } } | { ok: false; error: string } {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.workDate)) {
+    return { ok: false, error: "วันที่ไม่ถูกต้อง" };
+  }
+  const checkIn = input.checkIn.trim();
+  if (!HHMM.test(checkIn)) {
+    return { ok: false, error: "เวลาเข้างานไม่ถูกต้อง (HH:MM)" };
+  }
+  const checkOut = input.checkOut.trim();
+  if (checkOut !== "" && !HHMM.test(checkOut)) {
+    return { ok: false, error: "เวลาออกงานไม่ถูกต้อง (HH:MM)" };
+  }
+  if (checkOut !== "" && checkOut < checkIn) {
+    return { ok: false, error: "เวลาออกต้องไม่ก่อนเวลาเข้า" };
+  }
+  return { ok: true, value: { checkIn, checkOut } };
 }

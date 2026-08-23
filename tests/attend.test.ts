@@ -5,6 +5,9 @@ import {
   filterRows,
   statusCounts,
   canViewAttend,
+  canEditAttendance,
+  bangkokTimestamp,
+  validateAttendanceEdit,
   ATT_ORDER,
   type AttendRow,
 } from "@/lib/attend/attendance";
@@ -33,6 +36,47 @@ describe("leaveCovers", () => {
   });
 });
 
+describe("canEditAttendance", () => {
+  it("mirrors canViewAttend (admin/manager/hr)", () => {
+    expect(canEditAttendance(["hr"])).toBe(true);
+    expect(canEditAttendance(["manager"])).toBe(true);
+    expect(canEditAttendance(["sales"])).toBe(false);
+  });
+});
+
+describe("bangkokTimestamp", () => {
+  it("builds a +07:00 ISO timestamp", () => {
+    expect(bangkokTimestamp("2026-08-12", "08:20")).toBe("2026-08-12T08:20:00+07:00");
+  });
+});
+
+describe("validateAttendanceEdit", () => {
+  it("accepts valid times; blank check-out is allowed", () => {
+    expect(validateAttendanceEdit({ workDate: "2026-08-12", checkIn: "08:20", checkOut: "17:30" })).toEqual({
+      ok: true,
+      value: { checkIn: "08:20", checkOut: "17:30" },
+    });
+    expect(validateAttendanceEdit({ workDate: "2026-08-12", checkIn: "08:20", checkOut: "" })).toEqual({
+      ok: true,
+      value: { checkIn: "08:20", checkOut: "" },
+    });
+  });
+  it.each([
+    [{ checkIn: "8:20" }, "เวลาเข้างานไม่ถูกต้อง (HH:MM)"],
+    [{ checkIn: "25:00" }, "เวลาเข้างานไม่ถูกต้อง (HH:MM)"],
+    [{ checkOut: "9:9" }, "เวลาออกงานไม่ถูกต้อง (HH:MM)"],
+    [{ checkOut: "07:00" }, "เวลาออกต้องไม่ก่อนเวลาเข้า"],
+    [{ workDate: "12/08/2026" }, "วันที่ไม่ถูกต้อง"],
+  ])("rejects %o", (patch, msg) => {
+    const base = { workDate: "2026-08-12", checkIn: "08:20", checkOut: "17:30" };
+    const r = validateAttendanceEdit({ ...base, ...patch });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error).toBe(msg);
+    }
+  });
+});
+
 function row(over: Partial<AttendRow>): AttendRow {
   return {
     employeeId: "e",
@@ -40,6 +84,7 @@ function row(over: Partial<AttendRow>): AttendRow {
     position: "เซลล์",
     status: "present",
     checkIn: "2026-08-12T08:20:00Z",
+    checkOut: null,
     lateMinutes: null,
     otMinutes: 0,
     selfieUrl: null,
