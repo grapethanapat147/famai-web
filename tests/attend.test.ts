@@ -42,6 +42,8 @@ function row(over: Partial<AttendRow>): AttendRow {
     checkIn: "2026-08-12T08:20:00Z",
     lateMinutes: null,
     otMinutes: 0,
+    selfieUrl: null,
+    distanceM: null,
     ...over,
   };
 }
