@@ -2,6 +2,7 @@
 import type { DashUnit } from "@/lib/dashboard/stats";
 import type { OverdueReg } from "@/lib/automation/registration";
 import type { RemRow } from "@/lib/automation/service";
+import { formatThaiDate } from "@/lib/format";
 
 const MAX_LINES = 10;
 
@@ -36,7 +37,7 @@ export function serviceReminderDigest(due: RemRow[], dateLabel: string): string 
     .slice(0, MAX_LINES)
     .map(
       (r) =>
-        `• ${r.customerName}${r.model ? ` · ${r.model}` : ""} · เช็กระยะ ${r.targetKm.toLocaleString("en-US")} กม.${r.dueDate ? ` · ครบ ${r.dueDate}` : ""}`,
+        `• ${r.customerName}${r.model ? ` · ${r.model}` : ""} · เช็กระยะ ${r.targetKm.toLocaleString("en-US")} กม.${r.dueDate ? ` · ครบ ${formatThaiDate(r.dueDate)}` : ""}`,
     );
   const more = due.length > MAX_LINES ? `\n…และอีก ${due.length - MAX_LINES} ราย` : "";
   return `🔧 ถึงกำหนดเช็กระยะ — ${due.length} ราย (ณ ${dateLabel})\n${lines.join("\n")}${more}`;

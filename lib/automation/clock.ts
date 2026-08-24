@@ -9,7 +9,7 @@ function pad(n: number): string {
 export function nowParts(now: Date): { today: string; label: string } {
   return {
     today: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
-    label: `${now.getDate()} ${THAI_MONTHS[now.getMonth()]} ${now.getFullYear()}`,
+    label: `${now.getDate()} ${THAI_MONTHS[now.getMonth()]} ${now.getFullYear() + 543}`,
   };
 }
 

@@ -73,7 +73,7 @@ export function AcctView({
       header: "",
       align: "right",
       render: (d) => (
-        <span className="flex justify-end gap-1.5">
+        <span className="flex justify-end gap-2">
           {!d.voided && (
             <>
               <RowButton onClick={() => setEditing(d)}>แก้ไข</RowButton>
@@ -122,7 +122,7 @@ export function AcctView({
             onChange={(e) => setSearch(e.target.value)}
             aria-label="ค้นหาเอกสาร"
             placeholder="ค้นเลขที่ / ลูกค้า"
-            className="w-full rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink sm:w-56"
+            className="w-full rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink sm:w-56"
           />
         </FilterBar>
       </div>
@@ -173,7 +173,7 @@ function RowButton({ onClick, children }: { onClick: () => void; children: React
     <button
       type="button"
       onClick={onClick}
-      className="rounded-[20px] border border-hairline px-3 py-1 text-xs text-ink-soft transition-transform active:scale-[0.97] hover:text-ink"
+      className="rounded-[20px] border border-hairline px-3.5 py-2 text-xs text-ink-soft transition-transform active:scale-[0.97] hover:text-ink"
     >
       {children}
     </button>
@@ -261,7 +261,19 @@ function IssueModal({
   );
 }
 
-function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  inputMode,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  inputMode?: "numeric" | "tel";
+}) {
   return (
     <label className="flex flex-col gap-1 text-xs text-ink-soft">
       {label}
@@ -269,7 +281,8 @@ function Field({ label, value, onChange, placeholder }: { label: string; value: 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink"
+        inputMode={inputMode}
+        className="rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink"
       />
     </label>
   );
@@ -359,7 +372,7 @@ function EditDocModal({
               type="date"
               value={docDate}
               onChange={(e) => setDocDate(e.target.value)}
-              className="rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink"
+              className="rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink"
             />
           </label>
         </div>
@@ -369,8 +382,8 @@ function EditDocModal({
           <Field label="ชื่อบริษัท" value={sellerName} onChange={setSellerName} />
           <Field label="ที่อยู่" value={sellerAddress} onChange={setSellerAddress} />
           <div className="grid grid-cols-2 gap-2">
-            <Field label="เลขผู้เสียภาษี" value={sellerTaxId} onChange={setSellerTaxId} />
-            <Field label="โทร." value={sellerPhone} onChange={setSellerPhone} />
+            <Field label="เลขผู้เสียภาษี" value={sellerTaxId} onChange={setSellerTaxId} inputMode="numeric" />
+            <Field label="โทร." value={sellerPhone} onChange={setSellerPhone} inputMode="tel" />
           </div>
         </fieldset>
 
@@ -379,8 +392,8 @@ function EditDocModal({
           <Field label="ชื่อ-นามสกุล" value={buyerName} onChange={setBuyerName} />
           <Field label="ที่อยู่" value={buyerAddress} onChange={setBuyerAddress} />
           <div className="grid grid-cols-2 gap-2">
-            <Field label="เลขผู้เสียภาษี" value={buyerTaxId} onChange={setBuyerTaxId} />
-            <Field label="โทร." value={buyerPhone} onChange={setBuyerPhone} />
+            <Field label="เลขผู้เสียภาษี" value={buyerTaxId} onChange={setBuyerTaxId} inputMode="numeric" />
+            <Field label="โทร." value={buyerPhone} onChange={setBuyerPhone} inputMode="tel" />
           </div>
         </fieldset>
 
@@ -403,7 +416,7 @@ function EditDocModal({
                 inputMode="decimal"
                 value={base}
                 onChange={(e) => setBase(e.target.value)}
-                className="rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink"
+                className="rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink"
               />
             </label>
             <label className="flex flex-col gap-1 text-xs text-ink-soft">
@@ -418,7 +431,7 @@ function EditDocModal({
                 inputMode="decimal"
                 value={vat}
                 onChange={(e) => setVat(e.target.value)}
-                className="rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink"
+                className="rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink"
               />
             </label>
           </div>
@@ -493,7 +506,7 @@ function VoidDocModal({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="เช่น พิมพ์ผิด / ลูกค้ายกเลิก"
-            className="rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink"
+            className="rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink"
           />
         </label>
         {error && <StatusBadge variant="bad">{error}</StatusBadge>}

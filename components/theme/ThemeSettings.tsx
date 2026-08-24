@@ -174,7 +174,7 @@ export function ThemeSettings({
             value={selected}
             onChange={(e) => pick(e.target.value)}
             placeholder="#RRGGBB"
-            className="w-28 rounded-[8px] border border-hairline bg-card px-3 py-2 font-mono text-sm text-ink outline-none focus:border-ink"
+            className="w-28 rounded-[8px] border border-hairline bg-card px-3 py-2 font-mono text-base text-ink outline-none focus:border-ink"
           />
           {!valid && <span className="text-xs text-accent">รูปแบบต้องเป็น #RRGGBB</span>}
           {valid && activePreset && <span className="text-xs text-muted">= {activePreset.name}</span>}

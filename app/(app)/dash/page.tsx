@@ -18,18 +18,26 @@ const THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.
 
 function thaiDate(): string {
   const d = new Date();
-  return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`;
 }
 
 export default async function DashPage() {
   const supabase = await createServerSupabase();
 
+  const now = new Date();
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
+  // scope ฝั่ง DB (FAM-1108) — หน้าแรกเปิดทุกวันบนมือถือ: ดึงเฉพาะรถคงเหลือ/หนี้ค้าง/ยอดเดือนนี้
+  // (เดิมดึงทั้งประวัติแล้วทิ้ง — โตตามอายุระบบ และชน cap 1000 แถวแล้วตัวเลขเพี้ยนเงียบๆ)
   const [unitsRes, branches, variantsRes, recRes, saleRes] = await Promise.all([
-    supabase.from("motorcycle_unit").select("id, branch_id, variant_id, status, received_at, cost"),
+    supabase
+      .from("motorcycle_unit")
+      .select("id, branch_id, variant_id, status, received_at, cost")
+      .in("status", ["available", "reserved", "in_transfer"]),
     getBranchesCached(),
     supabase.from("model_variant").select("id, model_name"),
-    supabase.from("receivable").select("balance, settled_at"),
-    supabase.from("sale").select("sold_at"),
+    supabase.from("receivable").select("balance, settled_at").is("settled_at", null),
+    supabase.from("sale").select("sold_at").gte("sold_at", monthStart),
   ]);
 
   const branchMap = new Map(branches.map((b) => [b.id, b]));
@@ -52,14 +60,10 @@ export default async function DashPage() {
   const settings = await getSettings();
   const units = stripMoneyFields(rawUnits, see, ["cost"]) as DashUnit[];
 
-  const overdueRaw = (recRes.data ?? [])
-    .filter((r) => r.settled_at == null)
-    .reduce((sum, r) => sum + Number(r.balance ?? 0), 0);
+  const overdueRaw = (recRes.data ?? []).reduce((sum, r) => sum + Number(r.balance ?? 0), 0);
   const overdue = see ? overdueRaw : null;
 
-  const now = new Date();
-  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-  const soldThisMonth = (saleRes.data ?? []).filter((s) => s.sold_at >= monthStart).length;
+  const soldThisMonth = (saleRes.data ?? []).length;
 
   return (
     <DashboardView

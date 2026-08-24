@@ -2,7 +2,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { canSeeMoney } from "@/lib/auth/money";
 import { getActiveBranches, getCompaniesCached } from "@/lib/reference/cache";
-import { getSettingsWith } from "@/lib/settings";
+import { getSettings } from "@/lib/settings";
 import { canViewPayroll, computePayslip, monthRange, type PayslipRow } from "@/lib/payroll/payroll";
 import { PayrollView } from "@/components/payroll/PayrollView";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
@@ -29,7 +29,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   }
 
   const see = await canSeeMoney();
-  const settings = await getSettingsWith(supabase);
+  const settings = await getSettings(); // แคชข้ามรีเควสต์ (FAM-1108) — เดิมใช้ getSettingsWith ที่ query สดทุกครั้ง
 
   const [empRes, usersRes, attRes, salesRes, branches, orgCompanies] = await Promise.all([
     supabase.from("employee").select("id, user_id, position, base_salary").is("resigned_at", null),

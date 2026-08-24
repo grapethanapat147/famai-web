@@ -48,6 +48,6 @@ describe("nowParts", () => {
   it("formats ISO today + Thai label", () => {
     const { today, label } = nowParts(new Date(2026, 7, 5)); // 2026-08-05
     expect(today).toBe("2026-08-05");
-    expect(label).toBe("5 ส.ค. 2026");
+    expect(label).toBe("5 ส.ค. 2569");
   });
 });

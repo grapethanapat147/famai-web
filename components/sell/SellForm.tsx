@@ -9,6 +9,7 @@ import { MoneyStepInput } from "@/components/ui/MoneyStepInput";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { computeDeal } from "@/lib/sell/deal";
+import { formatBaht } from "@/lib/format";
 import type { SellActionResult, SellInitial } from "@/lib/sell/sell";
 
 export type SellUnit = {
@@ -277,7 +278,7 @@ export function SellForm({
                 >
                   {f.name}
                   {canSeeMoney && (
-                    <span className={on ? "text-card/60" : "text-muted"}>฿{f.cost.toLocaleString("en-US")}</span>
+                    <span className={on ? "text-card/60" : "text-muted"}>{formatBaht(f.cost)}</span>
                   )}
                 </button>
               );

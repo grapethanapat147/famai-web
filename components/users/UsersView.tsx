@@ -13,7 +13,7 @@ export type RoleOption = { id: string; code: string; name: string };
 export type BranchOption = { id: string; name: string };
 
 const selectClass =
-  "rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
+  "rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink";
 
 export function UsersView({
   users,

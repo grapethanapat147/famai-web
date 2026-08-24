@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import type { OrgBranch, OrgCompany, OrgInfoActionResult } from "@/lib/org/info";
 
 const fieldCls =
-  "w-full rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
+  "w-full rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink";
 
 /** ชุดช่องกรอกของ 1 บริษัท — module-level กัน react-hooks/static-components */
 function OrgFields({ prefix, row, canEdit }: { prefix: string; row: OrgCompany; canEdit: boolean }) {

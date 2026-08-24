@@ -39,6 +39,6 @@ describe("serviceReminderDigest", () => {
   it("summarizes customer/model/km/due", () => {
     const msg = serviceReminderDigest([rem({ customerName: "มานี", targetKm: 4000, dueDate: "2026-08-10" })], "21 ส.ค. 2026")!;
     expect(msg).toContain("1 ราย");
-    expect(msg).toContain("มานี · NMAX · เช็กระยะ 4,000 กม. · ครบ 2026-08-10");
+    expect(msg).toContain("มานี · NMAX · เช็กระยะ 4,000 กม. · ครบ 10 ส.ค. 2569");
   });
 });

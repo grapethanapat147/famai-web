@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  const dateLabel = `${now.getDate()} ${THAI_MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+  const dateLabel = `${now.getDate()} ${THAI_MONTHS[now.getMonth()]} ${now.getFullYear() + 543}`;
 
   const units: DashUnit[] = (unitsRes.data ?? []).map((u) => {
     const b = branchMap.get(u.branch_id);

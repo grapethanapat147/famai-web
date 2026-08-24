@@ -23,7 +23,7 @@ import {
 const inputCls =
   "w-full rounded-[8px] border border-hairline bg-card px-3 py-2.5 text-base text-ink outline-none focus:border-ink tabular";
 const selectClass =
-  "rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
+  "rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink";
 
 type PartsAction = (formData: FormData) => Promise<PartsActionResult>;
 

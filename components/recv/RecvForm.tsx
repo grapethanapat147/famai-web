@@ -6,6 +6,7 @@ import { Chips } from "@/components/ui/Chips";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { computeCostVat, deriveSku, type RecvActionResult, type RecvBranch, type RecvVariant } from "@/lib/recv/recv";
+import { formatBaht } from "@/lib/format";
 
 const inputCls =
   "w-full rounded-[8px] border border-hairline bg-card px-3 py-2.5 text-base text-ink outline-none focus:border-ink tabular";
@@ -232,7 +233,7 @@ export function RecvForm({
             <div className="my-1 border-t border-hairline-2" />
             <Row label="เลขเครื่อง" value={engineNo.trim() || "—"} mono />
             <Row label="เลขตัวถัง" value={frameNo.trim() || "—"} mono />
-            <Row label="ราคาขาย" value={retail.trim() ? `฿${Number(retail).toLocaleString("en-US")}` : "รอกำหนด"} />
+            <Row label="ราคาขาย" value={retail.trim() ? formatBaht(Number(retail)) : "รอกำหนด"} />
           </div>
         )}
       </aside>

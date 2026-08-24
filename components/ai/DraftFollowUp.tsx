@@ -4,7 +4,7 @@ import { useState } from "react";
 import { FOLLOWUP_PURPOSES } from "@/lib/ai/prompts/followup";
 
 const selectCls =
-  "w-full rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
+  "w-full rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink";
 
 /** ปุ่ม + แผงร่างข้อความติดตามลูกค้าด้วย AI (E12 FAM-1066) — เรียก /api/ai/draft-followup */
 export function DraftFollowUp({
@@ -104,7 +104,7 @@ export function DraftFollowUp({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={4}
-            className="w-full resize-y rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink"
+            className="w-full resize-y rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink"
           />
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-muted">AI ช่วยร่าง — ตรวจก่อนส่งทุกครั้ง</p>

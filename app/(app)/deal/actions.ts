@@ -187,7 +187,7 @@ export async function updateDealStep(formData: FormData): Promise<DealActionResu
     { onConflict: "registration_id,stage" },
   );
   if (error) {
-    return { ok: false, error: "บันทึกสถานะขั้นไม่สำเร็จ (รัน migration registration_step แล้วหรือยัง?)" };
+    return { ok: false, error: "บันทึกสถานะขั้นไม่สำเร็จ — ระบบยังไม่พร้อม กรุณาแจ้งผู้ดูแลระบบ" };
   }
 
   revalidatePath("/deal");
@@ -228,7 +228,7 @@ export async function updateDealCustomer(formData: FormData): Promise<DealAction
       .update({ full_name: v.name, phone: v.phone, address: v.address, tax_id: v.taxId })
       .eq("id", customerId);
     if (error) {
-      return { ok: false, error: "บันทึกข้อมูลลูกค้าไม่สำเร็จ (สิทธิ์บริษัท?)" };
+      return { ok: false, error: "บันทึกข้อมูลลูกค้าไม่สำเร็จ — คุณอาจไม่มีสิทธิ์ในบริษัทนี้ ให้ผู้ดูแลตรวจสิทธิ์ที่หน้า บัญชีผู้ใช้" };
     }
   }
   if (regId) {

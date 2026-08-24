@@ -79,15 +79,27 @@ export function CatalogView({ models, supabaseUrl }: { models: CatalogModel[]; s
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="ค้นชื่อรุ่น"
-            className="w-full rounded-[10px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink sm:w-56"
+            className="w-full rounded-[10px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink sm:w-56"
             aria-label="ค้นหารุ่น"
           />
         </div>
 
         {shown.length === 0 ? (
-          <p className="rounded-[12px] border border-dashed border-hairline p-10 text-center text-muted">
-            ไม่พบรุ่นที่ค้นหา
-          </p>
+          <div className="rounded-[12px] border border-dashed border-hairline p-10 text-center text-muted">
+            <p>ไม่พบรุ่นที่ค้นหา</p>
+            {(q !== "" || cat !== "all") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQ("");
+                  setCat("all");
+                }}
+                className="mt-3 rounded-[20px] border border-hairline px-4 py-2 text-sm text-ink-soft transition-colors hover:text-ink"
+              >
+                ล้างคำค้น / ดูทุกรุ่น
+              </button>
+            )}
+          </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {shown.map((m) => {

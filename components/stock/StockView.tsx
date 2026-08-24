@@ -20,7 +20,7 @@ import {
 } from "@/lib/stock/units";
 
 const selectClass =
-  "rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
+  "rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink";
 
 export function StockView({
   units,
