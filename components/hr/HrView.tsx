@@ -2,6 +2,7 @@
 
 import { useRef, useState, type ReactNode } from "react";
 import { Chips } from "@/components/ui/Chips";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Drawer } from "@/components/ui/Drawer";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -105,7 +106,12 @@ export function HrView({
         </div>
 
         {shown.length === 0 ? (
-          <p className="rounded-[12px] border border-dashed border-hairline p-8 text-center text-muted">ไม่มีใบลาในมุมมองนี้</p>
+          <EmptyState
+            icon="clock"
+            title="ไม่มีใบลาในมุมมองนี้"
+            description={scope === "mine" ? "ยังไม่เคยขอลา — กดปุ่มด้านล่างเพื่อยื่นใบลาแรก" : "ลองสลับมุมมอง หรือรอใบลาใหม่เข้ามา"}
+            action={hasEmployee && scope === "mine" ? { label: "+ ขอลา", onClick: () => setAsking(true) } : undefined}
+          />
         ) : (
           <ul className="flex flex-col gap-2">
             {shown.map((l) => {

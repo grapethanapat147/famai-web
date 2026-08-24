@@ -10,7 +10,7 @@ import { PrintableEmployeePayslip } from "@/components/payroll/PrintableEmployee
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 
 const selectClass =
-  "rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
+  "rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink";
 
 function otHint(minutes: number): string {
   if (!minutes) {

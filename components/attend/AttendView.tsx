@@ -22,7 +22,7 @@ import {
 import type { HrActionResult } from "@/lib/hr/leave";
 
 const selectClass =
-  "rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
+  "rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink";
 
 function timeOf(iso: string | null): string {
   if (!iso) {
@@ -124,7 +124,7 @@ export function AttendView({
               <button
                 type="button"
                 onClick={() => setEditRow(r)}
-                className="rounded-[20px] border border-hairline px-3 py-1 text-xs text-ink-soft transition-transform active:scale-[0.97] hover:text-ink"
+                className="rounded-[20px] border border-hairline px-3.5 py-2 text-xs text-ink-soft transition-transform active:scale-[0.97] hover:text-ink"
               >
                 แก้เวลา
               </button>
@@ -264,7 +264,7 @@ function EditAttendanceModal({
         {error && <StatusBadge variant="bad">{error}</StatusBadge>}
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-[24px] px-4 py-2 text-sm text-ink-soft">
-            ปิด
+            ยกเลิก
           </button>
           <button
             type="button"

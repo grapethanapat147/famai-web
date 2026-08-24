@@ -7,7 +7,7 @@ import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { formatThaiDate } from "@/lib/format";
+import { formatBaht, formatThaiDate } from "@/lib/format";
 import { financeLabel, financedAmount, optionTerms, type RateTiers } from "@/lib/quote/finance";
 import {
   filterQuotes,
@@ -25,7 +25,7 @@ export type QuoteFinanceCo = { id: string; name: string; ratePct: number; rateTi
 const inputCls =
   "w-full rounded-[8px] border border-hairline bg-card px-3 py-2.5 text-base text-ink outline-none focus:border-ink";
 const selectClass =
-  "rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
+  "rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink";
 
 export function QuoteView({
   quotes,
@@ -444,8 +444,8 @@ function QuoteBuilder({
             </div>
             {v && (
               <p className="-mt-1 text-xs text-muted">
-                ราคาตั้ง ฿{v.retail.toLocaleString("en-US")}
-                {discount > 0 && <span className="text-pos"> · ลด ฿{discount.toLocaleString("en-US")}</span>}
+                ราคาตั้ง {formatBaht(v.retail)}
+                {discount > 0 && <span className="text-pos"> · ลด {formatBaht(discount)}</span>}
                 {o.price > v.retail && <span className="text-attn"> · สูงกว่าราคาตั้ง</span>}
               </p>
             )}

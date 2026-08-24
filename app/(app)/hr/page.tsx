@@ -11,30 +11,45 @@ function todayISO(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date());
 }
 
+/** วันที่ตัดประวัติใบลา (90 วันย้อนหลัง, เขตเวลาไทย) */
+function leaveCutoffISO(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date(Date.now() - 90 * 86_400_000));
+}
+
 export default async function HrPage() {
   const supabase = await createServerSupabase();
   const me = await getCurrentUser();
   const today = todayISO();
 
-  const myEmp = me
-    ? (await supabase.from("employee").select("id, branch_id").eq("user_id", me.id).maybeSingle()).data
-    : null;
-  const myEmpId = myEmp?.id ?? null;
+  // ใบลาที่ยังรออนุมัติ (ทุกอายุ) + ประวัติ 90 วันล่าสุด — หน้าลงเวลาเปิดทุกวัน ไม่ต้องแบกประวัติทั้งบริษัท (FAM-1108)
+  const leaveCutoff = leaveCutoffISO();
 
-  // geofence ของบริษัทพนักงาน (ถ้าตั้งไว้) — บอก client ให้ขอ GPS ก่อนลงเวลา
-  const branchGeo = myEmp?.branch_id
-    ? (await supabase.from("branch").select("geo_lat, geo_lng, geo_radius_m, require_selfie").eq("id", myEmp.branch_id).maybeSingle()).data
-    : null;
-  const fence = branchGeo ? branchGeofence(branchGeo) : null;
-
-  const [attRes, leavesRes, employeesRes, usersRes] = await Promise.all([
-    myEmpId
-      ? supabase.from("attendance").select("check_in, check_out, status").eq("employee_id", myEmpId).eq("work_date", today).maybeSingle()
+  // รอบแรกยิงขนานทุก query ที่อิสระ (เดิม waterfall 3 รอบ) — เหลือรอบสองเฉพาะที่ต้องใช้ myEmp
+  const [myEmpRes, leavesRes, employeesRes, usersRes] = await Promise.all([
+    me
+      ? supabase.from("employee").select("id, branch_id").eq("user_id", me.id).maybeSingle()
       : Promise.resolve({ data: null }),
-    supabase.from("leave_request").select("id, employee_id, leave_type, date_from, date_to, status, reason").order("date_from", { ascending: false }),
+    supabase
+      .from("leave_request")
+      .select("id, employee_id, leave_type, date_from, date_to, status, reason")
+      .or(`status.eq.รออนุมัติ,date_from.gte.${leaveCutoff}`)
+      .order("date_from", { ascending: false }),
     supabase.from("employee").select("id, user_id"),
     supabase.from("app_user").select("id, full_name"),
   ]);
+  const myEmp = myEmpRes.data;
+  const myEmpId = myEmp?.id ?? null;
+
+  const [attRes, branchGeoRes] = await Promise.all([
+    myEmpId
+      ? supabase.from("attendance").select("check_in, check_out, status").eq("employee_id", myEmpId).eq("work_date", today).maybeSingle()
+      : Promise.resolve({ data: null }),
+    myEmp?.branch_id
+      ? supabase.from("branch").select("geo_lat, geo_lng, geo_radius_m, require_selfie").eq("id", myEmp.branch_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  const branchGeo = branchGeoRes.data;
+  const fence = branchGeo ? branchGeofence(branchGeo) : null;
 
   const userName = new Map((usersRes.data ?? []).map((u) => [u.id, u.full_name]));
   const empUser = new Map((employeesRes.data ?? []).map((e) => [e.id, e.user_id]));

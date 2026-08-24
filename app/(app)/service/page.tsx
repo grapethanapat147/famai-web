@@ -14,12 +14,14 @@ export default async function ServicePage() {
   const user = await getCurrentUser();
 
   // RLS คัดให้เห็นเฉพาะบริษัทที่เข้าถึงได้ (เว้น allBranch)
+  // จำกัด 200 งานล่าสุด (FAM-1108) — งานซ่อมโตเร็วสุดของร้าน งานเก่าที่ปิดแล้วไม่ต้องแบกทุกครั้ง
   const { data: jobRows } = await supabase
     .from("service_job")
     .select(
       "id, job_no, customer_id, unit_id, engine_no, frame_no, odometer_km, service_type, symptom, status, checked_in_at, technician_id, labor_cost, parts_cost, total",
     )
-    .order("checked_in_at", { ascending: false });
+    .order("checked_in_at", { ascending: false })
+    .limit(200);
   const jobs = jobRows ?? [];
   const jobIds = jobs.map((j) => j.id);
 

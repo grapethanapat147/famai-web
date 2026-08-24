@@ -58,7 +58,7 @@ export function ModelsView({
   const shown = useMemo(() => sortModels(filterModels(rows, { search, category }), sort), [rows, search, category, sort]);
   const isFiltered = search.trim() !== "" || category !== "all";
 
-  const selectClass = "rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
+  const selectClass = "rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink";
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -226,7 +226,7 @@ function ModelCard({
               type="button"
               onClick={onEdit}
               aria-label={`แก้ไข ${m.modelName}`}
-              className="shrink-0 text-ink-soft transition-colors hover:text-ink"
+              className="-m-2 shrink-0 p-2 text-ink-soft transition-colors hover:text-ink"
             >
               <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M13.5 4.5l2 2L7 15l-2.5.5L5 13z" />

@@ -122,7 +122,7 @@ export async function issueReceipt(formData: FormData): Promise<AcctActionResult
     },
   });
   if (error) {
-    return { ok: false, error: "บันทึกใบเสร็จไม่สำเร็จ (สิทธิ์บริษัท?)" };
+    return { ok: false, error: "บันทึกใบเสร็จไม่สำเร็จ — คุณอาจไม่มีสิทธิ์ในบริษัทนี้ ให้ผู้ดูแลตรวจสิทธิ์ที่หน้า บัญชีผู้ใช้" };
   }
 
   revalidatePath("/acct");
@@ -199,7 +199,7 @@ export async function issueTaxInvoice(formData: FormData): Promise<AcctActionRes
     buyer_snapshot: receipt.buyer_snapshot,
   });
   if (error) {
-    return { ok: false, error: "บันทึกใบกำกับภาษีไม่สำเร็จ (สิทธิ์บริษัท?)" };
+    return { ok: false, error: "บันทึกใบกำกับภาษีไม่สำเร็จ — คุณอาจไม่มีสิทธิ์ในบริษัทนี้ ให้ผู้ดูแลตรวจสิทธิ์ที่หน้า บัญชีผู้ใช้" };
   }
 
   revalidatePath("/acct");
@@ -268,7 +268,7 @@ export async function updateDocument(formData: FormData): Promise<AcctActionResu
     })
     .eq("id", docId);
   if (error) {
-    return { ok: false, error: "บันทึกการแก้ไขไม่สำเร็จ (สิทธิ์บริษัท?)" };
+    return { ok: false, error: "บันทึกการแก้ไขไม่สำเร็จ — คุณอาจไม่มีสิทธิ์ในบริษัทนี้ ให้ผู้ดูแลตรวจสิทธิ์ที่หน้า บัญชีผู้ใช้" };
   }
 
   revalidatePath("/acct");

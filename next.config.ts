@@ -6,8 +6,9 @@ const nextConfig: NextConfig = {
     root: import.meta.dirname,
   },
   images: {
-    // รูปรถ/รูปรุ่น เก็บบน Supabase Storage
-    remotePatterns: [{ protocol: "https", hostname: "hpsmjavfvrdctclmlmhp.supabase.co" }],
+    // รูปรถ/รูปรุ่น เก็บบน Supabase Storage — โปรเจกต์จริงของเกรพ (famai-motor)
+    // เดิมชี้ hpsmjavfvrdctclmlmhp (โปรเจกต์เก่าที่เลิกใช้) — วันนี้ยังไม่พังเพราะทุก <Image> ใช้ unoptimized
+    remotePatterns: [{ protocol: "https", hostname: "xpbdvhfvmpokdnfhoujx.supabase.co" }],
   },
 };
 

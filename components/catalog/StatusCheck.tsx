@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createPublicSupabase } from "@/lib/supabase/public";
+import { formatThaiDate } from "@/lib/format";
 
 type Found = {
   found: true;
@@ -104,7 +105,7 @@ export function StatusCheck() {
             <dl className="flex flex-col gap-2 border-t border-hairline-2 pt-4 text-sm">
               <Row label="รุ่นรถ">{res.model_th || res.model}{res.color ? ` · ${res.color}` : ""}</Row>
               {res.plate && <Row label="ทะเบียน">{res.plate}</Row>}
-              {res.delivered_at && <Row label="ส่งมอบเมื่อ">{new Date(res.delivered_at).toLocaleDateString("th-TH")}</Row>}
+              {res.delivered_at && <Row label="ส่งมอบเมื่อ">{formatThaiDate(res.delivered_at)}</Row>}
               <Row label="ลูกค้า">
                 คุณ{res.customer.name} · {res.customer.phone}
               </Row>

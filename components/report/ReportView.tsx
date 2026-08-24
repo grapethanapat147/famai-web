@@ -19,7 +19,7 @@ type DetailColumn = { header: string; align?: "right"; money?: boolean };
 type DetailCell = string | number;
 
 const selectClass =
-  "rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
+  "rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink";
 
 const KIND_LABEL: Record<string, string> = { finance: "ไฟแนนซ์", customer: "ลูกค้า" };
 

@@ -55,7 +55,7 @@ export async function editAttendance(formData: FormData): Promise<HrActionResult
     { onConflict: "employee_id,work_date" },
   );
   if (error) {
-    return { ok: false, error: "บันทึกเวลาไม่สำเร็จ (สิทธิ์บริษัท?)" };
+    return { ok: false, error: "บันทึกเวลาไม่สำเร็จ — คุณอาจไม่มีสิทธิ์ในบริษัทนี้ ให้ผู้ดูแลตรวจสิทธิ์ที่หน้า บัญชีผู้ใช้" };
   }
 
   revalidatePath("/attend");

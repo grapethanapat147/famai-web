@@ -13,7 +13,7 @@ import { formatThaiDate } from "@/lib/format";
 import { phaseVariant, PLATE_WARN_DAYS, type PlateActionResult, type PlatePhase, type PlateRow, type StaffOption } from "@/lib/registration/plate";
 
 const PHASES: PlatePhase[] = ["รอยื่นขนส่ง", "รอเล่มทะเบียน", "ได้ป้ายแล้ว"];
-const selectClass = "rounded-[8px] border border-hairline bg-card px-3 py-2 text-sm text-ink outline-none focus:border-ink";
+const selectClass = "rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink";
 
 export function RegistrationView({
   queue,
@@ -177,7 +177,7 @@ function RowButton({ onClick, children }: { onClick: () => void; children: React
     <button
       type="button"
       onClick={onClick}
-      className="rounded-[20px] border border-hairline px-3 py-1 text-xs text-ink-soft transition-transform active:scale-[0.97] hover:text-ink"
+      className="rounded-[20px] border border-hairline px-3.5 py-2 text-xs text-ink-soft transition-transform active:scale-[0.97] hover:text-ink"
     >
       {children}
     </button>
@@ -228,7 +228,7 @@ function DltSubmitModal({ row, action, onClose }: { row: PlateRow; action: (form
         {error && <StatusBadge variant="bad">{error}</StatusBadge>}
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-[24px] px-4 py-2 text-sm text-ink-soft">
-            ปิด
+            ยกเลิก
           </button>
           <button
             type="button"
@@ -283,13 +283,13 @@ function PlateReceivedModal({ row, action, onClose }: { row: PlateRow; action: (
         </label>
         <label className="flex flex-col gap-1 text-xs text-ink-soft">
           เลขเล่มทะเบียน (ถ้ามี)
-          <input value={bookNo} onChange={(e) => setBookNo(e.target.value)} placeholder="เลขเล่ม" className={selectClass} />
+          <input value={bookNo} onChange={(e) => setBookNo(e.target.value)} inputMode="numeric" placeholder="เลขเล่ม" className={selectClass} />
         </label>
         <p className="text-xs text-muted">บันทึกแล้วดีลจะเลื่อนไปขั้น “ป้ายขาว” อัตโนมัติ</p>
         {error && <StatusBadge variant="bad">{error}</StatusBadge>}
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-[24px] px-4 py-2 text-sm text-ink-soft">
-            ปิด
+            ยกเลิก
           </button>
           <button
             type="button"
@@ -359,7 +359,7 @@ function DeliveryModal({
         </label>
         <label className="flex flex-col gap-1 text-xs text-ink-soft">
           สถานที่ส่งมอบ (ถ้ามี)
-          <input value={place} onChange={(e) => setPlace(e.target.value)} placeholder="เช่น หน้าร้าน สาขาปทุมฯ / บ้านลูกค้า" className={selectClass} />
+          <input value={place} onChange={(e) => setPlace(e.target.value)} placeholder="เช่น หน้าร้าน / บ้านลูกค้า" className={selectClass} />
         </label>
         <label className="flex flex-col gap-1 text-xs text-ink-soft">
           ผู้ส่งมอบ (ถ้ามี)
@@ -376,7 +376,7 @@ function DeliveryModal({
         {error && <StatusBadge variant="bad">{error}</StatusBadge>}
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-[24px] px-4 py-2 text-sm text-ink-soft">
-            ปิด
+            ยกเลิก
           </button>
           <button
             type="button"

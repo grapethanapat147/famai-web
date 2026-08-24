@@ -45,7 +45,7 @@ export async function recordDltSubmission(formData: FormData): Promise<PlateActi
     .update({ dlt_request_no: parsed.value, dlt_submitted_at: todayISO() })
     .eq("id", regId);
   if (error) {
-    return { ok: false, error: "บันทึกการยื่นไม่สำเร็จ (รัน migration registration_plate แล้วหรือยัง?)" };
+    return { ok: false, error: "บันทึกการยื่นไม่สำเร็จ — ระบบยังไม่พร้อม กรุณาแจ้งผู้ดูแลระบบ" };
   }
 
   await supabase.from("registration_event").insert({
