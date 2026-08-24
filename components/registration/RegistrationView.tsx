@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
@@ -68,7 +69,14 @@ export function RegistrationView({
       header: "ลูกค้า / บริษัท",
       render: (r) => (
         <span className="text-ink-soft">
-          {r.customerName} <span className="text-muted">· {r.branch}</span>
+          <Link
+            href={`/deal?q=${encodeURIComponent(r.customerName)}`}
+            className="underline-offset-2 hover:text-ink hover:underline"
+            title="ดูดีลของลูกค้าคนนี้"
+          >
+            {r.customerName}
+          </Link>{" "}
+          <span className="text-muted">· {r.branch}</span>
         </span>
       ),
     },

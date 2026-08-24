@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
@@ -566,6 +567,14 @@ function DealDrawer({
               </div>
               {prev && revertAction && !next && (
                 <p className="mt-2 text-xs text-muted">ดีลนี้ถึงขั้นสุดท้ายแล้ว — กด “ย้อนกลับ” ได้หากเผลอกดไปต่อ</p>
+              )}
+              {(deal.stage === "รอทะเบียน" || deal.stage === "ป้ายขาว") && (
+                <p className="mt-2 text-xs text-muted">
+                  บันทึกเลขคำขอ / รับเล่ม / ส่งมอบ ที่หน้า{" "}
+                  <Link href="/registration" className="font-medium text-accent hover:underline">
+                    งานทะเบียน →
+                  </Link>
+                </p>
               )}
             </div>
           )}

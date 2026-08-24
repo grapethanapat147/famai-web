@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { Chips } from "@/components/ui/Chips";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -44,6 +45,7 @@ export function RecvForm({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
+  const [savedUnitId, setSavedUnitId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const engineRef = useRef<HTMLInputElement>(null);
 
@@ -98,6 +100,7 @@ export function RecvForm({
     setBusy(false);
     if (res.ok) {
       setSaved(res.engineNo);
+      setSavedUnitId(res.unitId ?? null);
       // รับต่อเนื่อง — เคลียร์เลขเครื่อง/ตัวถัง/หมายเหตุ เก็บบริษัท/รุ่น/สีไว้
       setEngineNo("");
       setFrameNo("");
@@ -198,7 +201,16 @@ export function RecvForm({
         >
           {busy ? "กำลังบันทึก…" : "รับรถเข้าสต๊อก"}
         </button>
-        {saved && <StatusBadge variant="good">รับรถเข้าสต๊อกแล้ว — เลขเครื่อง {saved} · พร้อมรับคันถัดไป</StatusBadge>}
+        {saved && (
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge variant="good">รับรถเข้าสต๊อกแล้ว — เลขเครื่อง {saved} · พร้อมรับคันถัดไป</StatusBadge>
+            {savedUnitId && (
+              <Link href={`/stock?unit=${savedUnitId}`} className="text-sm font-medium text-accent hover:underline">
+                ดูในสต๊อก →
+              </Link>
+            )}
+          </div>
+        )}
         {error && <StatusBadge variant="bad">{error}</StatusBadge>}
       </div>
 

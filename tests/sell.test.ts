@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeDeal, type DealInput } from "@/lib/sell/deal";
-import { canSell } from "@/lib/sell/sell";
+import { canSell, validateSellPricing } from "@/lib/sell/sell";
 
 const base: DealInput = {
   listPrice: 46900,
@@ -70,5 +70,22 @@ describe("canSell (FAM-1023 · ตรงกับด่านสิทธิ์�
     expect(canSell(["acct"])).toBe(false);
     expect(canSell(["tech"])).toBe(false);
     expect(canSell([])).toBe(false);
+  });
+});
+
+describe("validateSellPricing (FAM-1107 · กันค่าติดลบ/ส่วนลดเกินราคาตั้ง)", () => {
+  it("ยอมรับราคาปกติ (มี/ไม่มีเงินดาวน์)", () => {
+    expect(validateSellPricing({ listPrice: 46900, discount: 1000, downPayment: 5000 })).toEqual({ ok: true });
+    expect(validateSellPricing({ listPrice: 46900, discount: 0, downPayment: null })).toEqual({ ok: true });
+    expect(validateSellPricing({ listPrice: 46900, discount: 46900, downPayment: 0 })).toEqual({ ok: true }); // ลดเต็มราคา (แจกฟรี) ยังยอม
+  });
+  it.each([
+    [{ listPrice: 0, discount: 0, downPayment: null }, "ราคาตั้งไม่ถูกต้อง"],
+    [{ listPrice: 46900, discount: -1, downPayment: null }, "ส่วนลดต้องไม่ติดลบ"],
+    [{ listPrice: 46900, discount: 50000, downPayment: null }, "ส่วนลดมากกว่าราคาตั้งไม่ได้"],
+    [{ listPrice: 46900, discount: 0, downPayment: -5000 }, "เงินดาวน์ต้องไม่ติดลบ"],
+    [{ listPrice: Number.NaN, discount: 0, downPayment: null }, "ราคาตั้งไม่ถูกต้อง"],
+  ])("ปฏิเสธ %o", (input, error) => {
+    expect(validateSellPricing(input)).toEqual({ ok: false, error });
   });
 });

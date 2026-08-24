@@ -31,8 +31,9 @@ export function MoneyStepInput({
       <input
         type="number"
         inputMode="numeric"
+        min={0}
         value={value || ""}
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
+        onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))}
         placeholder={placeholder}
         aria-label={ariaLabel}
         className={inputCls}

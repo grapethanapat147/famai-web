@@ -27,6 +27,7 @@ import {
   isRegStage,
   stageVariant,
   stageTimestampField,
+  advanceBlockReason,
   REG_STAGES,
 } from "@/lib/deal/stage";
 import { filterDeals, stageCounts, openDealCount, offTrackCount, customerDeals, customerServices, isOffTrack, canManageDeal, canVoidDeal, isVoidableStage, vatBreakdown, type Deal, type ServiceHistory } from "@/lib/deal/deals";
@@ -183,5 +184,18 @@ describe("isVoidableStage", () => {
     expect(isVoidableStage("ส่งไฟแนนซ์")).toBe(true);
     expect(isVoidableStage("รอทะเบียน")).toBe(true);
     expect(isVoidableStage("ส่งมอบแล้ว")).toBe(false);
+  });
+});
+
+describe("advanceBlockReason (FAM-1107 · เข้า ป้ายขาว ต้องมีเลขทะเบียน)", () => {
+  it("ห้ามเข้า ป้ายขาว เมื่อยังไม่มี plate_no", () => {
+    expect(advanceBlockReason("ป้ายขาว", null)).toContain("งานทะเบียน");
+    expect(advanceBlockReason("ป้ายขาว", "  ")).toContain("งานทะเบียน");
+  });
+  it("ผ่านเมื่อมี plate_no หรือเป็นขั้นอื่น", () => {
+    expect(advanceBlockReason("ป้ายขาว", "1กก 1234 ปทุมธานี")).toBeNull();
+    expect(advanceBlockReason("ส่งมอบแล้ว", null)).toBeNull();
+    expect(advanceBlockReason("รอทะเบียน", null)).toBeNull();
+    expect(advanceBlockReason("อนุมัติ", null)).toBeNull();
   });
 });

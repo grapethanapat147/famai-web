@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { Chips } from "@/components/ui/Chips";
 import { Combobox } from "@/components/ui/Combobox";
 import { Money } from "@/components/ui/Money";
@@ -71,6 +72,7 @@ export function SellForm({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [savedDoc, setSavedDoc] = useState<string | null>(null);
+  const [savedCustomer, setSavedCustomer] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const unit = units.find((u) => u.id === unitId) ?? null;
@@ -139,6 +141,7 @@ export function SellForm({
     setBusy(false);
     if (res.ok) {
       setSavedDoc(res.docNo ?? "บันทึกแล้ว");
+      setSavedCustomer(customerName.trim()); // เก็บไว้ทำลิงก์ไปดีล ก่อนรีเซ็ตฟอร์ม
       // รีเซ็ตฟอร์มกันบันทึกซ้ำ
       setNote("");
       setUnitId("");
@@ -301,9 +304,19 @@ export function SellForm({
           {busy ? "กำลังบันทึก…" : "บันทึกการขาย"}
         </button>
         {savedDoc && (
-          <StatusBadge variant="good">
-            บันทึกการขายแล้ว{savedDoc !== "ตัวอย่าง" ? ` — เลขที่ ${savedDoc}` : " (ตัวอย่าง)"}
-          </StatusBadge>
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge variant="good">
+              บันทึกการขายแล้ว{savedDoc !== "ตัวอย่าง" ? ` — เลขที่ ${savedDoc}` : " (ตัวอย่าง)"}
+            </StatusBadge>
+            {savedCustomer && (
+              <Link
+                href={`/deal?q=${encodeURIComponent(savedCustomer)}`}
+                className="text-sm font-medium text-accent hover:underline"
+              >
+                ไปดีลของ {savedCustomer} →
+              </Link>
+            )}
+          </div>
         )}
         {error && <StatusBadge variant="bad">{error}</StatusBadge>}
       </div>
