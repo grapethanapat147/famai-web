@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { sellUnit } from "@/lib/rpc";
-import { canSell, type SellActionResult } from "@/lib/sell/sell";
+import { canSell, validateSellPricing, type SellActionResult } from "@/lib/sell/sell";
 
 /**
  * บันทึกการขายผ่าน sell_unit RPC (atomic + กันขายซ้ำ) — ด่านสิทธิ์ + คำนวณเงินฝั่ง DB
@@ -37,8 +37,10 @@ export async function recordSale(formData: FormData): Promise<SellActionResult> 
   if (!customerName) {
     return { ok: false, error: "กรอกชื่อลูกค้า" };
   }
-  if (!Number.isFinite(listPrice) || listPrice <= 0) {
-    return { ok: false, error: "ราคาตั้งไม่ถูกต้อง" };
+  const downPayment = payMethod === "finance" && downRaw !== "" ? Number(downRaw) : null;
+  const pricing = validateSellPricing({ listPrice, discount, downPayment });
+  if (!pricing.ok) {
+    return { ok: false, error: pricing.error };
   }
   if (payMethod === "finance" && !financeId) {
     return { ok: false, error: "เลือกบริษัทไฟแนนซ์" };
@@ -54,7 +56,7 @@ export async function recordSale(formData: FormData): Promise<SellActionResult> 
       listPrice,
       discount,
       freebieCost,
-      downPayment: payMethod === "finance" && downRaw !== "" ? Number(downRaw) : null,
+      downPayment,
       termMonths: payMethod === "finance" && termRaw !== "" ? Number(termRaw) : null,
       financeId: payMethod === "finance" ? financeId : null,
       note,

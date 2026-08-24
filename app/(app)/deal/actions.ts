@@ -5,7 +5,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveBranches } from "@/lib/reference/cache";
 import { canManageDeal, canVoidDeal, isVoidableStage, validateDealCustomer, type DealActionResult } from "@/lib/deal/deals";
-import { isRegStage, regNext, regPrev, stageTimestampField, substatusOptions, type PayMethod } from "@/lib/deal/stage";
+import { advanceBlockReason, isRegStage, regNext, regPrev, stageTimestampField, substatusOptions, type PayMethod } from "@/lib/deal/stage";
 import { validateLeadInput } from "@/lib/deal/lead";
 import { canFinanceTransition, canManageFinance, isFinanceStatus } from "@/lib/deal/finance";
 
@@ -32,7 +32,7 @@ export async function advanceRegistration(formData: FormData): Promise<DealActio
 
   const { data: reg, error: regError } = await supabase
     .from("registration")
-    .select("id, stage, sale_id")
+    .select("id, stage, sale_id, plate_no")
     .eq("id", regId)
     .maybeSingle();
   if (regError || !reg) {
@@ -48,6 +48,12 @@ export async function advanceRegistration(formData: FormData): Promise<DealActio
 
   if (regNext(reg.stage, payMethod) !== to) {
     return { ok: false, error: "เลื่อนขั้นแบบนี้ไม่ได้" };
+  }
+
+  // กันข้ามการบันทึกเลขทะเบียน (FAM-1107) — เข้า ป้ายขาว ต้องรับเล่มผ่านหน้า งานทะเบียน ก่อน
+  const blocked = advanceBlockReason(to, reg.plate_no);
+  if (blocked) {
+    return { ok: false, error: blocked };
   }
 
   const patch: {

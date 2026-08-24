@@ -1,6 +1,6 @@
 /** ตรรกะสิทธิ์/ตรวจสอบ/ประกอบข้อมูล สำหรับรับรถเข้าสต๊อกทีละคัน (ฟังก์ชันบริสุทธิ์ ทดสอบได้) */
 
-export type RecvActionResult = { ok: true; engineNo: string } | { ok: false; error: string };
+export type RecvActionResult = { ok: true; engineNo: string; unitId?: string | null } | { ok: false; error: string };
 
 /** ตัวเลือกในฟอร์ม (เตรียมจาก DB ฝั่ง server) */
 export type RecvColor = { code: string; name: string };

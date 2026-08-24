@@ -68,21 +68,25 @@ export async function receiveUnit(formData: FormData): Promise<RecvActionResult>
     costVat = computeCostVat(cost, await getSetting("vat_pct"));
   }
 
-  const { error } = await supabase.from("motorcycle_unit").insert({
-    branch_id: v.branchId,
-    variant_id: v.variantId,
-    color_code: v.colorCode,
-    sku: deriveSku(variantRes.data.code, v.colorCode),
-    engine_no: v.engineNo,
-    frame_no: v.frameNo,
-    unit_kind: v.unitKind,
-    status: "available",
-    received_at: v.receivedAt,
-    cost,
-    cost_vat: costVat,
-    retail: v.retail,
-    note: v.note,
-  });
+  const { data: inserted, error } = await supabase
+    .from("motorcycle_unit")
+    .insert({
+      branch_id: v.branchId,
+      variant_id: v.variantId,
+      color_code: v.colorCode,
+      sku: deriveSku(variantRes.data.code, v.colorCode),
+      engine_no: v.engineNo,
+      frame_no: v.frameNo,
+      unit_kind: v.unitKind,
+      status: "available",
+      received_at: v.receivedAt,
+      cost,
+      cost_vat: costVat,
+      retail: v.retail,
+      note: v.note,
+    })
+    .select("id")
+    .single();
   if (error) {
     if (error.code === "23505") {
       return { ok: false, error: "เลขเครื่องหรือเลขตัวถังนี้มีอยู่แล้ว" };
@@ -92,5 +96,5 @@ export async function receiveUnit(formData: FormData): Promise<RecvActionResult>
 
   revalidatePath("/recv");
   revalidatePath("/stock");
-  return { ok: true, engineNo: v.engineNo };
+  return { ok: true, engineNo: v.engineNo, unitId: inserted?.id ?? null };
 }

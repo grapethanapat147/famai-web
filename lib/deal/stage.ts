@@ -49,6 +49,18 @@ export function isDelivered(stage: RegStage): boolean {
   return stage === "ส่งมอบแล้ว";
 }
 
+/**
+ * เหตุผลที่ห้ามเลื่อนขั้นจากหน้าดีล (FAM-1107) — คืน null ถ้าเลื่อนได้
+ * เข้า "ป้ายขาว" ต้องมีเลขทะเบียนแล้ว (บันทึกผ่านหน้า งานทะเบียน) — ไม่งั้นเลขทะเบียนจะหายจากระบบถาวร
+ * เพราะ recordPlateReceived เป็นผู้บันทึก plate_no เพียงทางเดียว และรับเฉพาะขั้น "รอทะเบียน"
+ */
+export function advanceBlockReason(to: RegStage, plateNo: string | null): string | null {
+  if (to === "ป้ายขาว" && (!plateNo || plateNo.trim() === "")) {
+    return "ต้องบันทึกรับเล่ม/เลขทะเบียนที่หน้า “งานทะเบียน” ก่อน จึงจะถึงขั้นป้ายขาว";
+  }
+  return null;
+}
+
 /** ตัวเลือกสถานะย่อยต่อขั้น (FAM-1093 P2) — กด step แล้วเลือกได้ว่าตอนนี้อยู่จุดไหนของขั้นนั้น */
 export const STAGE_SUBSTATUS: Record<RegStage, readonly string[]> = {
   ขายแล้ว: ["รอเอกสารลูกค้า", "เอกสารครบ", "ลูกค้าขอเลื่อนรับรถ"],
