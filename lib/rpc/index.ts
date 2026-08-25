@@ -75,6 +75,8 @@ export type SellUnitArgs = {
   termMonths: number | null;
   financeId: string | null;
   note: string | null;
+  /** เลือกลูกค้าเดิม (FAM-1110) — null/ไม่ส่ง = สร้างลูกค้าใหม่จากชื่อ/เบอร์ */
+  customerId?: string | null;
 };
 
 export type SellUnitResult = { sale_id: string; doc_no: string | null; customer_id: string };
@@ -96,6 +98,7 @@ export async function sellUnit(client: TypedSupabaseClient, a: SellUnitArgs): Pr
     p_term_months: a.termMonths,
     p_finance_id: a.financeId,
     p_note: a.note,
+    p_customer_id: a.customerId ?? null,
   });
   if (error) {
     throw new Error(error.message);

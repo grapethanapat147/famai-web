@@ -26,6 +26,7 @@ export type SellUnit = {
   cost?: number | null;
 };
 export type FinanceCo = { id: string; name: string; ratePct: number };
+export type CustomerOption = { id: string; fullName: string; phone: string | null };
 export type FreebieOption = { name: string; cost: number };
 
 const inputCls =
@@ -41,6 +42,7 @@ export function SellForm({
   financeTerms,
   canSeeMoney,
   sellerBranchCode,
+  customers = [],
   action,
   initial,
 }: {
@@ -53,6 +55,8 @@ export function SellForm({
   financeTerms: number[];
   canSeeMoney: boolean;
   sellerBranchCode: string | null;
+  /** ลูกค้าเดิมให้เลือกซ้ำ (FAM-1110) — กันสร้างระเบียนลูกค้าซ้ำทุกครั้งที่ขาย */
+  customers?: CustomerOption[];
   action?: (formData: FormData) => Promise<SellActionResult>;
   initial?: SellInitial;
 }) {
@@ -67,6 +71,8 @@ export function SellForm({
   const [discount, setDiscount] = useState(0);
   const [downPayment, setDownPayment] = useState(initial?.downPayment ?? 0);
   const [note, setNote] = useState("");
+  const [customerMode, setCustomerMode] = useState<"new" | "existing">("new");
+  const [customerId, setCustomerId] = useState("");
   const [financeCoId, setFinanceCoId] = useState(initial?.financeId ?? "");
   const [months, setMonths] = useState(initial?.months ?? financeTerms[0] ?? 12);
   const [freebies, setFreebies] = useState<string[]>([]);
@@ -77,6 +83,18 @@ export function SellForm({
   const [error, setError] = useState<string | null>(null);
 
   const unit = units.find((u) => u.id === unitId) ?? null;
+
+  /** เลือกลูกค้าเดิม — เติมชื่อ/เบอร์จากระเบียนเดิม (ใช้โชว์สรุป + ทำลิงก์ไปดีลหลังบันทึก) */
+  function selectCustomer(id: string) {
+    setCustomerId(id);
+    const c = customers.find((x) => x.id === id);
+    setCustomerName(c?.fullName ?? "");
+    setCustomerPhone(c?.phone ?? "");
+    setSavedDoc(null);
+    setError(null);
+  }
+
+  const customerReady = customerMode === "existing" ? customerId !== "" : customerName.trim() !== "";
 
   function selectUnit(id: string) {
     setUnitId(id);
@@ -126,6 +144,7 @@ export function SellForm({
     }
     const fd = new FormData();
     fd.set("unit_id", unit.id);
+    fd.set("customer_id", customerMode === "existing" ? customerId : "");
     fd.set("customer_name", customerName.trim());
     fd.set("customer_phone", customerPhone.trim());
     fd.set("pay_method", payMethod);
@@ -146,6 +165,8 @@ export function SellForm({
       // รีเซ็ตฟอร์มกันบันทึกซ้ำ
       setNote("");
       setUnitId("");
+      setCustomerId("");
+      setCustomerMode("new");
       setCustomerName("");
       setCustomerPhone("");
       setDiscount(0);
@@ -206,14 +227,52 @@ export function SellForm({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="ชื่อลูกค้า *">
-            <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="ชื่อ-นามสกุล" className={inputCls} />
+        {customers.length > 0 && (
+          <Field label="ลูกค้า" full>
+            <Chips
+              value={customerMode}
+              onChange={(v) => {
+                setCustomerMode(v);
+                setCustomerId("");
+                if (v === "existing") {
+                  setCustomerName("");
+                  setCustomerPhone("");
+                }
+              }}
+              options={[
+                { value: "new", label: "ลูกค้าใหม่" },
+                { value: "existing", label: `ลูกค้าเดิม (${customers.length})` },
+              ]}
+            />
           </Field>
-          <Field label="เบอร์โทร">
-            <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} inputMode="tel" className={inputCls} />
+        )}
+
+        {customerMode === "existing" ? (
+          <Field label="เลือกลูกค้าเดิม * (พิมพ์ค้นชื่อ/เบอร์)" full>
+            <Combobox
+              ariaLabel="เลือกลูกค้าเดิม"
+              placeholder="พิมพ์ชื่อ หรือเบอร์โทร…"
+              value={customerId}
+              onChange={selectCustomer}
+              emptyText="ไม่พบลูกค้า — สลับไป “ลูกค้าใหม่” เพื่อสร้างใหม่"
+              options={customers.map((c) => ({
+                value: c.id,
+                label: c.fullName,
+                sub: c.phone ?? "ไม่มีเบอร์",
+                keywords: c.phone ?? "",
+              }))}
+            />
           </Field>
-        </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="ชื่อลูกค้า *">
+              <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="ชื่อ-นามสกุล" className={inputCls} />
+            </Field>
+            <Field label="เบอร์โทร">
+              <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} inputMode="tel" className={inputCls} />
+            </Field>
+          </div>
+        )}
 
         <Field label="วิธีชำระ" full>
           <Chips
@@ -298,7 +357,7 @@ export function SellForm({
 
         <button
           type="button"
-          disabled={!unit || mismatch || customerName.trim() === "" || busy}
+          disabled={!unit || mismatch || !customerReady || busy}
           onClick={() => setConfirmOpen(true)}
           className="mt-2 rounded-[24px] bg-accent py-3 text-sm font-medium text-card transition-transform active:scale-[0.99] disabled:opacity-50"
         >

@@ -30,6 +30,7 @@ export async function recordSale(formData: FormData): Promise<SellActionResult> 
   const downRaw = String(formData.get("down_payment") ?? "").trim();
   const termRaw = String(formData.get("term_months") ?? "").trim();
   const note = String(formData.get("note") ?? "").trim() || null;
+  const customerId = String(formData.get("customer_id") ?? "").trim() || null;
 
   if (!unitId) {
     return { ok: false, error: "เลือกคันรถก่อน" };
@@ -60,6 +61,7 @@ export async function recordSale(formData: FormData): Promise<SellActionResult> 
       termMonths: payMethod === "finance" && termRaw !== "" ? Number(termRaw) : null,
       financeId: payMethod === "finance" ? financeId : null,
       note,
+      customerId,
     });
     revalidatePath("/sell");
     revalidatePath("/stock");
