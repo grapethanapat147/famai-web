@@ -5,7 +5,7 @@ import { getBranchesCached } from "@/lib/reference/cache";
 import { getSettings } from "@/lib/settings";
 import { stripMoneyFields } from "@/lib/auth/strip-money";
 import { computeAgeDays } from "@/lib/stock/units";
-import { SellForm, type FinanceCo, type SellUnit } from "@/components/sell/SellForm";
+import { SellForm, type CustomerOption, type FinanceCo, type SellUnit } from "@/components/sell/SellForm";
 import type { SellInitial } from "@/lib/sell/sell";
 import { recordSale } from "./actions";
 
@@ -34,7 +34,7 @@ export default async function SellPage({
 
   const supabase = await createServerSupabase();
 
-  const [unitsRes, variantsRes, colorsRes, branches, finRes] = await Promise.all([
+  const [unitsRes, variantsRes, colorsRes, branches, finRes, custRes] = await Promise.all([
     supabase
       .from("motorcycle_unit")
       .select("id, branch_id, variant_id, color_code, engine_no, frame_no, received_at, cost, retail")
@@ -43,7 +43,15 @@ export default async function SellPage({
     supabase.from("model_color").select("variant_id, color_code, color_name"),
     getBranchesCached(),
     supabase.from("finance_company").select("id, name, flat_rate_pct").eq("is_active", true),
+    // ลูกค้าเดิมสำหรับเลือกซ้ำ (FAM-1110) — RLS คัดเฉพาะบริษัทที่เข้าถึงได้
+    supabase.from("customer").select("id, full_name, phone").order("created_at", { ascending: false }).limit(500),
   ]);
+
+  const customers: CustomerOption[] = (custRes.data ?? []).map((c) => ({
+    id: c.id,
+    fullName: c.full_name,
+    phone: c.phone,
+  }));
 
   const variants = new Map((variantsRes.data ?? []).map((v) => [v.id, v]));
   const colors = new Map((colorsRes.data ?? []).map((c) => [`${c.variant_id}:${c.color_code}`, c.color_name]));
@@ -111,6 +119,7 @@ export default async function SellPage({
       financeTerms={settings.finance_terms}
       canSeeMoney={see}
       sellerBranchCode={sellerBranchCode}
+      customers={customers}
       action={recordSale}
       initial={initial}
     />

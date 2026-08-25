@@ -587,6 +587,7 @@ export type Database = {
           p_term_months: number | null;
           p_finance_id: string | null;
           p_note: string | null;
+          p_customer_id?: string | null;
         };
         Returns: Json;
       };

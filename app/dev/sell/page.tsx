@@ -31,6 +31,13 @@ async function mockSell(formData: FormData): Promise<SellActionResult> {
   return { ok: true, saleId: "dev-sale", docNo: "FMG-TAXINV-2569-00042" };
 }
 
+/** ลูกค้าเดิมตัวอย่าง (FAM-1110) — ของจริงดึงจากตาราง customer ตาม RLS */
+const CUSTOMERS = [
+  { id: "c1", fullName: "นายวีระ โปร่งนุช", phone: "081-234-5678" },
+  { id: "c2", fullName: "มานี รักษ์ดี", phone: "089-111-2222" },
+  { id: "c3", fullName: "ประเสริฐ มั่งมี", phone: null },
+];
+
 export default function DevSellPage() {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 lg:px-6">
@@ -48,6 +55,7 @@ export default function DevSellPage() {
         financeTerms={[12, 18, 24, 30, 36, 42, 48]}
         canSeeMoney
         sellerBranchCode="FMG01"
+        customers={CUSTOMERS}
         action={mockSell}
       />
     </main>
