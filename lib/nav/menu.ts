@@ -58,6 +58,7 @@ export const MENU: MenuGroup[] = [
       { key: "expense", title: "ค่าใช้จ่าย", subtitle: "บันทึกรายจ่ายพร้อมใบเสร็จ", icon: "files", roles: ["admin", "manager", "acct"] },
       { key: "attend", title: "ภาพรวมการเข้างาน", subtitle: "ใครมาแล้ว ใครสาย ใครยังไม่มา", icon: "users", roles: ["admin", "manager", "hr"] },
       { key: "hr", title: "ลงเวลาและลา", subtitle: "เวลาเข้าออกและใบลา", icon: "clock", roles: ["admin", "manager", "hr", "sales", "stock", "tech", "acct"] },
+      { key: "employees", title: "พนักงาน", subtitle: "ข้อมูลพนักงาน เงินเดือน และเพิ่มพนักงานใหม่", icon: "users", roles: ["admin", "manager", "hr"] },
       { key: "payroll", title: "เงินเดือนและ OT", subtitle: "เงินเดือน คอมมิชชั่น สลิป", icon: "card", roles: ["admin", "manager", "hr", "acct"] },
       { key: "users", title: "บัญชีผู้ใช้", subtitle: "ผู้ใช้ บทบาท และสิทธิ์", icon: "key", roles: ["admin"] },
     ],
