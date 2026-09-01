@@ -32,7 +32,7 @@ export default async function AttendPage({ searchParams }: { searchParams: Promi
     supabase.from("app_user").select("id, full_name"),
     supabase
       .from("attendance")
-      .select("employee_id, check_in, check_out, status, late_minutes, ot_minutes, check_in_selfie, check_in_distance_m")
+      .select("employee_id, check_in, check_out, status, late_minutes, ot_minutes, check_in_selfie, check_in_distance_m, check_in_site_name")
       .eq("work_date", date),
     supabase
       .from("leave_request")
@@ -67,6 +67,7 @@ export default async function AttendPage({ searchParams }: { searchParams: Promi
       otMinutes: att?.ot_minutes ?? 0,
       selfieUrl: att?.check_in_selfie ? signedByPath.get(att.check_in_selfie) ?? null : null,
       distanceM: att?.check_in_distance_m ?? null,
+      siteName: att?.check_in_site_name ?? null,
     };
   });
 

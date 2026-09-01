@@ -88,6 +88,7 @@ function row(over: Partial<AttendRow>): AttendRow {
     lateMinutes: null,
     otMinutes: 0,
     selfieUrl: null,
+    siteName: null,
     distanceM: null,
     ...over,
   };

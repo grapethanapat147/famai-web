@@ -14,12 +14,12 @@ const FAKE_SELFIE =
   );
 
 const ROWS: AttendRow[] = [
-  { employeeId: "1", name: "สมชาย ใจดี", position: "เซลล์", status: "present", checkIn: "2026-08-12T01:20:00Z", checkOut: null, lateMinutes: null, otMinutes: 0, selfieUrl: FAKE_SELFIE, distanceM: 42 },
-  { employeeId: "2", name: "มานี รักษ์ดี", position: "บัญชี", status: "late", checkIn: "2026-08-12T02:05:00Z", checkOut: null, lateMinutes: 35, otMinutes: 0, selfieUrl: FAKE_SELFIE, distanceM: 118 },
-  { employeeId: "3", name: "วิภา สุขใจ", position: "สต๊อก", status: "leave", checkIn: null, checkOut: null, lateMinutes: null, otMinutes: 0, selfieUrl: null, distanceM: null },
-  { employeeId: "4", name: "ประเสริฐ มั่งมี", position: "ช่าง", status: "present", checkIn: "2026-08-12T01:10:00Z", checkOut: "2026-08-12T11:10:00Z", lateMinutes: null, otMinutes: 90, selfieUrl: null, distanceM: null },
-  { employeeId: "5", name: "วิชัย ช่างเก่ง", position: "ช่าง", status: "pending", checkIn: null, checkOut: null, lateMinutes: null, otMinutes: 0, selfieUrl: null, distanceM: null },
-  { employeeId: "6", name: "อรุณี ขยันงาน", position: "เซลล์", status: "absent", checkIn: null, checkOut: null, lateMinutes: null, otMinutes: 0, selfieUrl: null, distanceM: null },
+  { employeeId: "1", name: "สมชาย ใจดี", position: "เซลล์", status: "present", checkIn: "2026-08-12T01:20:00Z", checkOut: null, lateMinutes: null, otMinutes: 0, selfieUrl: FAKE_SELFIE, siteName: "หน้าร้านปทุมธานี", distanceM: 42 },
+  { employeeId: "2", name: "มานี รักษ์ดี", position: "บัญชี", status: "late", checkIn: "2026-08-12T02:05:00Z", checkOut: null, lateMinutes: 35, otMinutes: 0, selfieUrl: FAKE_SELFIE, siteName: "หน้าร้านปทุมธานี", distanceM: 118 },
+  { employeeId: "3", name: "วิภา สุขใจ", position: "สต๊อก", status: "leave", checkIn: null, checkOut: null, lateMinutes: null, otMinutes: 0, selfieUrl: null, siteName: null, distanceM: null },
+  { employeeId: "4", name: "ประเสริฐ มั่งมี", position: "ช่าง", status: "present", checkIn: "2026-08-12T01:10:00Z", checkOut: "2026-08-12T11:10:00Z", lateMinutes: null, otMinutes: 90, selfieUrl: null, siteName: null, distanceM: null },
+  { employeeId: "5", name: "วิชัย ช่างเก่ง", position: "ช่าง", status: "pending", checkIn: null, checkOut: null, lateMinutes: null, otMinutes: 0, selfieUrl: null, siteName: null, distanceM: null },
+  { employeeId: "6", name: "อรุณี ขยันงาน", position: "เซลล์", status: "absent", checkIn: null, checkOut: null, lateMinutes: null, otMinutes: 0, selfieUrl: null, siteName: null, distanceM: null },
 ];
 
 async function mockEdit(): Promise<HrActionResult> {
