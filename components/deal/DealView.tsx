@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
@@ -16,6 +16,7 @@ import { PrintableTaxInvoice } from "@/components/deal/PrintableTaxInvoice";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 import { formatThaiDate } from "@/lib/format";
 import { dealTrack, regNext, regPrev, stageIndex, stageVariant, substatusOptions, type RegStage } from "@/lib/deal/stage";
+import { DEAL_PHASES, dealPhase, PHASE_HINT, phaseIndex, phaseVariant, type DealPhase } from "@/lib/deal/phase";
 import { LEAD_SOURCES, type LeadRow } from "@/lib/deal/lead";
 import {
   customerDeals,
@@ -25,13 +26,16 @@ import {
   isVoidableStage,
   offTrackCount,
   openDealCount,
-  stageCounts,
   type Deal,
   type DealActionResult,
   type ServiceHistory,
 } from "@/lib/deal/deals";
-import { REG_STAGES } from "@/lib/deal/stage";
 import { finNext, financeActionLabel, financeStatusVariant, isFinanceStatus, type FinanceStatus } from "@/lib/deal/finance";
+
+/** เฟสของดีลใบหนึ่ง (FAM-1111) — คิดจาก stage จริง + สถานะเคสสินเชื่อ */
+function phaseOf(d: Deal): DealPhase {
+  return dealPhase({ payMethod: d.payMethod, financeStatus: d.finance?.status ?? null, stage: d.stage });
+}
 
 const inputCls =
   "w-full rounded-[8px] border border-hairline bg-card px-3 py-2.5 text-base text-ink outline-none focus:border-ink";
@@ -77,24 +81,35 @@ export function DealView({
   stepAction?: (formData: FormData) => Promise<DealActionResult>;
 }) {
   const [stage, setStage] = useState<RegStage | "all">("all");
+  const [phase, setPhase] = useState<DealPhase | "all">("all");
   const [search, setSearch] = useState(initialSearch);
   const [view, setView] = useState<"all" | "open" | "offtrack" | "leads">("all");
   const [selected, setSelected] = useState<Deal | null>(null);
   const [adding, setAdding] = useState(false);
 
-  const counts = stageCounts(deals);
   const open = openDealCount(deals);
   const offTrack = offTrackCount(deals);
-  const rows = filterDeals(deals, { stage, search, onlyOpen: view === "open", onlyOffTrack: view === "offtrack" });
+  const baseRows = filterDeals(deals, { stage, search, onlyOpen: view === "open", onlyOffTrack: view === "offtrack" });
+  // กรองตามเฟสหลัก (FAM-1111) — เฟสคิดจากระเบียนจริง ไม่ได้เก็บเป็นฟิลด์
+  const rows = phase === "all" ? baseRows : baseRows.filter((d) => phaseOf(d) === phase);
+
+  const phaseCounts = useMemo(() => {
+    const c: Record<DealPhase, number> = { คุยกับลูกค้า: 0, ไฟแนนซ์: 0, เปิดการขาย: 0, ส่งมอบ: 0 };
+    for (const d of deals) {
+      c[phaseOf(d)] += 1;
+    }
+    return c;
+  }, [deals]);
 
   const leadQuery = search.trim().toLowerCase();
   const filteredLeads = leadQuery
     ? leads.filter((l) => `${l.name} ${l.phone ?? ""} ${l.interestedModel ?? ""}`.toLowerCase().includes(leadQuery))
     : leads;
 
-  const isFiltered = stage !== "all" || search.trim() !== "" || view !== "all";
+  const isFiltered = stage !== "all" || phase !== "all" || search.trim() !== "" || view !== "all";
   function resetFilters() {
     setStage("all");
+    setPhase("all");
     setSearch("");
     setView("all");
   }
@@ -116,13 +131,16 @@ export function DealView({
       render: (d) => <span className="text-ink-soft">{d.payMethod === "finance" ? "เงินผ่อน" : "เงินสด"}</span>,
     },
     {
-      key: "stage",
-      header: "ขั้น",
+      key: "phase",
+      header: "เฟส",
       render: (d) =>
         isOffTrack(d) ? (
           <StatusBadge variant="bad">ไฟแนนซ์ปฏิเสธ</StatusBadge>
         ) : (
-          <StatusBadge variant={stageVariant(d.stage)}>{d.stage}</StatusBadge>
+          <span className="inline-flex items-center gap-1.5">
+            <StatusBadge variant={phaseVariant(phaseOf(d))}>{phaseOf(d)}</StatusBadge>
+            <span className="text-[11px] text-muted">{d.stage}</span>
+          </span>
         ),
     },
     { key: "date", header: "วันที่ขาย", render: (d) => <span className="text-ink-soft">{formatThaiDate(d.soldAt)}</span> },
@@ -153,23 +171,55 @@ export function DealView({
         />
       </div>
 
-      {view !== "leads" && (
-        <div className="mb-4 flex flex-wrap gap-2">
-          {REG_STAGES.map((s) => (
+      {/* เฟสหลักตามงานจริง (FAM-1111): คุยกับลูกค้า → ไฟแนนซ์ → เปิดการขาย → ส่งมอบ
+          "คุยกับลูกค้า" = ลีด (ยังไม่เปิดบิล) จึงสลับไปลิสต์ลีดให้เลย */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        {DEAL_PHASES.map((p, i) => {
+          const isLeadPhase = p === "คุยกับลูกค้า";
+          const on = isLeadPhase ? view === "leads" : view !== "leads" && phase === p;
+          const count = isLeadPhase ? leads.length : phaseCounts[p];
+          return (
             <button
-              key={s}
+              key={p}
               type="button"
-              onClick={() => setStage((cur) => (cur === s ? "all" : s))}
-              className={`flex items-center gap-2 rounded-[10px] border px-3 py-2 text-sm ${
-                stage === s ? "border-ink bg-card" : "border-hairline bg-card"
+              onClick={() => {
+                if (isLeadPhase) {
+                  setView(view === "leads" ? "all" : "leads");
+                  setPhase("all");
+                } else {
+                  setView("all");
+                  setPhase((cur) => (cur === p && view !== "leads" ? "all" : p));
+                }
+              }}
+              title={PHASE_HINT[p]}
+              className={`flex items-center gap-2 rounded-[10px] border px-3 py-2 text-sm transition-colors ${
+                on ? "border-ink bg-card" : "border-hairline bg-card hover:border-ink/40"
               }`}
             >
-              <StatusBadge variant={stageVariant(s)}>{s}</StatusBadge>
-              <span className="tabular font-semibold text-ink">{counts[s]}</span>
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-paper-2 text-[11px] font-semibold tabular text-muted">
+                {i + 1}
+              </span>
+              <StatusBadge variant={phaseVariant(p)}>{p}</StatusBadge>
+              <span className="tabular font-semibold text-ink">{count}</span>
             </button>
-          ))}
-        </div>
-      )}
+          );
+        })}
+        {offTrack > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              setView(view === "offtrack" ? "all" : "offtrack");
+              setPhase("all");
+            }}
+            className={`flex items-center gap-2 rounded-[10px] border px-3 py-2 text-sm ${
+              view === "offtrack" ? "border-ink bg-card" : "border-hairline bg-card"
+            }`}
+          >
+            <StatusBadge variant="bad">ตกราง</StatusBadge>
+            <span className="tabular font-semibold text-ink">{offTrack}</span>
+          </button>
+        )}
+      </div>
 
       <div className="mb-4">
         <FilterBar summary={view === "leads" ? `ลีด ${filteredLeads.length} ราย` : `กำลังดู: ${rows.length} ดีล`}>
@@ -408,13 +458,25 @@ function DealDrawer({
     <Modal open={deal !== null} onClose={onClose} size="lg" title={deal ? `${deal.customerName} · ${deal.vehicle}` : ""}>
       {deal && (
         <div className="flex flex-col gap-4 text-sm">
-          <StepBar
-            track={track}
-            currentIndex={Math.max(0, idx)}
-            offTrack={offTrack}
-            onStepClick={stepAction && canManage ? (i) => setActiveStep((cur) => (cur === i ? null : i)) : undefined}
-            activeIndex={activeStep ?? undefined}
-          />
+          {/* เฟสหลัก (FAM-1111) — ภาพรวมที่เจ้าของร้านใช้ · ขั้นละเอียดอยู่แถบล่าง */}
+          <div className="flex flex-col gap-2">
+            <StepBar track={[...DEAL_PHASES]} currentIndex={phaseIndex(phaseOf(deal))} offTrack={offTrack} />
+            <p className="text-xs text-muted">
+              เฟสปัจจุบัน: <b className="text-ink-soft">{phaseOf(deal)}</b> · {PHASE_HINT[phaseOf(deal)]}
+            </p>
+          </div>
+
+          {/* ขั้นละเอียดของงานทะเบียน — กดที่ขั้นเพื่อบันทึกสถานะย่อย/หมายเหตุ */}
+          <div className="flex flex-col gap-1.5 border-t border-hairline-2 pt-3">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-muted">ขั้นละเอียด (งานทะเบียน)</p>
+            <StepBar
+              track={track}
+              currentIndex={Math.max(0, idx)}
+              offTrack={offTrack}
+              onStepClick={stepAction && canManage ? (i) => setActiveStep((cur) => (cur === i ? null : i)) : undefined}
+              activeIndex={activeStep ?? undefined}
+            />
+          </div>
 
           {stepAction && canManage && activeStep !== null && track[activeStep] && (
             <StepEditor
