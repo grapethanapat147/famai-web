@@ -10,6 +10,7 @@ import { positionFromRoles } from "@/lib/hr/employee";
 import { lateMinutes, workMinutes } from "@/lib/hr/time";
 import { canApproveLeave, isLeaveType, leaveDays, type HrActionResult } from "@/lib/hr/leave";
 import { branchGeofence, formatDistanceM, haversineMeters, withinGeofence } from "@/lib/hr/geo";
+import { isSiteKind, nearestSite, type SiteRow } from "@/lib/branch/sites";
 
 /** วันที่/เวลาปัจจุบันตามเขตเวลาไทย */
 function bangkokDate(): string {
@@ -97,20 +98,63 @@ export async function clockIn(formData: FormData): Promise<HrActionResult> {
     .eq("id", emp.branch_id)
     .maybeSingle();
 
-  // ตรวจพิกัด (geofence) เฉพาะบริษัทที่ตั้งค่าไว้ — ต้องมีพิกัดและอยู่ในรัศมี
-  let geoFields: { check_in_lat?: number; check_in_lng?: number; check_in_distance_m?: number } = {};
+  // จุดลงเวลาของบริษัท (FAM-1113) — สาขาหลายจุดมาก่อน · ไม่มีจุดค่อยใช้ geofence เดี่ยวของบริษัท (FAM-1101)
+  const { data: siteRows } = await supabase
+    .from("branch_site")
+    .select("id, branch_id, name, kind, lat, lng, radius_m, is_active")
+    .eq("branch_id", emp.branch_id)
+    .eq("is_active", true);
+
+  const sites: SiteRow[] = (siteRows ?? []).map((s) => ({
+    id: s.id,
+    branchId: s.branch_id,
+    branchName: "",
+    name: s.name,
+    kind: isSiteKind(s.kind) ? s.kind : "other",
+    lat: Number(s.lat),
+    lng: Number(s.lng),
+    radiusM: Number(s.radius_m),
+    isActive: s.is_active,
+  }));
+
   const fence = branch ? branchGeofence(branch) : null;
-  if (fence) {
+  const needGeo = sites.length > 0 || fence !== null;
+
+  let geoFields: {
+    check_in_lat?: number;
+    check_in_lng?: number;
+    check_in_distance_m?: number;
+    check_in_site_id?: string;
+    check_in_site_name?: string;
+  } = {};
+
+  if (needGeo) {
     const lat = Number(formData.get("lat"));
     const lng = Number(formData.get("lng"));
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       return { ok: false, error: "ต้องเปิดตำแหน่ง (GPS) เพื่อลงเวลา — อนุญาตการเข้าถึงตำแหน่งแล้วลองใหม่" };
     }
-    const distance = Math.round(haversineMeters(lat, lng, fence.lat, fence.lng));
-    if (!withinGeofence(distance, fence.radiusM)) {
-      return { ok: false, error: `อยู่นอกพื้นที่ร้าน (${formatDistanceM(distance)} จากจุดลงเวลา) — เข้าใกล้ร้านแล้วลองใหม่` };
+
+    if (sites.length > 0) {
+      const near = nearestSite(sites, emp.branch_id, lat, lng);
+      if (!near || !near.inside) {
+        const how = near ? ` (ใกล้สุด ${near.site.name} ห่าง ${formatDistanceM(near.distanceM)})` : "";
+        return { ok: false, error: `อยู่นอกพื้นที่สาขา${how} — เข้าใกล้สาขาแล้วลองใหม่` };
+      }
+      geoFields = {
+        check_in_lat: lat,
+        check_in_lng: lng,
+        check_in_distance_m: near.distanceM,
+        check_in_site_id: near.site.id,
+        check_in_site_name: near.site.name, // แช่ชื่อ ณ วันลงเวลา — เปลี่ยนชื่อสาขาทีหลังประวัติไม่เปลี่ยนตาม
+      };
+    } else if (fence) {
+      const distance = Math.round(haversineMeters(lat, lng, fence.lat, fence.lng));
+      if (!withinGeofence(distance, fence.radiusM)) {
+        return { ok: false, error: `อยู่นอกพื้นที่ร้าน (${formatDistanceM(distance)} จากจุดลงเวลา) — เข้าใกล้ร้านแล้วลองใหม่` };
+      }
+      geoFields = { check_in_lat: lat, check_in_lng: lng, check_in_distance_m: distance };
     }
-    geoFields = { check_in_lat: lat, check_in_lng: lng, check_in_distance_m: distance };
   }
 
   // เซลฟี่ยืนยัน เฉพาะบริษัทที่เปิด require_selfie — client อัปโหลดแล้วส่ง path มา

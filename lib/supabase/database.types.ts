@@ -44,6 +44,22 @@ type Branch = {
   require_selfie: boolean; // FAM-1101 P2 บังคับถ่ายเซลฟี่ตอนลงเวลา
 };
 
+/** จุดลงเวลา/สาขาย่อยของบริษัท (migration 12) — FAM-1113 เปิดใช้งานผ่าน UI */
+type BranchSite = {
+  id: string;
+  branch_id: string;
+  name: string;
+  kind: string; // main | sub | other
+  lat: number;
+  lng: number;
+  radius_m: number;
+  pin_acc_m: number | null;
+  holds_stock: boolean;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+};
+
 type Company = {
   id: string;
   code: string;
@@ -404,6 +420,8 @@ type Attendance = {
   check_in_lng: number | null;
   check_in_distance_m: number | null;
   check_in_selfie: string | null; // FAM-1101 P2 path เซลฟี่
+  check_in_site_id: string | null; // migration 12 — จุดลงเวลาที่ใกล้สุด (FAM-1113)
+  check_in_site_name: string | null; // ชื่อจุด ณ วันลงเวลา (แช่ไว้ ประวัติไม่เปลี่ยนตามการแก้ชื่อ)
 };
 
 type LeaveRequest = {
@@ -513,6 +531,7 @@ export type Database = {
     Tables: {
       branch: Table<Branch>;
       company: Table<Company>;
+      branch_site: Table<BranchSite>;
       app_user: Table<AppUser>;
       role: Table<Role>;
       app_user_role: Table<{ user_id: string; role_id: string }>;

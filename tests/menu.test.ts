@@ -2,12 +2,12 @@ import { describe, it, expect } from "vitest";
 import { MENU, visibleMenu, ALL_MENU_KEYS } from "@/lib/nav/menu";
 
 describe("MENU config", () => {
-  // 20 หน้าจาก index.html v1.15 + models (FAM-1009) + acct (FAM-1102) + registration (FAM-1100) + employees (FAM-1109) + taxinv (FAM-1112) = 25
+  // 20 หน้าจาก index.html v1.15 + models (FAM-1009) + acct (FAM-1102) + registration (FAM-1100) + employees (FAM-1109) + taxinv (FAM-1112) + sites (FAM-1113) = 26
   // ('assist' ผู้ช่วย AI ถอดออกจาก UI ที่ FAM-1069 — นอก TOR; โค้ด lib/api ยังอยู่ dormant)
-  it("has 6 groups and 25 pages", () => {
+  it("has 6 groups and 26 pages", () => {
     expect(MENU).toHaveLength(6);
-    expect(ALL_MENU_KEYS).toHaveLength(25);
-    expect(new Set(ALL_MENU_KEYS).size).toBe(25); // ไม่มี key ซ้ำ
+    expect(ALL_MENU_KEYS).toHaveLength(26);
+    expect(new Set(ALL_MENU_KEYS).size).toBe(26); // ไม่มี key ซ้ำ
   });
 
   it("sales sees sell but not users/settings/models", () => {
@@ -21,12 +21,13 @@ describe("MENU config", () => {
 
   it("admin sees every page (incl. models); tech does not see users", () => {
     const adminKeys = visibleMenu(["admin"]).flatMap((g) => g.items.map((i) => i.key));
-    expect(adminKeys).toHaveLength(25);
+    expect(adminKeys).toHaveLength(26);
     expect(adminKeys).toContain("models");
     expect(adminKeys).toContain("acct");
     expect(adminKeys).toContain("registration");
     expect(adminKeys).toContain("employees");
     expect(adminKeys).toContain("taxinv");
+    expect(adminKeys).toContain("sites");
     const techKeys = visibleMenu(["tech"]).flatMap((g) => g.items.map((i) => i.key));
     expect(techKeys).not.toContain("users");
     expect(techKeys).not.toContain("models");
