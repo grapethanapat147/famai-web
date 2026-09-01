@@ -7,6 +7,7 @@ import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Combobox } from "@/components/ui/Combobox";
+import { Chips } from "@/components/ui/Chips";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PrintableReceipt } from "@/components/acct/PrintableReceipt";
@@ -17,6 +18,7 @@ type IssueKind = "receipt" | "taxinv";
 
 export function AcctView({
   docs,
+  initialDocType = "all",
   receiptIssuable,
   taxinvIssuable,
   vatPct,
@@ -26,6 +28,8 @@ export function AcctView({
   voidDocumentAction,
 }: {
   docs: DocDetail[];
+  /** แท็บที่เปิดมาก่อน (FAM-1112) — /taxinv เข้ามาที่แท็บใบกำกับภาษีเลย */
+  initialDocType?: "all" | "RECEIPT" | "TAXINV";
   receiptIssuable: IssuableSale[];
   taxinvIssuable: IssuableSale[];
   vatPct: number;
@@ -35,6 +39,7 @@ export function AcctView({
   voidDocumentAction: (formData: FormData) => Promise<AcctActionResult>;
 }) {
   const [search, setSearch] = useState("");
+  const [docType, setDocType] = useState<"all" | "RECEIPT" | "TAXINV">(initialDocType);
   const [issuing, setIssuing] = useState<IssueKind | null>(null);
   const [editing, setEditing] = useState<DocDetail | null>(null);
   const [voiding, setVoiding] = useState<DocDetail | null>(null);
@@ -51,7 +56,9 @@ export function AcctView({
   }, [printTick, printDoc]);
 
   const q = search.trim().toLowerCase();
-  const rows = q ? docs.filter((d) => `${d.docNo} ${d.buyer.name}`.toLowerCase().includes(q)) : docs;
+  const byType = docType === "all" ? docs : docs.filter((d) => d.docType === docType);
+  const rows = q ? byType.filter((d) => `${d.docNo} ${d.buyer.name}`.toLowerCase().includes(q)) : byType;
+  const countOf = (t: "RECEIPT" | "TAXINV") => docs.filter((d) => d.docType === t).length;
 
   const columns: Column<DocDetail>[] = [
     {
@@ -113,6 +120,18 @@ export function AcctView({
             + ใบกำกับภาษี
           </button>
         </div>
+      </div>
+
+      <div className="mb-3">
+        <Chips
+          value={docType}
+          onChange={setDocType}
+          options={[
+            { value: "all", label: `ทั้งหมด (${docs.length})` },
+            { value: "RECEIPT", label: `ใบเสร็จรับเงิน (${countOf("RECEIPT")})` },
+            { value: "TAXINV", label: `ใบกำกับภาษี (${countOf("TAXINV")})` },
+          ]}
+        />
       </div>
 
       <div className="mb-4">

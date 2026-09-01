@@ -17,7 +17,7 @@ function party(snapshot: unknown): PartySnapshot {
   };
 }
 
-export default async function AcctPage() {
+export async function AccountingPage({ initialDocType = "all" }: { initialDocType?: "all" | "RECEIPT" | "TAXINV" }) {
   const user = await getCurrentUser();
   if (!user || !canManageAccount(user.roleCodes)) {
     return (
@@ -102,6 +102,7 @@ export default async function AcctPage() {
   return (
     <AcctView
       docs={docs}
+      initialDocType={initialDocType}
       receiptIssuable={receiptIssuable}
       taxinvIssuable={taxinvIssuable}
       vatPct={settings.vat_pct}
@@ -111,4 +112,9 @@ export default async function AcctPage() {
       voidDocumentAction={voidDocument}
     />
   );
+}
+
+
+export default async function AcctPage() {
+  return <AccountingPage />;
 }
