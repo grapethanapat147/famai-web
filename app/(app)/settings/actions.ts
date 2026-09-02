@@ -9,7 +9,6 @@ import { isValidHex } from "@/lib/theme/derive";
 import { findFontPair, isValidFontPath } from "@/lib/theme/fonts";
 import type { ThemeActionResult } from "@/lib/theme/config";
 import { nullIfBlank, parseCheckbox, parseTaxId, type OrgInfoActionResult } from "@/lib/org/info";
-import { validateGeoConfig } from "@/lib/hr/geo";
 import type { Json } from "@/lib/supabase/database.types";
 
 /**
@@ -148,9 +147,6 @@ export async function updateOrgInfo(formData: FormData): Promise<OrgInfoActionRe
     tax_id: string | null;
     address: string | null;
     phone: string | null;
-    geo_lat: number | null;
-    geo_lng: number | null;
-    geo_radius_m: number | null;
     require_selfie: boolean;
   };
   const branchUpdates: Array<{ id: string; fields: BranchFields }> = [];
@@ -159,21 +155,10 @@ export async function updateOrgInfo(formData: FormData): Promise<OrgInfoActionRe
     if (!f.ok) {
       return { ok: false, error: `บริษัท: ${f.error}` };
     }
-    const geo = validateGeoConfig(
-      String(formData.get(`branch_${id}_geo_lat`) ?? ""),
-      String(formData.get(`branch_${id}_geo_lng`) ?? ""),
-      String(formData.get(`branch_${id}_geo_radius`) ?? ""),
-    );
-    if (!geo.ok) {
-      return { ok: false, error: `พิกัดลงเวลา: ${geo.error}` };
-    }
     branchUpdates.push({
       id,
       fields: {
         ...f.value,
-        geo_lat: geo.value.lat,
-        geo_lng: geo.value.lng,
-        geo_radius_m: geo.value.radiusM,
         require_selfie: parseCheckbox(formData.get(`branch_${id}_require_selfie`)),
       },
     });

@@ -117,3 +117,21 @@ export function nearestSite(sites: readonly SiteRow[], branchId: string, lat: nu
 export function activeSiteCount(sites: readonly SiteRow[], branchId: string): number {
   return sites.filter((s) => s.branchId === branchId && s.isActive).length;
 }
+
+/** บริษัทที่ยังมีพิกัดเก่าใน branch.geo_* ค้างอยู่ (FAM-1101) แต่ยังไม่มีจุดใน branch_site */
+export type LegacyGeoBranch = { id: string; name: string; lat: number; lng: number; radiusM: number };
+
+export function legacyGeoBranches(
+  branches: readonly { id: string; name: string; geoLat: number | null; geoLng: number | null; geoRadiusM: number | null }[],
+  sites: readonly SiteRow[],
+): LegacyGeoBranch[] {
+  const withSites = new Set(sites.map((s) => s.branchId));
+  const out: LegacyGeoBranch[] = [];
+  for (const b of branches) {
+    if (withSites.has(b.id) || b.geoLat == null || b.geoLng == null || b.geoRadiusM == null) {
+      continue;
+    }
+    out.push({ id: b.id, name: b.name, lat: b.geoLat, lng: b.geoLng, radiusM: b.geoRadiusM });
+  }
+  return out;
+}

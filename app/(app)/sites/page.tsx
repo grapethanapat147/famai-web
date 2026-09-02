@@ -1,9 +1,9 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveBranches } from "@/lib/reference/cache";
-import { canManageSites, isSiteKind, type SiteRow } from "@/lib/branch/sites";
+import { canManageSites, isSiteKind, legacyGeoBranches, type SiteRow } from "@/lib/branch/sites";
 import { SitesView, type SiteBranchOption } from "@/components/sites/SitesView";
-import { saveSite } from "./actions";
+import { importLegacyGeo, saveSite } from "./actions";
 
 export const metadata = { title: "สาขา (จุดลงเวลา) — Famai Motor Group" };
 
@@ -18,9 +18,10 @@ export default async function SitesPage() {
   }
 
   const supabase = await createServerSupabase();
-  const [sitesRes, branchRows] = await Promise.all([
+  const [sitesRes, branchRows, geoRes] = await Promise.all([
     supabase.from("branch_site").select("id, branch_id, name, kind, lat, lng, radius_m, is_active").order("name"),
     getActiveBranches(),
+    supabase.from("branch").select("id, name, geo_lat, geo_lng, geo_radius_m"),
   ]);
 
   const branchName = new Map(branchRows.map((b) => [b.id, b.name]));
@@ -38,5 +39,16 @@ export default async function SitesPage() {
 
   const branches: SiteBranchOption[] = branchRows.map((b) => ({ id: b.id, name: b.name }));
 
-  return <SitesView sites={sites} branches={branches} action={saveSite} />;
+  const legacyGeo = legacyGeoBranches(
+    (geoRes.data ?? []).map((b) => ({
+      id: b.id,
+      name: b.name,
+      geoLat: b.geo_lat != null ? Number(b.geo_lat) : null,
+      geoLng: b.geo_lng != null ? Number(b.geo_lng) : null,
+      geoRadiusM: b.geo_radius_m != null ? Number(b.geo_radius_m) : null,
+    })),
+    sites,
+  );
+
+  return <SitesView sites={sites} branches={branches} legacyGeo={legacyGeo} action={saveSite} importAction={importLegacyGeo} />;
 }

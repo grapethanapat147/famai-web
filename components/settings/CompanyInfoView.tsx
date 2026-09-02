@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import Link from "next/link";
 import type { OrgBranch, OrgCompany, OrgInfoActionResult } from "@/lib/org/info";
 
 const fieldCls =
@@ -39,74 +40,29 @@ function OrgFields({ prefix, row, canEdit }: { prefix: string; row: OrgCompany; 
   );
 }
 
-/** ตั้งค่าลงเวลาต่อบริษัท (FAM-1101 P3) — พิกัด geofence + บังคับเซลฟี่ · เก็บเป็นช่องในฟอร์มเดียวกัน */
+/**
+ * ตั้งค่าลงเวลาต่อบริษัท — เหลือแค่ "บังคับเซลฟี่" (นโยบาย)
+ * พิกัด/รัศมีย้ายไปตั้งที่หน้าสาขาแล้ว (FAM-1114) เพื่อไม่ให้มีที่ตั้งค่า 2 ที่แล้วขัดกันเงียบๆ
+ */
 function AttendanceFields({ prefix, branch, canEdit }: { prefix: string; branch: OrgBranch; canEdit: boolean }) {
-  const [lat, setLat] = useState(branch.geoLat);
-  const [lng, setLng] = useState(branch.geoLng);
-  const [radius, setRadius] = useState(branch.geoRadius);
   const [selfie, setSelfie] = useState(branch.requireSelfie);
-  const [locating, setLocating] = useState(false);
-  const [geoErr, setGeoErr] = useState<string | null>(null);
 
-  function useHere() {
-    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
-      setGeoErr("อุปกรณ์นี้ไม่รองรับ GPS");
-      return;
-    }
-    setLocating(true);
-    setGeoErr(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLat(String(pos.coords.latitude));
-        setLng(String(pos.coords.longitude));
-        if (radius.trim() === "") {
-          setRadius("150");
-        }
-        setLocating(false);
-      },
-      () => {
-        setGeoErr("ขอตำแหน่งไม่สำเร็จ — อนุญาต GPS แล้วลองใหม่");
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10_000 },
-    );
-  }
-
-  const geoOn = lat.trim() !== "" && lng.trim() !== "" && radius.trim() !== "";
   return (
     <div className="mt-3 rounded-[10px] border border-hairline-2 p-3">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[11px] font-medium uppercase tracking-wider text-muted">ลงเวลาเข้า — พิกัด + เซลฟี่</span>
-        <StatusBadge variant={geoOn ? "good" : "off"}>{geoOn ? `เปิด geofence · ${radius} ม.` : "ปิด geofence"}</StatusBadge>
+        <span className="text-[11px] font-medium uppercase tracking-wider text-muted">ลงเวลาเข้า</span>
+        <StatusBadge variant={branch.siteCount > 0 ? "good" : "off"}>
+          {branch.siteCount > 0 ? `จุดลงเวลา ${branch.siteCount} จุด` : "ยังไม่มีจุดลงเวลา"}
+        </StatusBadge>
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted">ละติจูด</span>
-          <input name={`${prefix}_geo_lat`} value={lat} onChange={(e) => setLat(e.target.value)} disabled={!canEdit} inputMode="decimal" placeholder="13.9403" className={fieldCls} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted">ลองจิจูด</span>
-          <input name={`${prefix}_geo_lng`} value={lng} onChange={(e) => setLng(e.target.value)} disabled={!canEdit} inputMode="decimal" placeholder="100.5422" className={fieldCls} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted">รัศมี (เมตร)</span>
-          <input name={`${prefix}_geo_radius`} value={radius} onChange={(e) => setRadius(e.target.value)} disabled={!canEdit} inputMode="numeric" placeholder="150" className={fieldCls} />
-        </label>
-      </div>
-      {canEdit && (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={useHere}
-            disabled={locating}
-            className="rounded-[20px] border border-hairline px-3 py-1.5 text-xs text-ink-soft transition-transform active:scale-[0.97] hover:text-ink disabled:opacity-50"
-          >
-            📍 {locating ? "กำลังหาตำแหน่ง…" : "ใช้ตำแหน่งปัจจุบัน"}
-          </button>
-          {geoErr && <StatusBadge variant="bad">{geoErr}</StatusBadge>}
-        </div>
-      )}
-      <p className="mt-2 text-xs text-muted">ว่างทั้ง 3 ช่อง = ปิด geofence · หาพิกัดจาก Google Maps (คลิกขวาที่ร้าน → คัดลอกพิกัด) หรือกด “ใช้ตำแหน่งปัจจุบัน” ตอนอยู่ที่ร้าน</p>
+      <p className="text-xs text-muted">
+        พิกัดและรัศมีตั้งที่หน้า{" "}
+        <Link href="/sites" className="text-accent hover:underline">
+          สาขา
+        </Link>{" "}
+        — บริษัทหนึ่งมีได้หลายจุด (หน้าร้าน โกดัง ฯลฯ){" "}
+        {branch.siteCount === 0 && "· ยังไม่มีจุด = พนักงานลงเวลาที่ไหนก็ได้"}
+      </p>
       <label className="mt-3 flex items-center gap-2 text-sm text-ink">
         <input type="checkbox" name={`${prefix}_require_selfie`} checked={selfie} onChange={(e) => setSelfie(e.target.checked)} disabled={!canEdit} className="h-4 w-4 accent-[var(--accent)]" />
         🤳 บังคับถ่ายเซลฟี่ตอนลงเวลาเข้า

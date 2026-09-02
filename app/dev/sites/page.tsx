@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SitesView, type SiteBranchOption } from "@/components/sites/SitesView";
-import { validateSite, type SiteActionResult, type SiteRow } from "@/lib/branch/sites";
+import { validateSite, type LegacyGeoBranch, type SiteActionResult, type SiteRow } from "@/lib/branch/sites";
 
 /** พรีวิวหน้าสาขา/จุดลงเวลา (sites) — sample data · ใช้ validateSite ตัวจริงเพื่อให้ error ตรงกับของจริง */
 
@@ -19,8 +19,22 @@ const SITES: SiteRow[] = [
   { id: "s4", branchId: "b2", branchName: BRANCHES[1].name, name: "จุดเก่า (ปิดใช้)", kind: "other", lat: 13.9801, lng: 100.6099, radiusM: 80, isActive: false },
 ];
 
+const LEGACY: LegacyGeoBranch[] = [{ id: "b3", name: BRANCHES[2].name, lat: 13.9812, lng: 100.7712, radiusM: 150 }];
+
 export default function DevSitesPage() {
   const [sites, setSites] = useState(SITES);
+  const [legacy, setLegacy] = useState(LEGACY);
+
+  const mockImport: (formData: FormData) => Promise<SiteActionResult> = async (formData) => {
+    const id = String(formData.get("branch_id") ?? "");
+    const b = legacy.find((x) => x.id === id);
+    if (!b) {
+      return { ok: false, error: "บริษัทนี้ไม่มีพิกัดเก่าให้ย้าย" };
+    }
+    setSites((prev) => [...prev, { id: `imported-${b.id}`, branchId: b.id, branchName: b.name, name: b.name, kind: "main", lat: b.lat, lng: b.lng, radiusM: b.radiusM, isActive: true }]);
+    setLegacy((prev) => prev.filter((x) => x.id !== id));
+    return { ok: true, message: `ย้ายพิกัดของ ${b.name} มาเป็นจุดลงเวลาแล้ว` };
+  };
 
   const mockSave: (formData: FormData) => Promise<SiteActionResult> = async (formData) => {
     const parsed = validateSite({
@@ -42,5 +56,5 @@ export default function DevSitesPage() {
     return { ok: true, message: id ? "บันทึกจุดลงเวลาแล้ว" : "เพิ่มจุดลงเวลาแล้ว" };
   };
 
-  return <SitesView sites={sites} branches={BRANCHES} action={mockSave} />;
+  return <SitesView sites={sites} branches={BRANCHES} legacyGeo={legacy} action={mockSave} importAction={mockImport} />;
 }
