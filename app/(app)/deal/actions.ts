@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { canChangeLeadStage, isLeadStage, validateLeadStageChange } from "@/lib/deal/lead-stage";
 import { getActiveBranches } from "@/lib/reference/cache";
 import { canManageDeal, canVoidDeal, isVoidableStage, validateDealCustomer, type DealActionResult } from "@/lib/deal/deals";
 import { advanceBlockReason, isRegStage, regNext, regPrev, stageTimestampField, substatusOptions, type PayMethod } from "@/lib/deal/stage";
@@ -438,4 +439,57 @@ export async function voidDeal(formData: FormData): Promise<DealActionResult> {
 
   revalidatePath("/deal");
   return { ok: true };
+}
+
+/**
+ * เปลี่ยนขั้นลูกค้าก่อนขาย + บันทึกประวัติ (FAM-1119 · fixlist ข้อ 07)
+ * ประวัติเขียนแบบ best-effort — เปลี่ยนขั้นสำเร็จแล้วประวัติล้ม ไม่ควรย้อนสถานะกลับ
+ */
+export async function updateLeadStage(formData: FormData): Promise<DealActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canChangeLeadStage(user.roleCodes)) {
+    return { ok: false, error: "ไม่มีสิทธิ์เปลี่ยนขั้นลูกค้า" };
+  }
+
+  const customerId = String(formData.get("customer_id") ?? "").trim();
+  const to = String(formData.get("to_stage") ?? "").trim();
+  const note = String(formData.get("note") ?? "").trim() || null;
+
+  const supabase = await createServerSupabase();
+  const { data: cust } = await supabase.from("customer").select("id, stage").eq("id", customerId).maybeSingle();
+  if (!cust) {
+    return { ok: false, error: "ไม่พบลูกค้า" };
+  }
+  const from = isLeadStage(cust.stage) ? cust.stage : "เข้ามาดูรถ";
+
+  const parsed = validateLeadStageChange({ customerId, from, to });
+  if (!parsed.ok) {
+    return { ok: false, error: parsed.error };
+  }
+
+  // เขียนแบบมีเงื่อนไข: ขั้นต้องยังเป็นค่าเดิม กันสองคนกดพร้อมกันแล้วทับกัน
+  const { data: updated, error } = await supabase
+    .from("customer")
+    .update({ stage: parsed.value.to })
+    .eq("id", customerId)
+    .eq("stage", cust.stage)
+    .select("id");
+  if (error || !updated || updated.length === 0) {
+    return { ok: false, error: "ขั้นเพิ่งถูกเปลี่ยน กรุณาลองใหม่" };
+  }
+
+  await supabase.from("lead_stage_history").insert({
+    customer_id: customerId,
+    from_stage: parsed.value.from,
+    to_stage: parsed.value.to,
+    changed_by: user.id,
+    note,
+  });
+
+  revalidatePath("/deal");
+  revalidatePath("/flow");
+  return { ok: true, message: `ย้ายไปขั้น ${parsed.value.to} แล้ว` };
 }
