@@ -610,6 +610,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      next_service_reminder: {
+        Args: { p_job_id: string };
+        Returns: string | null;
+      };
       meters_between: {
         Args: { la1: number; ln1: number; la2: number; ln2: number };
         Returns: number;

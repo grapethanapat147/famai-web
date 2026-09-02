@@ -28,10 +28,12 @@ export const SETTING_FIELDS: readonly SettingField[] = [
 
   { key: "vat_pct", label: "ภาษีมูลค่าเพิ่ม", group: "ขายและการเงิน", kind: "percent" },
   { key: "finance_terms", label: "จำนวนงวดผ่อน", group: "ขายและการเงิน", kind: "int-list", unit: "งวด", help: "เช่น 12, 24, 36, 48" },
+  { key: "ar_due_days", label: "ไฟแนนซ์ต้องโอนภายใน", group: "ขายและการเงิน", kind: "number", unit: "วัน", help: "ใช้ตั้งวันครบกำหนดของเงินค้างรับตอนขายเงินผ่อน" },
   { key: "freebie_is_cost", label: "นับของแถมเป็นต้นทุน (หักจากกำไร)", group: "ขายและการเงิน", kind: "bool" },
 
   { key: "follow_up_cadence", label: "รอบติดตามลูกค้า", group: "ลูกค้าและบริการ", kind: "int-list", unit: "วัน", help: "เช่น 7, 30, 90" },
   { key: "service_km", label: "ระยะเช็กระยะ", group: "ลูกค้าและบริการ", kind: "int-list", unit: "กม.", help: "เช่น 500, 1000, 4000, 8000" },
+  { key: "service_first_days", label: "นัดเช็กระยะภายใน", group: "ลูกค้าและบริการ", kind: "number", unit: "วัน", help: "นับจากวันขาย / วันปิดใบงานซ่อมรอบก่อน" },
 
   { key: "work_start", label: "เวลาเข้างาน", group: "พนักงานและเงินเดือน", kind: "time" },
   { key: "work_end", label: "เวลาเลิกงาน", group: "พนักงานและเงินเดือน", kind: "time" },
