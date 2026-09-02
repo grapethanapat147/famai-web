@@ -7,9 +7,13 @@ import { formatBaht } from "@/lib/format";
 import type { PayrollActionResult } from "@/app/(app)/payroll/actions";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { toCsv } from "@/lib/report/csv";
+import { bankFileRows, buildBankFile, ssnFileRows, ssnSummary } from "@/lib/payroll/exports";
 import { payrollTotals, type PayslipRow, isPeriodLocked, periodStatusVariant, type PeriodStatus } from "@/lib/payroll/payroll";
 import { PrintableEmployeePayslip } from "@/components/payroll/PrintableEmployeePayslip";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
+
+/** ข้อมูลนำส่ง/โอนต่อพนักงาน — แยกจาก PayslipRow เพราะเป็นข้อมูลอ่อนไหว (FAM-1124) */
+export type PayoutInfo = { employeeId: string; ssnNo: string | null; bankCode: string | null; bankAccount: string | null };
 
 const selectClass =
   "rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink";
@@ -31,6 +35,7 @@ export function PayrollView({
   periodStatus = null,
   canClose = false,
   periodAction,
+  payoutInfo = [],
 }: {
   rows: PayslipRow[];
   month: string;
@@ -40,6 +45,8 @@ export function PayrollView({
   periodStatus?: PeriodStatus | null;
   canClose?: boolean;
   periodAction?: (formData: FormData) => Promise<PayrollActionResult>;
+  /** เลขประกันสังคม + บัญชีธนาคาร (FAM-1124) — ว่างเมื่อผู้ใช้ไม่มีสิทธิ์ดูเงิน */
+  payoutInfo?: PayoutInfo[];
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -47,6 +54,7 @@ export function PayrollView({
   const [printTick, setPrintTick] = useState(0);
   const [periodBusy, setPeriodBusy] = useState(false);
   const [periodMsg, setPeriodMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [exportMsg, setExportMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const locked = isPeriodLocked(periodStatus);
 
@@ -89,6 +97,64 @@ export function PayrollView({
     : rows;
   const totals = payrollTotals(shown);
 
+  const infoById = new Map(payoutInfo.map((p) => [p.employeeId, p]));
+
+  function download(name: string, table: (string | number)[][]) {
+    const blob = new Blob(["\ufeff" + toCsv(table)], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /** ข้อ 13 — ใบสรุปนำส่งประกันสังคม */
+  function exportSsn() {
+    const summary = ssnSummary(
+      shown.map((r) => ({
+        employeeId: r.employeeId,
+        name: r.name,
+        ssnNo: infoById.get(r.employeeId)?.ssnNo ?? null,
+        base: r.base,
+        ssn: r.ssn,
+      })),
+    );
+    if (summary.employeeCount === 0) {
+      setExportMsg({ ok: false, text: "งวดนี้ไม่มีใครถูกหักประกันสังคม" });
+      return;
+    }
+    download(`ssn-${month}.csv`, ssnFileRows(summary));
+    setExportMsg(
+      summary.missingSsnNo.length > 0
+        ? { ok: false, text: `ดาวน์โหลดแล้ว แต่ยังขาดเลขประกันสังคม ${summary.missingSsnNo.length} คน (${summary.missingSsnNo.map((r) => r.name).join(", ")}) — ยื่นไม่ผ่านจนกว่าจะกรอก` }
+        : { ok: true, text: `ใบนำส่ง ${summary.employeeCount} คน · นำส่งรวม ${formatBaht(summary.grandTotal)}` },
+    );
+  }
+
+  /** ข้อ 14 — ไฟล์โอนเงินเดือนส่งธนาคาร */
+  function exportBank() {
+    const result = buildBankFile(
+      shown.map((r) => ({
+        employeeId: r.employeeId,
+        name: r.name,
+        bankCode: infoById.get(r.employeeId)?.bankCode ?? null,
+        bankAccount: infoById.get(r.employeeId)?.bankAccount ?? null,
+        net: r.net,
+      })),
+    );
+    if (result.ready.length === 0) {
+      setExportMsg({ ok: false, text: "ไม่มีใครโอนได้ — ยังไม่ได้กรอกเลขบัญชี (แก้ที่หน้าพนักงาน)" });
+      return;
+    }
+    download(`bank-transfer-${month}.csv`, bankFileRows(result.ready));
+    setExportMsg(
+      result.skipped.length > 0
+        ? { ok: false, text: `โอนได้ ${result.ready.length} คน · ต้องจ่ายมือ ${result.skipped.length} คน (${result.skipped.map((s) => `${s.row.name}: ${s.reason}`).join(" · ")})` }
+        : { ok: true, text: `ไฟล์โอน ${result.ready.length} คน · รวม ${formatBaht(result.total)}` },
+    );
+  }
+
   function exportCsv() {
     const header = ["พนักงาน", "ตำแหน่ง", "ฐานเงินเดือน", "OT", "คอมมิชชั่น", "ประกันสังคม", "เงินสุทธิ"];
     const body = shown.map((r) => [r.name, r.position, r.base, r.otAmount, r.commission, r.ssn, r.net]);
@@ -105,7 +171,7 @@ export function PayrollView({
 
   return (
     <div className="mx-auto max-w-5xl">
-      {(locked || periodMsg) && (
+      {(locked || periodMsg || exportMsg) && (
         <div className="mb-3 flex flex-col gap-2 print:hidden">
           {locked && (
             <p className="rounded-[10px] border border-dashed border-hairline px-3 py-2 text-sm text-ink-soft">
@@ -113,6 +179,7 @@ export function PayrollView({
             </p>
           )}
           {periodMsg && <StatusBadge variant={periodMsg.ok ? "good" : "bad"}>{periodMsg.text}</StatusBadge>}
+          {exportMsg && <StatusBadge variant={exportMsg.ok ? "good" : "warn"}>{exportMsg.text}</StatusBadge>}
         </div>
       )}
 
@@ -160,6 +227,16 @@ export function PayrollView({
                   </button>
                 </>
               )}
+            </>
+          )}
+          {canSeeMoney && payoutInfo.length > 0 && (
+            <>
+              <button type="button" onClick={exportSsn} className="rounded-[24px] border border-hairline px-4 py-2 text-sm text-ink-soft">
+                ใบนำส่ง ปกส.
+              </button>
+              <button type="button" onClick={exportBank} className="rounded-[24px] border border-hairline px-4 py-2 text-sm text-ink-soft">
+                ไฟล์โอนธนาคาร
+              </button>
             </>
           )}
           <button type="button" onClick={() => window.print()} className="rounded-[24px] border border-hairline px-4 py-2 text-sm text-ink-soft">

@@ -24,6 +24,14 @@ async function mockPeriod(formData: FormData) {
   return { ok: true as const, message: action === "close" ? "ปิดงวดแล้ว — แช่ยอดสลิป 5 คน" : "บันทึกแล้ว" };
 }
 
+const PAYOUT = [
+  { employeeId: "1", ssnNo: "1234567890123", bankCode: "004", bankAccount: "123-4-56789-0" },
+  { employeeId: "2", ssnNo: null, bankCode: "014", bankAccount: "9876543210" }, // ขาดเลข ปกส.
+  { employeeId: "3", ssnNo: "9876543210987", bankCode: null, bankAccount: null }, // ไม่มีบัญชี ต้องจ่ายมือ
+  { employeeId: "4", ssnNo: "1112223334445", bankCode: "004", bankAccount: "555-1-23456-7" },
+  { employeeId: "5", ssnNo: "5556667778889", bankCode: "025", bankAccount: "0012345678" },
+];
+
 export default function DevPayrollPage() {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 lg:px-6">
@@ -32,6 +40,7 @@ export default function DevPayrollPage() {
         <p className="mt-1 text-ink-soft">sample data — สลิปคำนวณสด (ฐาน + OT + คอม − ปกส.) · เปลี่ยนงวด · ส่งออก CSV / พิมพ์</p>
       </header>
       <PayrollView
+      payoutInfo={PAYOUT}
       periodStatus="ปิดงวดแล้ว"
       canClose
       periodAction={mockPeriod}
