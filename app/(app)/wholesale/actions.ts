@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import { sellWholesale } from "@/lib/rpc";
+import { sellWholesale, voidWholesaleOrder } from "@/lib/rpc";
+import { getSettingsWith } from "@/lib/settings";
+import { amountBreakdown, canManageAccount } from "@/lib/acct/documents";
 import {
   canManageWholesaleCompanies,
   canSellWholesale,
@@ -118,4 +120,151 @@ export async function saveWholesaleCompany(formData: FormData): Promise<Wholesal
 
   revalidatePath("/wholesale");
   return { ok: true, message: companyId ? "บันทึกร้านค้าแล้ว" : "เพิ่มร้านค้าแล้ว" };
+}
+
+/**
+ * ออกใบกำกับภาษีของบิลขายส่ง (FAM-1128)
+ * ผู้ซื้อ = ร้านค้าปลายทาง · ยอด = ยอดรวมทั้งบิล · รายการ = รุ่นรถทุกคันในบิล
+ * เลขเอกสารดึงจากชุด TAXINV เดียวกับขายปลีก (เล่มใบกำกับเป็นชุดเดียว)
+ */
+export async function issueWholesaleTaxInvoice(formData: FormData): Promise<WholesaleActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canManageAccount(user.roleCodes)) {
+    return { ok: false, error: "ไม่มีสิทธิ์ออกเอกสารบัญชี" };
+  }
+
+  const orderId = String(formData.get("order_id") ?? "").trim();
+  if (!orderId) {
+    return { ok: false, error: "เลือกบิลก่อน" };
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: order } = await supabase
+    .from("wholesale_order")
+    .select("id, branch_id, company_id, order_no, total, voided_at")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (!order || order.voided_at) {
+    return { ok: false, error: "ไม่พบบิล (หรือถูกยกเลิกแล้ว)" };
+  }
+
+  const [{ data: company }, { data: branch }, { data: lines }] = await Promise.all([
+    supabase.from("wholesale_company").select("name, address, tax_id, phone").eq("id", order.company_id).maybeSingle(),
+    supabase.from("branch").select("name, address, tax_id, phone").eq("id", order.branch_id).maybeSingle(),
+    supabase.from("wholesale_order_line").select("unit_id").eq("order_id", orderId),
+  ]);
+  if (!company) {
+    return { ok: false, error: "ไม่พบร้านค้าของบิลนี้" };
+  }
+  if (!company.tax_id || company.tax_id.trim() === "") {
+    return { ok: false, error: `ยังไม่ได้กรอกเลขผู้เสียภาษีของ ${company.name} — กรอกที่แท็บร้านค้าก่อนออกใบกำกับ` };
+  }
+
+  const { data: existing } = await supabase
+    .from("document")
+    .select("doc_no")
+    .eq("wholesale_order_id", orderId)
+    .eq("doc_type", "TAXINV")
+    .is("voided_at", null)
+    .maybeSingle();
+  if (existing) {
+    return { ok: false, error: `ออกใบกำกับของบิลนี้ไปแล้ว (${existing.doc_no})` };
+  }
+
+  const unitIds = (lines ?? []).map((l) => l.unit_id);
+  const { data: units } = unitIds.length
+    ? await supabase.from("motorcycle_unit").select("id, variant_id, engine_no, frame_no").in("id", unitIds)
+    : { data: [] };
+  const { data: variants } = await supabase.from("model_variant").select("id, model_name");
+  const variantName = new Map((variants ?? []).map((v) => [v.id, v.model_name]));
+  const vehicle = (units ?? [])
+    .map((u) => `${variantName.get(u.variant_id) ?? "รถ"} (${u.engine_no || u.frame_no || "—"})`)
+    .join(", ");
+
+  const { data: docNo, error: noError } = await supabase.rpc("next_doc_no", {
+    p_branch: order.branch_id,
+    p_type: "TAXINV",
+    p_year: beYear(),
+  });
+  if (noError || !docNo) {
+    return { ok: false, error: "ออกเลขเอกสารไม่สำเร็จ" };
+  }
+
+  const settings = await getSettingsWith(supabase);
+  const amt = amountBreakdown(Number(order.total ?? 0), settings.vat_pct);
+
+  const { error } = await supabase.from("document").insert({
+    branch_id: order.branch_id,
+    doc_type: "TAXINV",
+    part: "full",
+    doc_no: docNo,
+    doc_date: todayISO(),
+    wholesale_order_id: orderId,
+    amount_base: amt.base,
+    amount_vat: amt.vat,
+    amount_total: amt.total,
+    seller_snapshot: {
+      name: branch?.name ?? "บริษัท",
+      address: branch?.address ?? null,
+      taxId: branch?.tax_id ?? null,
+      phone: branch?.phone ?? null,
+    },
+    buyer_snapshot: {
+      name: company.name,
+      address: company.address ?? null,
+      taxId: company.tax_id,
+      phone: company.phone ?? null,
+      item: { vehicle: vehicle || `ขายส่ง ${order.order_no}`, engineNo: "", frameNo: "" },
+    },
+  });
+  if (error) {
+    return { ok: false, error: "บันทึกใบกำกับไม่สำเร็จ — คุณอาจไม่มีสิทธิ์ในบริษัทนี้" };
+  }
+
+  revalidatePath("/wholesale");
+  revalidatePath("/acct");
+  revalidatePath("/taxinv");
+  return { ok: true, message: `ออกใบกำกับแล้ว — ${docNo}` };
+}
+
+/** ยกเลิกบิลขายส่ง (FAM-1128) — RPC คืนรถเข้าสต๊อกและล้างเงินค้างรับให้ในทรานแซกชันเดียว */
+export async function voidWholesale(formData: FormData): Promise<WholesaleActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!canManageWholesaleCompanies(user.roleCodes)) {
+    return { ok: false, error: "ยกเลิกบิลขายส่งได้เฉพาะผู้ดูแล / ผู้บริหาร" };
+  }
+
+  const orderId = String(formData.get("order_id") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!orderId) {
+    return { ok: false, error: "ไม่พบบิล" };
+  }
+  if (reason === "") {
+    return { ok: false, error: "ระบุเหตุผลที่ยกเลิก" };
+  }
+
+  const supabase = await createServerSupabase();
+  try {
+    const res = await voidWholesaleOrder(supabase, orderId, reason);
+    revalidatePath("/wholesale");
+    revalidatePath("/stock");
+    revalidatePath("/ar");
+    return { ok: true, message: `ยกเลิก ${res.order_no} แล้ว — คืนรถเข้าสต๊อก ${res.units_restored} คัน` };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "ยกเลิกบิลไม่สำเร็จ" };
+  }
+}
+
+/** ปี พ.ศ. ของวันนี้ (เขตเวลาไทย) */
+function beYear(): number {
+  return Number(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric" }).format(new Date())) + 543;
+}
+function todayISO(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date());
 }

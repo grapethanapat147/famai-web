@@ -11,7 +11,7 @@ import {
   type WholesaleUnit,
 } from "@/lib/wholesale/wholesale";
 import { WholesaleView } from "@/components/wholesale/WholesaleView";
-import { recordWholesaleSale, saveWholesaleCompany } from "./actions";
+import { issueWholesaleTaxInvoice, recordWholesaleSale, saveWholesaleCompany, voidWholesale } from "./actions";
 
 export const metadata = { title: "ขายส่ง (B2B) — Famai Motor Group" };
 
@@ -47,6 +47,16 @@ export default async function WholesalePage() {
   ]);
 
   const orderIds = (ordersRes.data ?? []).map((o) => o.id);
+  // ใบกำกับของบิลขายส่ง (FAM-1128) — โชว์ในตารางว่าออกแล้วหรือยัง
+  const { data: docRows } = orderIds.length
+    ? await supabase
+        .from("document")
+        .select("wholesale_order_id, doc_no")
+        .eq("doc_type", "TAXINV")
+        .is("voided_at", null)
+        .in("wholesale_order_id", orderIds)
+    : { data: [] };
+  const docByOrder = new Map((docRows ?? []).map((d) => [d.wholesale_order_id as string, d.doc_no]));
   const { data: lineRows } = orderIds.length
     ? await supabase.from("wholesale_order_line").select("order_id").in("order_id", orderIds)
     : { data: [] };
@@ -73,6 +83,7 @@ export default async function WholesalePage() {
     gross: o.gross_profit != null ? Number(o.gross_profit) : null,
     salespersonName: (o.salesperson_id && userName.get(o.salesperson_id)) || "—",
     voided: o.voided_at != null,
+    taxInvoiceNo: docByOrder.get(o.id) ?? null,
   }));
   const orders = stripMoneyFields(rawOrders, see, ["gross"]) as WholesaleOrderRow[];
 
@@ -110,6 +121,8 @@ export default async function WholesalePage() {
       canSeeMoney={see}
       sellAction={recordWholesaleSale}
       companyAction={saveWholesaleCompany}
+      docAction={issueWholesaleTaxInvoice}
+      voidAction={voidWholesale}
     />
   );
 }

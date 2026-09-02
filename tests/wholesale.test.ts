@@ -158,8 +158,8 @@ describe("validateWholesaleCompany", () => {
 
 describe("filterWholesaleOrders", () => {
   const rows: WholesaleOrderRow[] = [
-    { id: "1", orderNo: "FMG-WHOLESALE-2569-00001", companyName: "ร้านรังสิต", soldAt: "2026-09-02", units: 3, total: 160_000, gross: 12_000, salespersonName: "สมชาย", voided: false },
-    { id: "2", orderNo: "FMG-WHOLESALE-2569-00002", companyName: "ร้านลำลูกกา", soldAt: "2026-08-20", units: 1, total: 55_000, gross: 5_000, salespersonName: "มานี", voided: false },
+    { id: "1", orderNo: "FMG-WHOLESALE-2569-00001", companyName: "ร้านรังสิต", soldAt: "2026-09-02", units: 3, total: 160_000, gross: 12_000, salespersonName: "สมชาย", voided: false, taxInvoiceNo: null },
+    { id: "2", orderNo: "FMG-WHOLESALE-2569-00002", companyName: "ร้านลำลูกกา", soldAt: "2026-08-20", units: 1, total: 55_000, gross: 5_000, salespersonName: "มานี", voided: false, taxInvoiceNo: "FMG-TAXINV-2569-00009" },
   ];
 
   it("ค้นด้วยเลขบิล / ร้านค้า / พนักงาน", () => {

@@ -32,6 +32,8 @@ export function WholesaleView({
   canSeeMoney,
   sellAction,
   companyAction,
+  docAction,
+  voidAction,
 }: {
   orders: WholesaleOrderRow[];
   companies: WholesaleCompany[];
@@ -41,6 +43,9 @@ export function WholesaleView({
   canSeeMoney: boolean;
   sellAction: (formData: FormData) => Promise<WholesaleActionResult>;
   companyAction: (formData: FormData) => Promise<WholesaleActionResult>;
+  /** ออกใบกำกับ / ยกเลิกบิล (FAM-1128) */
+  docAction?: (formData: FormData) => Promise<WholesaleActionResult>;
+  voidAction?: (formData: FormData) => Promise<WholesaleActionResult>;
 }) {
   const [tab, setTab] = useState<"orders" | "companies">("orders");
   const [search, setSearch] = useState("");
@@ -48,6 +53,8 @@ export function WholesaleView({
   const [selling, setSelling] = useState(false);
   const [editingCompany, setEditingCompany] = useState<WholesaleCompany | null>(null);
   const [addingCompany, setAddingCompany] = useState(false);
+  const [issuingDoc, setIssuingDoc] = useState<WholesaleOrderRow | null>(null);
+  const [voiding, setVoiding] = useState<WholesaleOrderRow | null>(null);
 
   const rows = filterWholesaleOrders(orders, { search, fromDate });
   const activeCompanies = companies.filter((c) => c.isActive);
@@ -70,6 +77,48 @@ export function WholesaleView({
     { key: "gross", header: "กำไร", align: "right", render: (o) => <Money value={o.gross} canSee={canSeeMoney} /> },
     { key: "when", header: "วันที่", render: (o) => <span className="text-muted">{formatThaiDate(o.soldAt)}</span> },
     { key: "by", header: "พนักงาน", render: (o) => <span className="text-muted">{o.salespersonName}</span> },
+    {
+      key: "doc",
+      header: "ใบกำกับ",
+      render: (o) =>
+        o.taxInvoiceNo ? (
+          <span className="font-mono text-xs text-ink-soft">{o.taxInvoiceNo}</span>
+        ) : o.voided ? (
+          <span className="text-muted">—</span>
+        ) : (
+          <span className="text-xs text-muted">ยังไม่ออก</span>
+        ),
+    },
+    {
+      key: "act",
+      header: "",
+      align: "right",
+      render: (o) =>
+        o.voided ? (
+          <span className="text-xs text-muted">ยกเลิกแล้ว</span>
+        ) : (
+          <span className="flex flex-wrap justify-end gap-1.5">
+            {docAction && !o.taxInvoiceNo && (
+              <button
+                type="button"
+                onClick={() => setIssuingDoc(o)}
+                className="rounded-[20px] border border-hairline px-3 py-1.5 text-xs text-ink-soft transition-transform active:scale-[0.97] hover:text-ink"
+              >
+                ออกใบกำกับ
+              </button>
+            )}
+            {voidAction && canManageCompanies && (
+              <button
+                type="button"
+                onClick={() => setVoiding(o)}
+                className="rounded-[20px] border border-hairline px-3 py-1.5 text-xs text-accent transition-transform active:scale-[0.97]"
+              >
+                ยกเลิก
+              </button>
+            )}
+          </span>
+        ),
+    },
   ];
 
   return (
@@ -159,6 +208,31 @@ export function WholesaleView({
           canSeeMoney={canSeeMoney}
           action={sellAction}
           onClose={() => setSelling(false)}
+        />
+      )}
+      {issuingDoc && docAction && (
+        <ConfirmOrderModal
+          key={`doc-${issuingDoc.id}`}
+          order={issuingDoc}
+          title={`ออกใบกำกับภาษี — ${issuingDoc.orderNo}`}
+          body={`ออกใบกำกับให้ ${issuingDoc.companyName} ยอดรวม ${formatBaht(issuingDoc.total)} · ผู้ซื้อบนเอกสารคือร้านค้า`}
+          cta="ออกใบกำกับ"
+          field="order_id"
+          action={docAction}
+          onClose={() => setIssuingDoc(null)}
+        />
+      )}
+      {voiding && voidAction && (
+        <ConfirmOrderModal
+          key={`void-${voiding.id}`}
+          order={voiding}
+          title={`ยกเลิกบิล — ${voiding.orderNo}`}
+          body={`ยกเลิกแล้วรถ ${voiding.units} คันจะกลับเข้าสต๊อก และเงินค้างรับของบิลนี้ที่ยังไม่ได้รับเงินจะถูกล้าง`}
+          cta="ยกเลิกบิล"
+          field="order_id"
+          needReason
+          action={voidAction}
+          onClose={() => setVoiding(null)}
         />
       )}
       {(addingCompany || editingCompany) && (
@@ -497,6 +571,81 @@ function CompanyModal({
           </button>
           <button type="button" onClick={submit} disabled={busy} className="rounded-[24px] bg-ink px-4 py-2 text-sm font-medium text-card disabled:opacity-50">
             {busy ? "กำลังบันทึก…" : company ? "บันทึก" : "เพิ่มร้านค้า"}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/** ยืนยันการกระทำกับบิลขายส่ง (ออกใบกำกับ / ยกเลิก) — ใช้ร่วมกันสองงาน */
+function ConfirmOrderModal({
+  order,
+  title,
+  body,
+  cta,
+  field,
+  needReason = false,
+  action,
+  onClose,
+}: {
+  order: WholesaleOrderRow;
+  title: string;
+  body: string;
+  cta: string;
+  field: string;
+  needReason?: boolean;
+  action: (formData: FormData) => Promise<WholesaleActionResult>;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    if (busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const fd = new FormData();
+    fd.set(field, order.id);
+    if (needReason) {
+      fd.set("reason", reason);
+    }
+    const res = await action(fd);
+    setBusy(false);
+    if (res.ok) {
+      router.refresh();
+      onClose();
+    } else {
+      setError(res.error);
+    }
+  }
+
+  return (
+    <Modal open onClose={onClose} title={title}>
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-ink-soft">{body}</p>
+        {needReason && (
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-muted">เหตุผลที่ยกเลิก *</span>
+            <input value={reason} onChange={(e) => setReason(e.target.value)} className={`${inputCls} w-full`} />
+          </label>
+        )}
+        {error && <StatusBadge variant="bad">{error}</StatusBadge>}
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-[24px] border border-hairline px-4 py-2 text-sm text-ink-soft">
+            ปิด
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={busy || (needReason && reason.trim() === "")}
+            className="rounded-[24px] bg-ink px-4 py-2 text-sm font-medium text-card disabled:opacity-50"
+          >
+            {busy ? "กำลังบันทึก…" : cta}
           </button>
         </div>
       </div>

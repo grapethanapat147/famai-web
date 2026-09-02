@@ -138,3 +138,16 @@ export async function sellWholesale(
   }
   return data as unknown as SellWholesaleResult;
 }
+
+/** ยกเลิกบิลขายส่ง — คืนรถเข้าสต๊อก + ล้างเงินค้างรับที่ยังไม่ได้รับเงิน (FAM-1128) */
+export async function voidWholesaleOrder(
+  client: TypedSupabaseClient,
+  orderId: string,
+  reason: string,
+): Promise<{ order_no: string; units_restored: number }> {
+  const { data, error } = await client.rpc("void_wholesale_order", { p_order_id: orderId, p_reason: reason });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data as unknown as { order_no: string; units_restored: number };
+}

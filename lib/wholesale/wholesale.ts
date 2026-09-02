@@ -141,6 +141,7 @@ export type WholesaleOrderRow = {
   gross: number | null;
   salespersonName: string;
   voided: boolean;
+  taxInvoiceNo: string | null; // ออกใบกำกับของบิลนี้แล้วหรือยัง (FAM-1128)
 };
 
 /** กรองบิลขายส่งด้วยคำค้น (เลขบิล/ร้านค้า/พนักงาน) + ตั้งแต่วันที่ */

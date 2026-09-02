@@ -28,9 +28,13 @@ const UNITS: WholesaleUnit[] = [
 ];
 
 const ORDERS: WholesaleOrderRow[] = [
-  { id: "o1", orderNo: "FMG-WHOLESALE-2569-00002", companyName: "ร้านมอเตอร์ไซค์รังสิต", soldAt: "2026-09-01", units: 3, total: 171_000, gross: 15_000, salespersonName: "สมชาย ใจดี", voided: false },
-  { id: "o2", orderNo: "FMG-WHOLESALE-2569-00001", companyName: "ลำลูกกามอเตอร์", soldAt: "2026-08-25", units: 1, total: 59_000, gross: 11_000, salespersonName: "มานี รักษ์ดี", voided: false },
+  { id: "o1", orderNo: "FMG-WHOLESALE-2569-00002", companyName: "ร้านมอเตอร์ไซค์รังสิต", soldAt: "2026-09-01", units: 3, total: 171_000, gross: 15_000, salespersonName: "สมชาย ใจดี", taxInvoiceNo: "FMG-TAXINV-2569-00007", voided: false },
+  { id: "o2", orderNo: "FMG-WHOLESALE-2569-00001", companyName: "ลำลูกกามอเตอร์", soldAt: "2026-08-25", units: 1, total: 59_000, gross: 11_000, salespersonName: "มานี รักษ์ดี", taxInvoiceNo: null, voided: false },
 ];
+
+async function mockDoc(): Promise<WholesaleActionResult> {
+  return { ok: true, message: "ออกใบกำกับแล้ว — FMG-TAXINV-2569-00010" };
+}
 
 export default function DevWholesalePage() {
   const [orders, setOrders] = useState(ORDERS);
@@ -54,11 +58,26 @@ export default function DevWholesalePage() {
         total,
         gross: null,
         salespersonName: "ฉัน",
+        taxInvoiceNo: null,
         voided: false,
       },
       ...prev,
     ]);
     return { ok: true, orderNo: no, message: `บันทึกขายส่งแล้ว — ${no}` };
+  };
+
+  const mockVoid: (formData: FormData) => Promise<WholesaleActionResult> = async (formData) => {
+    const id = String(formData.get("order_id") ?? "");
+    const reason = String(formData.get("reason") ?? "").trim();
+    if (reason === "") {
+      return { ok: false, error: "ระบุเหตุผลที่ยกเลิก" };
+    }
+    const o = orders.find((x) => x.id === id);
+    if (o?.taxInvoiceNo) {
+      return { ok: false, error: "บิลนี้ออกเอกสารไปแล้ว — ยกเลิกเอกสารก่อนจึงยกเลิกบิลได้" };
+    }
+    setOrders((prev) => prev.map((x) => (x.id === id ? { ...x, voided: true } : x)));
+    return { ok: true, message: `ยกเลิก ${o?.orderNo} แล้ว — คืนรถเข้าสต๊อก ${o?.units ?? 0} คัน` };
   };
 
   const mockCompany: (formData: FormData) => Promise<WholesaleActionResult> = async (formData) => {
@@ -93,6 +112,8 @@ export default function DevWholesalePage() {
       canSeeMoney
       sellAction={mockSell}
       companyAction={mockCompany}
+      docAction={mockDoc}
+      voidAction={mockVoid}
     />
   );
 }
