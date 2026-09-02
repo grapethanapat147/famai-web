@@ -42,6 +42,7 @@ export const MENU: MenuGroup[] = [
       { key: "deal", title: "ลูกค้าและดีล", subtitle: "ขาย ไฟแนนซ์ ทะเบียน จบในหน้าเดียว", icon: "users", roles: ["admin", "manager", "acct", "sales"] },
       { key: "registration", title: "งานทะเบียน", subtitle: "คิวจดทะเบียน/ป้าย เรียงตามค้างนาน", icon: "card", roles: ["admin", "manager", "acct"] },
       { key: "acct", title: "บัญชี", subtitle: "ใบเสร็จรับเงิน / ใบกำกับภาษี", icon: "file", roles: ["admin", "manager", "acct"] },
+      { key: "taxinv", title: "ใบกำกับภาษี", subtitle: "ออก/แก้ไข/พิมพ์ ใบกำกับภาษี", icon: "files", roles: ["admin", "manager", "acct"] },
       { key: "ar", title: "เงินค้างรับ", subtitle: "ยอดที่ยังไม่ได้รับ", icon: "cash", roles: ["admin", "manager", "acct"] },
     ],
   },
