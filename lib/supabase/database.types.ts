@@ -529,6 +529,44 @@ type Freebie = {
   min_qty: number;
 };
 
+type WholesaleCompanyRow = {
+  id: string;
+  branch_id: string | null;
+  name: string;
+  tax_id: string | null;
+  address: string | null;
+  phone: string | null;
+  contact_name: string | null;
+  credit_days: number;
+  note: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
+type WholesaleOrderRowDb = {
+  id: string;
+  branch_id: string;
+  company_id: string;
+  order_no: string;
+  sold_at: string;
+  salesperson_id: string | null;
+  total: number;
+  cost_total: number;
+  gross_profit: number;
+  note: string | null;
+  voided_at: string | null;
+  voided_reason: string | null;
+  created_at: string;
+};
+
+type WholesaleOrderLineRow = {
+  id: number;
+  order_id: string;
+  unit_id: string;
+  price: number;
+  cost: number;
+};
+
 type FinanceCompany = {
   id: string;
   name: string;
@@ -592,6 +630,9 @@ export type Database = {
       receivable: Table<Receivable>;
       receipt_payment: Table<ReceiptPayment>;
       finance_company: Table<FinanceCompany>;
+      wholesale_company: Table<WholesaleCompanyRow>;
+      wholesale_order: Table<WholesaleOrderRowDb>;
+      wholesale_order_line: Table<WholesaleOrderLineRow>;
       finance_case: Table<FinanceCase>;
       finance_case_event: Table<FinanceCaseEvent>;
       registration_event: Table<RegistrationEvent>;
@@ -659,6 +700,10 @@ export type Database = {
       next_service_reminder: {
         Args: { p_job_id: string };
         Returns: string | null;
+      };
+      sell_wholesale: {
+        Args: { p_company_id: string; p_lines: Json; p_note?: string | null };
+        Returns: Json;
       };
       meters_between: {
         Args: { la1: number; ln1: number; la2: number; ln2: number };
