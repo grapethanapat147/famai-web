@@ -14,7 +14,7 @@ import {
   type PeriodStatus,
 } from "@/lib/payroll/payroll";
 import { updatePayrollPeriod } from "./actions";
-import { PayrollView } from "@/components/payroll/PayrollView";
+import { PayrollView, type PayoutInfo } from "@/components/payroll/PayrollView";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 
 export const metadata = { title: "เงินเดือนและ OT — Famai Motor Group" };
@@ -42,7 +42,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   const settings = await getSettings(); // แคชข้ามรีเควสต์ (FAM-1108) — เดิมใช้ getSettingsWith ที่ query สดทุกครั้ง
 
   const [empRes, usersRes, attRes, salesRes, branches, orgCompanies, periodRes] = await Promise.all([
-    supabase.from("employee").select("id, user_id, position, base_salary").is("resigned_at", null),
+    supabase.from("employee").select("id, user_id, position, base_salary, ssn_no, bank_code, bank_account").is("resigned_at", null),
     supabase.from("app_user").select("id, full_name"),
     supabase.from("attendance").select("employee_id, ot_minutes").gte("work_date", start).lte("work_date", end),
     supabase.from("sale").select("salesperson_id, gross_profit").is("voided_at", null).gte("sold_at", start).lte("sold_at", end),
@@ -124,6 +124,19 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
 
   const rows = frozenRows ?? liveRows;
 
+  // ข้อมูลนำส่งประกันสังคม + โอนเงินเดือน (FAM-1124 · fixlist ข้อ 13/14) — ข้อมูลอ่อนไหว ส่งเฉพาะคนที่ดูเงินได้
+  const empExtra = new Map(
+    (empRes.data ?? []).map((e) => [e.id, { ssnNo: e.ssn_no ?? null, bankCode: e.bank_code ?? null, bankAccount: e.bank_account ?? null }]),
+  );
+  const payoutInfo: PayoutInfo[] = see
+    ? rows.map((r) => ({
+        employeeId: r.employeeId,
+        ssnNo: empExtra.get(r.employeeId)?.ssnNo ?? null,
+        bankCode: empExtra.get(r.employeeId)?.bankCode ?? null,
+        bankAccount: empExtra.get(r.employeeId)?.bankAccount ?? null,
+      }))
+    : [];
+
   // ไม่มีสิทธิ์เห็นเงิน → ไม่ส่งตัวเลขเงินเดือนไป client เลย
   const safeRows: PayslipRow[] = see
     ? rows
@@ -151,6 +164,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
       periodStatus={periodStatus}
       canClose={canClosePayroll(me.roleCodes)}
       periodAction={updatePayrollPeriod}
+      payoutInfo={payoutInfo}
     />
   );
 }
