@@ -5,6 +5,11 @@ import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
+import {
+  CustomerHistoryPanel,
+  type PurchaseHistoryItem,
+  type ServiceHistoryItem,
+} from "@/components/customer/CustomerHistoryPanel";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { Money } from "@/components/ui/Money";
@@ -33,6 +38,7 @@ const selectClass =
 
 export function ServiceView({
   jobs,
+  purchases = {},
   seller,
   canManage,
   action,
@@ -43,6 +49,8 @@ export function ServiceView({
   removeLineAction,
 }: {
   jobs: ServiceJob[];
+  /** ประวัติการซื้อของลูกค้า แยกตาม customerId (fixlist ข้อ 17) */
+  purchases?: Record<string, PurchaseHistoryItem[]>;
   seller: QuoteSeller;
   canManage: boolean;
   action: (formData: FormData) => Promise<ServiceActionResult>;
@@ -127,7 +135,7 @@ export function ServiceView({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="ค้นหาเลขงาน / ลูกค้า / รถ"
-            placeholder="ค้นเลขงาน / ลูกค้า / รถ"
+            placeholder="ค้นเลขงาน / ลูกค้า / รถ / เลขเครื่อง / เลขถัง"
             className={`${selectClass} w-full sm:w-56`}
           />
           <label className="flex items-center gap-2 text-sm text-muted">
@@ -167,6 +175,14 @@ export function ServiceView({
 
       <JobDrawer
         job={selected}
+        purchases={selected?.customerId ? (purchases[selected.customerId] ?? []) : []}
+        services={
+          selected?.customerId
+            ? jobs
+                .filter((j) => j.customerId === selected.customerId && j.id !== selected.id)
+                .map((j) => ({ key: j.id, serviceType: j.serviceType, checkedInAt: j.checkedInAt, total: j.total }))
+            : []
+        }
         seller={seller}
         canManage={canManage}
         action={action}
@@ -340,6 +356,8 @@ function CreateJobModal({
 
 function JobDrawer({
   job,
+  purchases,
+  services,
   seller,
   canManage,
   action,
@@ -350,6 +368,8 @@ function JobDrawer({
   onAdvanced,
 }: {
   job: ServiceJob | null;
+  purchases: PurchaseHistoryItem[];
+  services: ServiceHistoryItem[];
   seller: QuoteSeller;
   canManage: boolean;
   action: (formData: FormData) => Promise<ServiceActionResult>;
@@ -627,6 +647,8 @@ function JobDrawer({
           </div>
 
           {error && <StatusBadge variant="bad">{error}</StatusBadge>}
+
+          {job.customerId && <CustomerHistoryPanel purchases={purchases} services={services} />}
 
           {canManage && nexts.length > 0 && (
             <div className="flex flex-col gap-2">

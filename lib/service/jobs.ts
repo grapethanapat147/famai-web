@@ -37,6 +37,8 @@ export type ServiceJob = {
   customerName: string;
   vehicle: string; // รุ่น/สี หรือ เลขเครื่อง (รถนอก)
   engineNo: string;
+  frameNo: string; // เลขถัง — คนหน้าร้านมักมีแต่เลขนี้ (FAM-1118 · fixlist ข้อ 16)
+  customerId: string | null; // เปิดประวัติลูกค้าจากหน้าซ่อมได้เลย (fixlist ข้อ 17)
   odometerKm: number | null;
   serviceType: string; // เช็กระยะ | ซ่อม | เคลม | อื่นๆ
   symptom: string;
@@ -49,7 +51,7 @@ export type ServiceJob = {
   lines: ServiceLine[];
 };
 
-/** กรองด้วยสถานะ + คำค้น (เลขงาน/ลูกค้า/รถ/เลขเครื่อง) + ตั้งแต่วันที่ (R1: ตัวเลือกวันที่) */
+/** กรองด้วยสถานะ + คำค้น (เลขงาน/ลูกค้า/รถ/เลขเครื่อง/เลขถัง) + ตั้งแต่วันที่ (R1: ตัวเลือกวันที่) */
 export function filterJobs(
   jobs: readonly ServiceJob[],
   opts: { status?: ServiceStatus | "all"; search?: string; fromDate?: string } = {},
@@ -64,7 +66,7 @@ export function filterJobs(
       return false;
     }
     if (q) {
-      const hay = `${j.jobNo} ${j.customerName} ${j.vehicle} ${j.engineNo}`.toLowerCase();
+      const hay = `${j.jobNo} ${j.customerName} ${j.vehicle} ${j.engineNo} ${j.frameNo}`.toLowerCase();
       if (!hay.includes(q)) {
         return false;
       }
