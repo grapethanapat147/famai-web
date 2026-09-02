@@ -120,3 +120,21 @@ export async function nextServiceReminder(client: TypedSupabaseClient, jobId: st
   }
   return data ?? null;
 }
+
+export type SellWholesaleResult = { order_id: string; order_no: string; units: number; total: number };
+
+/** บันทึกขายส่ง (FAM-1127) — atomic: หัวบิล + รายคัน + ตัดสต๊อก (+เงินค้างรับถ้าขายเชื่อ) */
+export async function sellWholesale(
+  client: TypedSupabaseClient,
+  a: { companyId: string; lines: { unitId: string; price: number }[]; note: string | null },
+): Promise<SellWholesaleResult> {
+  const { data, error } = await client.rpc("sell_wholesale", {
+    p_company_id: a.companyId,
+    p_lines: a.lines.map((l) => ({ unit_id: l.unitId, price: l.price })),
+    p_note: a.note,
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data as unknown as SellWholesaleResult;
+}
