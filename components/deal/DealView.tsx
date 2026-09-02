@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
@@ -18,6 +19,7 @@ import { formatThaiDate } from "@/lib/format";
 import { dealTrack, regNext, regPrev, stageIndex, stageVariant, substatusOptions, type RegStage } from "@/lib/deal/stage";
 import { DEAL_PHASES, dealPhase, PHASE_HINT, phaseIndex, phaseVariant, type DealPhase } from "@/lib/deal/phase";
 import { LEAD_SOURCES, type LeadRow } from "@/lib/deal/lead";
+import { leadStageVariant, nextLeadStages } from "@/lib/deal/lead-stage";
 import {
   customerDeals,
   customerServices,
@@ -54,6 +56,8 @@ export function DealView({
   leads = [],
   leadVariants = [],
   addCustomerAction,
+  canChangeStage = false,
+  leadStageAction,
   canManageFinance = false,
   financeAction,
   canVoid = false,
@@ -73,6 +77,9 @@ export function DealView({
   leads?: LeadRow[];
   leadVariants?: { id: string; name: string }[];
   addCustomerAction?: (formData: FormData) => Promise<DealActionResult>;
+  /** เปลี่ยนขั้นลูกค้าก่อนขาย (FAM-1119 · fixlist ข้อ 07) */
+  canChangeStage?: boolean;
+  leadStageAction?: (formData: FormData) => Promise<DealActionResult>;
   canManageFinance?: boolean;
   financeAction?: (formData: FormData) => Promise<DealActionResult>;
   canVoid?: boolean;
@@ -244,7 +251,13 @@ export function DealView({
       </div>
 
       {view === "leads" ? (
-        <LeadsList leads={filteredLeads} hasAny={leads.length > 0} onAdd={addCustomerAction ? () => setAdding(true) : undefined} />
+        <LeadsList
+          leads={filteredLeads}
+          hasAny={leads.length > 0}
+          onAdd={addCustomerAction ? () => setAdding(true) : undefined}
+          canChangeStage={canChangeStage}
+          stageAction={leadStageAction}
+        />
       ) : (
         <DataTable
           columns={columns}
@@ -936,7 +949,19 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /** ลิสต์ลีด (ลูกค้าที่ยังไม่ปิดการขาย) — ปุ่มเปิดการขาย prefill ชื่อ/เบอร์/รุ่นที่สนใจ */
-function LeadsList({ leads, hasAny, onAdd }: { leads: LeadRow[]; hasAny: boolean; onAdd?: () => void }) {
+function LeadsList({
+  leads,
+  hasAny,
+  onAdd,
+  canChangeStage,
+  stageAction,
+}: {
+  leads: LeadRow[];
+  hasAny: boolean;
+  onAdd?: () => void;
+  canChangeStage: boolean;
+  stageAction?: (formData: FormData) => Promise<DealActionResult>;
+}) {
   if (leads.length === 0) {
     return (
       <EmptyState
@@ -969,6 +994,9 @@ function LeadsList({ leads, hasAny, onAdd }: { leads: LeadRow[]; hasAny: boolean
                 {l.source && <span>· {l.source}</span>}
                 <span>· เพิ่ม {formatThaiDate(l.createdAt)}</span>
               </p>
+              <div className="mt-1.5">
+                <LeadStagePicker lead={l} canChange={canChangeStage} action={stageAction} />
+              </div>
             </div>
             <a
               href={`/sell?${params.toString()}`}
@@ -980,6 +1008,67 @@ function LeadsList({ leads, hasAny, onAdd }: { leads: LeadRow[]; hasAny: boolean
         );
       })}
     </ul>
+  );
+}
+
+/** ป้ายขั้นลูกค้า + เปลี่ยนขั้นในที่เดียว (FAM-1119 · fixlist ข้อ 07) */
+function LeadStagePicker({
+  lead,
+  canChange,
+  action,
+}: {
+  lead: LeadRow;
+  canChange: boolean;
+  action?: (formData: FormData) => Promise<DealActionResult>;
+}) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const options = nextLeadStages(lead.stage);
+
+  async function move(to: string) {
+    if (!action || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const fd = new FormData();
+    fd.set("customer_id", lead.id);
+    fd.set("to_stage", to);
+    const res = await action(fd);
+    setBusy(false);
+    if (res.ok) {
+      router.refresh();
+    } else {
+      setError(res.error);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <StatusBadge variant={leadStageVariant(lead.stage)}>{lead.stage}</StatusBadge>
+      {canChange && action && options.length > 0 && (
+        <select
+          aria-label={`เปลี่ยนขั้นของ ${lead.name}`}
+          value=""
+          disabled={busy}
+          onChange={(e) => {
+            if (e.target.value) {
+              void move(e.target.value);
+            }
+          }}
+          className="rounded-[8px] border border-hairline bg-card px-2 py-1 text-xs text-ink-soft disabled:opacity-50"
+        >
+          <option value="">{busy ? "กำลังบันทึก…" : "ย้ายขั้น →"}</option>
+          {options.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+      )}
+      {error && <StatusBadge variant="bad">{error}</StatusBadge>}
+    </div>
   );
 }
 

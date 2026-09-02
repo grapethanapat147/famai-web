@@ -5,10 +5,11 @@ import { canManageDeal, canVoidDeal, type Deal, type DealStep, type FinanceInfo,
 import { canManageFinance } from "@/lib/deal/finance";
 import { isRegStage, type PayMethod, type RegStage } from "@/lib/deal/stage";
 import { buildLeads } from "@/lib/deal/lead";
+import { canChangeLeadStage } from "@/lib/deal/lead-stage";
 import { DealView } from "@/components/deal/DealView";
 import { getSetting } from "@/lib/settings";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
-import { addCustomer, advanceFinance, advanceRegistration, revertRegistration, updateDealCustomer, updateDealStep, voidDeal } from "./actions";
+import { addCustomer, advanceFinance, advanceRegistration, revertRegistration, updateDealCustomer, updateDealStep, updateLeadStage, voidDeal } from "./actions";
 
 export const metadata = { title: "ลูกค้าและดีล — Famai Motor Group" };
 
@@ -33,7 +34,7 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
     saleIds.length
       ? supabase.from("finance_case").select("id, sale_id, company_id, status, amount, reject_reason").in("sale_id", saleIds)
       : Promise.resolve({ data: [] }),
-    supabase.from("customer").select("id, full_name, phone, address, tax_id, source, interested_variant_id, created_at"),
+    supabase.from("customer").select("id, full_name, phone, address, tax_id, source, interested_variant_id, stage, created_at"),
     supabase.from("finance_company").select("id, name"),
     supabase.from("motorcycle_unit").select("id, variant_id, color_code, engine_no, frame_no"),
     supabase.from("model_variant").select("id, model_name"),
@@ -172,6 +173,8 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
       leads={leads}
       leadVariants={leadVariants}
       addCustomerAction={addCustomer}
+      canChangeStage={canChangeLeadStage(user?.roleCodes ?? [])}
+      leadStageAction={updateLeadStage}
       canManageFinance={canManageFinance(roleCodes)}
       financeAction={advanceFinance}
       canVoid={canVoidDeal(roleCodes)}

@@ -62,9 +62,9 @@ describe("validateLeadInput", () => {
 describe("buildLeads", () => {
   const variantName = new Map([["v1", "NMAX"]]);
   const customers = [
-    { id: "c1", full_name: "ลีดใหม่", phone: "08", interested_variant_id: "v1", source: "LINE", created_at: "2026-08-22T00:00:00Z" },
-    { id: "c2", full_name: "ลูกค้าซื้อแล้ว", phone: null, interested_variant_id: null, source: null, created_at: "2026-08-01T00:00:00Z" },
-    { id: "c3", full_name: "ลีดเก่า", phone: null, interested_variant_id: "vX", source: null, created_at: "2026-07-01T00:00:00Z" },
+    { id: "c1", full_name: "ลีดใหม่", phone: "08", interested_variant_id: "v1", source: "LINE", stage: "เข้ามาดูรถ", created_at: "2026-08-22T00:00:00Z" },
+    { id: "c2", full_name: "ลูกค้าซื้อแล้ว", phone: null, interested_variant_id: null, source: null, stage: "เข้ามาดูรถ", created_at: "2026-08-01T00:00:00Z" },
+    { id: "c3", full_name: "ลีดเก่า", phone: null, interested_variant_id: "vX", source: null, stage: "เข้ามาดูรถ", created_at: "2026-07-01T00:00:00Z" },
   ];
 
   it("keeps only customers without a deal, newest first, resolves interested model", () => {

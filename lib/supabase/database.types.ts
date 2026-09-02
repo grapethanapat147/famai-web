@@ -190,6 +190,16 @@ type AppSetting = {
   value: Json;
 };
 
+type LeadStageHistory = {
+  id: number;
+  customer_id: string;
+  from_stage: string | null;
+  to_stage: string;
+  changed_by: string | null;
+  changed_at: string;
+  note: string | null;
+};
+
 type Sale = {
   id: string;
   branch_id: string;
@@ -544,6 +554,7 @@ export type Database = {
       unit_transfer: Table<UnitTransfer>;
       customer: Table<Customer>;
       app_setting: Table<AppSetting>;
+      lead_stage_history: Table<LeadStageHistory>;
       sale: Table<Sale>;
       receivable: Table<Receivable>;
       receipt_payment: Table<ReceiptPayment>;

@@ -170,9 +170,14 @@ const LEAD_VARIANTS = [
 ];
 
 const LEADS: LeadRow[] = [
-  { id: "l1", name: "กานดา ทองคำ", phone: "081-111-2222", interestedVariantId: "v-nmax", interestedModel: "NMAX", source: "Facebook", createdAt: "2026-08-22T09:00:00Z" },
-  { id: "l2", name: "ธนา วงศ์ไทย", phone: "089-333-4444", interestedVariantId: "v-xmax", interestedModel: "XMAX 300", source: "เดินเข้าร้าน", createdAt: "2026-08-20T13:30:00Z" },
+  { id: "l1", name: "กานดา ทองคำ", phone: "081-111-2222", interestedVariantId: "v-nmax", interestedModel: "NMAX", source: "Facebook", stage: "สนใจ", createdAt: "2026-08-22T09:00:00Z" },
+  { id: "l2", name: "ธนา วงศ์ไทย", phone: "089-333-4444", interestedVariantId: "v-xmax", interestedModel: "XMAX 300", source: "เดินเข้าร้าน", stage: "ทำสัญญา", createdAt: "2026-08-20T13:30:00Z" },
 ];
+
+async function mockLeadStage(formData: FormData): Promise<DealActionResult> {
+  const to = String(formData.get("to_stage") ?? "");
+  return { ok: true, message: `ย้ายไปขั้น ${to} แล้ว` };
+}
 
 export default function DevDealPage() {
   return (
@@ -199,6 +204,8 @@ export default function DevDealPage() {
         leads={LEADS}
         leadVariants={LEAD_VARIANTS}
         addCustomerAction={mockAddCustomer}
+      canChangeStage
+      leadStageAction={mockLeadStage}
         canManageFinance
         financeAction={mockFinance}
         canVoid

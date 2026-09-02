@@ -1,5 +1,7 @@
 /** เพิ่มลูกค้า (ลีด) เพื่อติดตามการขายในอนาคต (ฟังก์ชันบริสุทธิ์ ทดสอบได้) */
 
+import { isLeadStage, type LeadStage } from "@/lib/deal/lead-stage";
+
 /** ช่องทางที่ลูกค้าเข้ามา — ใช้ในดรอปดาวน์ + ตรวจฝั่ง server */
 export const LEAD_SOURCES: readonly string[] = ["เดินเข้าร้าน", "โทรเข้า", "Facebook", "LINE", "แนะนำต่อ", "อื่นๆ"];
 
@@ -29,6 +31,7 @@ export type LeadRow = {
   interestedVariantId: string | null;
   interestedModel: string | null;
   source: string | null;
+  stage: LeadStage; // ขั้นก่อนขาย (FAM-1119 · fixlist ข้อ 07)
   createdAt: string; // ISO
 };
 
@@ -61,7 +64,7 @@ export function validateLeadInput(input: LeadInput): { ok: true; value: LeadVali
 
 /** ลีด = ลูกค้าที่ยังไม่ปรากฏในดีลใด ๆ (ยังไม่ปิดการขาย) เรียงใหม่สุดก่อน */
 export function buildLeads(
-  customers: ReadonlyArray<{ id: string; full_name: string; phone: string | null; interested_variant_id: string | null; source: string | null; created_at: string }>,
+  customers: ReadonlyArray<{ id: string; full_name: string; phone: string | null; interested_variant_id: string | null; source: string | null; stage: string; created_at: string }>,
   variantName: ReadonlyMap<string, string>,
   dealCustomerIds: ReadonlySet<string>,
 ): LeadRow[] {
@@ -74,6 +77,7 @@ export function buildLeads(
       interestedVariantId: c.interested_variant_id,
       interestedModel: c.interested_variant_id ? variantName.get(c.interested_variant_id) ?? null : null,
       source: c.source,
+      stage: isLeadStage(c.stage) ? c.stage : "เข้ามาดูรถ",
       createdAt: c.created_at,
     }))
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
