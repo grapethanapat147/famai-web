@@ -1,5 +1,5 @@
 import { formatBaht, formatThaiDate } from "@/lib/format";
-import { bahtText, docTypeLabel, type DocDetail } from "@/lib/acct/documents";
+import { bahtText, docTypeLabel, type DocDetail, docPartLabel } from "@/lib/acct/documents";
 
 /**
  * แม่แบบพิมพ์ใบเสร็จรับเงิน / ใบกำกับภาษี (FAM-1102) — ใช้สไตล์ .print-doc/.qdoc-* ร่วมกับเอกสารอื่น
@@ -82,6 +82,10 @@ export function PrintableReceipt({ doc }: { doc: DocDetail }) {
           </tr>
         </tbody>
       </table>
+
+      {doc.part !== "full" && (
+        <p className="qdoc-part">รายการนี้เป็นส่วน: <b>{docPartLabel(doc.part)}</b> ของการซื้อรถคันนี้</p>
+      )}
 
       {doc.publicToken && (
         <p className="qdoc-token">

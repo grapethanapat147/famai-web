@@ -20,6 +20,7 @@ const DOCS: DocDetail[] = [
     engineNo: "G3V5E-0865055",
     frameNo: "MH3SG576111027060",
     voided: false,
+    part: "down",
     publicToken: "FMG-7K2M9",
   },
   {
@@ -36,6 +37,7 @@ const DOCS: DocDetail[] = [
     engineNo: "G3V5E-0865055",
     frameNo: "MH3SG576111027060",
     voided: false,
+    part: "down",
     publicToken: "FMG-7K2M9",
   },
   {
@@ -52,6 +54,7 @@ const DOCS: DocDetail[] = [
     engineNo: "E34RE-057401",
     frameNo: "MLEUE364111399878",
     voided: false,
+    part: "financed",
     publicToken: "FMG-7K2M9",
   },
 ];
@@ -78,6 +81,17 @@ async function mockOk(): Promise<AcctActionResult> {
   return { ok: true };
 }
 
+const FINANCE_SET = [
+  { saleId: "s-9", customerName: "นายวีระ โปร่งนุช", vehicle: "NMAX 155 · แดง", netPrice: 107_500, soldAt: "2026-09-01", hasReceipt: false },
+];
+
+async function mockFinanceSet() {
+  return {
+    ok: true as const,
+    message: "ออกแล้ว: ใบเสร็จเงินดาวน์ FMG-RECEIPT-2569-00002 · ใบกำกับเงินดาวน์ FMG-TAXINV-2569-00002 · ใบกำกับยอดจัด FMG-TAXINV-2569-00003",
+  };
+}
+
 export default function DevAcctPage() {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 lg:px-6">
@@ -86,6 +100,8 @@ export default function DevAcctPage() {
         <p className="mt-1 text-ink-soft">FAM-1102 · sample data — ใบเสร็จ / ใบกำกับภาษี + แก้ไข (ยกเว้นเลข) + ยกเลิก + พิมพ์</p>
       </header>
       <AcctView
+      financeSetIssuable={FINANCE_SET}
+      issueFinanceSetAction={mockFinanceSet}
         docs={DOCS}
         receiptIssuable={RECEIPT_ISSUABLE}
         taxinvIssuable={TAXINV_ISSUABLE}

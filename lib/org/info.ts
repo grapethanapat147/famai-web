@@ -1,6 +1,6 @@
 /** ข้อมูลกิจการ/บริษัท ที่ขึ้นหัวเอกสาร (FAM-1078) — ตัวช่วยบริสุทธิ์ ทดสอบได้ */
 
-export type OrgInfoActionResult = { ok: true } | { ok: false; error: string };
+export type OrgInfoActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
 export type OrgCompany = {
   id: string;

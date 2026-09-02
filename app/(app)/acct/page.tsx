@@ -1,9 +1,9 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getSettingsCached } from "@/lib/reference/cache";
-import { canManageAccount, parseDocItem, type DocDetail, type IssuableSale, type PartySnapshot } from "@/lib/acct/documents";
+import { canManageAccount, isDocPart, needsThreeDocs, parseDocItem, type DocPart, type DocDetail, type IssuableSale, type PartySnapshot } from "@/lib/acct/documents";
 import { AcctView } from "@/components/acct/AcctView";
-import { issueReceipt, issueTaxInvoice, updateDocument, voidDocument } from "./actions";
+import { issueFinanceDocSet, issueReceipt, issueTaxInvoice, updateDocument, voidDocument } from "./actions";
 
 export const metadata = { title: "บัญชี — Famai Motor Group" };
 
@@ -32,9 +32,9 @@ export async function AccountingPage({ initialDocType = "all" }: { initialDocTyp
     getSettingsCached(),
     supabase
       .from("document")
-      .select("id, doc_type, doc_no, doc_date, sale_id, amount_base, amount_vat, amount_total, seller_snapshot, buyer_snapshot, voided_at")
+      .select("id, doc_type, part, doc_no, doc_date, sale_id, amount_base, amount_vat, amount_total, seller_snapshot, buyer_snapshot, voided_at")
       .order("doc_no", { ascending: false }),
-    supabase.from("sale").select("id, customer_id, unit_id, net_price, sold_at, public_token").is("voided_at", null).order("sold_at", { ascending: false }),
+    supabase.from("sale").select("id, customer_id, unit_id, net_price, sold_at, public_token, pay_method, down_payment").is("voided_at", null).order("sold_at", { ascending: false }),
     supabase.from("motorcycle_unit").select("id, variant_id, color_code, engine_no, frame_no"),
     supabase.from("model_variant").select("id, model_name"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),
@@ -75,6 +75,7 @@ export async function AccountingPage({ initialDocType = "all" }: { initialDocTyp
       vat: Number(d.amount_vat ?? 0),
       total: Number(d.amount_total ?? 0),
       voided: d.voided_at != null,
+      part: isDocPart(d.part ?? "full") ? (d.part as DocPart) : "full",
       publicToken: d.sale_id ? (tokenBySale.get(d.sale_id) ?? null) : null,
       vehicle: item.vehicle || "—",
       engineNo: item.engineNo,
@@ -97,6 +98,24 @@ export async function AccountingPage({ initialDocType = "all" }: { initialDocTyp
     };
   }
 
+  // ชุดขายเงินผ่อน 3 ใบ (FAM-1126 · fixlist ข้อ 11) — ยังออกไม่ครบทั้ง 3 ส่วน
+  const partsBySale = new Map<string, Set<string>>();
+  for (const d of docsRes.data ?? []) {
+    if (!d.sale_id || d.voided_at) {
+      continue;
+    }
+    const set = partsBySale.get(d.sale_id) ?? new Set<string>();
+    set.add(`${d.doc_type}:${d.part ?? "full"}`);
+    partsBySale.set(d.sale_id, set);
+  }
+  const financeSetIssuable: IssuableSale[] = (salesRes.data ?? [])
+    .filter((s) => needsThreeDocs(s.pay_method, s.down_payment != null ? Number(s.down_payment) : null))
+    .filter((s) => {
+      const have = partsBySale.get(s.id) ?? new Set<string>();
+      return !(have.has("RECEIPT:down") && have.has("TAXINV:down") && have.has("TAXINV:financed"));
+    })
+    .map((s) => issuableSale(s.id));
+
   // ใบเสร็จ: การขายที่ยังไม่มีใบเสร็จ · ใบกำกับภาษี: การขายที่มีใบเสร็จแล้วแต่ยังไม่มีใบกำกับ
   const receiptIssuable: IssuableSale[] = (salesRes.data ?? []).filter((s) => !receiptSaleIds.has(s.id)).map((s) => issuableSale(s.id));
   const taxinvIssuable: IssuableSale[] = (salesRes.data ?? [])
@@ -109,6 +128,8 @@ export async function AccountingPage({ initialDocType = "all" }: { initialDocTyp
       initialDocType={initialDocType}
       receiptIssuable={receiptIssuable}
       taxinvIssuable={taxinvIssuable}
+      financeSetIssuable={financeSetIssuable}
+      issueFinanceSetAction={issueFinanceDocSet}
       vatPct={settings.vat_pct}
       issueReceiptAction={issueReceipt}
       issueTaxInvoiceAction={issueTaxInvoice}

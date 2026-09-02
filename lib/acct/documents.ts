@@ -1,6 +1,6 @@
 /** เอกสารบัญชี — ใบเสร็จรับเงิน / ใบกำกับภาษี (ฟังก์ชันบริสุทธิ์ ทดสอบได้) */
 
-export type AcctActionResult = { ok: true; docNo?: string } | { ok: false; error: string };
+export type AcctActionResult = { ok: true; docNo?: string; message?: string } | { ok: false; error: string };
 
 export type DocType = "RECEIPT" | "TAXINV";
 
@@ -82,6 +82,7 @@ export type DocDetail = {
   engineNo: string;
   frameNo: string;
   voided: boolean;
+  part: DocPart; // ส่วนของการขาย (FAM-1126) — เอกสารเก่าเป็น full
   publicToken: string | null; // รหัสให้ลูกค้าเช็กสถานะเองที่ /status (FAM-1117)
 };
 
@@ -233,4 +234,61 @@ export function validateDocEdit(input: DocEditInput): { ok: true; value: DocEdit
       docDate: input.docDate,
     },
   };
+}
+
+// ── ขายเงินผ่อน: แยกเอกสาร 3 ใบ (FAM-1126 · fixlist ข้อ 11) ──────────────────────
+
+/**
+ * ส่วนของเอกสารเทียบกับการขาย
+ * - `full`     เงินสด/ของเดิม — ใบเดียวยอดเต็ม
+ * - `down`     เงินดาวน์ (ผู้ซื้อ = ลูกค้า)
+ * - `financed` ยอดจัดไฟแนนซ์ (ผู้ซื้อ = บริษัทไฟแนนซ์)
+ */
+export type DocPart = "full" | "down" | "financed";
+
+export const DOC_PART_LABEL: Record<DocPart, string> = {
+  full: "ยอดเต็ม",
+  down: "เงินดาวน์",
+  financed: "ยอดจัดไฟแนนซ์",
+};
+
+export function isDocPart(v: string): v is DocPart {
+  return v === "full" || v === "down" || v === "financed";
+}
+
+export function docPartLabel(v: string | null): string {
+  return v && isDocPart(v) ? DOC_PART_LABEL[v] : DOC_PART_LABEL.full;
+}
+
+export type SaleSplit = {
+  down: { base: number; vat: number; total: number };
+  financed: { base: number; vat: number; total: number };
+};
+
+/**
+ * แยกยอดขายเงินผ่อนเป็น "เงินดาวน์" + "ยอดจัด"
+ *
+ * ยอดจัดคิดแบบ **ส่วนที่เหลือ** (ยอดเต็ม − เงินดาวน์) ทั้งฐานภาษีและ VAT
+ * ไม่ได้คิดแยกอิสระ — เพื่อให้สองใบบวกกันได้ยอดเต็มพอดีทุกบาททุกสตางค์
+ * (ถ้าคิดแยกกันแล้วปัดเศษคนละที ผลรวมจะเพี้ยนไป 1 สตางค์ ซึ่งสรรพากรไม่ยอม)
+ *
+ * เงินดาวน์เกินยอดเต็ม/ติดลบ → บีบให้อยู่ในช่วง 0..ยอดเต็ม
+ */
+export function splitFinanceSale(netPrice: number, downPayment: number, vatPct: number): SaleSplit {
+  const full = amountBreakdown(netPrice, vatPct);
+  const downTotal = Math.min(Math.max(downPayment, 0), netPrice);
+  const down = amountBreakdown(downTotal, vatPct);
+  return {
+    down,
+    financed: {
+      base: Math.round((full.base - down.base) * 100) / 100,
+      vat: Math.round((full.vat - down.vat) * 100) / 100,
+      total: Math.round((full.total - down.total) * 100) / 100,
+    },
+  };
+}
+
+/** ขายเงินผ่อนที่มีเงินดาวน์ > 0 เท่านั้นที่ต้องแยก 3 ใบ */
+export function needsThreeDocs(payMethod: string, downPayment: number | null): boolean {
+  return payMethod === "finance" && (downPayment ?? 0) > 0;
 }

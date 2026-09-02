@@ -12,18 +12,20 @@ import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PrintableReceipt } from "@/components/acct/PrintableReceipt";
 import { formatBaht, formatThaiDate } from "@/lib/format";
-import { docTypeLabel, type AcctActionResult, type DocDetail, type IssuableSale } from "@/lib/acct/documents";
+import { docTypeLabel, type AcctActionResult, type DocDetail, type IssuableSale, docPartLabel } from "@/lib/acct/documents";
 
-type IssueKind = "receipt" | "taxinv";
+type IssueKind = "receipt" | "taxinv" | "financeSet";
 
 export function AcctView({
   docs,
   initialDocType = "all",
   receiptIssuable,
   taxinvIssuable,
+  financeSetIssuable = [],
   vatPct,
   issueReceiptAction,
   issueTaxInvoiceAction,
+  issueFinanceSetAction,
   updateDocumentAction,
   voidDocumentAction,
 }: {
@@ -32,9 +34,12 @@ export function AcctView({
   initialDocType?: "all" | "RECEIPT" | "TAXINV";
   receiptIssuable: IssuableSale[];
   taxinvIssuable: IssuableSale[];
+  /** ขายเงินผ่อนที่มีเงินดาวน์ — ออกชุด 3 ใบ (FAM-1126 · fixlist ข้อ 11) */
+  financeSetIssuable?: IssuableSale[];
   vatPct: number;
   issueReceiptAction: (formData: FormData) => Promise<AcctActionResult>;
   issueTaxInvoiceAction: (formData: FormData) => Promise<AcctActionResult>;
+  issueFinanceSetAction?: (formData: FormData) => Promise<AcctActionResult>;
   updateDocumentAction: (formData: FormData) => Promise<AcctActionResult>;
   voidDocumentAction: (formData: FormData) => Promise<AcctActionResult>;
 }) {
@@ -67,7 +72,9 @@ export function AcctView({
       primary: true,
       render: (d) => (
         <span>
-          <span className="font-mono text-xs">{d.docNo}</span> <span className="text-muted">· {docTypeLabel(d.docType)}</span>
+          <span className="font-mono text-xs">{d.docNo}</span>{" "}
+          <span className="text-muted">· {docTypeLabel(d.docType)}</span>
+          {d.part !== "full" && <span className="ml-1 text-xs text-accent">({docPartLabel(d.part)})</span>}
           {d.voided && <span className="ml-1 text-[11px] text-accent">(ยกเลิก)</span>}
         </span>
       ),
@@ -112,6 +119,15 @@ export function AcctView({
           >
             + ใบเสร็จ
           </button>
+          {issueFinanceSetAction && financeSetIssuable.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIssuing("financeSet")}
+              className="rounded-[24px] border border-hairline px-4 py-2 text-sm font-medium text-ink transition-transform active:scale-[0.98]"
+            >
+              + ชุดขายผ่อน 3 ใบ ({financeSetIssuable.length})
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setIssuing("taxinv")}
@@ -180,6 +196,17 @@ export function AcctView({
           onClose={() => setIssuing(null)}
         />
       )}
+      {issuing === "financeSet" && issueFinanceSetAction && (
+        <IssueModal
+          title="ออกเอกสารชุดขายเงินผ่อน"
+          cta="ออกทั้ง 3 ใบ"
+          issuable={financeSetIssuable}
+          emptyText="ไม่มีการขายเงินผ่อนที่ยังต้องออกเอกสารชุดนี้"
+          hint="จะออกให้ 3 ใบ: ใบเสร็จเงินดาวน์ · ใบกำกับเงินดาวน์ (ชื่อลูกค้า) · ใบกำกับยอดจัด (ชื่อไฟแนนซ์)"
+          action={issueFinanceSetAction}
+          onClose={() => setIssuing(null)}
+        />
+      )}
       {editing && <EditDocModal key={editing.id} doc={editing} vatPct={vatPct} action={updateDocumentAction} onClose={() => setEditing(null)} />}
       {voiding && <VoidDocModal key={voiding.id} doc={voiding} action={voidDocumentAction} onClose={() => setVoiding(null)} />}
       {printDoc && <PrintableReceipt doc={printDoc} />}
@@ -204,6 +231,7 @@ function IssueModal({
   cta,
   issuable,
   emptyText,
+  hint,
   action,
   onClose,
 }: {
@@ -211,6 +239,7 @@ function IssueModal({
   cta: string;
   issuable: IssuableSale[];
   emptyText: string;
+  hint?: string;
   action: (formData: FormData) => Promise<AcctActionResult>;
   onClose: () => void;
 }) {
@@ -231,7 +260,7 @@ function IssueModal({
     const res = await action(fd);
     setBusy(false);
     if (res.ok) {
-      setSavedNo(res.docNo ?? "ออกแล้ว");
+      setSavedNo(res.message ?? res.docNo ?? "ออกแล้ว");
       setSaleId("");
       router.refresh();
     } else {
@@ -242,6 +271,7 @@ function IssueModal({
   return (
     <Modal open onClose={onClose} title={title}>
       <div className="flex flex-col gap-3">
+        {hint && <p className="rounded-[10px] bg-paper px-3 py-2 text-xs text-ink-soft">{hint}</p>}
         <label className="flex flex-col gap-1 text-sm text-ink-soft">
           เลือกการขาย (พิมพ์ค้นชื่อ/รุ่น)
           <Combobox
@@ -260,7 +290,7 @@ function IssueModal({
         </label>
 
         {error && <StatusBadge variant="bad">{error}</StatusBadge>}
-        {savedNo && <StatusBadge variant="good">ออกเอกสารแล้ว — เลขที่ {savedNo}</StatusBadge>}
+        {savedNo && <StatusBadge variant="good">{savedNo}</StatusBadge>}
 
         <div className="mt-1 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-[24px] px-4 py-2 text-sm text-ink-soft">
