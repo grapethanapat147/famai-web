@@ -63,14 +63,19 @@ export default async function TransferPage() {
     };
   });
 
+  // นิติบุคคลของแต่ละบริษัท — ใช้ปิดปลายทางข้ามบริษัทตั้งแต่ในฟอร์ม (FAM-1129 · บรีฟ R1 B1)
+  const companyOf = new Map(branchRows.map((b) => [b.id, b.company_id ?? null]));
+
   const units: TransferUnit[] = (availRes.data ?? []).map((u) => ({
     id: u.id,
     vehicle: vehicleOf(u),
     engineNo: u.engine_no,
     branchName: branchName.get(u.branch_id) ?? "—",
+    branchId: u.branch_id,
+    companyId: companyOf.get(u.branch_id) ?? null,
   }));
 
-  const branches: TransferBranch[] = branchRows.map((b) => ({ id: b.id, name: b.name }));
+  const branches: TransferBranch[] = branchRows.map((b) => ({ id: b.id, name: b.name, companyId: companyOf.get(b.id) ?? null }));
 
   const allBranchIds = branches.map((b) => b.id);
   const myBranchIds = user?.allBranch ? allBranchIds : (user?.branchIds ?? []);

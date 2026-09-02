@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import Link from "next/link";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { Chips } from "@/components/ui/Chips";
 import { DataTable, type Column } from "@/components/ui/DataTable";
@@ -18,10 +19,11 @@ import {
   type Transfer,
   type TransferActionResult,
   type TransferStatus,
+  sameCompany,
 } from "@/lib/transfer/transfers";
 
-export type TransferUnit = { id: string; vehicle: string; engineNo: string; branchName: string };
-export type TransferBranch = { id: string; name: string };
+export type TransferUnit = { id: string; vehicle: string; engineNo: string; branchName: string; branchId: string; companyId: string | null };
+export type TransferBranch = { id: string; name: string; companyId: string | null };
 
 const inputCls =
   "w-full rounded-[8px] border border-hairline bg-card px-3 py-2.5 text-base text-ink outline-none focus:border-ink";
@@ -297,6 +299,9 @@ function RequestModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const selectedUnit = units.find((u) => u.id === unitId) ?? null;
+  const crossCompanyExists =
+    selectedUnit != null && branches.some((b) => b.id !== selectedUnit.branchId && !sameCompany(selectedUnit.companyId, b.companyId));
   const canSubmit = unitId !== "" && toBranch !== "";
 
   async function submit() {
@@ -337,13 +342,25 @@ function RequestModal({
         <Field label="บริษัทปลายทาง">
           <select value={toBranch} onChange={(e) => setToBranch(e.target.value)} className={inputCls}>
             <option value="">— เลือกบริษัท —</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
+            {branches.map((b) => {
+              const crossCompany = selectedUnit != null && b.id !== selectedUnit.branchId && !sameCompany(selectedUnit.companyId, b.companyId);
+              return (
+                <option key={b.id} value={b.id} disabled={crossCompany || b.id === selectedUnit?.branchId}>
+                  {b.name}
+                  {crossCompany ? " — คนละบริษัท (ต้องขายส่งแทน)" : b.id === selectedUnit?.branchId ? " — ต้นทางเอง" : ""}
+                </option>
+              );
+            })}
           </select>
         </Field>
+        {selectedUnit && crossCompanyExists && (
+          <p className="rounded-[10px] bg-paper px-3 py-2 text-xs text-ink-soft">
+            บริษัทที่อยู่คนละนิติบุคคลกับรถคันนี้ถูกปิดไว้ — การย้ายข้ามบริษัทถือเป็นการขาย ต้องเปิดบิลที่หน้า{" "}
+            <Link href="/wholesale" className="text-accent hover:underline">
+              ขายส่ง (B2B)
+            </Link>
+          </p>
+        )}
         <Field label="หมายเหตุ (ถ้ามี)">
           <input value={note} onChange={(e) => setNote(e.target.value)} className={inputCls} />
         </Field>

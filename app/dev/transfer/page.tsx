@@ -53,14 +53,15 @@ const TRANSFERS: Transfer[] = [
 ];
 
 const UNITS: TransferUnit[] = [
-  { id: "a1", vehicle: "Aerox · น้ำเงิน", engineNo: "E3R8E-771020", branchName: "Famai Motor Group" },
-  { id: "a2", vehicle: "Grand Filano · ขาว", engineNo: "E3P4E-220145", branchName: "Famai Motor Group" },
+  { id: "a1", vehicle: "Aerox · น้ำเงิน", engineNo: "E3R8E-771020", branchName: "Famai Motor Group", branchId: "b1", companyId: "co1" },
+  { id: "a2", vehicle: "Grand Filano · ขาว", engineNo: "E3P4E-220145", branchName: "Famai Motor Group", branchId: "b1", companyId: "co1" },
 ];
 
+// b3 เป็นคนละนิติบุคคล — ใช้ทดสอบว่าปลายทางข้ามบริษัทถูกปิด (FAM-1129)
 const BRANCHES: TransferBranch[] = [
-  { id: "b1", name: "Famai Motor Group" },
-  { id: "b2", name: "Famai Motor" },
-  { id: "b3", name: "Famai Chonburi" },
+  { id: "b1", name: "Famai Motor Group", companyId: "co1" },
+  { id: "b2", name: "Famai Motor", companyId: "co1" },
+  { id: "b3", name: "Famai Chonburi", companyId: "co2" },
 ];
 
 async function mockAction(): Promise<TransferActionResult> {
