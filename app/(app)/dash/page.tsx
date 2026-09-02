@@ -1,5 +1,6 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { canSeeMoney } from "@/lib/auth/money";
+import { cashToday, financeApproval, lowStockModels, salesMoney } from "@/lib/dashboard/money";
 import { getBranchesCached } from "@/lib/reference/cache";
 import { getSettings } from "@/lib/settings";
 import { stripMoneyFields } from "@/lib/auth/strip-money";
@@ -29,7 +30,7 @@ export default async function DashPage() {
 
   // scope ฝั่ง DB (FAM-1108) — หน้าแรกเปิดทุกวันบนมือถือ: ดึงเฉพาะรถคงเหลือ/หนี้ค้าง/ยอดเดือนนี้
   // (เดิมดึงทั้งประวัติแล้วทิ้ง — โตตามอายุระบบ และชน cap 1000 แถวแล้วตัวเลขเพี้ยนเงียบๆ)
-  const [unitsRes, branches, variantsRes, recRes, saleRes] = await Promise.all([
+  const [unitsRes, branches, variantsRes, recRes, saleRes, payRes, expRes, finRes] = await Promise.all([
     supabase
       .from("motorcycle_unit")
       .select("id, branch_id, variant_id, status, received_at, cost")
@@ -37,7 +38,11 @@ export default async function DashPage() {
     getBranchesCached(),
     supabase.from("model_variant").select("id, model_name"),
     supabase.from("receivable").select("balance, settled_at").is("settled_at", null),
-    supabase.from("sale").select("sold_at").gte("sold_at", monthStart),
+    supabase.from("sale").select("sold_at, net_price").is("voided_at", null).gte("sold_at", monthStart),
+    // เงินเข้า/ออกวันนี้ + ผลไฟแนนซ์เดือนนี้ (FAM-1120 · fixlist ข้อ 15)
+    supabase.from("receipt_payment").select("paid_at, amount").eq("paid_at", todayISO()),
+    supabase.from("expense").select("spent_at, amount").eq("spent_at", todayISO()),
+    supabase.from("finance_case").select("status").gte("submitted_at", monthStart),
   ]);
 
   const branchMap = new Map(branches.map((b) => [b.id, b]));
@@ -65,6 +70,19 @@ export default async function DashPage() {
 
   const soldThisMonth = (saleRes.data ?? []).length;
 
+  const sales = salesMoney(
+    (saleRes.data ?? []).map((s) => ({ soldAt: s.sold_at, netPrice: Number(s.net_price ?? 0) })),
+    today,
+  );
+  const cash = cashToday(
+    (payRes.data ?? []).map((r) => ({ date: r.paid_at, amount: Number(r.amount ?? 0) })),
+    (expRes.data ?? []).map((r) => ({ date: r.spent_at, amount: Number(r.amount ?? 0) })),
+    today,
+  );
+  const finance = financeApproval((finRes.data ?? []).map((f) => f.status));
+  // ใช้ units ที่ผ่าน stripMoneyFields แล้ว — นับจำนวนอย่างเดียว ไม่เกี่ยวกับสิทธิ์ดูเงิน
+  const lowStock = lowStockModels(units, settings.low_stock);
+
   return (
     <DashboardView
       units={units}
@@ -73,6 +91,10 @@ export default async function DashPage() {
       buckets={settings.aging_buckets}
       overdue={overdue}
       soldThisMonth={soldThisMonth}
+      sales={sales}
+      cash={cash}
+      finance={finance}
+      lowStock={lowStock}
       asOf={thaiDate()}
     />
   );
