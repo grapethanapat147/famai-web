@@ -82,6 +82,7 @@ export type Deal = {
   stage: RegStage;
   plateNo: string | null;
   docNo: string | null; // เลขที่ใบกำกับภาษี (ออกตอนขายด้วย next_doc_no 'TAXINV')
+  publicToken: string | null; // รหัสให้ลูกค้าเช็กสถานะเองที่ /status (FAM-1117)
   finance: FinanceInfo | null;
   steps: DealStep[]; // ข้อมูลต่อขั้น (สถานะย่อย/หมายเหตุ/เวลาอัปเดต)
 };

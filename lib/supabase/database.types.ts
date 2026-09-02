@@ -211,6 +211,7 @@ type Sale = {
   doc_no: string | null;
   voided_at: string | null;
   voided_reason: string | null;
+  public_token: string; // migration 14 — รหัสให้ลูกค้าเช็กสถานะเองที่ /status
   created_at: string;
 };
 

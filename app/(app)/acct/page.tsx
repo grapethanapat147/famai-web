@@ -34,7 +34,7 @@ export async function AccountingPage({ initialDocType = "all" }: { initialDocTyp
       .from("document")
       .select("id, doc_type, doc_no, doc_date, sale_id, amount_base, amount_vat, amount_total, seller_snapshot, buyer_snapshot, voided_at")
       .order("doc_no", { ascending: false }),
-    supabase.from("sale").select("id, customer_id, unit_id, net_price, sold_at").is("voided_at", null).order("sold_at", { ascending: false }),
+    supabase.from("sale").select("id, customer_id, unit_id, net_price, sold_at, public_token").is("voided_at", null).order("sold_at", { ascending: false }),
     supabase.from("motorcycle_unit").select("id, variant_id, color_code, engine_no, frame_no"),
     supabase.from("model_variant").select("id, model_name"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),
@@ -57,6 +57,9 @@ export async function AccountingPage({ initialDocType = "all" }: { initialDocTyp
     return { vehicle: model ? `${model}${color ? ` · ${color}` : ""}` : "—", engineNo: unit.engine_no, frameNo: unit.frame_no };
   }
 
+  // รหัสให้ลูกค้าเช็กสถานะเองที่ /status — พิมพ์ท้ายใบเสร็จ (FAM-1117 · fixlist ข้อ 06)
+  const tokenBySale = new Map((salesRes.data ?? []).map((s) => [s.id, s.public_token]));
+
   const docs: DocDetail[] = (docsRes.data ?? []).map((d) => {
     // รายการรถ: ใช้ snapshot ที่แช่ไว้ (แก้ไขได้) ก่อน — เอกสารเก่าที่ไม่มี fallback ไปดึงจากการขาย
     const stored = parseDocItem(d.buyer_snapshot);
@@ -72,6 +75,7 @@ export async function AccountingPage({ initialDocType = "all" }: { initialDocTyp
       vat: Number(d.amount_vat ?? 0),
       total: Number(d.amount_total ?? 0),
       voided: d.voided_at != null,
+      publicToken: d.sale_id ? (tokenBySale.get(d.sale_id) ?? null) : null,
       vehicle: item.vehicle || "—",
       engineNo: item.engineNo,
       frameNo: item.frameNo,

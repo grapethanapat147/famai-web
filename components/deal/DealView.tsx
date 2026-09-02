@@ -522,6 +522,13 @@ function DealDrawer({
               </button>
             )}
           </div>
+          {deal.publicToken && (
+            <p className="rounded-[10px] border border-dashed border-hairline px-3 py-2 text-xs text-ink-soft">
+              รหัสให้ลูกค้าเช็กสถานะเองที่หน้า <span className="font-medium text-ink">/status</span> ·{" "}
+              <span className="font-mono text-sm font-semibold text-ink">{deal.publicToken}</span>{" "}
+              <span className="text-muted">(พิมพ์อยู่ท้ายใบเสร็จด้วย)</span>
+            </p>
+          )}
           {printDoc === "sale" && <PrintableSaleDoc seller={seller} deal={deal} />}
           {printDoc === "tax" && <PrintableTaxInvoice seller={seller} deal={deal} vatPct={vatPct} />}
 

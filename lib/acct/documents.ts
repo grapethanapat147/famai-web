@@ -82,6 +82,7 @@ export type DocDetail = {
   engineNo: string;
   frameNo: string;
   voided: boolean;
+  publicToken: string | null; // รหัสให้ลูกค้าเช็กสถานะเองที่ /status (FAM-1117)
 };
 
 /** ผู้มีสิทธิ์งานบัญชี (ออก/ดูเอกสาร) — ตรงกับเมนู acct */

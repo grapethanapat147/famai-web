@@ -83,6 +83,12 @@ export function PrintableReceipt({ doc }: { doc: DocDetail }) {
         </tbody>
       </table>
 
+      {doc.publicToken && (
+        <p className="qdoc-token">
+          เช็กสถานะรถของท่านเองได้ที่ famai.co.th/status · รหัสติดตาม <b>{doc.publicToken}</b>
+        </p>
+      )}
+
       <div className="qdoc-foot">
         <div className="qdoc-sign">
           ผู้รับสินค้า
