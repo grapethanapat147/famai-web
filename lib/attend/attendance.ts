@@ -58,6 +58,7 @@ export type AttendRow = {
   otMinutes: number;
   selfieUrl: string | null; // signed URL เซลฟี่ตอนลงเวลา (FAM-1101 P3b)
   distanceM: number | null; // ระยะห่างจากจุดร้านตอนลงเวลา (เมตร)
+  siteName: string | null; // ชื่อจุดลงเวลาที่ใช้ตรวจ (FAM-1113) — แช่ไว้ตอนลงเวลา
 };
 
 export function filterRows(

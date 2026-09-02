@@ -92,7 +92,13 @@ export function AttendView({
         <span className="tabular text-ink-soft">
           {timeOf(r.checkIn)}
           {r.status === "late" && r.lateMinutes ? <span className="text-accent"> (สาย {r.lateMinutes} นาที)</span> : null}
-          {r.distanceM != null ? <span className="text-muted"> · 📍{formatDistanceM(r.distanceM)}</span> : null}
+          {r.distanceM != null ? (
+            <span className="text-muted">
+              {" · 📍"}
+              {r.siteName ? `${r.siteName} ` : ""}
+              {formatDistanceM(r.distanceM)}
+            </span>
+          ) : null}
         </span>
       ),
     },
@@ -293,7 +299,7 @@ function SelfieModal({ row, onClose }: { row: AttendRow; onClose: () => void }) 
           </span>
           {row.distanceM != null && (
             <span>
-              ห่างจากจุดร้าน <b className="text-ink">{formatDistanceM(row.distanceM)}</b>
+              ห่างจาก <b className="text-ink">{row.siteName ?? "จุดร้าน"}</b> {formatDistanceM(row.distanceM)}
             </span>
           )}
         </div>
