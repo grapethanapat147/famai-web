@@ -16,7 +16,11 @@
 | ต่อ Supabase จริง | `docs/06-supabase-setup.md` |
 | public catalog/status API | `docs/07-public-api.md` |
 | ดีไซน์/พฤติกรรมจริง | `index.html` (v1.15) + `prototype/` (เก่า, อ้างอิงเท่านั้น) |
-| requirements ระดับลูกค้า | `.codex/specs/Famai_System_Build_Spec.md` (สเปกต้นฉบับ) |
+| requirements ระดับลูกค้า | `.codex/specs/revision-1-client-feedback.md` (บรีฟแก้ไขครั้งที่ 1 — ฉบับล่าสุดที่อยู่ในรีโป) |
+| แผนงานตามหัวข้อ | `.codex/specs/` (theme engine, E12 AI plan ฯลฯ) |
+
+> **หมายเหตุ:** สเปกต้นฉบับ `Famai_System_Build_Spec.md` **ไม่ได้อยู่ในรีโป** (อยู่ฝั่งเจ้าของงาน)
+> ถ้าต้องอ้างอิง ขอไฟล์จากเจ้าของแล้ววางที่ `.codex/specs/` — อย่าอ้างถึงเหมือนมีอยู่แล้ว (FAM-1125 · fixlist ข้อ 27)
 
 ## Stack
 
