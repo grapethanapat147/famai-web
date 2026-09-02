@@ -5,8 +5,9 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { SettingsView } from "@/components/settings/SettingsView";
 import { ThemeSettings } from "@/components/theme/ThemeSettings";
 import { CompanyInfoView } from "@/components/settings/CompanyInfoView";
+import { FinanceCompanyView, type FinanceCompanyInfo } from "@/components/settings/FinanceCompanyView";
 import type { OrgBranch, OrgCompany } from "@/lib/org/info";
-import { updateOrgInfo, updateSettings, updateThemeSettings } from "./actions";
+import { updateFinanceCompanies, updateOrgInfo, updateSettings, updateThemeSettings } from "./actions";
 
 export const metadata = { title: "ตั้งค่าระบบ — Famai Motor Group" };
 
@@ -15,7 +16,7 @@ export default async function SettingsPage() {
   const admin = Boolean(user?.perms.admin);
 
   const supabase = await createServerSupabase();
-  const [companyRes, branchRes, siteRes] = await Promise.all([
+  const [companyRes, branchRes, siteRes, finRes] = await Promise.all([
     supabase.from("company").select("id, code, name, tax_id, address, phone").order("code"),
     supabase
       .from("branch")
@@ -23,6 +24,7 @@ export default async function SettingsPage() {
       .eq("is_active", true)
       .order("code"),
     supabase.from("branch_site").select("branch_id").eq("is_active", true),
+    supabase.from("finance_company").select("id, name, tax_id, address, phone").eq("is_active", true).order("name"),
   ]);
   const siteCountByBranch = new Map<string, number>();
   for (const s of siteRes.data ?? []) {
@@ -43,12 +45,21 @@ export default async function SettingsPage() {
     requireSelfie: Boolean(r.require_selfie),
   }));
 
+  const financeCompanies: FinanceCompanyInfo[] = (finRes.data ?? []).map((f) => ({
+    id: f.id,
+    name: f.name,
+    taxId: f.tax_id ?? "",
+    address: f.address ?? "",
+    phone: f.phone ?? "",
+  }));
+
   return (
     <div className="flex flex-col gap-4">
       <SettingsView settings={settings} canEdit={admin} action={updateSettings} />
       {company && (
         <CompanyInfoView company={company} branches={branches} canEdit={admin} action={updateOrgInfo} />
       )}
+      <FinanceCompanyView companies={financeCompanies} canEdit={admin} action={updateFinanceCompanies} />
       <div className="mx-auto w-full max-w-3xl">
         <ThemeSettings
           currentAccent={theme.accent}

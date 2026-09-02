@@ -180,3 +180,46 @@ export async function updateOrgInfo(formData: FormData): Promise<OrgInfoActionRe
   revalidatePath("/settings");
   return { ok: true };
 }
+
+/**
+ * แก้ข้อมูลผู้เสียภาษีของบริษัทไฟแนนซ์ (FAM-1126 · fixlist ข้อ 11)
+ * ใบกำกับภาษียอดจัดออกในนามไฟแนนซ์ จึงต้องมีชื่อ/ที่อยู่/เลขผู้เสียภาษีของเขาบนเอกสาร
+ */
+export async function updateFinanceCompanies(formData: FormData): Promise<OrgInfoActionResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { ok: false, error: "ยังไม่ได้ล็อกอิน" };
+  }
+  if (!user.perms.admin) {
+    return { ok: false, error: "แก้ไขได้เฉพาะผู้ดูแลระบบ (admin)" };
+  }
+
+  const ids = String(formData.get("finance_ids") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const supabase = await createServerSupabase();
+  for (const id of ids) {
+    const taxIdRaw = String(formData.get(`fin_${id}_tax_id`) ?? "");
+    const taxId = parseTaxId(taxIdRaw);
+    if (!taxId.ok) {
+      return { ok: false, error: `บริษัทไฟแนนซ์: ${taxId.error}` };
+    }
+    const { error } = await supabase
+      .from("finance_company")
+      .update({
+        tax_id: taxId.value,
+        address: String(formData.get(`fin_${id}_address`) ?? "").trim() || null,
+        phone: String(formData.get(`fin_${id}_phone`) ?? "").trim() || null,
+      })
+      .eq("id", id);
+    if (error) {
+      return { ok: false, error: "บันทึกข้อมูลบริษัทไฟแนนซ์ไม่สำเร็จ (สิทธิ์ไม่พอ หรือฐานข้อมูลผิดพลาด)" };
+    }
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/acct");
+  return { ok: true, message: "บันทึกข้อมูลบริษัทไฟแนนซ์แล้ว" };
+}

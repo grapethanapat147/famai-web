@@ -240,6 +240,7 @@ type DocumentRow = {
   id: string;
   branch_id: string;
   doc_type: string; // RECEIPT | TAXINV | …
+  part: string; // full | down | financed (migration 33)
   doc_no: string;
   doc_date: string;
   sale_id: string | null;
@@ -536,6 +537,9 @@ type FinanceCompany = {
   min_down_pct: number | null;
   commission: number | null;
   note: string | null;
+  address: string | null; // migration 33 — ข้อมูลผู้ซื้อบนใบกำกับยอดจัด
+  tax_id: string | null;
+  phone: string | null;
   is_active: boolean;
 };
 

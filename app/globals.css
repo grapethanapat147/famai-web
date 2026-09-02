@@ -251,6 +251,11 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.qdoc-part {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #3a3e47;
+}
 .qdoc-token {
   margin-top: 20px;
   padding: 8px 10px;
