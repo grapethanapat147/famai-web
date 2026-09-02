@@ -7,6 +7,7 @@ import type { TypedSupabaseClient } from "@/lib/supabase/client-type";
 import { nextDocNo } from "@/lib/rpc";
 import { canManageService, isServiceType, type ServiceActionResult } from "@/lib/service/jobs";
 import { canTransition, isServiceStatus } from "@/lib/service/status";
+import { nextServiceReminder } from "@/lib/rpc";
 import { isLineKind, jobTotals, lineAmount } from "@/lib/service/lines";
 
 /** คำนวณยอด labor/parts/total ใหม่จากรายการทั้งหมดของใบงาน แล้วเขียนกลับ (self-healing) */
@@ -74,6 +75,16 @@ export async function advanceStatus(formData: FormData): Promise<ServiceActionRe
     .select("id");
   if (casError || !updated || updated.length === 0) {
     return { ok: false, error: "สถานะเพิ่งเปลี่ยน กรุณาลองใหม่" };
+  }
+
+  // ปิดงานแล้วตั้งรอบเช็กระยะถัดไป (best-effort — ไม่ล้มการเปลี่ยนสถานะถ้าตั้งไม่ได้)
+  if (to === "เสร็จ") {
+    try {
+      await nextServiceReminder(supabase, jobId);
+      revalidatePath("/cal");
+    } catch {
+      // ตั้งเตือนไม่ได้ไม่ควรทำให้ปิดใบงานล้ม — รอบถัดไปตั้งมือได้จากหน้าปฏิทิน
+    }
   }
 
   revalidatePath("/service");

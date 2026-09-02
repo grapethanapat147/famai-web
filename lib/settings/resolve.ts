@@ -11,8 +11,10 @@ export type AppSettings = {
   reg_days: number;
   follow_up_cadence: number[];
   service_km: number[];
+  service_first_days: number;
   vat_pct: number;
   finance_terms: number[];
+  ar_due_days: number;
   freebie_is_cost: boolean;
   work_start: string;
   work_end: string;
@@ -30,8 +32,10 @@ export const SETTING_DEFAULTS: AppSettings = {
   reg_days: 30,
   follow_up_cadence: [7, 30, 90, 365, 1095],
   service_km: [500, 1000, 4000, 8000],
+  service_first_days: 30,
   vat_pct: 7,
   finance_terms: [12, 18, 24, 30, 36, 42, 48],
+  ar_due_days: 30,
   freebie_is_cost: true,
   work_start: "08:30",
   work_end: "17:30",

@@ -105,3 +105,15 @@ export async function sellUnit(client: TypedSupabaseClient, a: SellUnitArgs): Pr
   }
   return data as SellUnitResult;
 }
+
+/**
+ * ปิดใบงานซ่อมแล้วตั้งรอบเช็กระยะถัดไป (FAM-1115 · fixlist ข้อ 02)
+ * คืน id ของรอบใหม่ · null = ไม่มีรอบถัดไป (รถนอก / เลยระยะสุดท้ายใน settings service_km)
+ */
+export async function nextServiceReminder(client: TypedSupabaseClient, jobId: string): Promise<string | null> {
+  const { data, error } = await client.rpc("next_service_reminder", { p_job_id: jobId });
+  if (error) {
+    throw new Error(`next_service_reminder ล้มเหลว: ${error.message}`);
+  }
+  return data ?? null;
+}
