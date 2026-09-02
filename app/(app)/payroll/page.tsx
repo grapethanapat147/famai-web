@@ -3,7 +3,17 @@ import { getCurrentUser } from "@/lib/auth";
 import { canSeeMoney } from "@/lib/auth/money";
 import { getActiveBranches, getCompaniesCached } from "@/lib/reference/cache";
 import { getSettings } from "@/lib/settings";
-import { canViewPayroll, computePayslip, monthRange, type PayslipRow } from "@/lib/payroll/payroll";
+import {
+  canClosePayroll,
+  canViewPayroll,
+  computePayslip,
+  isPeriodLocked,
+  isPeriodStatus,
+  monthRange,
+  type PayslipRow,
+  type PeriodStatus,
+} from "@/lib/payroll/payroll";
+import { updatePayrollPeriod } from "./actions";
 import { PayrollView } from "@/components/payroll/PayrollView";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 
@@ -31,14 +41,31 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   const see = await canSeeMoney();
   const settings = await getSettings(); // แคชข้ามรีเควสต์ (FAM-1108) — เดิมใช้ getSettingsWith ที่ query สดทุกครั้ง
 
-  const [empRes, usersRes, attRes, salesRes, branches, orgCompanies] = await Promise.all([
+  const [empRes, usersRes, attRes, salesRes, branches, orgCompanies, periodRes] = await Promise.all([
     supabase.from("employee").select("id, user_id, position, base_salary").is("resigned_at", null),
     supabase.from("app_user").select("id, full_name"),
     supabase.from("attendance").select("employee_id, ot_minutes").gte("work_date", start).lte("work_date", end),
     supabase.from("sale").select("salesperson_id, gross_profit").is("voided_at", null).gte("sold_at", start).lte("sold_at", end),
     getActiveBranches(),
     getCompaniesCached(),
+    supabase
+      .from("payroll_period")
+      .select("id, status")
+      .is("branch_id", null)
+      .eq("period_start", start)
+      .eq("period_end", end)
+      .maybeSingle(),
   ]);
+
+  const period = periodRes.data ?? null;
+  const periodStatus: PeriodStatus | null = period && isPeriodStatus(period.status) ? period.status : null;
+  // งวดที่ปิดแล้วอ่านจากภาพนิ่ง — ไม่คำนวณใหม่ ไม่งั้นแก้บันทึกเวลาย้อนหลังแล้วยอดขยับ (fixlist ข้อ 08)
+  const snapRes = isPeriodLocked(periodStatus) && period
+    ? await supabase
+        .from("payslip")
+        .select("employee_id, employee_name, position, base, ot_minutes, ot_amount, commission_base, commission, ssn, net")
+        .eq("period_id", period.id)
+    : null;
 
   const userName = new Map((usersRes.data ?? []).map((u) => [u.id, u.full_name]));
 
@@ -53,7 +80,25 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
     }
   }
 
-  const rows: PayslipRow[] = (empRes.data ?? [])
+  const frozenRows: PayslipRow[] | null = snapRes?.data
+    ? snapRes.data
+        .map((s) => ({
+          employeeId: s.employee_id,
+          name: s.employee_name,
+          position: s.position ?? "—",
+          otMinutes: Number(s.ot_minutes ?? 0),
+          commissionBase: Number(s.commission_base ?? 0),
+          base: Number(s.base ?? 0),
+          otAmount: Number(s.ot_amount ?? 0),
+          commission: Number(s.commission ?? 0),
+          gross: Number(s.base ?? 0) + Number(s.ot_amount ?? 0) + Number(s.commission ?? 0),
+          ssn: Number(s.ssn ?? 0),
+          net: Number(s.net ?? 0),
+        }))
+        .sort((a, b) => b.net - a.net)
+    : null;
+
+  const liveRows: PayslipRow[] = (empRes.data ?? [])
     .map((e) => {
       const otMinutes = otByEmp.get(e.id) ?? 0;
       const commissionBase = e.user_id ? (gpByUser.get(e.user_id) ?? 0) : 0;
@@ -77,6 +122,8 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
     })
     .sort((a, b) => b.net - a.net);
 
+  const rows = frozenRows ?? liveRows;
+
   // ไม่มีสิทธิ์เห็นเงิน → ไม่ส่งตัวเลขเงินเดือนไป client เลย
   const safeRows: PayslipRow[] = see
     ? rows
@@ -95,5 +142,15 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
     sellerName: me.fullName ?? "",
   };
 
-  return <PayrollView rows={safeRows} month={month} seller={seller} canSeeMoney={see} />;
+  return (
+    <PayrollView
+      rows={safeRows}
+      month={month}
+      seller={seller}
+      canSeeMoney={see}
+      periodStatus={periodStatus}
+      canClose={canClosePayroll(me.roleCodes)}
+      periodAction={updatePayrollPeriod}
+    />
+  );
 }

@@ -345,6 +345,22 @@ type FollowUpTask = {
   note: string | null;
 };
 
+type Payslip = {
+  id: string;
+  period_id: string;
+  employee_id: string;
+  employee_name: string;
+  position: string | null;
+  base: number;
+  ot_minutes: number;
+  ot_amount: number;
+  commission_base: number;
+  commission: number;
+  ssn: number;
+  net: number;
+  created_at: string;
+};
+
 type PayrollPeriod = {
   id: string;
   branch_id: string | null;
@@ -584,6 +600,7 @@ export type Database = {
       service_reminder: Table<ServiceReminder>;
       follow_up_task: Table<FollowUpTask>;
       payroll_period: Table<PayrollPeriod>;
+      payslip: Table<Payslip>;
       part: Table<Part>;
       part_movement: Table<PartMovement>;
       freebie: Table<Freebie>;

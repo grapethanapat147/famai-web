@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Money } from "@/components/ui/Money";
 import { formatBaht } from "@/lib/format";
+import type { PayrollActionResult } from "@/app/(app)/payroll/actions";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { toCsv } from "@/lib/report/csv";
-import { payrollTotals, type PayslipRow } from "@/lib/payroll/payroll";
+import { payrollTotals, type PayslipRow, isPeriodLocked, periodStatusVariant, type PeriodStatus } from "@/lib/payroll/payroll";
 import { PrintableEmployeePayslip } from "@/components/payroll/PrintableEmployeePayslip";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 
@@ -26,16 +28,47 @@ export function PayrollView({
   month,
   seller,
   canSeeMoney,
+  periodStatus = null,
+  canClose = false,
+  periodAction,
 }: {
   rows: PayslipRow[];
   month: string;
   seller: QuoteSeller;
   canSeeMoney: boolean;
+  /** สถานะงวด (FAM-1122 · fixlist ข้อ 08) — ปิดแล้ว = ยอดถูกแช่ ไม่คำนวณใหม่ */
+  periodStatus?: PeriodStatus | null;
+  canClose?: boolean;
+  periodAction?: (formData: FormData) => Promise<PayrollActionResult>;
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [payslipEmp, setPayslipEmp] = useState<PayslipRow | null>(null);
   const [printTick, setPrintTick] = useState(0);
+  const [periodBusy, setPeriodBusy] = useState(false);
+  const [periodMsg, setPeriodMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const locked = isPeriodLocked(periodStatus);
+
+  async function runPeriod(action: "close" | "pay" | "reopen") {
+    if (!periodAction || periodBusy) {
+      return;
+    }
+    if (action === "reopen" && !window.confirm("เปิดงวดใหม่จะทิ้งยอดที่แช่ไว้ แล้วกลับไปคำนวณสดตามข้อมูลจริง ยืนยันไหม")) {
+      return;
+    }
+    setPeriodBusy(true);
+    setPeriodMsg(null);
+    const fd = new FormData();
+    fd.set("month", month);
+    fd.set("action", action);
+    const res = await periodAction(fd);
+    setPeriodBusy(false);
+    setPeriodMsg(res.ok ? { ok: true, text: res.message ?? "บันทึกแล้ว" } : { ok: false, text: res.error });
+    if (res.ok) {
+      router.refresh();
+    }
+  }
 
   // พิมพ์สลิปหลังเอกสารของคนที่เลือก render แล้ว (rAF กันพิมพ์ก่อน paint)
   useEffect(() => {
@@ -72,6 +105,17 @@ export function PayrollView({
 
   return (
     <div className="mx-auto max-w-5xl">
+      {(locked || periodMsg) && (
+        <div className="mb-3 flex flex-col gap-2 print:hidden">
+          {locked && (
+            <p className="rounded-[10px] border border-dashed border-hairline px-3 py-2 text-sm text-ink-soft">
+              🔒 งวดนี้ปิดแล้ว — ยอดที่เห็นคือยอดที่แช่ไว้ตอนปิดงวด แก้บันทึกเวลาย้อนหลังจะไม่ทำให้ตัวเลขนี้เปลี่ยน
+            </p>
+          )}
+          {periodMsg && <StatusBadge variant={periodMsg.ok ? "good" : "bad"}>{periodMsg.text}</StatusBadge>}
+        </div>
+      )}
+
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <label className="flex items-center gap-2 text-sm text-muted">
           งวดเดือน
@@ -82,7 +126,42 @@ export function PayrollView({
             className={`${selectClass} w-[150px]`}
           />
         </label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge variant={periodStatusVariant(periodStatus)}>{periodStatus ?? "ร่าง (คำนวณสด)"}</StatusBadge>
+          {canClose && periodAction && (
+            <>
+              {!locked && (
+                <button
+                  type="button"
+                  disabled={periodBusy}
+                  onClick={() => runPeriod("close")}
+                  className="rounded-[24px] bg-ink px-4 py-2 text-sm font-medium text-card disabled:opacity-50"
+                >
+                  {periodBusy ? "กำลังปิดงวด…" : "🔒 ปิดงวด"}
+                </button>
+              )}
+              {periodStatus === "ปิดงวดแล้ว" && (
+                <>
+                  <button
+                    type="button"
+                    disabled={periodBusy}
+                    onClick={() => runPeriod("pay")}
+                    className="rounded-[24px] bg-accent px-4 py-2 text-sm font-medium text-card disabled:opacity-50"
+                  >
+                    บันทึกว่าจ่ายแล้ว
+                  </button>
+                  <button
+                    type="button"
+                    disabled={periodBusy}
+                    onClick={() => runPeriod("reopen")}
+                    className="rounded-[24px] border border-hairline px-4 py-2 text-sm text-ink-soft disabled:opacity-50"
+                  >
+                    เปิดงวดใหม่
+                  </button>
+                </>
+              )}
+            </>
+          )}
           <button type="button" onClick={() => window.print()} className="rounded-[24px] border border-hairline px-4 py-2 text-sm text-ink-soft">
             พิมพ์
           </button>
