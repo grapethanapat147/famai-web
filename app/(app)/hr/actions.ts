@@ -7,7 +7,7 @@ import { getActiveBranches } from "@/lib/reference/cache";
 import { getSettingsWith } from "@/lib/settings";
 import type { TypedSupabaseClient } from "@/lib/supabase/client-type";
 import { positionFromRoles } from "@/lib/hr/employee";
-import { lateMinutes, workMinutes } from "@/lib/hr/time";
+import { lateMinutes, workMinutes, otMinutes } from "@/lib/hr/time";
 import { canApproveLeave, isLeaveType, leaveDays, type HrActionResult } from "@/lib/hr/leave";
 import { branchGeofence, formatDistanceM, haversineMeters, withinGeofence } from "@/lib/hr/geo";
 import { isSiteKind, nearestSite, type SiteRow } from "@/lib/branch/sites";
@@ -212,8 +212,16 @@ export async function clockOut(): Promise<HrActionResult> {
   }
 
   const nowIso = new Date().toISOString();
-  const work = workMinutes(bangkokHHMM(att.check_in), bangkokHHMM(nowIso));
-  const { error } = await supabase.from("attendance").update({ check_out: nowIso, work_minutes: work }).eq("id", att.id);
+  const inHHMM = bangkokHHMM(att.check_in);
+  const outHHMM = bangkokHHMM(nowIso);
+  const settings = await getSettingsWith(supabase);
+  const work = workMinutes(inHHMM, outHHMM);
+  // fixlist ข้อ 04 — เดิมไม่เคยเขียน ot_minutes ทำให้ค่า OT ในสลิปเป็น 0 เสมอ
+  const ot = otMinutes(inHHMM, outHHMM, settings.work_end);
+  const { error } = await supabase
+    .from("attendance")
+    .update({ check_out: nowIso, work_minutes: work, ot_minutes: ot })
+    .eq("id", att.id);
   if (error) {
     return { ok: false, error: "ลงเวลาออกไม่สำเร็จ" };
   }
