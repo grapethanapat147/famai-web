@@ -245,6 +245,7 @@ type DocumentRow = {
   doc_date: string;
   sale_id: string | null;
   service_job_id: string | null;
+  wholesale_order_id: string | null; // เอกสารของบิลขายส่ง (migration 35)
   customer_id: string | null;
   amount_base: number | null;
   amount_vat: number | null;
@@ -584,8 +585,9 @@ type FinanceCompany = {
 type Receivable = {
   id: string;
   branch_id: string;
-  sale_id: string;
-  kind: string; // finance | customer | อื่นๆ
+  sale_id: string | null; // null ได้เมื่อเป็นเงินค้างรับจากบิลขายส่ง (migration 34/35)
+  wholesale_order_id: string | null;
+  kind: string; // finance | customer | wholesale | อื่นๆ
   payer_finance_id: string | null;
   amount_due: number;
   amount_paid: number;
@@ -700,6 +702,10 @@ export type Database = {
       next_service_reminder: {
         Args: { p_job_id: string };
         Returns: string | null;
+      };
+      void_wholesale_order: {
+        Args: { p_order_id: string; p_reason: string };
+        Returns: Json;
       };
       sell_wholesale: {
         Args: { p_company_id: string; p_lines: Json; p_note?: string | null };
