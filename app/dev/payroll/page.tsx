@@ -19,6 +19,11 @@ const ROWS: PayslipRow[] = [
   row("5", "วิชัย ช่างเก่ง", "ช่าง", 13000, 300, 0),
 ];
 
+async function mockPeriod(formData: FormData) {
+  const action = String(formData.get("action") ?? "");
+  return { ok: true as const, message: action === "close" ? "ปิดงวดแล้ว — แช่ยอดสลิป 5 คน" : "บันทึกแล้ว" };
+}
+
 export default function DevPayrollPage() {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 lg:px-6">
@@ -27,6 +32,9 @@ export default function DevPayrollPage() {
         <p className="mt-1 text-ink-soft">sample data — สลิปคำนวณสด (ฐาน + OT + คอม − ปกส.) · เปลี่ยนงวด · ส่งออก CSV / พิมพ์</p>
       </header>
       <PayrollView
+      periodStatus="ปิดงวดแล้ว"
+      canClose
+      periodAction={mockPeriod}
         rows={ROWS}
         month="2026-08"
         seller={{
