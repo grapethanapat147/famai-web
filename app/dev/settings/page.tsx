@@ -33,9 +33,9 @@ async function mockOrg(formData: FormData): Promise<OrgInfoActionResult> {
 
 const DEV_COMPANY = { id: "co1", code: "FAMAI", name: "Famai Motor Group", taxId: "", address: "", phone: "" };
 const DEV_BRANCHES = [
-  { id: "b1", code: "FMG01", name: "Famai Motor Group", taxId: "", address: "สำนักงานใหญ่", phone: "", geoLat: "13.9403", geoLng: "100.5422", geoRadius: "150", requireSelfie: true },
-  { id: "b2", code: "FMM01", name: "Famai Motor", taxId: "", address: "บริษัท 1", phone: "", geoLat: "", geoLng: "", geoRadius: "", requireSelfie: false },
-  { id: "b3", code: "FCG01", name: "Famai Center Group", taxId: "", address: "บริษัท 2", phone: "", geoLat: "", geoLng: "", geoRadius: "", requireSelfie: false },
+  { id: "b1", code: "FMG01", name: "Famai Motor Group", taxId: "", address: "สำนักงานใหญ่", phone: "", siteCount: 2, requireSelfie: true },
+  { id: "b2", code: "FMM01", name: "Famai Motor", taxId: "", address: "บริษัท 1", phone: "", siteCount: 0, requireSelfie: false },
+  { id: "b3", code: "FCG01", name: "Famai Center Group", taxId: "", address: "บริษัท 2", phone: "", siteCount: 2, requireSelfie: false },
 ];
 
 export default function DevSettingsPage() {

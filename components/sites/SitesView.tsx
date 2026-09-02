@@ -14,6 +14,7 @@ import {
   SITE_KIND_LABEL,
   type SiteActionResult,
   type SiteKind,
+  type LegacyGeoBranch,
   type SiteRow,
 } from "@/lib/branch/sites";
 
@@ -24,12 +25,37 @@ const inputCls = "w-full rounded-[8px] border border-hairline bg-card px-3 py-2 
 export function SitesView({
   sites,
   branches,
+  legacyGeo = [],
   action,
+  importAction,
 }: {
   sites: SiteRow[];
   branches: SiteBranchOption[];
+  legacyGeo?: LegacyGeoBranch[];
   action: (formData: FormData) => Promise<SiteActionResult>;
+  importAction?: (formData: FormData) => Promise<SiteActionResult>;
 }) {
+  const router = useRouter();
+  const [importing, setImporting] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  async function runImport(branch: LegacyGeoBranch) {
+    if (!importAction || importing) {
+      return;
+    }
+    setImporting(branch.id);
+    setImportError(null);
+    const fd = new FormData();
+    fd.set("branch_id", branch.id);
+    const res = await importAction(fd);
+    setImporting(null);
+    if (res.ok) {
+      router.refresh();
+    } else {
+      setImportError(res.error);
+    }
+  }
+
   const [search, setSearch] = useState("");
   const [branchId, setBranchId] = useState("all");
   const [editing, setEditing] = useState<SiteRow | null>(null);
@@ -44,9 +70,10 @@ export function SitesView({
   });
 
   // บริษัทที่ยังไม่มีจุดลงเวลา = ลงเวลาที่ไหนก็ได้ (ไม่มีอะไรให้เทียบ) — ต้องเตือน
+  const legacyIds = useMemo(() => new Set(legacyGeo.map((b) => b.id)), [legacyGeo]);
   const branchesWithoutSite = useMemo(
-    () => branches.filter((b) => activeSiteCount(sites, b.id) === 0),
-    [branches, sites],
+    () => branches.filter((b) => activeSiteCount(sites, b.id) === 0 && !legacyIds.has(b.id)),
+    [branches, sites, legacyIds],
   );
 
   const columns: Column<SiteRow>[] = [
@@ -117,6 +144,31 @@ export function SitesView({
           + เพิ่มสาขา
         </button>
       </div>
+
+      {legacyGeo.length > 0 && importAction && (
+        <div className="mb-4 flex flex-col gap-2 rounded-[12px] border border-hairline bg-card p-4">
+          <p className="text-sm text-ink">
+            พบพิกัดลงเวลาแบบเก่าที่ตั้งไว้ในหน้าตั้งค่า — ย้ายมาเป็นจุดลงเวลาเพื่อให้เหลือที่ตั้งค่าที่เดียว
+          </p>
+          {legacyGeo.map((b) => (
+            <div key={b.id} className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-ink-soft">{b.name}</span>
+              <span className="font-mono text-xs text-muted">
+                {b.lat.toFixed(5)}, {b.lng.toFixed(5)} · {b.radiusM} ม.
+              </span>
+              <button
+                type="button"
+                onClick={() => runImport(b)}
+                disabled={importing !== null}
+                className="rounded-[20px] border border-hairline px-3.5 py-1.5 text-xs text-ink-soft transition-transform active:scale-[0.97] hover:text-ink disabled:opacity-50"
+              >
+                {importing === b.id ? "กำลังย้าย…" : "ย้ายมาเป็นจุดลงเวลา"}
+              </button>
+            </div>
+          ))}
+          {importError && <StatusBadge variant="bad">{importError}</StatusBadge>}
+        </div>
+      )}
 
       {branchesWithoutSite.length > 0 && (
         <div className="mb-4">

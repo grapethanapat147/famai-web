@@ -11,11 +11,12 @@ export type OrgCompany = {
   phone: string;
 };
 
-/** บริษัท (สาขา) เพิ่มการตั้งค่าลงเวลา — geofence + บังคับเซลฟี่ (FAM-1101 P3) · เก็บ geo เป็น string เพื่อ prefill input */
+/**
+ * บริษัท (สาขา) เพิ่มการตั้งค่าลงเวลา — บังคับเซลฟี่
+ * พิกัดย้ายไปตั้งที่หน้าสาขา (branch_site) แล้ว (FAM-1114) ที่นี่เก็บแค่จำนวนจุดไว้แสดงสรุป
+ */
 export type OrgBranch = OrgCompany & {
-  geoLat: string;
-  geoLng: string;
-  geoRadius: string;
+  siteCount: number;
   requireSelfie: boolean;
 };
 

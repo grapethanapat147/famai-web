@@ -3,6 +3,7 @@ import {
   activeSiteCount,
   canManageSites,
   isSiteKind,
+  legacyGeoBranches,
   nearestSite,
   RADIUS_MAX,
   RADIUS_MIN,
@@ -104,5 +105,28 @@ describe("activeSiteCount / isSiteKind", () => {
     expect(isSiteKind("main")).toBe(true);
     expect(isSiteKind("sub")).toBe(true);
     expect(isSiteKind("branch")).toBe(false);
+  });
+});
+
+describe("legacyGeoBranches", () => {
+  const branches = [
+    { id: "b1", name: "ปทุมธานี", geoLat: 13.94, geoLng: 100.54, geoRadiusM: 150 },
+    { id: "b2", name: "รังสิต", geoLat: 13.98, geoLng: 100.61, geoRadiusM: 200 },
+    { id: "b3", name: "ลำลูกกา", geoLat: null, geoLng: null, geoRadiusM: null },
+  ];
+
+  it("เอาเฉพาะบริษัทที่มีพิกัดเก่าแต่ยังไม่มีจุดใน branch_site", () => {
+    const out = legacyGeoBranches(branches, [site({ branchId: "b1" })]);
+    expect(out.map((b) => b.id)).toEqual(["b2"]);
+    expect(out[0]).toMatchObject({ name: "รังสิต", lat: 13.98, radiusM: 200 });
+  });
+
+  it("ย้ายครบแล้วเหลือศูนย์ · พิกัดไม่ครบ 3 ค่าถือว่าไม่มี", () => {
+    expect(legacyGeoBranches(branches, [site({ branchId: "b1" }), site({ id: "s2", branchId: "b2" })])).toEqual([]);
+    expect(legacyGeoBranches([{ id: "b9", name: "ไม่ครบ", geoLat: 13.9, geoLng: null, geoRadiusM: 150 }], [])).toEqual([]);
+  });
+
+  it("จุดที่ปิดใช้งานก็นับว่ามีจุดแล้ว (ไม่ต้องชวนย้ายซ้ำ)", () => {
+    expect(legacyGeoBranches(branches, [site({ branchId: "b2", isActive: false })]).map((b) => b.id)).toEqual(["b1"]);
   });
 });
