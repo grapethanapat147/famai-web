@@ -18,10 +18,10 @@ const FINANCE: FinanceCo[] = [
 ];
 
 const FREEBIES: FreebieOption[] = [
-  { name: "หมวกกันน็อก", cost: 450 },
-  { name: "พ.ร.บ.", cost: 320 },
-  { name: "ผ้าคลุมรถ", cost: 120 },
-  { name: "น้ำมันเครื่อง", cost: 180 },
+  { id: "f1", name: "หมวกกันน็อก", cost: 450, qtyOnHand: 12 },
+  { id: "f2", name: "พ.ร.บ.", cost: 320, qtyOnHand: 40 },
+  { id: "f3", name: "ผ้าคลุมรถ", cost: 120, qtyOnHand: 2 },
+  { id: "f4", name: "น้ำมันเครื่อง", cost: 180, qtyOnHand: 0 },
 ];
 
 async function mockSell(formData: FormData): Promise<SellActionResult> {

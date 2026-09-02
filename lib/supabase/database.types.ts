@@ -648,6 +648,7 @@ export type Database = {
           p_finance_id: string | null;
           p_note: string | null;
           p_customer_id?: string | null;
+          p_freebie_ids?: string[] | null;
         };
         Returns: Json;
       };

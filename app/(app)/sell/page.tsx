@@ -5,19 +5,11 @@ import { getBranchesCached } from "@/lib/reference/cache";
 import { getSettings } from "@/lib/settings";
 import { stripMoneyFields } from "@/lib/auth/strip-money";
 import { computeAgeDays } from "@/lib/stock/units";
-import { SellForm, type CustomerOption, type FinanceCo, type SellUnit } from "@/components/sell/SellForm";
+import { SellForm, type CustomerOption, type FinanceCo, type FreebieOption, type SellUnit } from "@/components/sell/SellForm";
 import type { SellInitial } from "@/lib/sell/sell";
 import { recordSale } from "./actions";
 
 export const metadata = { title: "ขายรถ — Famai Motor Group" };
-
-// ของแถม default (spec §7) — ควรมาจากตาราง `freebie` ภายหลัง
-const DEFAULT_FREEBIES = [
-  { name: "หมวกกันน็อก", cost: 450 },
-  { name: "พ.ร.บ.", cost: 320 },
-  { name: "ผ้าคลุมรถ", cost: 120 },
-  { name: "น้ำมันเครื่อง", cost: 180 },
-];
 
 function todayISO(): string {
   const d = new Date();
@@ -34,7 +26,7 @@ export default async function SellPage({
 
   const supabase = await createServerSupabase();
 
-  const [unitsRes, variantsRes, colorsRes, branches, finRes, custRes] = await Promise.all([
+  const [unitsRes, variantsRes, colorsRes, branches, finRes, custRes, freebieRes] = await Promise.all([
     supabase
       .from("motorcycle_unit")
       .select("id, branch_id, variant_id, color_code, engine_no, frame_no, received_at, cost, retail")
@@ -45,7 +37,16 @@ export default async function SellPage({
     supabase.from("finance_company").select("id, name, flat_rate_pct").eq("is_active", true),
     // ลูกค้าเดิมสำหรับเลือกซ้ำ (FAM-1110) — RLS คัดเฉพาะบริษัทที่เข้าถึงได้
     supabase.from("customer").select("id, full_name, phone").order("created_at", { ascending: false }).limit(500),
+    // ของแถมจากตารางจริง (FAM-1123 · fixlist ข้อ 05) — เดิมเป็นรายการพิมพ์ตายตัวในโค้ด
+    supabase.from("freebie").select("id, name, cost, qty_on_hand").order("name"),
   ]);
+
+  const freebieOptions: FreebieOption[] = (freebieRes.data ?? []).map((f) => ({
+    id: f.id,
+    name: f.name,
+    cost: Number(f.cost ?? 0),
+    qtyOnHand: Number(f.qty_on_hand ?? 0),
+  }));
 
   const customers: CustomerOption[] = (custRes.data ?? []).map((c) => ({
     id: c.id,
@@ -112,7 +113,7 @@ export default async function SellPage({
     <SellForm
       units={units}
       financeCompanies={financeCompanies}
-      freebieOptions={DEFAULT_FREEBIES}
+      freebieOptions={freebieOptions}
       vatPct={settings.vat_pct}
       agingDays={settings.aging_days}
       freebieIsCost={settings.freebie_is_cost}
