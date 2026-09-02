@@ -5,22 +5,26 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { CUSTOMER_MODE_COOKIE } from "@/lib/auth/constants";
+import { readDemoLoginState } from "@/lib/auth/demo";
 
 export type LoginState = { error: string } | null;
 
 /**
  * เข้าสู่ระบบด้วย Supabase Auth (รหัสผ่าน hash โดย Supabase — ไม่เขียนเอง)
  * โหมดทดลอง (DEMO_LOGIN=true): ใส่อะไรก็ได้ → เข้าเป็นบัญชีทดลองจริงตาม DEMO_LOGIN_EMAIL/PASSWORD
- * (คีย์อยู่ฝั่ง server เท่านั้น ไม่หลุดไป client) → ยังเห็นข้อมูลจริงผ่าน RLS · ปิดโหมดนี้ก่อนเปิดใช้จริง
+ * (คีย์อยู่ฝั่ง server เท่านั้น ไม่หลุดไป client) → ยังเห็นข้อมูลจริงผ่าน RLS
+ *
+ * FAM-1125: โหมดนี้ **ปิดตัวเองบน production เสมอ** ต่อให้ลืมตั้ง DEMO_LOGIN=false (fixlist ข้อ 21)
  */
 export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
-  const demo = process.env.DEMO_LOGIN === "true";
+  const demoState = readDemoLoginState();
+  const demo = demoState.enabled;
   let email = String(formData.get("email") ?? "").trim();
   let password = String(formData.get("password") ?? "");
 
-  if (demo && process.env.DEMO_LOGIN_EMAIL && process.env.DEMO_LOGIN_PASSWORD) {
-    email = process.env.DEMO_LOGIN_EMAIL;
-    password = process.env.DEMO_LOGIN_PASSWORD;
+  if (demo) {
+    email = process.env.DEMO_LOGIN_EMAIL as string;
+    password = process.env.DEMO_LOGIN_PASSWORD as string;
   } else if (!email || !password) {
     return { error: "กรุณากรอกอีเมลและรหัสผ่าน" };
   }
