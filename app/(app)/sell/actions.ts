@@ -31,6 +31,11 @@ export async function recordSale(formData: FormData): Promise<SellActionResult> 
   const termRaw = String(formData.get("term_months") ?? "").trim();
   const note = String(formData.get("note") ?? "").trim() || null;
   const customerId = String(formData.get("customer_id") ?? "").trim() || null;
+  // ของแถมส่งมาเป็น id (FAM-1123) — เซิร์ฟเวอร์คิดต้นทุน+ตัดสต๊อกเอง ไม่เชื่อยอดจาก client
+  const freebieIds = String(formData.get("freebie_ids") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   if (!unitId) {
     return { ok: false, error: "เลือกคันรถก่อน" };
@@ -62,8 +67,10 @@ export async function recordSale(formData: FormData): Promise<SellActionResult> 
       financeId: payMethod === "finance" ? financeId : null,
       note,
       customerId,
+      freebieIds: freebieIds.length > 0 ? freebieIds : null,
     });
     revalidatePath("/sell");
+    revalidatePath("/parts");
     revalidatePath("/stock");
     revalidatePath("/deal");
     return { ok: true, saleId: res.sale_id, docNo: res.doc_no };

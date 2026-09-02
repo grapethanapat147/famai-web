@@ -27,7 +27,7 @@ export type SellUnit = {
 };
 export type FinanceCo = { id: string; name: string; ratePct: number };
 export type CustomerOption = { id: string; fullName: string; phone: string | null };
-export type FreebieOption = { name: string; cost: number };
+export type FreebieOption = { id: string; name: string; cost: number; qtyOnHand: number };
 
 const inputCls =
   "w-full rounded-[8px] border border-hairline bg-card px-3 py-2.5 text-base text-ink outline-none focus:border-ink tabular";
@@ -75,7 +75,7 @@ export function SellForm({
   const [customerId, setCustomerId] = useState("");
   const [financeCoId, setFinanceCoId] = useState(initial?.financeId ?? "");
   const [months, setMonths] = useState(initial?.months ?? financeTerms[0] ?? 12);
-  const [freebies, setFreebies] = useState<string[]>([]);
+  const [freebies, setFreebies] = useState<string[]>([]); // เก็บเป็น id ของแถม (FAM-1123)
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [savedDoc, setSavedDoc] = useState<string | null>(null);
@@ -105,7 +105,7 @@ export function SellForm({
 
   const monthlyRatePct = financeCompanies.find((f) => f.id === financeCoId)?.ratePct ?? 0;
   const freebieCost = useMemo(
-    () => freebies.reduce((s, n) => s + (freebieOptions.find((f) => f.name === n)?.cost ?? 0), 0),
+    () => freebies.reduce((s, id) => s + (freebieOptions.find((f) => f.id === id)?.cost ?? 0), 0),
     [freebies, freebieOptions],
   );
 
@@ -151,6 +151,7 @@ export function SellForm({
     fd.set("list_price", String(listPrice));
     fd.set("discount", String(discount));
     fd.set("freebie_cost", String(freebieCost));
+    fd.set("freebie_ids", freebies.join(","));
     fd.set("note", note);
     if (payMethod === "finance") {
       fd.set("finance_id", financeCoId);
@@ -177,8 +178,8 @@ export function SellForm({
     }
   }
 
-  const toggleFreebie = (name: string) =>
-    setFreebies((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
+  const toggleFreebie = (id: string) =>
+    setFreebies((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   return (
     <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_360px]">
@@ -323,15 +324,21 @@ export function SellForm({
 
         <Field label="ของแถม (กดเพิ่ม/เอาออก)" full>
           <div className="flex flex-wrap gap-1.5">
+            {freebieOptions.length === 0 && (
+              <p className="text-sm text-muted">ยังไม่มีของแถมในระบบ — เพิ่มได้ที่หน้าคลังอะไหล่</p>
+            )}
             {freebieOptions.map((f) => {
-              const on = freebies.includes(f.name);
+              const on = freebies.includes(f.id);
+              const out = f.qtyOnHand < 1;
               return (
                 <button
-                  key={f.name}
+                  key={f.id}
                   type="button"
-                  onClick={() => toggleFreebie(f.name)}
+                  onClick={() => toggleFreebie(f.id)}
+                  disabled={out && !on}
                   aria-pressed={on}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition active:scale-95 ${
+                  title={out ? "ของหมดสต๊อก" : `คงเหลือ ${f.qtyOnHand}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${
                     on ? "bg-ink text-card" : "border border-hairline bg-card text-ink-soft hover:border-ink/40 hover:text-ink"
                   }`}
                 >
@@ -339,6 +346,9 @@ export function SellForm({
                   {canSeeMoney && (
                     <span className={on ? "text-card/60" : "text-muted"}>{formatBaht(f.cost)}</span>
                   )}
+                  <span className={`text-xs ${on ? "text-card/60" : out ? "text-accent" : "text-muted"}`}>
+                    {out ? "หมด" : `เหลือ ${f.qtyOnHand}`}
+                  </span>
                 </button>
               );
             })}
