@@ -33,7 +33,14 @@ export default function DevDashPage() {
         agingDays={90}
         buckets={[30, 60, 90]}
         overdue={128400}
-        soldThisMonth={0}
+        sales={{ today: 117_000, month: 1_284_000, countToday: 2, countMonth: 21 }}
+      cash={{ in: 96_500, out: 34_200, net: 62_300 }}
+      finance={{ approved: 12, rejected: 4, pending: 3, ratePct: 75 }}
+      lowStock={[
+        { model: "NMAX 155", qty: 1 },
+        { model: "XMAX 300", qty: 2 },
+      ]}
+      soldThisMonth={0}
         asOf="19 ส.ค. 2026"
       />
     </main>

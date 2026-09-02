@@ -1,14 +1,17 @@
 /**
  * ปรับแต่งการ์ด Dashboard (FAM-1096) — เลือกแสดง/ซ่อน + สลับตำแหน่ง (ฟังก์ชันบริสุทธิ์ ทดสอบได้)
- * แถบสรุปด้านบน (มูลค่าสต๊อก/ยอดขาย) เป็น KPI หลัก แสดงเสมอ — ปรับได้เฉพาะ 3 การ์ดนี้
+ * แถบสรุปด้านบน (มูลค่าสต๊อก/ยอดขาย) เป็น KPI หลัก แสดงเสมอ — ปรับได้เฉพาะการ์ดในรายการนี้
  */
 
-export type WidgetKey = "watch" | "aging" | "oldest";
+export type WidgetKey = "money" | "watch" | "finance" | "lowstock" | "aging" | "oldest";
 
-export const ALL_WIDGET_KEYS: readonly WidgetKey[] = ["watch", "aging", "oldest"];
+export const ALL_WIDGET_KEYS: readonly WidgetKey[] = ["money", "watch", "finance", "lowstock", "aging", "oldest"];
 
 export const WIDGET_LABEL: Record<WidgetKey, string> = {
+  money: "เงินวันนี้ / เดือนนี้",
   watch: "ต้องจับตา",
+  finance: "อัตราไฟแนนซ์อนุมัติ",
+  lowstock: "รุ่นใกล้หมดสต๊อก",
   aging: "ช่วงอายุสต๊อก",
   oldest: "รถค้างนานสุด",
 };

@@ -12,8 +12,10 @@ import { toCsv } from "@/lib/report/csv";
 export type SaleReportRow = { soldAt: string; model: string; branch: string; salesperson: string; net: number; gross: number | null };
 export type ExpenseReportRow = { spentAt: string; category: string; amount: number };
 export type ArReportRow = { kind: string; balance: number; settled: boolean };
+/** ขายอะไหล่รายรายการ (FAM-1120 · fixlist ข้อ 18) — ราคาขาย/ต้นทุน ณ วันที่ขาย */
+export type PartsReportRow = { soldAt: string; part: string; qty: number; revenue: number; cost: number };
 
-type ReportType = "sales" | "expense" | "ar";
+type ReportType = "sales" | "parts" | "expense" | "ar";
 type Metric = { header: string; money: boolean };
 type DetailColumn = { header: string; align?: "right"; money?: boolean };
 type DetailCell = string | number;
@@ -25,12 +27,14 @@ const KIND_LABEL: Record<string, string> = { finance: "ไฟแนนซ์", c
 
 export function ReportView({
   sales,
+  parts = [],
   expenses,
   receivables,
   canSeeMoney,
   today,
 }: {
   sales: SaleReportRow[];
+  parts?: PartsReportRow[];
   expenses: ExpenseReportRow[];
   receivables: ArReportRow[];
   canSeeMoney: boolean;
@@ -41,6 +45,7 @@ export function ReportView({
   const [to, setTo] = useState("");
   const [salesGroup, setSalesGroup] = useState<"model" | "branch" | "salesperson" | "month">("model");
   const [expenseGroup, setExpenseGroup] = useState<"category" | "month">("category");
+  const [partsGroup, setPartsGroup] = useState<"day" | "part" | "month">("day");
   const [detailKey, setDetailKey] = useState<string | null>(null);
 
   // ── สร้างตารางตามรายงานที่เลือก ───────────────────────────────────────
@@ -81,6 +86,41 @@ export function ReportView({
         s.salesperson,
         s.net,
         ...(canSeeMoney ? [s.gross ?? 0] : []),
+      ]);
+  } else if (type === "parts") {
+    // ข้อ 18 — ข้อมูลราคา/ต้นทุนมีครบทุกการเคลื่อนไหวแล้ว แค่ยังไม่มีหน้าสรุป
+    title = "ขายอะไหล่";
+    const inR = parts.filter((p) => inRange(p.soldAt, from, to));
+    const keyOf =
+      partsGroup === "month"
+        ? (p: PartsReportRow) => monthKeyBE(p.soldAt)
+        : partsGroup === "part"
+          ? (p: PartsReportRow) => p.part
+          : (p: PartsReportRow) => formatThaiDate(p.soldAt);
+    groupHeader = { day: "วันที่", part: "อะไหล่", month: "เดือน (พ.ศ.)" }[partsGroup];
+    metrics = canSeeMoney
+      ? [{ header: "ยอดขาย", money: true }, { header: "ต้นทุน", money: true }, { header: "กำไร", money: true }]
+      : [{ header: "ยอดขาย", money: true }];
+    const valueOfs = canSeeMoney
+      ? [(p: PartsReportRow) => p.revenue, (p: PartsReportRow) => p.cost, (p: PartsReportRow) => p.revenue - p.cost]
+      : [(p: PartsReportRow) => p.revenue];
+    rows = groupAggregate(inR, keyOf, valueOfs);
+    detailColumns = [
+      { header: "วันที่" },
+      { header: "อะไหล่" },
+      { header: "จำนวน", align: "right" },
+      { header: "ยอดขาย", align: "right", money: true },
+      ...(canSeeMoney
+        ? ([{ header: "ต้นทุน", align: "right", money: true }, { header: "กำไร", align: "right", money: true }] as DetailColumn[])
+        : []),
+    ];
+    detailFor = (key) =>
+      groupMembers(inR, keyOf, key).map((p) => [
+        formatThaiDate(p.soldAt),
+        p.part,
+        p.qty,
+        p.revenue,
+        ...(canSeeMoney ? [p.cost, p.revenue - p.cost] : []),
       ]);
   } else if (type === "expense") {
     title = "ค่าใช้จ่าย";
@@ -132,6 +172,7 @@ export function ReportView({
           }}
           options={[
             { value: "sales", label: "ยอดขาย" },
+            { value: "parts", label: "อะไหล่" },
             { value: "expense", label: "ค่าใช้จ่าย" },
             { value: "ar", label: "เงินค้างรับ" },
           ]}
@@ -167,6 +208,17 @@ export function ReportView({
               { value: "model", label: "ตามรุ่น" },
               { value: "branch", label: "ตามบริษัท" },
               { value: "salesperson", label: "ตามพนักงาน" },
+              { value: "month", label: "ตามเดือน" },
+            ]}
+          />
+        )}
+        {type === "parts" && (
+          <Chips
+            value={partsGroup}
+            onChange={setPartsGroup}
+            options={[
+              { value: "day", label: "รายวัน" },
+              { value: "part", label: "ตามอะไหล่" },
               { value: "month", label: "ตามเดือน" },
             ]}
           />

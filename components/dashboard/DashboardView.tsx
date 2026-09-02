@@ -3,6 +3,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { StatCard } from "@/components/ui/StatCard";
+import type { CashToday, FinanceApproval, LowStockModel, SalesMoney } from "@/lib/dashboard/money";
 import { Money } from "@/components/ui/Money";
 import { Chips } from "@/components/ui/Chips";
 import { HBarChart } from "@/components/ui/HBarChart";
@@ -26,6 +27,10 @@ export function DashboardView({
   buckets,
   overdue,
   soldThisMonth,
+  sales,
+  cash,
+  finance,
+  lowStock = [],
   asOf,
 }: {
   units: DashUnit[];
@@ -34,6 +39,11 @@ export function DashboardView({
   buckets: number[];
   overdue: number | null;
   soldThisMonth: number;
+  /** ตัวเลขเงินหน้าแรก (FAM-1120 · fixlist ข้อ 15) */
+  sales: SalesMoney;
+  cash: CashToday;
+  finance: FinanceApproval;
+  lowStock?: LowStockModel[];
   asOf?: string;
 }) {
   const [branch, setBranch] = useState("all");
@@ -83,6 +93,81 @@ export function DashboardView({
 
   function renderWidget(key: WidgetKey): ReactNode {
     switch (key) {
+      case "money":
+        return (
+          <section>
+            <h2 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted">เงินวันนี้ / เดือนนี้</h2>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <StatCard
+                label="ยอดขายวันนี้"
+                value={<Money value={canSeeMoney ? sales.today : null} canSee={canSeeMoney} />}
+                hint={`${sales.countToday} คัน`}
+              />
+              <StatCard
+                label="ยอดขายเดือนนี้"
+                value={<Money value={canSeeMoney ? sales.month : null} canSee={canSeeMoney} />}
+                hint={`${sales.countMonth} คัน`}
+              />
+              <StatCard
+                label="รับเข้า − จ่ายออกวันนี้"
+                value={<Money value={canSeeMoney ? cash.net : null} canSee={canSeeMoney} />}
+                hint={canSeeMoney ? `รับ ${cash.in.toLocaleString("th-TH")} · จ่าย ${cash.out.toLocaleString("th-TH")}` : undefined}
+                tone={canSeeMoney && cash.net < 0 ? "accent" : undefined}
+              />
+              <StatCard label="ขายเดือนนี้" value={String(soldThisMonth)} hint="คัน" />
+            </div>
+          </section>
+        );
+      case "finance":
+        return (
+          <section className="rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <h2 className="font-display font-semibold text-ink">อัตราไฟแนนซ์อนุมัติ</h2>
+              <span className="tabular text-2xl font-semibold text-ink">
+                {finance.ratePct == null ? "—" : `${finance.ratePct}%`}
+              </span>
+            </div>
+            <p className="text-sm text-muted">
+              อนุมัติ <b className="text-ink">{finance.approved}</b> · ไม่ผ่าน <b className="text-ink">{finance.rejected}</b> · รอผล{" "}
+              <b className="text-ink">{finance.pending}</b>
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              {finance.ratePct == null ? "ยังไม่มีเคสที่รู้ผล" : "คิดจากเคสที่รู้ผลแล้วเท่านั้น (เคสรอผลไม่นับ)"}
+            </p>
+            <Link href="/deal" className="mt-3 inline-block text-sm font-medium text-accent hover:underline">
+              ดูดีลทั้งหมด →
+            </Link>
+          </section>
+        );
+      case "lowstock":
+        return (
+          <section className="flex flex-col rounded-[12px] bg-card p-4 shadow-[var(--sh-sm)]">
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <h2 className="font-display font-semibold text-ink">รุ่นใกล้หมดสต๊อก</h2>
+              <span className="tabular text-sm text-muted">{lowStock.length} รุ่น</span>
+            </div>
+            {lowStock.length === 0 ? (
+              <p className="flex-1 py-8 text-center text-sm text-muted">ทุกรุ่นยังมีของพอ 👍</p>
+            ) : (
+              <ul className="-mx-1.5 flex flex-col">
+                {lowStock.map((m) => (
+                  <li key={m.model} className="border-b border-hairline-2 last:border-0">
+                    <Link
+                      href="/stock"
+                      className="flex items-center justify-between gap-3 rounded-[8px] px-1.5 py-2 text-sm transition-colors hover:bg-paper-2"
+                    >
+                      <span className="min-w-0 flex-1 truncate text-ink">{m.model}</span>
+                      <span className="w-16 shrink-0 text-right tabular font-medium text-accent">เหลือ {m.qty}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link href="/imp" className="mt-3 inline-block text-sm font-medium text-accent hover:underline">
+              สั่งรถเข้า →
+            </Link>
+          </section>
+        );
       case "watch":
         return (
           <section>

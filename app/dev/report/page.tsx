@@ -28,6 +28,13 @@ const RECEIVABLES: ArReportRow[] = [
   { kind: "customer", balance: 0, settled: true },
 ];
 
+const PARTS = [
+  { soldAt: "2026-09-02", part: "น้ำมันเครื่อง Yamalube", qty: 3, revenue: 990, cost: 540 },
+  { soldAt: "2026-09-02", part: "ผ้าเบรกหน้า", qty: 1, revenue: 450, cost: 260 },
+  { soldAt: "2026-09-01", part: "ยางนอก 110/70-13", qty: 2, revenue: 2600, cost: 1780 },
+  { soldAt: "2026-08-28", part: "หัวเทียน NGK", qty: 4, revenue: 480, cost: 240 },
+];
+
 export default function DevReportPage() {
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-8 lg:px-6">
@@ -35,7 +42,8 @@ export default function DevReportPage() {
         <h1 className="font-display text-[28px] font-semibold text-ink">รายงาน (preview)</h1>
         <p className="mt-1 text-ink-soft">sample data — สลับรายงาน · จัดกลุ่ม · ช่วงวันที่ · ส่งออก CSV / พิมพ์</p>
       </header>
-      <ReportView sales={SALES} expenses={EXPENSES} receivables={RECEIVABLES} canSeeMoney today="2026-08-12" />
+      <ReportView
+      parts={PARTS} sales={SALES} expenses={EXPENSES} receivables={RECEIVABLES} canSeeMoney today="2026-08-12" />
     </main>
   );
 }
