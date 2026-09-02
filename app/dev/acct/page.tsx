@@ -20,6 +20,7 @@ const DOCS: DocDetail[] = [
     engineNo: "G3V5E-0865055",
     frameNo: "MH3SG576111027060",
     voided: false,
+    publicToken: "FMG-7K2M9",
   },
   {
     id: "d3",
@@ -35,6 +36,7 @@ const DOCS: DocDetail[] = [
     engineNo: "G3V5E-0865055",
     frameNo: "MH3SG576111027060",
     voided: false,
+    publicToken: "FMG-7K2M9",
   },
   {
     id: "d2",
@@ -50,6 +52,7 @@ const DOCS: DocDetail[] = [
     engineNo: "E34RE-057401",
     frameNo: "MLEUE364111399878",
     voided: false,
+    publicToken: "FMG-7K2M9",
   },
 ];
 

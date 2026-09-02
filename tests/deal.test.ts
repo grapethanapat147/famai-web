@@ -79,6 +79,7 @@ function deal(over: Partial<Deal>): Deal {
   return {
     saleId: "s",
     regId: "r",
+    publicToken: null,
     customerId: "c",
     customerName: "สมชาย",
     customerPhone: null,

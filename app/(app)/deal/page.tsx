@@ -20,7 +20,7 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
   // ดีล = การขายที่ยังไม่ถูกยกเลิก · ล่าสุดขึ้นบน (R1)
   const { data: saleRows } = await supabase
     .from("sale")
-    .select("id, customer_id, unit_id, pay_method, net_price, sold_at, doc_no")
+    .select("id, customer_id, unit_id, pay_method, net_price, sold_at, doc_no, public_token")
     .is("voided_at", null)
     .order("sold_at", { ascending: false });
   const sales = saleRows ?? [];
@@ -119,6 +119,7 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
       stage,
       plateNo: reg?.plate_no ?? null,
       docNo: s.doc_no ?? null,
+      publicToken: s.public_token ?? null,
       finance,
       steps: reg ? (stepsByReg.get(reg.id) ?? []) : [],
     };
