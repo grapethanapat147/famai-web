@@ -190,6 +190,17 @@ type AppSetting = {
   value: Json;
 };
 
+type AuditLog = {
+  id: number;
+  at: string;
+  actor: string | null;
+  table_name: string;
+  row_id: string;
+  action: string; // INSERT | UPDATE | DELETE | VIEW_PII
+  before: Json | null;
+  after: Json | null;
+};
+
 type LeadStageHistory = {
   id: number;
   customer_id: string;
@@ -555,6 +566,7 @@ export type Database = {
       unit_transfer: Table<UnitTransfer>;
       customer: Table<Customer>;
       app_setting: Table<AppSetting>;
+      audit_log: Table<AuditLog>;
       lead_stage_history: Table<LeadStageHistory>;
       sale: Table<Sale>;
       receivable: Table<Receivable>;
