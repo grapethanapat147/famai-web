@@ -43,6 +43,8 @@ function job(over: Partial<ServiceJob>): ServiceJob {
     customerName: "สมชาย",
     vehicle: "NMAX",
     engineNo: "E1",
+    frameNo: "",
+    customerId: null,
     odometerKm: 1000,
     serviceType: "เช็กระยะ",
     symptom: "",
@@ -110,5 +112,26 @@ describe("canManageService", () => {
     expect(SERVICE_TYPES).toContain("เช็กระยะ");
     expect(isServiceType("ซ่อม")).toBe(true);
     expect(isServiceType("bogus")).toBe(false);
+  });
+});
+
+describe("ค้นหาด้วยเลขถัง (fixlist ข้อ 16)", () => {
+  const jobs = [
+    job({ id: "1", jobNo: "SV-001", engineNo: "E-111", frameNo: "MH3RG5710N123456" }),
+    job({ id: "2", jobNo: "SV-002", engineNo: "E-222", frameNo: "MH3RG5710N999999" }),
+  ];
+
+  it("คนหน้าร้านที่มีแต่เลขถัง หาเจอ", () => {
+    expect(filterJobs(jobs, { search: "N123456" }).map((j) => j.id)).toEqual(["1"]);
+    expect(filterJobs(jobs, { search: "mh3rg5710n999999" }).map((j) => j.id)).toEqual(["2"]);
+  });
+
+  it("ยังค้นด้วยเลขเครื่อง/เลขงานได้เหมือนเดิม", () => {
+    expect(filterJobs(jobs, { search: "E-222" }).map((j) => j.id)).toEqual(["2"]);
+    expect(filterJobs(jobs, { search: "SV-001" }).map((j) => j.id)).toEqual(["1"]);
+  });
+
+  it("เลขถังที่ไม่มีในระบบ = ไม่เจอ", () => {
+    expect(filterJobs(jobs, { search: "ZZZZZ" })).toEqual([]);
   });
 });

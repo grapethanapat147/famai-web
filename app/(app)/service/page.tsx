@@ -1,6 +1,8 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveBranches, getCompaniesCached } from "@/lib/reference/cache";
+import { isRegStage } from "@/lib/deal/stage";
+import type { PurchaseHistoryItem } from "@/components/customer/CustomerHistoryPanel";
 import { canManageService, type ServiceJob, type ServiceLine } from "@/lib/service/jobs";
 import { isServiceStatus, type ServiceStatus } from "@/lib/service/status";
 import { ServiceView, type ServiceCreateOptions, type ServiceLineOptions } from "@/components/service/ServiceView";
@@ -25,7 +27,9 @@ export default async function ServicePage() {
   const jobs = jobRows ?? [];
   const jobIds = jobs.map((j) => j.id);
 
-  const [linesRes, customersRes, techsRes, unitsRes, variantsRes, colorsRes, partsRes, branches, orgCompanies] = await Promise.all([
+  const customerIds = [...new Set(jobs.map((j) => j.customer_id).filter((id): id is string => Boolean(id)))];
+
+  const [linesRes, customersRes, techsRes, unitsRes, variantsRes, colorsRes, partsRes, branches, orgCompanies, salesRes, regsRes] = await Promise.all([
     jobIds.length
       ? supabase.from("service_job_line").select("id, job_id, kind, description, qty, unit_price, amount").in("job_id", jobIds)
       : Promise.resolve({ data: [] }),
@@ -37,6 +41,11 @@ export default async function ServicePage() {
     supabase.from("part").select("id, name, price, qty_on_hand").order("name"),
     getActiveBranches(),
     getCompaniesCached(),
+    // ประวัติการซื้อของลูกค้าที่มีใบงานอยู่ — เปิดดูจากหน้าซ่อมได้เลย (fixlist ข้อ 17)
+    customerIds.length
+      ? supabase.from("sale").select("id, customer_id, unit_id, sold_at").in("customer_id", customerIds).is("voided_at", null)
+      : Promise.resolve({ data: [] }),
+    customerIds.length ? supabase.from("registration").select("sale_id, stage") : Promise.resolve({ data: [] }),
   ]);
 
   const customerName = new Map((customersRes.data ?? []).map((c) => [c.id, c.full_name]));
@@ -71,6 +80,8 @@ export default async function ServicePage() {
       customerName: (j.customer_id && customerName.get(j.customer_id)) || "ลูกค้าทั่วไป",
       vehicle,
       engineNo: j.engine_no || unit?.engine_no || "",
+      frameNo: j.frame_no || unit?.frame_no || "",
+      customerId: j.customer_id ?? null,
       odometerKm: j.odometer_km,
       serviceType: j.service_type || "อื่นๆ",
       symptom: j.symptom || "",
@@ -83,6 +94,26 @@ export default async function ServicePage() {
       lines: linesByJob.get(j.id) ?? [],
     };
   });
+
+  const stageBySale = new Map((regsRes.data ?? []).map((r) => [r.sale_id, r.stage]));
+  const purchases: Record<string, PurchaseHistoryItem[]> = {};
+  for (const s of salesRes.data ?? []) {
+    const unit = unitMap.get(s.unit_id);
+    const model = unit ? variantName.get(unit.variant_id) : undefined;
+    const color = unit ? colorName.get(`${unit.variant_id}:${unit.color_code}`) : undefined;
+    const rawStage = stageBySale.get(s.id) ?? "";
+    const list = purchases[s.customer_id] ?? [];
+    list.push({
+      key: s.id,
+      vehicle: model ? `${model}${color ? ` · ${color}` : ""}` : "—",
+      soldAt: s.sold_at,
+      stage: isRegStage(rawStage) ? rawStage : "ขายแล้ว",
+    });
+    purchases[s.customer_id] = list;
+  }
+  for (const list of Object.values(purchases)) {
+    list.sort((a, b) => (a.soldAt < b.soldAt ? 1 : a.soldAt > b.soldAt ? -1 : 0));
+  }
 
   const createOptions: ServiceCreateOptions = {
     customers: (customersRes.data ?? []).map((c) => ({ id: c.id, name: c.full_name })),
@@ -124,6 +155,7 @@ export default async function ServicePage() {
   return (
     <ServiceView
       jobs={viewJobs}
+      purchases={purchases}
       seller={seller}
       canManage={canManageService(user?.roleCodes ?? [])}
       action={advanceStatus}

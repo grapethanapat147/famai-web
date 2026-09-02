@@ -8,6 +8,7 @@ import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Money } from "@/components/ui/Money";
+import { CustomerHistoryPanel } from "@/components/customer/CustomerHistoryPanel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { StatCard } from "@/components/ui/StatCard";
 import { StepBar } from "@/components/ui/StepBar";
@@ -15,7 +16,7 @@ import { PrintableSaleDoc } from "@/components/deal/PrintableSaleDoc";
 import { PrintableTaxInvoice } from "@/components/deal/PrintableTaxInvoice";
 import type { QuoteSeller } from "@/components/quote/PrintableQuoteDoc";
 import { formatThaiDate } from "@/lib/format";
-import { dealTrack, regNext, regPrev, stageIndex, stageVariant, substatusOptions, type RegStage } from "@/lib/deal/stage";
+import { dealTrack, regNext, regPrev, stageIndex, substatusOptions, type RegStage } from "@/lib/deal/stage";
 import { DEAL_PHASES, dealPhase, PHASE_HINT, phaseIndex, phaseVariant, type DealPhase } from "@/lib/deal/phase";
 import { LEAD_SOURCES, type LeadRow } from "@/lib/deal/lead";
 import {
@@ -526,49 +527,11 @@ function DealDrawer({
           {printDoc === "tax" && <PrintableTaxInvoice seller={seller} deal={deal} vatPct={vatPct} />}
 
           {deal.customerId && (
-            <div className="flex flex-col gap-3 rounded-[12px] bg-paper p-3">
-              <p className="font-medium text-ink">ประวัติลูกค้า</p>
-
-              <div>
-                <p className="mb-1 text-xs uppercase tracking-wide text-muted">การซื้อ · {history.length + 1} คัน</p>
-                {history.length === 0 ? (
-                  <p className="text-xs text-muted">ลูกค้าใหม่ — ซื้อครั้งแรก</p>
-                ) : (
-                  <ul className="flex flex-col">
-                    {history.map((h) => (
-                      <li
-                        key={h.saleId}
-                        className="flex items-center justify-between gap-3 border-b border-hairline-2 py-1.5 last:border-0"
-                      >
-                        <span className="min-w-0 flex-1 truncate text-ink">{h.vehicle}</span>
-                        <span className="shrink-0 text-xs text-muted">{formatThaiDate(h.soldAt)}</span>
-                        <StatusBadge variant={stageVariant(h.stage)}>{h.stage}</StatusBadge>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              <div>
-                <p className="mb-1 text-xs uppercase tracking-wide text-muted">การบริการ · {serviceHistory.length} ครั้ง</p>
-                {serviceHistory.length === 0 ? (
-                  <p className="text-xs text-muted">ยังไม่เคยเข้าศูนย์บริการ</p>
-                ) : (
-                  <ul className="flex flex-col">
-                    {serviceHistory.map((s, i) => (
-                      <li
-                        key={i}
-                        className="flex items-center justify-between gap-3 border-b border-hairline-2 py-1.5 last:border-0"
-                      >
-                        <span className="min-w-0 flex-1 truncate text-ink">{s.serviceType}</span>
-                        <span className="shrink-0 text-xs text-muted">{formatThaiDate(s.checkedInAt)}</span>
-                        <Money value={s.total} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
+            <CustomerHistoryPanel
+              includeCurrentPurchase
+              purchases={history.map((h) => ({ key: h.saleId, vehicle: h.vehicle, soldAt: h.soldAt, stage: h.stage }))}
+              services={serviceHistory.map((s, i) => ({ key: `${s.checkedInAt}-${i}`, serviceType: s.serviceType, checkedInAt: s.checkedInAt, total: s.total }))}
+            />
           )}
 
           {deal.finance && (
