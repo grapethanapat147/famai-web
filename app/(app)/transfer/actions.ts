@@ -49,7 +49,7 @@ export async function requestTransfer(formData: FormData): Promise<TransferActio
   const fromCo = branches?.find((b) => b.id === unit.branch_id)?.company_id ?? null;
   const toCo = branches?.find((b) => b.id === toBranch)?.company_id ?? null;
   if (!sameCompany(fromCo, toCo)) {
-    return { ok: false, error: "โอนข้ามบริษัทไม่ได้ — ต้องเปิดการขายระหว่างบริษัท" };
+    return { ok: false, error: "โอนข้ามบริษัทไม่ได้ — การย้ายข้ามนิติบุคคลถือเป็นการขาย ให้เปิดบิลที่หน้าขายส่ง (B2B) แทน" };
   }
 
   const { data: moved, error: casError } = await supabase
