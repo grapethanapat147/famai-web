@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hhmmToMinutes, lateMinutes, isLate, workMinutes } from "@/lib/hr/time";
+import { formatOt, hhmmToMinutes, lateMinutes, isLate, otMinutes, workMinutes } from "@/lib/hr/time";
 import { leaveDays, usedLeaveDays, filterLeaves, canApproveLeave, isLeaveType, type LeaveRow } from "@/lib/hr/leave";
 
 describe("time helpers", () => {
@@ -75,5 +75,40 @@ describe("gates", () => {
     expect(canApproveLeave({ approve: false })).toBe(false);
     expect(isLeaveType("ลาป่วย")).toBe(true);
     expect(isLeaveType("bogus")).toBe(false);
+  });
+});
+
+describe("otMinutes (fixlist ข้อ 04)", () => {
+  const END = "17:30";
+
+  it("อยู่เกินเวลาเลิกงาน นับเป็นช่วงละ 30 นาที (ปัดลง)", () => {
+    expect(otMinutes("08:30", "19:30", END)).toBe(120);
+    expect(otMinutes("08:30", "19:20", END)).toBe(90);
+    expect(otMinutes("08:30", "18:00", END)).toBe(30);
+  });
+
+  it("อยู่เกินไม่ถึงหนึ่งช่วง = ไม่ใช่ OT", () => {
+    expect(otMinutes("08:30", "17:40", END)).toBe(0);
+    expect(otMinutes("08:30", "17:30", END)).toBe(0);
+    expect(otMinutes("08:30", "16:00", END)).toBe(0);
+  });
+
+  it("เข้ากะหลังเวลาเลิกงาน นับ OT จากเวลาเข้า ไม่ใช่ทั้งกะ", () => {
+    expect(otMinutes("18:00", "20:00", END)).toBe(120);
+    expect(otMinutes("18:00", "18:20", END)).toBe(0);
+  });
+
+  it("ปรับความยาวช่วงได้", () => {
+    expect(otMinutes("08:30", "18:15", END, 15)).toBe(45);
+    expect(otMinutes("08:30", "18:15", END, 60)).toBe(0);
+  });
+});
+
+describe("formatOt", () => {
+  it("อ่านง่ายเป็นชั่วโมง/นาที", () => {
+    expect(formatOt(0)).toBe("0 น.");
+    expect(formatOt(45)).toBe("45 น.");
+    expect(formatOt(90)).toBe("1 ชม. 30 น.");
+    expect(formatOt(120)).toBe("2 ชม.");
   });
 });

@@ -42,7 +42,7 @@ export default async function HrPage() {
 
   const [attRes, branchGeoRes] = await Promise.all([
     myEmpId
-      ? supabase.from("attendance").select("check_in, check_out, status").eq("employee_id", myEmpId).eq("work_date", today).maybeSingle()
+      ? supabase.from("attendance").select("check_in, check_out, status, ot_minutes").eq("employee_id", myEmpId).eq("work_date", today).maybeSingle()
       : Promise.resolve({ data: null }),
     myEmp?.branch_id
       ? supabase.from("branch").select("geo_lat, geo_lng, geo_radius_m, require_selfie").eq("id", myEmp.branch_id).maybeSingle()
@@ -71,9 +71,9 @@ export default async function HrPage() {
   });
 
   const myToday: MyToday | null = attRes.data
-    ? { checkIn: attRes.data.check_in, checkOut: attRes.data.check_out, status: attRes.data.status }
+    ? { checkIn: attRes.data.check_in, checkOut: attRes.data.check_out, status: attRes.data.status, otMinutes: attRes.data.ot_minutes ?? 0 }
     : myEmpId
-      ? { checkIn: null, checkOut: null, status: null }
+      ? { checkIn: null, checkOut: null, status: null, otMinutes: 0 }
       : null;
 
   return (

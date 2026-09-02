@@ -6,7 +6,7 @@ import type { HrActionResult, LeaveRow } from "@/lib/hr/leave";
 
 /** พรีวิวหน้าลงเวลาและลา (hr) — sample data · มุมมองผู้อนุมัติ */
 
-const MY_TODAY: MyToday = { checkIn: null, checkOut: null, status: null };
+const MY_TODAY: MyToday = { checkIn: null, checkOut: null, status: null, otMinutes: 0 };
 
 const LEAVES: LeaveRow[] = [
   { id: "1", employeeId: "me", employeeName: "ฉัน", leaveType: "ลาพักร้อน", dateFrom: "2026-08-20", dateTo: "2026-08-22", status: "รออนุมัติ", reason: "เที่ยวกับครอบครัว", mine: true },

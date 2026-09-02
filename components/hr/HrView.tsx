@@ -5,6 +5,7 @@ import { Chips } from "@/components/ui/Chips";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Drawer } from "@/components/ui/Drawer";
+import { formatOt } from "@/lib/hr/time";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatThaiDate } from "@/lib/format";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
@@ -20,7 +21,7 @@ import {
   type LeaveStatus,
 } from "@/lib/hr/leave";
 
-export type MyToday = { checkIn: string | null; checkOut: string | null; status: string | null };
+export type MyToday = { checkIn: string | null; checkOut: string | null; status: string | null; otMinutes: number };
 
 const inputCls =
   "w-full rounded-[8px] border border-hairline bg-card px-3 py-2.5 text-base text-ink outline-none focus:border-ink";
@@ -308,6 +309,12 @@ function ClockCard({
               <p className="text-muted">ออกงาน</p>
               <p className="tabular font-semibold text-ink">{timeOf(myToday?.checkOut ?? null)}</p>
             </div>
+            {(myToday?.otMinutes ?? 0) > 0 && (
+              <div>
+                <p className="text-muted">ล่วงเวลา</p>
+                <p className="tabular font-semibold text-ink">{formatOt(myToday?.otMinutes ?? 0)}</p>
+              </div>
+            )}
           </div>
 
           {(geofence || requireSelfie) && !checkedIn && (
