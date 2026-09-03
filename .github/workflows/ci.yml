@@ -22,3 +22,28 @@ jobs:
           # publishable key เปิดเผยได้ (ความปลอดภัยมาจาก RLS) — ดู docs/06-supabase-setup.md
           NEXT_PUBLIC_SUPABASE_URL: https://xpbdvhfvmpokdnfhoujx.supabase.co
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_mBjGCNowMwfbi3PBeXaSMg_hAMfPwDZ
+
+  # เทสความปลอดภัยกับฐานข้อมูลจริง (fixlist ข้อ 19/20) — รันเมื่อตั้ง secret TEST_LOGINS แล้วเท่านั้น
+  # secret ที่ต้องมี: TEST_LOGINS (JSON บัญชีทดสอบ — ดู .env.test.local.example) · SUPABASE_SERVICE_ROLE_KEY (สร้าง/ลบข้อมูลทดสอบ)
+  integration:
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      RUN_INTEGRATION: "1"
+      TEST_LOGINS: ${{ secrets.TEST_LOGINS }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: https://xpbdvhfvmpokdnfhoujx.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_mBjGCNowMwfbi3PBeXaSMg_hAMfPwDZ
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Integration (ข้ามถ้ายังไม่ตั้ง TEST_LOGINS)
+        if: env.TEST_LOGINS != ''
+        run: npx vitest run tests/integration
+      - name: ยังไม่ได้ตั้ง secret
+        if: env.TEST_LOGINS == ''
+        run: echo "ข้าม integration tests — ตั้ง secret TEST_LOGINS + SUPABASE_SERVICE_ROLE_KEY ใน GitHub → Settings → Secrets แล้วจะรันอัตโนมัติ"
