@@ -3,7 +3,7 @@
 งาน dev ทุกชิ้นต้องมี ticket ก่อน implement — Epic (งานใหญ่) + Task (งานเล็ก)
 
 ## Source of truth
-- ดูตาราง docs ใน `CLAUDE.md` — `docs/01-08`, `index.html`, `.codex/specs/Famai_System_Build_Spec.md`
+- ดูตาราง docs ใน `CLAUDE.md` — `docs/01-08`, `.codex/specs/revision-1-client-feedback.md` (สเปกต้นฉบับไม่อยู่ในรีโป — ดูหมายเหตุใน CLAUDE.md)
 - ถ้า ticket ขัดกับ docs/handoff ให้เพิ่ม `### Open Questions` แล้วถามผู้ใช้ ห้ามเดา
 
 ## Board files (index เท่านั้น เก็บเฉพาะ link)

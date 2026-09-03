@@ -33,7 +33,7 @@ export const MENU: MenuGroup[] = [
       { key: "stock", title: "สต๊อกรถ", subtitle: "ค้นหาและจัดการรถทุกคัน", icon: "bike", roles: ["admin", "manager", "stock", "sales", "acct"] },
       { key: "wholesale", title: "ขายส่ง (B2B)", subtitle: "ขายรถให้ร้านค้าด้วยกัน — บิลเดียวหลายคัน", icon: "truck", roles: ["admin", "manager", "sales"] },
       { key: "sell", title: "ขายรถ", subtitle: "เปิดการขายและออกเอกสาร", icon: "tag", roles: ["admin", "manager", "sales"] },
-      { key: "transfer", title: "โอนย้ายบริษัท", subtitle: "ย้ายรถระหว่างบริษัท", icon: "repeat", roles: ["admin", "manager", "stock"] },
+      { key: "transfer", title: "โอนย้ายบริษัท", subtitle: "ย้ายรถระหว่างบริษัทในเครือเดียวกัน (ข้ามนิติบุคคลใช้ขายส่ง)", icon: "repeat", roles: ["admin", "manager", "stock"] },
     ],
   },
   {
