@@ -204,7 +204,7 @@ export async function addServiceLine(formData: FormData): Promise<ServiceActionR
   }
 
   let unitPrice: number;
-  let part: { id: string; branch_id: string; qty_on_hand: number; price: number; name: string } | null = null;
+  let part: { id: string; branch_id: string; qty_on_hand: number; price: number; name: string; cost: number } | null = null;
 
   if (kind === "part") {
     if (!partId) {
@@ -212,13 +212,13 @@ export async function addServiceLine(formData: FormData): Promise<ServiceActionR
     }
     const { data: p } = await supabase
       .from("part")
-      .select("id, branch_id, qty_on_hand, price, name")
+      .select("id, branch_id, qty_on_hand, price, name, cost")
       .eq("id", partId)
       .maybeSingle();
     if (!p) {
       return { ok: false, error: "ไม่พบอะไหล่ (หรือไม่มีสิทธิ์บริษัทนี้)" };
     }
-    part = { id: p.id, branch_id: p.branch_id, qty_on_hand: p.qty_on_hand, price: Number(p.price), name: p.name };
+    part = { id: p.id, branch_id: p.branch_id, qty_on_hand: p.qty_on_hand, price: Number(p.price), name: p.name, cost: Number(p.cost ?? 0) };
     if (part.qty_on_hand < qty) {
       return { ok: false, error: `สต๊อกไม่พอ — เหลือ ${part.qty_on_hand}` };
     }
@@ -253,7 +253,7 @@ export async function addServiceLine(formData: FormData): Promise<ServiceActionR
 
     const { data: move, error: moveError } = await supabase
       .from("part_movement")
-      .insert({ part_id: part.id, branch_id: part.branch_id, kind: "job", qty: -qty, job_id: jobId, unit_price: unitPrice, by_user: user.id })
+      .insert({ part_id: part.id, branch_id: part.branch_id, kind: "job", qty: -qty, job_id: jobId, unit_price: unitPrice, unit_cost: part.cost, by_user: user.id })
       .select("id")
       .maybeSingle();
     if (moveError || !move) {
@@ -334,7 +334,7 @@ export async function removeServiceLine(formData: FormData): Promise<ServiceActi
 
   if (line.kind === "part" && line.part_id) {
     const returnQty = Number(line.qty);
-    const { data: p } = await supabase.from("part").select("id, branch_id, qty_on_hand").eq("id", line.part_id).maybeSingle();
+    const { data: p } = await supabase.from("part").select("id, branch_id, qty_on_hand, cost").eq("id", line.part_id).maybeSingle();
     if (p) {
       await supabase
         .from("part")
@@ -346,6 +346,7 @@ export async function removeServiceLine(formData: FormData): Promise<ServiceActi
         branch_id: p.branch_id,
         kind: "adjust",
         qty: returnQty,
+        unit_cost: p.cost,
         job_id: line.job_id,
         by_user: user.id,
         note: "คืนสต๊อก: ลบรายการอะไหล่ในใบงาน",

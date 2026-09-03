@@ -529,6 +529,7 @@ type PartMovement = {
   job_id: string | null;
   sale_id: string | null;
   unit_price: number | null;
+  unit_cost: number | null; // ต้นทุน ณ เวลาที่เคลื่อนไหว (migration 38)
   at: string;
   by_user: string | null;
   note: string | null;
