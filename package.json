@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "gen:types": "supabase gen types typescript --project-id xpbdvhfvmpokdnfhoujx --schema public,pub > lib/supabase/database.types.generated.ts"
+    "gen:types": "supabase gen types typescript --project-id xpbdvhfvmpokdnfhoujx --schema public,pub > lib/supabase/database.types.generated.ts",
+    "backup": "./scripts/backup.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

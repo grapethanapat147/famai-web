@@ -3,6 +3,8 @@
  * ฟังก์ชันบริสุทธิ์ ทดสอบได้ · ด่านสิทธิ์จริงบังคับซ้ำในทุก server action
  */
 
+import { checkPassword } from "@/lib/auth/password";
+
 export type EmployeeActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
 export type EmployeeRow = {
@@ -157,7 +159,7 @@ export type NewAccountValid = {
 };
 
 /** ความยาวรหัสผ่านชั่วคราวขั้นต่ำ (แอดมินตั้งให้ แล้วให้พนักงานเปลี่ยนเองภายหลัง) */
-export const MIN_PASSWORD_LENGTH = 8;
+export { MIN_PASSWORD_LENGTH, PASSWORD_RULE_HINT } from "@/lib/auth/password";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_RE = /^[a-zA-Z0-9._-]+$/;
@@ -179,8 +181,10 @@ export function validateNewAccount(input: NewAccountInput): { ok: true; value: N
   if (!EMAIL_RE.test(email)) {
     return { ok: false, error: "อีเมลไม่ถูกต้อง (ใช้สำหรับเข้าสู่ระบบ)" };
   }
-  if (input.password.length < MIN_PASSWORD_LENGTH) {
-    return { ok: false, error: `รหัสผ่านชั่วคราวต้องยาวอย่างน้อย ${MIN_PASSWORD_LENGTH} ตัว` };
+  // นโยบายรหัสผ่านฝั่งแอป (FAM-1136) — แทน Leaked Password Protection ที่ต้องใช้แพ็ก Pro
+  const pw = checkPassword(input.password, { email, username, fullName });
+  if (!pw.ok) {
+    return { ok: false, error: pw.error };
   }
   if (input.branchId.trim() === "") {
     return { ok: false, error: "เลือกบริษัท" };
