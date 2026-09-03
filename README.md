@@ -101,12 +101,15 @@ npm run dev                    # http://localhost:3000
 ## ก่อนเปิดใช้จริง — สิ่งที่เจ้าของต้องกดเองบน Supabase/GitHub
 
 1. **รีเซ็ตรหัสผ่านฐานข้อมูล** (Settings → Database) — รหัสเดิมเคยส่งผ่านแชต
-2. **เปิด Leaked Password Protection + 2FA** (Authentication) และ **อัปเกรดแพ็ก Pro** — แพ็กฟรีไม่มี backup ถ้าข้อมูลใบกำกับหายจะหายถาวร
-3. ตั้ง `DEMO_LOGIN=false` บน Vercel (ถ้าลืม ระบบปิดให้เองบน production และขึ้นเตือนที่หน้า login แต่ควรตั้งให้ถูก)
-4. ใส่บัญชีทดสอบเป็น secret ใน GitHub Actions + `RUN_INTEGRATION=1` เพื่อให้เทสตรวจสิทธิ์กับฐานข้อมูลจริง (`tests/integration/auth-rls.test.ts`) รันทุกครั้ง
-5. กรอก **เลขผู้เสียภาษีของบริษัทไฟแนนซ์** (ตั้งค่าระบบ) และ **ร้านค้าขายส่ง** — ไม่กรอกจะออกใบกำกับให้เขาไม่ได้
-6. รัน `demo-cleanup.sql`
-7. เมื่อพร้อมเปิดแคตตาล็อกให้ลูกค้าค้นเจอใน Google: ตั้ง `CATALOG_PUBLIC=true` บน Vercel แล้ว deploy ใหม่ (ก่อนหน้านั้นทุกหน้า noindex)
+2. **เปิด 2FA** ที่บัญชี Supabase (Account preferences → Security) — ทำได้ทุกแพ็ก
+3. **สำรองข้อมูลเอง** ตราบใดที่ยังใช้แพ็กฟรี (ฟรีไม่มี backup อัตโนมัติ) — `npm run backup` เดือนละครั้ง แล้วก๊อปไฟล์ออกนอกเครื่อง
+   ครั้งแรกต้อง `brew install libpq && brew link --force libpq` และเติม `DATABASE_URL` ใน `.env.local`
+   **อัปเกรด Pro ก่อนออกใบกำกับภาษีจริงใบแรก** — จะได้ backup อัตโนมัติ + เปิด Leaked Password Protection ได้ (ฟีเจอร์นั้นมีเฉพาะ Pro)
+4. ตั้ง `DEMO_LOGIN=false` บน Vercel (ถ้าลืม ระบบปิดให้เองบน production และขึ้นเตือนที่หน้า login แต่ควรตั้งให้ถูก)
+5. ใส่บัญชีทดสอบเป็น secret ใน GitHub Actions + `RUN_INTEGRATION=1` เพื่อให้เทสตรวจสิทธิ์กับฐานข้อมูลจริง (`tests/integration/auth-rls.test.ts`) รันทุกครั้ง
+6. กรอก **เลขผู้เสียภาษีของบริษัทไฟแนนซ์** (ตั้งค่าระบบ) และ **ร้านค้าขายส่ง** — ไม่กรอกจะออกใบกำกับให้เขาไม่ได้
+7. รัน `demo-cleanup.sql`
+8. เมื่อพร้อมเปิดแคตตาล็อกให้ลูกค้าค้นเจอใน Google: ตั้ง `CATALOG_PUBLIC=true` บน Vercel แล้ว deploy ใหม่ (ก่อนหน้านั้นทุกหน้า noindex)
 
 ---
 
@@ -121,6 +124,7 @@ lib/<โดเมน>/                            ตรรกะบริสุ
 tests/                                  vitest
 supabase/migrations/                    SQL ทั้งหมด (รันเองใน SQL Editor)
 supabase/seed/                          ข้อมูลตัวอย่าง + ตัวลบ
+scripts/backup.sh                       สำรองฐานข้อมูลด้วยมือ (แพ็กฟรีไม่มี backup อัตโนมัติ)
 .codex/tasks/                           กระดานงาน (ticket-first) · done.md sync จาก git
 docs/                                   เอกสารออกแบบ (ดู docs/README.md ว่าฉบับไหนยังใช้ได้)
 index.html · prototype/ · tools/ · reference/   ต้นแบบเดิม v1.15 — อ้างอิงเท่านั้น ไม่ใช่ตัวจริงแล้ว

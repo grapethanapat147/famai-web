@@ -12,10 +12,10 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatThaiDate } from "@/lib/format";
 import {
   filterEmployees,
-  MIN_PASSWORD_LENGTH,
   type EmployeeActionResult,
   type EmployeeRow,
 } from "@/lib/employees/employees";
+import { PASSWORD_RULE_HINT, checkPassword, randomPassword } from "@/lib/auth/password";
 
 export type BranchOption = { id: string; name: string };
 export type RoleOption = { id: string; code: string; name: string };
@@ -23,13 +23,6 @@ export type RoleOption = { id: string; code: string; name: string };
 const inputCls = "w-full rounded-[8px] border border-hairline bg-card px-3 py-2 text-base text-ink outline-none focus:border-ink";
 
 /** รหัสผ่านชั่วคราวแบบสุ่ม — ให้แอดมินไม่ต้องคิดเอง (เลี่ยงรหัสง่ายอย่าง 12345678) */
-function randomPassword(): string {
-  const alphabet = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const bytes = new Uint32Array(12);
-  crypto.getRandomValues(bytes);
-  return [...bytes].map((n) => alphabet[n % alphabet.length]).join("");
-}
-
 export function EmployeesView({
   employees,
   branches,
@@ -335,6 +328,8 @@ function CreateStaffModal({
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // ตรวจสดขณะพิมพ์ ใช้ฟังก์ชันเดียวกับด่านฝั่งเซิร์ฟเวอร์ (FAM-1136)
+  const passwordCheck = checkPassword(password, { email, username, fullName });
   const [branchId, setBranchId] = useState(branches[0]?.id ?? "");
   const [roleIds, setRoleIds] = useState<string[]>([]);
   const [empCode, setEmpCode] = useState("");
@@ -426,7 +421,7 @@ function CreateStaffModal({
               />
             </Field>
           </div>
-          <Field label={`รหัสผ่านชั่วคราว * (อย่างน้อย ${MIN_PASSWORD_LENGTH} ตัว)`} hint="แจ้งพนักงานแล้วให้เปลี่ยนเองภายหลัง">
+          <Field label="รหัสผ่านชั่วคราว *" hint={PASSWORD_RULE_HINT}>
             <div className="flex gap-2">
               <input
                 value={password}
@@ -442,6 +437,7 @@ function CreateStaffModal({
                 สุ่ม
               </button>
             </div>
+            {password !== "" && !passwordCheck.ok && <p className="mt-1 text-xs text-accent">{passwordCheck.error}</p>}
           </Field>
         </section>
 
