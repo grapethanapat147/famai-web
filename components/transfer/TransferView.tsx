@@ -347,7 +347,7 @@ function RequestModal({
               return (
                 <option key={b.id} value={b.id} disabled={crossCompany || b.id === selectedUnit?.branchId}>
                   {b.name}
-                  {crossCompany ? " — คนละบริษัท (ต้องขายส่งแทน)" : b.id === selectedUnit?.branchId ? " — ต้นทางเอง" : ""}
+                  {crossCompany ? " — คนละนิติบุคคล (ต้องขายส่งแทน)" : b.id === selectedUnit?.branchId ? " — ต้นทางเอง" : ""}
                 </option>
               );
             })}

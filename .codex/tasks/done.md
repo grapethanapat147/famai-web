@@ -1,127 +1,133 @@
 # Done
 
-> sync จาก **git log ของ main** เมื่อ 2026-09-02 (FAM-1125 · fixlist ข้อ 26)
-> เดิมกระดานค้างที่ FAM-1070 ขณะที่โค้ดไปถึง FAM-1124 — และตั๋วเก่าหลายใบยังเขียน
-> "In Progress" ทั้งที่ merge เข้า main ไปนานแล้ว จึงยึดจาก commit จริงแทนข้อความในตั๋ว
+> sync จาก **git log ของ main** เมื่อ 2026-09-03 (FAM-1130) — ตั๋วที่ id โผล่ใน commit ของ main = เสร็จ
+> ตั๋วเก่าที่ยังเขียน Status ค้างเป็น In Progress ทั้งที่ merge แล้ว ถูกแก้เป็น Done ให้ตรงกับกระดาน
 
-**เข้า main แล้ว 119 ใบ**
+**เข้า main แล้ว 126 ใบ**
 
-- [FAM-1001](tickets/FAM-1001.md) — Scaffold Next.js + Supabase + envs + CI
-- [FAM-1002](tickets/FAM-1002.md) — Design tokens + Thai fonts + app shell
-- [FAM-1003](tickets/FAM-1003.md) — Core UI components
-- [FAM-1004](tickets/FAM-1004.md) — Supabase data layer & RPC wrappers
-- [FAM-1005](tickets/FAM-1005.md) — login & session
-- [FAM-1006](tickets/FAM-1006.md) — RBAC menu + server money-strip + customer mode
-- [FAM-1008](tickets/FAM-1008.md) — Stock screen (สต๊อกรถ)
-- [FAM-1009](tickets/FAM-1009.md) — หน้าข้อมูลรุ่นรถและสี (models catalog)
-- [FAM-1010](tickets/FAM-1010.md) — หน้าอะไหล่และของแถม (parts) + R1 แก้ราคาของแถม
-- [FAM-1011](tickets/FAM-1011.md) — deal calculator + form (ขายรถ)
-- [FAM-1012](tickets/FAM-1012.md) — หน้าศูนย์ซ่อม (service) + R1 ยอดชำระ/ตัวเลือกวันที่
-- [FAM-1013](tickets/FAM-1013.md) — ขาย·ไฟแนนซ์·ทะเบียน หน้าเดียว
-- [FAM-1014](tickets/FAM-1014.md) — เทียบรถ/ไฟแนนซ์ให้ลูกค้า
-- [FAM-1015](tickets/FAM-1015.md) — หน้าเงินค้างรับ (ar) + ลงรับเงิน
-- [FAM-1016](tickets/FAM-1016.md) — หน้าโอนย้ายสาขา (transfer)
-- [FAM-1017](tickets/FAM-1017.md) — Dashboard (ภาพรวม)
-- [FAM-1018](tickets/FAM-1018.md) — หน้าตั้งค่าระบบ (settings)
-- [FAM-1019](tickets/FAM-1019.md) — หน้าค่าใช้จ่าย (expense) + R1 ซื้อกับใคร/หมายเหตุ
-- [FAM-1020](tickets/FAM-1020.md) — จัดการบทบาท/สาขา (RBAC)
-- [FAM-1021](tickets/FAM-1021.md) — สรุปแยกประเภท + ส่งออก/พิมพ์
-- [FAM-1022](tickets/FAM-1022.md) — Company entity + branch hierarchy (R1)
-- [FAM-1023](tickets/FAM-1023.md) — บันทึกการขายจริง (atomic)
-- [FAM-1024](tickets/FAM-1024.md) — อัปโหลดรูปรถเข้า storage (model-photo)
-- [FAM-1025](tickets/FAM-1025.md) — เพิ่มรุ่นแบบ atomic
-- [FAM-1026](tickets/FAM-1026.md) — แก้ข้อมูลหลักอะไหล่ + รับอะไหล่เข้า (parts master/receive)
-- [FAM-1027](tickets/FAM-1027.md) — เปิดใบงานซ่อมใหม่ + แก้รายการ (create/edit service job)
-- [FAM-1028](tickets/FAM-1028.md) — งานสินเชื่อเต็ม + เปิดดีล/ลูกค้าเท (deal follow-ups)
-- [FAM-1029](tickets/FAM-1029.md) — แม่แบบพิมพ์ใบเสนอราคา + ดู/แก้/แปลงเป็นการขาย (quote follow-ups)
-- [FAM-1030](tickets/FAM-1030.md) — อนุมัติค่าใช้จ่าย (expense approval)
-- [FAM-1031](tickets/FAM-1031.md) — หน้าภาพรวมการเข้างาน (attend)
-- [FAM-1032](tickets/FAM-1032.md) — หน้าลงเวลาและลา (hr)
-- [FAM-1033](tickets/FAM-1033.md) — หน้าเงินเดือนและ OT (payroll)
-- [FAM-1034](tickets/FAM-1034.md) — รวมกิจกรรมบริษัท/ลา/รถ
-- [FAM-1035](tickets/FAM-1035.md) — ใครทำอะไรตอนไหน
-- [FAM-1036](tickets/FAM-1036.md) — อ่านไฟล์ยามาฮ่า → เพิ่มรถเป็นชุด
-- [FAM-1037](tickets/FAM-1037.md) — Theme Foundation + Engine (ticket 1/3 · UI/ธีม track)
-- [FAM-1038](tickets/FAM-1038.md) — หน้าตั้งค่าธีม (แอดมิน) (ticket 2/3 · UI/ธีม track)
-- [FAM-1039](tickets/FAM-1039.md) — ระบบฟอนต์ + อัปโหลด (ticket 3/3 · UI/ธีม track)
-- [FAM-1040](tickets/FAM-1040.md) — ปุ่มแคปหน้าจอเฉพาะจุด (โหมดลูกค้า)
-- [FAM-1041](tickets/FAM-1041.md) — UI polish รอบ craft & interaction (shared primitives)
-- [FAM-1042](tickets/FAM-1042.md) — เจาะหน้า Dashboard
-- [FAM-1043](tickets/FAM-1043.md) — mini per-branch split + รายการรถค้าง
-- [FAM-1044](tickets/FAM-1044.md) — Dashboard → คลิกรถค้างเปิดคันนั้นใน /stock (deep-link)
-- [FAM-1045](tickets/FAM-1045.md) — ล้าง ?unit ออกจาก URL ตอนปิด drawer
-- [FAM-1046](tickets/FAM-1046.md) — เจาะหน้าขาย (SellForm)
-- [FAM-1047](tickets/FAM-1047.md) — เจาะหน้าใบเสนอราคา (QuoteView)
-- [FAM-1048](tickets/FAM-1048.md) — เจาะหน้ารายงาน (ReportView)
-- [FAM-1049](tickets/FAM-1049.md) — เจาะหน้าอะไหล่ (PartsView)
-- [FAM-1050](tickets/FAM-1050.md) — แคตตาล็อก + เช็กสถานะ (E11 slice 1)
-- [FAM-1051](tickets/FAM-1051.md) — หน้ารายละเอียดรุ่น + พร้อมรูปจริง (E11 slice 2)
-- [FAM-1052](tickets/FAM-1052.md) — sitemap + robots + Open Graph
-- [FAM-1053](tickets/FAM-1053.md) — generate og:image (การ์ดแบรนด์ต่อรุ่น)
-- [FAM-1054](tickets/FAM-1054.md) — ฝังรูปรถจริงในการ์ด OG (แก้ WebP crash)
-- [FAM-1055](tickets/FAM-1055.md) — JSON-LD structured data (Product/Breadcrumb/ItemList)
-- [FAM-1056](tickets/FAM-1056.md) — cron auth + LINE notify + aged-stock digest
-- [FAM-1057](tickets/FAM-1057.md) — เตือนทะเบียนเกินกำหนด
-- [FAM-1058](tickets/FAM-1058.md) — เตือนเช็กระยะตามไมล์ (service due)
-- [FAM-1059](tickets/FAM-1059.md) — สร้างงานติดตามหลังขาย (sale follow-up)
-- [FAM-1060](tickets/FAM-1060.md) — เตือนปิดงวดเงินเดือน (ปิด E10)
-- [FAM-1061](tickets/FAM-1061.md) — surface deals ที่ต้องจัดการ (hero + off-track filter)
-- [FAM-1062](tickets/FAM-1062.md) — ประวัติลูกค้าในแผงดีล (customer history)
-- [FAM-1063](tickets/FAM-1063.md) — รวมประวัติบริการในแผงดีล (service history)
-- [FAM-1064](tickets/FAM-1064.md) — polish ArView (เงินค้างรับ)
-- [FAM-1065](tickets/FAM-1065.md) — เดินสาย AI (infra, ปิดไว้)
-- [FAM-1066](tickets/FAM-1066.md) — ร่างข้อความติดตามลูกค้าด้วย AI
-- [FAM-1067](tickets/FAM-1067.md) — ผู้ช่วยวิเคราะห์ (Thai Q&A + tool-use RLS)
-- [FAM-1068](tickets/FAM-1068.md) — AI ช่วยจับคู่คอลัมน์ตอนนำเข้า .xls (ปิด E12)
-- [FAM-1069](tickets/FAM-1069.md) — เก็บโค้ดไว้ dormant
-- [FAM-1070](tickets/FAM-1070.md) — Pre-launch QA sweep + sync task board/docs
-- [FAM-1071](tickets/FAM-1071.md) — Graceful error / 404 / loading pages (App Router hardening)
-- [FAM-1072](tickets/FAM-1072.md) — Empty states ที่สื่อความหมาย (icon + copy + action)
-- [FAM-1073](tickets/FAM-1073.md) — a11y + print + loading skeleton
-- [FAM-1074](tickets/FAM-1074.md) — เอกสารใบขาย/ส่งมอบรถ (PrintableSaleDoc)
-- [FAM-1075](tickets/FAM-1075.md) — เอกสารใบสั่งซ่อม (PrintableServiceDoc)
-- [FAM-1076](tickets/FAM-1076.md) — สลิปเงินเดือนรายคน (PrintableEmployeePayslip)
-- [FAM-1077](tickets/FAM-1077.md) — ใบกำกับภาษี (PrintableTaxInvoice)
-- [FAM-1078](tickets/FAM-1078.md) — ฟอร์มแก้ข้อมูลกิจการ/สาขา (บนหัวเอกสาร)
-- [FAM-1079](tickets/FAM-1079.md) — หน้าแรกพาเข้าแอป + โหมดทดลอง login (ให้ลูกค้าลอง)
-- [FAM-1080](tickets/FAM-1080.md) — ย้าย Vercel function region → Singapore (sin1) แก้เว็บช้า
-- [FAM-1081](tickets/FAM-1081.md) — ค้นหาทั่วเว็บ (global search / Cmd+K)
-- [FAM-1082](tickets/FAM-1082.md) — parallelize getCurrentUser
-- [FAM-1083](tickets/FAM-1083.md) — เงา backdrop ค้นหาให้ครอบทั้งจอ
-- [FAM-1084](tickets/FAM-1084.md) — แคชข้อมูลอ้างอิง (settings/theme/สาขา/บริษัท) ลด round-trip ต่อการนำทาง
-- [FAM-1085](tickets/FAM-1085.md) — หน้า /recv รับรถเข้าสต๊อกทีละคัน
-- [FAM-1086](tickets/FAM-1086.md) — เชื่อมบัญชีกับข้อมูลพนักงาน (ปลดล็อกลงเวลา/ลา)
-- [FAM-1087](tickets/FAM-1087.md) — หน้า deal: เพิ่มลูกค้า (ลีด) + ปุ่มย้อนขั้น
-- [FAM-1088](tickets/FAM-1088.md) — /stock แสดงรหัสรุ่นใน filter + แถวรายการ
-- [FAM-1089](tickets/FAM-1089.md) — /sell ช่องเลือกคันพิมพ์ค้นได้ (searchable) + แสดงละเอียด
-- [FAM-1090](tickets/FAM-1090.md) — /flow "งานของฉัน" กรองแค่งานฉัน + สีตามตำแหน่ง
-- [FAM-1091](tickets/FAM-1091.md) — /models ปุ่ม Edit แก้ไขข้อมูลรุ่น
-- [FAM-1092](tickets/FAM-1092.md) — มุมมองการ์ด + สลับกริด/ตาราง
-- [FAM-1093](tickets/FAM-1093.md) — ทำเป็น phase)
-- [FAM-1094](tickets/FAM-1094.md) — หมายเหตุในฟอร์มหลัก
-- [FAM-1096](tickets/FAM-1096.md) — Dashboard ปรับแต่งได้ (เลือกการ์ด + สลับตำแหน่ง)
-- [FAM-1097](tickets/FAM-1097.md) — sort/filter หน้าที่ยังไม่มี
-- [FAM-1099](tickets/FAM-1099.md) — ปุ่มบวกเลขเร็ว (5พัน/1หมื่น) บนช่องกรอกเงิน
-- [FAM-1100](tickets/FAM-1100.md) — คิวป้าย 2 ระยะ (ยื่นขนส่ง → รับเล่ม)
-- [FAM-1101](tickets/FAM-1101.md) — P1
-- [FAM-1102](tickets/FAM-1102.md) — ใบเสร็จรับเงิน + ใบกำกับภาษี (epic)
-- [FAM-1103](tickets/FAM-1103.md) — เลิกใช้ "สาขา" → ใช้ "บริษัท" ทั้งระบบ
-- [FAM-1104](tickets/FAM-1104.md) — กดดูรายละเอียดแต่ละรายการ (drill-down)
-- [FAM-1105](tickets/FAM-1105.md) — ปิดวงจรดีล (ป้ายขาว → ส่งมอบแล้ว)
-- [FAM-1106](tickets/FAM-1106.md) — ปุ่มแคปหน้าจอส่งซัพพอร์ต
-- [FAM-1107](tickets/FAM-1107.md) — เชื่อม flow + กันข้อมูลเพี้ยน (จากผลตรวจ 5 มิติ)
-- [FAM-1108](tickets/FAM-1108.md) — ชุดที่ 2)
-- [FAM-1109](tickets/FAM-1109.md) — ตั้งเงินเดือน/ตำแหน่ง + เพิ่มพนักงานใหม่ (รวมหน้าเดียว)
-- [FAM-1110](tickets/FAM-1110.md) — เลือกลูกค้าเดิมตอนขาย (กันระเบียนลูกค้าซ้ำ)
-- [FAM-1111](tickets/FAM-1111.md) — คุยกับลูกค้า → ไฟแนนซ์ → เปิดการขาย → ส่งมอบ
-- [FAM-1112](tickets/FAM-1112.md) — แท็บใบกำกับภาษี + เมนูแยก
-- [FAM-1113](tickets/FAM-1113.md) — สาขา + จุดลงเวลา (branch_site)
-- [FAM-1114](tickets/FAM-1114.md) — พิกัดลงเวลา: รวบให้เหลือที่ตั้งค่าที่เดียว
-- [FAM-1115](tickets/FAM-1115.md) — ขายรถแล้วสร้างข้อมูลปลายทางให้ครบ (fixlist ข้อ 01 / 02 / 03)
-- [FAM-1116](tickets/FAM-1116.md) — คิดนาที OT ตอนลงเวลาออก (fixlist ข้อ 04)
-- [FAM-1117](tickets/FAM-1117.md) — โชว์รหัสให้ลูกค้าเช็กสถานะเอง (fixlist ข้อ 06)
-- [FAM-1118](tickets/FAM-1118.md) — หน้าศูนย์ซ่อม: ค้นด้วยเลขถัง + ดูประวัติลูกค้าได้เลย (fixlist ข้อ 16 + 17)
-- [FAM-1119](tickets/FAM-1119.md) — ขั้นลูกค้าก่อนขาย + ประวัติการเปลี่ยนขั้น (fixlist ข้อ 07 · `เจ้าของย้ำ`)
-- [FAM-1120](tickets/FAM-1120.md) — แดชบอร์ดเป็นเงิน + รายงานกำไรอะไหล่ (fixlist ข้อ 15 + 18)
-- [FAM-1121](tickets/FAM-1121.md) — หน้าดูประวัติการแก้ไข (fixlist ข้อ 10)
-- [FAM-1122](tickets/FAM-1122.md) — ปิดงวดเงินเดือน (fixlist ข้อ 08)
+- [FAM-1001: Scaffold Next.js + Supabase + envs + CI](tickets/FAM-1001.md)
+- [FAM-1002: Design tokens + Thai fonts + app shell](tickets/FAM-1002.md)
+- [FAM-1003: Core UI components](tickets/FAM-1003.md)
+- [FAM-1004: Supabase data layer & RPC wrappers](tickets/FAM-1004.md)
+- [FAM-1005: login & session](tickets/FAM-1005.md)
+- [FAM-1006: RBAC menu + server money-strip + customer mode](tickets/FAM-1006.md)
+- [FAM-1008: Stock screen (สต๊อกรถ)](tickets/FAM-1008.md)
+- [FAM-1009: หน้าข้อมูลรุ่นรถและสี (models catalog)](tickets/FAM-1009.md)
+- [FAM-1010: หน้าอะไหล่และของแถม (parts) + R1 แก้ราคาของแถม](tickets/FAM-1010.md)
+- [FAM-1011: deal calculator + form (ขายรถ)](tickets/FAM-1011.md)
+- [FAM-1012: หน้าศูนย์ซ่อม (service) + R1 ยอดชำระ/ตัวเลือกวันที่](tickets/FAM-1012.md)
+- [FAM-1013: ขาย·ไฟแนนซ์·ทะเบียน หน้าเดียว](tickets/FAM-1013.md)
+- [FAM-1014: เทียบรถ/ไฟแนนซ์ให้ลูกค้า](tickets/FAM-1014.md)
+- [FAM-1015: หน้าเงินค้างรับ (ar) + ลงรับเงิน](tickets/FAM-1015.md)
+- [FAM-1016: หน้าโอนย้ายสาขา (transfer)](tickets/FAM-1016.md)
+- [FAM-1017: Dashboard (ภาพรวม)](tickets/FAM-1017.md)
+- [FAM-1018: หน้าตั้งค่าระบบ (settings)](tickets/FAM-1018.md)
+- [FAM-1019: หน้าค่าใช้จ่าย (expense) + R1 ซื้อกับใคร/หมายเหตุ](tickets/FAM-1019.md)
+- [FAM-1020: จัดการบทบาท/สาขา (RBAC)](tickets/FAM-1020.md)
+- [FAM-1021: สรุปแยกประเภท + ส่งออก/พิมพ์](tickets/FAM-1021.md)
+- [FAM-1022: Company entity + branch hierarchy (R1)](tickets/FAM-1022.md)
+- [FAM-1023: บันทึกการขายจริง (atomic)](tickets/FAM-1023.md)
+- [FAM-1024: อัปโหลดรูปรถเข้า storage (model-photo)](tickets/FAM-1024.md)
+- [FAM-1025: เพิ่มรุ่นแบบ atomic](tickets/FAM-1025.md)
+- [FAM-1026: แก้ข้อมูลหลักอะไหล่ + รับอะไหล่เข้า (parts master/receive)](tickets/FAM-1026.md)
+- [FAM-1027: เปิดใบงานซ่อมใหม่ + แก้รายการ (create/edit service job)](tickets/FAM-1027.md)
+- [FAM-1028: งานสินเชื่อเต็ม + เปิดดีล/ลูกค้าเท (deal follow-ups)](tickets/FAM-1028.md)
+- [FAM-1029: แม่แบบพิมพ์ใบเสนอราคา + ดู/แก้/แปลงเป็นการขาย (quote follow-ups)](tickets/FAM-1029.md)
+- [FAM-1030: อนุมัติค่าใช้จ่าย (expense approval)](tickets/FAM-1030.md)
+- [FAM-1031: หน้าภาพรวมการเข้างาน (attend)](tickets/FAM-1031.md)
+- [FAM-1032: หน้าลงเวลาและลา (hr)](tickets/FAM-1032.md)
+- [FAM-1033: หน้าเงินเดือนและ OT (payroll)](tickets/FAM-1033.md)
+- [FAM-1034: รวมกิจกรรมบริษัท/ลา/รถ](tickets/FAM-1034.md)
+- [FAM-1035: ใครทำอะไรตอนไหน](tickets/FAM-1035.md)
+- [FAM-1036: อ่านไฟล์ยามาฮ่า → เพิ่มรถเป็นชุด](tickets/FAM-1036.md)
+- [FAM-1037: Theme Foundation + Engine (ticket 1/3 · UI/ธีม track)](tickets/FAM-1037.md)
+- [FAM-1038: หน้าตั้งค่าธีม (แอดมิน) (ticket 2/3 · UI/ธีม track)](tickets/FAM-1038.md)
+- [FAM-1039: ระบบฟอนต์ + อัปโหลด (ticket 3/3 · UI/ธีม track)](tickets/FAM-1039.md)
+- [FAM-1040: ปุ่มแคปหน้าจอเฉพาะจุด (โหมดลูกค้า)](tickets/FAM-1040.md)
+- [FAM-1041: UI polish รอบ craft & interaction (shared primitives)](tickets/FAM-1041.md)
+- [FAM-1042: เจาะหน้า Dashboard](tickets/FAM-1042.md)
+- [FAM-1043: mini per-branch split + รายการรถค้าง](tickets/FAM-1043.md)
+- [FAM-1044: Dashboard → คลิกรถค้างเปิดคันนั้นใน /stock (deep-link)](tickets/FAM-1044.md)
+- [FAM-1045: ล้าง ?unit ออกจาก URL ตอนปิด drawer](tickets/FAM-1045.md)
+- [FAM-1046: เจาะหน้าขาย (SellForm)](tickets/FAM-1046.md)
+- [FAM-1047: เจาะหน้าใบเสนอราคา (QuoteView)](tickets/FAM-1047.md)
+- [FAM-1048: เจาะหน้ารายงาน (ReportView)](tickets/FAM-1048.md)
+- [FAM-1049: เจาะหน้าอะไหล่ (PartsView)](tickets/FAM-1049.md)
+- [FAM-1050: แคตตาล็อก + เช็กสถานะ (E11 slice 1)](tickets/FAM-1050.md)
+- [FAM-1051: หน้ารายละเอียดรุ่น + พร้อมรูปจริง (E11 slice 2)](tickets/FAM-1051.md)
+- [FAM-1052: sitemap + robots + Open Graph](tickets/FAM-1052.md)
+- [FAM-1053: generate og:image (การ์ดแบรนด์ต่อรุ่น)](tickets/FAM-1053.md)
+- [FAM-1054: ฝังรูปรถจริงในการ์ด OG (แก้ WebP crash)](tickets/FAM-1054.md)
+- [FAM-1055: JSON-LD structured data (Product/Breadcrumb/ItemList)](tickets/FAM-1055.md)
+- [FAM-1056: cron auth + LINE notify + aged-stock digest](tickets/FAM-1056.md)
+- [FAM-1057: เตือนทะเบียนเกินกำหนด](tickets/FAM-1057.md)
+- [FAM-1058: เตือนเช็กระยะตามไมล์ (service due)](tickets/FAM-1058.md)
+- [FAM-1059: สร้างงานติดตามหลังขาย (sale follow-up)](tickets/FAM-1059.md)
+- [FAM-1060: เตือนปิดงวดเงินเดือน (ปิด E10)](tickets/FAM-1060.md)
+- [FAM-1061: surface deals ที่ต้องจัดการ (hero + off-track filter)](tickets/FAM-1061.md)
+- [FAM-1062: ประวัติลูกค้าในแผงดีล (customer history)](tickets/FAM-1062.md)
+- [FAM-1063: รวมประวัติบริการในแผงดีล (service history)](tickets/FAM-1063.md)
+- [FAM-1064: polish ArView (เงินค้างรับ)](tickets/FAM-1064.md)
+- [FAM-1065: เดินสาย AI (infra, ปิดไว้)](tickets/FAM-1065.md)
+- [FAM-1066: ร่างข้อความติดตามลูกค้าด้วย AI](tickets/FAM-1066.md)
+- [FAM-1067: ผู้ช่วยวิเคราะห์ (Thai Q&A + tool-use RLS)](tickets/FAM-1067.md)
+- [FAM-1068: AI ช่วยจับคู่คอลัมน์ตอนนำเข้า .xls (ปิด E12)](tickets/FAM-1068.md)
+- [FAM-1069: เก็บโค้ดไว้ dormant](tickets/FAM-1069.md)
+- [FAM-1070: Pre-launch QA sweep + sync task board/docs](tickets/FAM-1070.md)
+- [FAM-1071: Graceful error / 404 / loading pages (App Router hardening)](tickets/FAM-1071.md)
+- [FAM-1072: Empty states ที่สื่อความหมาย (icon + copy + action)](tickets/FAM-1072.md)
+- [FAM-1073: a11y + print + loading skeleton](tickets/FAM-1073.md)
+- [FAM-1074: เอกสารใบขาย/ส่งมอบรถ (PrintableSaleDoc)](tickets/FAM-1074.md)
+- [FAM-1075: เอกสารใบสั่งซ่อม (PrintableServiceDoc)](tickets/FAM-1075.md)
+- [FAM-1076: สลิปเงินเดือนรายคน (PrintableEmployeePayslip)](tickets/FAM-1076.md)
+- [FAM-1077: ใบกำกับภาษี (PrintableTaxInvoice)](tickets/FAM-1077.md)
+- [FAM-1078: ฟอร์มแก้ข้อมูลกิจการ/สาขา (บนหัวเอกสาร)](tickets/FAM-1078.md)
+- [FAM-1079: หน้าแรกพาเข้าแอป + โหมดทดลอง login (ให้ลูกค้าลอง)](tickets/FAM-1079.md)
+- [FAM-1080: ย้าย Vercel function region → Singapore (sin1) แก้เว็บช้า](tickets/FAM-1080.md)
+- [FAM-1081: ค้นหาทั่วเว็บ (global search / Cmd+K)](tickets/FAM-1081.md)
+- [FAM-1082: parallelize getCurrentUser](tickets/FAM-1082.md)
+- [FAM-1083: เงา backdrop ค้นหาให้ครอบทั้งจอ](tickets/FAM-1083.md)
+- [FAM-1084: แคชข้อมูลอ้างอิง (settings/theme/สาขา/บริษัท) ลด round-trip ต่อการนำทาง](tickets/FAM-1084.md)
+- [FAM-1085: หน้า /recv รับรถเข้าสต๊อกทีละคัน](tickets/FAM-1085.md)
+- [FAM-1086: เชื่อมบัญชีกับข้อมูลพนักงาน (ปลดล็อกลงเวลา/ลา)](tickets/FAM-1086.md)
+- [FAM-1087: หน้า deal: เพิ่มลูกค้า (ลีด) + ปุ่มย้อนขั้น](tickets/FAM-1087.md)
+- [FAM-1088: /stock แสดงรหัสรุ่นใน filter + แถวรายการ](tickets/FAM-1088.md)
+- [FAM-1089: /sell ช่องเลือกคันพิมพ์ค้นได้ (searchable) + แสดงละเอียด](tickets/FAM-1089.md)
+- [FAM-1090: /flow "งานของฉัน" กรองแค่งานฉัน + สีตามตำแหน่ง](tickets/FAM-1090.md)
+- [FAM-1091: /models ปุ่ม Edit แก้ไขข้อมูลรุ่น](tickets/FAM-1091.md)
+- [FAM-1092: มุมมองการ์ด + สลับกริด/ตาราง](tickets/FAM-1092.md)
+- [FAM-1093: ทำเป็น phase)](tickets/FAM-1093.md)
+- [FAM-1094: หมายเหตุในฟอร์มหลัก](tickets/FAM-1094.md)
+- [FAM-1096: Dashboard ปรับแต่งได้ (เลือกการ์ด + สลับตำแหน่ง)](tickets/FAM-1096.md)
+- [FAM-1097: sort/filter หน้าที่ยังไม่มี](tickets/FAM-1097.md)
+- [FAM-1099: ปุ่มบวกเลขเร็ว (5พัน/1หมื่น) บนช่องกรอกเงิน](tickets/FAM-1099.md)
+- [FAM-1100: คิวป้าย 2 ระยะ (ยื่นขนส่ง → รับเล่ม)](tickets/FAM-1100.md)
+- [FAM-1101: P1](tickets/FAM-1101.md)
+- [FAM-1102: ใบเสร็จรับเงิน + ใบกำกับภาษี (epic)](tickets/FAM-1102.md)
+- [FAM-1103: เลิกใช้ "สาขา" → ใช้ "บริษัท" ทั้งระบบ](tickets/FAM-1103.md)
+- [FAM-1104: กดดูรายละเอียดแต่ละรายการ (drill-down)](tickets/FAM-1104.md)
+- [FAM-1105: ปิดวงจรดีล (ป้ายขาว → ส่งมอบแล้ว)](tickets/FAM-1105.md)
+- [FAM-1106: ปุ่มแคปหน้าจอส่งซัพพอร์ต](tickets/FAM-1106.md)
+- [FAM-1107: เชื่อม flow + กันข้อมูลเพี้ยน (จากผลตรวจ 5 มิติ)](tickets/FAM-1107.md)
+- [FAM-1108: ชุดที่ 2)](tickets/FAM-1108.md)
+- [FAM-1109: ตั้งเงินเดือน/ตำแหน่ง + เพิ่มพนักงานใหม่ (รวมหน้าเดียว)](tickets/FAM-1109.md)
+- [FAM-1110: เลือกลูกค้าเดิมตอนขาย (กันระเบียนลูกค้าซ้ำ)](tickets/FAM-1110.md)
+- [FAM-1111: คุยกับลูกค้า → ไฟแนนซ์ → เปิดการขาย → ส่งมอบ](tickets/FAM-1111.md)
+- [FAM-1112: แท็บใบกำกับภาษี + เมนูแยก](tickets/FAM-1112.md)
+- [FAM-1113: สาขา + จุดลงเวลา (branch_site)](tickets/FAM-1113.md)
+- [FAM-1114: พิกัดลงเวลา: รวบให้เหลือที่ตั้งค่าที่เดียว](tickets/FAM-1114.md)
+- [FAM-1115: ขายรถแล้วสร้างข้อมูลปลายทางให้ครบ (fixlist ข้อ 01 / 02 / 03)](tickets/FAM-1115.md)
+- [FAM-1116: คิดนาที OT ตอนลงเวลาออก (fixlist ข้อ 04)](tickets/FAM-1116.md)
+- [FAM-1117: โชว์รหัสให้ลูกค้าเช็กสถานะเอง (fixlist ข้อ 06)](tickets/FAM-1117.md)
+- [FAM-1118: หน้าศูนย์ซ่อม: ค้นด้วยเลขถัง + ดูประวัติลูกค้าได้เลย (fixlist ข้อ 16 + 17)](tickets/FAM-1118.md)
+- [FAM-1119: ขั้นลูกค้าก่อนขาย + ประวัติการเปลี่ยนขั้น (fixlist ข้อ 07 · `เจ้าของย้ำ`)](tickets/FAM-1119.md)
+- [FAM-1120: แดชบอร์ดเป็นเงิน + รายงานกำไรอะไหล่ (fixlist ข้อ 15 + 18)](tickets/FAM-1120.md)
+- [FAM-1121: หน้าดูประวัติการแก้ไข (fixlist ข้อ 10)](tickets/FAM-1121.md)
+- [FAM-1122: ปิดงวดเงินเดือน (fixlist ข้อ 08)](tickets/FAM-1122.md)
+- [FAM-1123: ของแถมจากตารางจริง + ตัดสต๊อก (fixlist ข้อ 05)](tickets/FAM-1123.md)
+- [FAM-1124: ใบนำส่งประกันสังคม + ไฟล์โอนเงินเดือน (fixlist ข้อ 13 + 14)](tickets/FAM-1124.md)
+- [FAM-1125: ปิดประตูก่อนขึ้นจริง: สวิตช์ DEMO_LOGIN + กระดานงาน + ไฟล์สเปก (fixlist ข้อ 21, 26, 27)](tickets/FAM-1125.md)
+- [FAM-1126: แยกเอกสารขายเงินผ่อนเป็น 3 ใบ (fixlist ข้อ 11)](tickets/FAM-1126.md)
+- [FAM-1127: ขายส่งระหว่างร้าน B2B (fixlist ข้อ 12 · บรีฟ R1 หมวด D)](tickets/FAM-1127.md)
+- [FAM-1128: ใบกำกับ + ยกเลิกบิลขายส่ง (ต่อจาก fixlist ข้อ 12)](tickets/FAM-1128.md)
+- [FAM-1129: โอนข้ามบริษัทไม่ได้ ต้องเปิดบิลขายส่ง (บรีฟ R1 B1)](tickets/FAM-1129.md)

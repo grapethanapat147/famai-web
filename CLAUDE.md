@@ -15,7 +15,8 @@
 | design tokens + กฎ UI (§9 rules) | `docs/04-design-system.md` |
 | ต่อ Supabase จริง | `docs/06-supabase-setup.md` |
 | public catalog/status API | `docs/07-public-api.md` |
-| ดีไซน์/พฤติกรรมจริง | `index.html` (v1.15) + `prototype/` (เก่า, อ้างอิงเท่านั้น) |
+| ดีไซน์ต้นแบบ (อ้างอิงเท่านั้น — แอปจริงคือโค้ดในรีโปนี้) | `index.html` (v1.15) + `prototype/` |
+| ข้อมูลตัวอย่างทุกหน้า | `supabase/seed/demo.sql` (+ `demo-cleanup.sql` ลบก่อนเปิดจริง) |
 | requirements ระดับลูกค้า | `.codex/specs/revision-1-client-feedback.md` (บรีฟแก้ไขครั้งที่ 1 — ฉบับล่าสุดที่อยู่ในรีโป) |
 | แผนงานตามหัวข้อ | `.codex/specs/` (theme engine, E12 AI plan ฯลฯ) |
 
@@ -45,11 +46,12 @@ Next.js (App Router) + TypeScript · Supabase (Postgres + RLS + Auth + Storage) 
 
 ## Conventions
 
-- เช็ค `index.html` + `docs/` ก่อนสร้างของใหม่ ยึด design token §04 · Node parse ISO เป็น UTC ส่วนแอปใช้ Asia/Bangkok — คำนวณเวลาฝั่งที่ถูก timezone
+- เช็ค `components/` + `docs/04-design-system.md` ก่อนสร้างของใหม่ (มี component ให้ใช้ซ้ำแล้วเกือบทุกแบบ) ยึด design token §04 · Node parse ISO เป็น UTC ส่วนแอปใช้ Asia/Bangkok — คำนวณเวลาฝั่งที่ถูก timezone
 - ทุก code change มี test; security-critical (RLS/money/double-sell/doc-no) ต้องมี test ก่อน Done
-- QA เดิม: `node tools/qa/run.js` (33 ชุด, Playwright) — อย่าทำ QA พังตอนพอร์ต
+- ก่อน push ต้องผ่านครบ: `npm run test` (vitest ทั้งชุด ไม่ใช่แค่ไฟล์ที่แตะ) · `typecheck` · `lint` · `build` — เท่ากับที่ CI รัน · `tools/qa/` เป็นด่านตรวจของต้นแบบเดิม ไม่เกี่ยวกับแอปนี้
 - ตอบสั้น กระชับ · ห้ามสร้างไฟล์ docs ใหม่นอกจากผู้ใช้ขอ
-- git: origin ชี้ repo ของเพื่อน — **ห้าม push จนกว่าผู้ใช้ยืนยัน** remote
+- git: origin = `grapethanapat147/famai-web` (ของเจ้าของ) · งานทุกชิ้นอยู่บนสาขา `feature/FAM-XXXX` แล้ว push + ให้ลิงก์ compare — เจ้าของ merge เองในเบราว์เซอร์ (เครื่องนี้ไม่มี `gh`)
+- migration: เขียนไฟล์ใน `supabase/migrations/` แล้ว **วางเนื้อ SQL ทั้งก้อนในแชต** ให้เจ้าของรันใน Supabase SQL Editor เอง (ห้ามส่งแค่ path) · เขียน `database.types.ts` ด้วยมือให้ตรงกับคอลัมน์ที่ใช้ (ตารางที่ไม่ประกาศจะ resolve เป็น `never`)
 
 <!-- BEGIN:nextjs-agent-rules -->
 

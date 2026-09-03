@@ -5,18 +5,30 @@ import { ALL_MENU_KEYS } from "@/lib/nav/menu";
 const saleFlow = FLOWS.find((f) => f.key === "sale")!;
 
 describe("visibleSteps", () => {
+  const allIndex = saleFlow.steps.map((_, i) => i);
+  const salesIndex = saleFlow.steps.flatMap((s, i) => (s.roles.includes("sales") ? [i] : []));
+
   it("returns all steps (with original index) when onlyMine is off", () => {
     const all = visibleSteps(saleFlow, ["sales"], false);
     expect(all).toHaveLength(saleFlow.steps.length);
-    expect(all.map((s) => s.index)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(all.map((s) => s.index)).toEqual(allIndex);
   });
   it("keeps only my steps (original numbers preserved) when onlyMine is on", () => {
-    // ขายมอเตอร์ไซค์: sales อยู่ในขั้น เสนอราคา(1) เปิดการขาย(2) ส่งมอบ(5)
     const mine = visibleSteps(saleFlow, ["sales"], true);
-    expect(mine.map((s) => s.index)).toEqual([1, 2, 5]);
+    expect(mine.map((s) => s.index)).toEqual(salesIndex);
+    expect(salesIndex.length).toBeGreaterThan(0);
+    expect(salesIndex.length).toBeLessThan(allIndex.length); // เซลล์ไม่ได้ทำทุกขั้น
   });
   it("admin sees every step even with onlyMine (ดูแลทุกงาน)", () => {
-    expect(visibleSteps(saleFlow, ["admin"], true).map((s) => s.index)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(visibleSteps(saleFlow, ["admin"], true).map((s) => s.index)).toEqual(allIndex);
+  });
+
+  it("ขายมอเตอร์ไซค์เรียงตามเฟสหลัก คุยกับลูกค้า → ไฟแนนซ์ → เปิดการขาย → ส่งมอบ (FAM-1111)", () => {
+    const titles = saleFlow.steps.map((s) => s.title);
+    const firstOf = (phase: string) => titles.findIndex((x) => x.startsWith(phase));
+    const order = ["คุยกับลูกค้า", "ไฟแนนซ์", "เปิดการขาย", "ส่งมอบ"].map(firstOf);
+    expect(order.every((i) => i >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 });
 
