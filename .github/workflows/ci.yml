@@ -20,8 +20,8 @@ jobs:
       - run: npm run build
         env:
           # publishable key เปิดเผยได้ (ความปลอดภัยมาจาก RLS) — ดู docs/06-supabase-setup.md
-          NEXT_PUBLIC_SUPABASE_URL: https://hpsmjavfvrdctclmlmhp.supabase.co
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_WVL0ff-x2L0EwngZH8RZiw_4vNISVa_
+          NEXT_PUBLIC_SUPABASE_URL: https://xpbdvhfvmpokdnfhoujx.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_mBjGCNowMwfbi3PBeXaSMg_hAMfPwDZ
 
   # เทสความปลอดภัยกับฐานข้อมูลจริง (fixlist ข้อ 19/20) — รันเมื่อตั้ง secret TEST_LOGINS แล้วเท่านั้น
   # secret ที่ต้องมี: TEST_LOGINS (JSON บัญชีทดสอบ — ดู .env.test.local.example) · SUPABASE_SERVICE_ROLE_KEY (สร้าง/ลบข้อมูลทดสอบ)
@@ -32,8 +32,8 @@ jobs:
       RUN_INTEGRATION: "1"
       TEST_LOGINS: ${{ secrets.TEST_LOGINS }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      NEXT_PUBLIC_SUPABASE_URL: https://hpsmjavfvrdctclmlmhp.supabase.co
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_WVL0ff-x2L0EwngZH8RZiw_4vNISVa_
+      NEXT_PUBLIC_SUPABASE_URL: https://xpbdvhfvmpokdnfhoujx.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_mBjGCNowMwfbi3PBeXaSMg_hAMfPwDZ
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

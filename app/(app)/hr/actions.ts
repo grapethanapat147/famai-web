@@ -5,9 +5,9 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveBranches } from "@/lib/reference/cache";
 import { getSettingsWith } from "@/lib/settings";
+import { punchIn, punchOut } from "@/lib/rpc";
 import type { TypedSupabaseClient } from "@/lib/supabase/client-type";
 import { positionFromRoles } from "@/lib/hr/employee";
-import { lateMinutes, workMinutes, otMinutes } from "@/lib/hr/time";
 import { canApproveLeave, isLeaveType, leaveDays, type HrActionResult } from "@/lib/hr/leave";
 import { branchGeofence, formatDistanceM, haversineMeters, withinGeofence } from "@/lib/hr/geo";
 import { isSiteKind, nearestSite, type SiteRow } from "@/lib/branch/sites";
@@ -15,10 +15,6 @@ import { isSiteKind, nearestSite, type SiteRow } from "@/lib/branch/sites";
 /** วันที่/เวลาปัจจุบันตามเขตเวลาไทย */
 function bangkokDate(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date());
-}
-function bangkokHHMM(iso?: string): string {
-  const d = iso ? new Date(iso) : new Date();
-  return new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Bangkok" }).format(d);
 }
 
 async function myEmployeeId(supabase: TypedSupabaseClient, userId: string): Promise<string | null> {
@@ -163,23 +159,20 @@ export async function clockIn(formData: FormData): Promise<HrActionResult> {
     return { ok: false, error: "ต้องถ่ายเซลฟี่ยืนยันก่อนลงเวลา" };
   }
 
+  // เวลาประทับจาก now() ของฐานข้อมูล ไม่ใช่นาฬิกาเครื่องแอป (FAM-1132 · fixlist ข้อ 23)
   const settings = await getSettingsWith(supabase);
-  const nowIso = new Date().toISOString();
-  const late = lateMinutes(bangkokHHMM(), settings.work_start);
-  const { error } = await supabase.from("attendance").upsert(
-    {
-      employee_id: empId,
-      work_date: today,
-      check_in: nowIso,
-      status: late > 0 ? "สาย" : "ปกติ",
-      late_minutes: late,
-      ...geoFields,
-      ...(selfiePath ? { check_in_selfie: selfiePath } : {}),
-    },
-    { onConflict: "employee_id,work_date" },
-  );
-  if (error) {
-    return { ok: false, error: "ลงเวลาไม่สำเร็จ" };
+  try {
+    await punchIn(supabase, {
+      lat: geoFields.check_in_lat ?? null,
+      lng: geoFields.check_in_lng ?? null,
+      distanceM: geoFields.check_in_distance_m ?? null,
+      siteId: geoFields.check_in_site_id ?? null,
+      siteName: geoFields.check_in_site_name ?? null,
+      selfiePath: selfiePath || null,
+      workStart: settings.work_start,
+    });
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "ลงเวลาไม่สำเร็จ" };
   }
   revalidatePath("/hr");
   return { ok: true };
@@ -211,19 +204,12 @@ export async function clockOut(): Promise<HrActionResult> {
     return { ok: false, error: "ลงเวลาออกแล้ว" };
   }
 
-  const nowIso = new Date().toISOString();
-  const inHHMM = bangkokHHMM(att.check_in);
-  const outHHMM = bangkokHHMM(nowIso);
+  // เวลาออก + ชั่วโมงงาน + OT คิดในฐานข้อมูล (สูตรเดียวกับ lib/hr/time.ts) — FAM-1132
   const settings = await getSettingsWith(supabase);
-  const work = workMinutes(inHHMM, outHHMM);
-  // fixlist ข้อ 04 — เดิมไม่เคยเขียน ot_minutes ทำให้ค่า OT ในสลิปเป็น 0 เสมอ
-  const ot = otMinutes(inHHMM, outHHMM, settings.work_end);
-  const { error } = await supabase
-    .from("attendance")
-    .update({ check_out: nowIso, work_minutes: work, ot_minutes: ot })
-    .eq("id", att.id);
-  if (error) {
-    return { ok: false, error: "ลงเวลาออกไม่สำเร็จ" };
+  try {
+    await punchOut(supabase, { workEnd: settings.work_end, otStep: 30 });
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "ลงเวลาออกไม่สำเร็จ" };
   }
   revalidatePath("/hr");
   return { ok: true };

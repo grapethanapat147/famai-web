@@ -1,25 +1,27 @@
 {
-  "regions": ["sin1"],
-  "crons": [
-    { "path": "/api/cron/aged-stock", "schedule": "0 2 * * *" },
-    { "path": "/api/cron/registration-overdue", "schedule": "0 3 * * *" },
-    { "path": "/api/cron/service-due", "schedule": "0 4 * * *" },
-    { "path": "/api/cron/sale-followup", "schedule": "0 5 * * *" },
-    { "path": "/api/cron/payroll-close", "schedule": "0 6 * * *" }
+  "regions": [
+    "sin1"
   ],
-  "headers": [
+  "crons": [
     {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Robots-Tag",
-          "value": "noindex, nofollow"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "no-referrer"
-        }
-      ]
+      "path": "/api/cron/aged-stock",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/registration-overdue",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/service-due",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/sale-followup",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/payroll-close",
+      "schedule": "0 6 * * *"
     }
   ]
 }
