@@ -151,3 +151,43 @@ export async function voidWholesaleOrder(
   }
   return data as unknown as { order_no: string; units_restored: number };
 }
+
+/** ลงเวลาเข้า — เวลาจากฐานข้อมูล (FAM-1132) · server action ตรวจ geofence/เซลฟี่ก่อน แล้วส่งผลมาแช่ */
+export async function punchIn(
+  client: TypedSupabaseClient,
+  a: {
+    lat: number | null;
+    lng: number | null;
+    distanceM: number | null;
+    siteId: string | null;
+    siteName: string | null;
+    selfiePath: string | null;
+    workStart: string;
+  },
+): Promise<{ check_in: string; late_minutes: number }> {
+  const { data, error } = await client.rpc("punch_in", {
+    p_lat: a.lat,
+    p_lng: a.lng,
+    p_distance_m: a.distanceM,
+    p_site_id: a.siteId,
+    p_site_name: a.siteName,
+    p_selfie_path: a.selfiePath,
+    p_work_start: a.workStart,
+  });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data as unknown as { check_in: string; late_minutes: number };
+}
+
+/** ลงเวลาออก — เวลาจากฐานข้อมูล + คิดชั่วโมงงาน/OT ใน DB (FAM-1132) */
+export async function punchOut(
+  client: TypedSupabaseClient,
+  a: { workEnd: string; otStep?: number },
+): Promise<{ check_out: string; work_minutes: number; ot_minutes: number }> {
+  const { data, error } = await client.rpc("punch_out", { p_work_end: a.workEnd, p_ot_step: a.otStep ?? 30 });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data as unknown as { check_out: string; work_minutes: number; ot_minutes: number };
+}

@@ -699,6 +699,22 @@ export type Database = {
         };
         Returns: Json;
       };
+      punch_in: {
+        Args: {
+          p_lat?: number | null;
+          p_lng?: number | null;
+          p_distance_m?: number | null;
+          p_site_id?: string | null;
+          p_site_name?: string | null;
+          p_selfie_path?: string | null;
+          p_work_start?: string;
+        };
+        Returns: Json;
+      };
+      punch_out: {
+        Args: { p_work_end?: string; p_ot_step?: number };
+        Returns: Json;
+      };
       next_service_reminder: {
         Args: { p_job_id: string };
         Returns: string | null;
