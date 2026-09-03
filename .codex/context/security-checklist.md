@@ -35,11 +35,14 @@
 - [ ] ดาวน์โหลด `pg_dump` เก็บนอกระบบเดือนละครั้ง + **ทดสอบกู้คืนจริง** ปีละครั้ง
 
 ## Security test checklist (ต้องมี test จริง ก่อน Done)
-- [ ] เซลล์เรียก API → ไม่มี cost/gross_profit
-- [ ] user สาขา A query สาขา B → 0 แถว
-- [ ] ขายคันเดียวพร้อมกัน 2 req → สำเร็จ 1 / ล้มเหลว 1
-- [ ] customer mode → money-fields หายทุก endpoint
-- [ ] แก้ข้อมูลปิดแล้วโดยไม่มี editBack → ถูกปฏิเสธ
-- [ ] ออกเลขเอกสารพร้อมกัน → ไม่ซ้ำ
-- [ ] ทุกการแก้ไข → มีแถว audit_log ถูกต้อง
-- [ ] anon ยิงตาราง `public` จริง → 401; `pub.*` → 200 อ่านอย่างเดียว
+เทสกับฐานข้อมูลจริงอยู่ที่ `tests/integration/` — รันด้วย `RUN_INTEGRATION=1` (CI job `integration` รันเองเมื่อตั้ง secret) · อัปเดต 3 ก.ย. 2569 (FAM-1133)
+
+- [x] เซลล์เรียก API → ไม่มี cost/gross_profit — ชั้นแอป: `stripMoneyFields` + `canSeeMoney` (ยูนิตเทส) · RLS ไม่ตัดคอลัมน์ จึงต้องซ่อนที่ server layer เสมอ
+- [x] user สาขา A query สาขา B → 0 แถว — `auth-rls.test.ts` (allBranch=false เห็นสาขาเดียว)
+- [x] ขายคันเดียวพร้อมกัน 2 req → สำเร็จ 1 / ล้มเหลว 1 — `security.test.ts` "ขายคันเดียวกันพร้อมกัน"
+- [x] ช่าง (ไม่มีสิทธิ์ขาย) เรียก sell_unit → ถูกปฏิเสธ — `security.test.ts` "ช่างกดขายรถ"
+- [ ] customer mode → money-fields หายทุก endpoint — ยังไม่มีโหมดนี้ในแอป Next (มีใน prototype เดิม) · เมื่อทำต้องเทส
+- [ ] แก้ข้อมูลปิดแล้วโดยไม่มี editBack → ถูกปฏิเสธ — แอปใช้สิทธิ์ตาม role แทน editBack (แก้เวลาย้อนหลัง = hr/manager/admin) · ปิดงวดเงินเดือนแล้วแช่ยอด (FAM-1122)
+- [x] ออกเลขเอกสารพร้อมกัน → ไม่ซ้ำ — `security.test.ts` "เลขเอกสารพร้อมกัน"
+- [x] ทุกการแก้ไข → มีแถว audit_log ถูกต้อง — `security.test.ts` "audit_log" (ต้องมีบัญชี admin ใน TEST_LOGINS)
+- [x] anon ยิงตาราง `public` จริง → ปฏิเสธ; `pub.*` → อ่านได้ — `auth-rls.test.ts` + `security.test.ts` "anon อ่าน pub"
