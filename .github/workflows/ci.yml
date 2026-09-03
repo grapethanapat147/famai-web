@@ -20,5 +20,5 @@ jobs:
       - run: npm run build
         env:
           # publishable key เปิดเผยได้ (ความปลอดภัยมาจาก RLS) — ดู docs/06-supabase-setup.md
-          NEXT_PUBLIC_SUPABASE_URL: https://hpsmjavfvrdctclmlmhp.supabase.co
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_WVL0ff-x2L0EwngZH8RZiw_4vNISVa_
+          NEXT_PUBLIC_SUPABASE_URL: https://xpbdvhfvmpokdnfhoujx.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_mBjGCNowMwfbi3PBeXaSMg_hAMfPwDZ

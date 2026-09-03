@@ -106,6 +106,7 @@ npm run dev                    # http://localhost:3000
 4. ใส่บัญชีทดสอบเป็น secret ใน GitHub Actions + `RUN_INTEGRATION=1` เพื่อให้เทสตรวจสิทธิ์กับฐานข้อมูลจริง (`tests/integration/auth-rls.test.ts`) รันทุกครั้ง
 5. กรอก **เลขผู้เสียภาษีของบริษัทไฟแนนซ์** (ตั้งค่าระบบ) และ **ร้านค้าขายส่ง** — ไม่กรอกจะออกใบกำกับให้เขาไม่ได้
 6. รัน `demo-cleanup.sql`
+7. เมื่อพร้อมเปิดแคตตาล็อกให้ลูกค้าค้นเจอใน Google: ตั้ง `CATALOG_PUBLIC=true` บน Vercel แล้ว deploy ใหม่ (ก่อนหน้านั้นทุกหน้า noindex)
 
 ---
 
