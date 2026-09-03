@@ -30,7 +30,7 @@ export default async function ReportPage() {
     supabase.from("expense_category").select("id, name"),
     supabase.from("receivable").select("kind, balance, settled_at"),
     // ขายอะไหล่ (FAM-1120 · fixlist ข้อ 18) — ตัดออกจากคลัง = qty ติดลบ
-    supabase.from("part_movement").select("part_id, kind, qty, unit_price, at").in("kind", ["sale", "job"]),
+    supabase.from("part_movement").select("part_id, kind, qty, unit_price, unit_cost, at").in("kind", ["sale", "job"]),
     supabase.from("part").select("id, name, cost"),
   ]);
 
@@ -63,8 +63,8 @@ export default async function ReportPage() {
         part: info?.name ?? "—",
         qty,
         revenue: qty * Number(m.unit_price ?? 0),
-        // ต้นทุนใช้ราคาทุนปัจจุบันของอะไหล่ — part_movement ไม่ได้แช่ต้นทุน ณ วันขายไว้
-        cost: qty * (info?.cost ?? 0),
+        // ต้นทุนที่แช่ไว้ ณ วันขาย (FAM-1137) — แถวเก่าก่อน migration 38 ไม่มีค่า ใช้ราคาทุนปัจจุบันแทน
+        cost: qty * (m.unit_cost != null ? Number(m.unit_cost) : (info?.cost ?? 0)),
       };
     });
 

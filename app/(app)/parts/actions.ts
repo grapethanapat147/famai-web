@@ -48,7 +48,7 @@ export async function issuePart(formData: FormData): Promise<PartsActionResult> 
 
   const { data: part, error: readError } = await supabase
     .from("part")
-    .select("id, branch_id, qty_on_hand, price")
+    .select("id, branch_id, qty_on_hand, price, cost")
     .eq("id", partId)
     .maybeSingle();
   if (readError || !part) {
@@ -75,6 +75,7 @@ export async function issuePart(formData: FormData): Promise<PartsActionResult> 
     kind,
     qty: -qty,
     unit_price: part.price,
+    unit_cost: part.cost, // แช่ต้นทุน ณ วันตัดสต๊อก (FAM-1137) — กำไรย้อนหลังไม่ขยับตามราคาทุนปัจจุบัน
     by_user: user.id,
   });
   if (moveError) {
@@ -278,7 +279,7 @@ export async function receivePart(formData: FormData): Promise<PartsActionResult
   const supabase = await createServerSupabase();
   const { data: part, error: readError } = await supabase
     .from("part")
-    .select("id, branch_id, qty_on_hand")
+    .select("id, branch_id, qty_on_hand, cost")
     .eq("id", partId)
     .maybeSingle();
   if (readError || !part) {
@@ -300,6 +301,7 @@ export async function receivePart(formData: FormData): Promise<PartsActionResult
     branch_id: part.branch_id,
     kind: "receive",
     qty,
+    unit_cost: part.cost,
     by_user: user.id,
   });
   if (moveError) {

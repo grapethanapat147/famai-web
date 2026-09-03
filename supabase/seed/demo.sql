@@ -373,8 +373,8 @@ insert into service_job_line (job_id, kind, part_id, description, qty, unit_pric
   ('0000000d-e000-4000-8000-0000000000b3', 'part',  '0000000d-e000-4000-8000-0000000000c1', 'ผ้าเบรกหน้า', 1, 450, 450);
 
 -- การเคลื่อนไหวอะไหล่: รับเข้า → เบิกใช้ในใบงาน → ขายหน้าร้าน (ยอดคงเหลือใน part ตรงกับผลรวม)
-insert into part_movement (part_id, branch_id, kind, qty, job_id, sale_id, unit_price, at, by_user, note)
-select x.part::uuid, b.id, x.kind, x.qty, x.job::uuid, null, x.price, x.at::timestamptz, x.by::uuid, x.note from (values
+insert into part_movement (part_id, branch_id, kind, qty, job_id, sale_id, unit_price, unit_cost, at, by_user, note)
+select x.part::uuid, b.id, x.kind, x.qty, x.job::uuid, null, x.price, p.cost, x.at::timestamptz, x.by::uuid, x.note from (values
   ('0000000d-e000-4000-8000-0000000000c0', 'FMG01', 'receive', 30, null, 180, '2026-08-01 09:00+07', '0000000d-e000-4000-8000-000000000007', 'รับจากตัวแทน ล็อต ส.ค.'),
   ('0000000d-e000-4000-8000-0000000000c0', 'FMG01', 'job',     -1, '0000000d-e000-4000-8000-0000000000b0', 330, '2026-04-20 09:30+07', '0000000d-e000-4000-8000-000000000005', null),
   ('0000000d-e000-4000-8000-0000000000c0', 'FMG01', 'job',     -1, '0000000d-e000-4000-8000-0000000000b1', 330, '2026-06-10 10:20+07', '0000000d-e000-4000-8000-000000000005', null),
@@ -390,7 +390,8 @@ select x.part::uuid, b.id, x.kind, x.qty, x.job::uuid, null, x.price, x.at::time
   ('0000000d-e000-4000-8000-0000000000c4', 'FMG01', 'receive', 12, null, 150, '2026-08-01 09:00+07', '0000000d-e000-4000-8000-000000000007', null),
   ('0000000d-e000-4000-8000-0000000000c4', 'FMG01', 'job',     -1, '0000000d-e000-4000-8000-0000000000b1', 280, '2026-06-10 10:20+07', '0000000d-e000-4000-8000-000000000005', null),
   ('0000000d-e000-4000-8000-0000000000c4', 'FMG01', 'sale',    -1, null, 280, '2026-09-02 15:40+07', '0000000d-e000-4000-8000-000000000007', 'ขายหน้าร้าน')
-) as x(part, code, kind, qty, job, price, at, by, note) join branch b on b.code = x.code;
+) as x(part, code, kind, qty, job, price, at, by, note)
+join branch b on b.code = x.code join part p on p.id = x.part::uuid;
 -- ตรวจยอด: น้ำมัน 30−1−1−1−3 = 24 ✓ · ผ้าเบรก 10−1−1 = 8 ✓ · หัวเทียน 6−4 = 2 ✓ · ยาง 6−2 = 4 ✓ · ไส้กรอง 12−1−1 = 10 ✓
 
 -- เตือนเช็กระยะ (cron อ่านตารางนี้)
