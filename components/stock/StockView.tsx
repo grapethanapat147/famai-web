@@ -9,6 +9,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Drawer } from "@/components/ui/Drawer";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { AttachmentPanel } from "@/components/attachments/AttachmentPanel";
+import type { AttachmentActionResult, AttachmentRow } from "@/lib/attachments/attachments";
 import { formatThaiDate } from "@/lib/format";
 import {
   STATUS_META,
@@ -27,11 +29,26 @@ export function StockView({
   canSeeMoney,
   agingDays,
   initialUnitId,
+  attachments = {},
+  canAttach = false,
+  canDeleteAttachments = false,
+  currentUserId = null,
+  attachmentActions,
 }: {
   units: StockUnit[];
   canSeeMoney: boolean;
   agingDays: number;
   initialUnitId?: string;
+  /** บิลรับรถ/ใบทะเบียน/รูป แยกตาม unit id (FAM-1134 · fixlist ข้อ 09) */
+  attachments?: Record<string, AttachmentRow[]>;
+  canAttach?: boolean;
+  canDeleteAttachments?: boolean;
+  currentUserId?: string | null;
+  attachmentActions?: {
+    add: (formData: FormData) => Promise<AttachmentActionResult>;
+    remove: (formData: FormData) => Promise<AttachmentActionResult>;
+    url: (formData: FormData) => Promise<AttachmentActionResult>;
+  };
 }) {
   const [branch, setBranch] = useState("all");
   const [model, setModel] = useState("all");
@@ -211,6 +228,17 @@ export function StockView({
             </Row>
             {canSeeMoney && <Row label="ต้นทุน"><Money value={selected.cost ?? null} /></Row>}
             <Row label="ราคาขาย"><Money value={selected.retail} /></Row>
+            <AttachmentPanel
+              ownerTable="motorcycle_unit"
+              ownerId={selected.id}
+              items={attachments[selected.id] ?? []}
+              canManage={canAttach}
+              canDeleteAny={canDeleteAttachments}
+              currentUserId={currentUserId}
+              addAction={attachmentActions?.add}
+              removeAction={attachmentActions?.remove}
+              urlAction={attachmentActions?.url}
+            />
           </div>
         )}
       </Drawer>

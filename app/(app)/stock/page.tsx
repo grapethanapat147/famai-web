@@ -5,6 +5,10 @@ import { getSetting } from "@/lib/settings";
 import { stripMoneyFields } from "@/lib/auth/strip-money";
 import { computeAgeDays, type StockStatus, type StockUnit } from "@/lib/stock/units";
 import { StockView } from "@/components/stock/StockView";
+import { getCurrentUser } from "@/lib/auth";
+import { loadAttachments } from "@/lib/attachments/load";
+import { canAttach } from "@/lib/attachments/attachments";
+import { addAttachment, attachmentUrl, removeAttachment } from "../attachments/actions";
 
 export const metadata = { title: "สต๊อกรถ — Famai Motor Group" };
 
@@ -60,5 +64,21 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
   // ตัดต้นทุนออกฝั่งเซิร์ฟเวอร์ถ้าไม่มีสิทธิ์ — ไม่ส่งค่า cost ไป client เลย
   const safeUnits = stripMoneyFields(units, see, ["cost"]) as StockUnit[];
 
-  return <StockView units={safeUnits} canSeeMoney={see} agingDays={agingDays} initialUnitId={initialUnitId} />;
+  // บิลรับรถ/ใบทะเบียนที่แนบไว้กับแต่ละคัน (FAM-1134 · fixlist ข้อ 09)
+  const user = await getCurrentUser();
+  const attachments = Object.fromEntries(await loadAttachments(supabase, "motorcycle_unit", safeUnits.map((u) => u.id)));
+
+  return (
+    <StockView
+      units={safeUnits}
+      canSeeMoney={see}
+      agingDays={agingDays}
+      initialUnitId={initialUnitId}
+      attachments={attachments}
+      canAttach={canAttach("motorcycle_unit", user?.roleCodes ?? [])}
+      canDeleteAttachments={Boolean(user?.perms.admin)}
+      currentUserId={user?.id ?? null}
+      attachmentActions={{ add: addAttachment, remove: removeAttachment, url: attachmentUrl }}
+    />
+  );
 }

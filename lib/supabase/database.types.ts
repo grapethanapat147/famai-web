@@ -190,6 +190,19 @@ type AppSetting = {
   value: Json;
 };
 
+type Attachment = {
+  id: string;
+  owner_table: string; // expense | motorcycle_unit | registration | …
+  owner_id: string;
+  file_path: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  kind: string | null;
+  uploaded_by: string | null;
+  uploaded_at: string;
+};
+
 type AuditLog = {
   id: number;
   at: string;
@@ -626,6 +639,7 @@ export type Database = {
       unit_transfer: Table<UnitTransfer>;
       customer: Table<Customer>;
       app_setting: Table<AppSetting>;
+      attachment: Table<Attachment>;
       audit_log: Table<AuditLog>;
       lead_stage_history: Table<LeadStageHistory>;
       sale: Table<Sale>;
