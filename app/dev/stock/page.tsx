@@ -1,5 +1,6 @@
 import { StockView } from "@/components/stock/StockView";
 import { computeAgeDays, type StockUnit } from "@/lib/stock/units";
+import { mockAddAttachment, mockAttachmentUrl, mockRemoveAttachment } from "./mock-actions";
 
 /** พรีวิวหน้าสต๊อกด้วย sample data (FAM-1008) — ตรวจหน้าตาโดยไม่ต้องล็อกอิน; /stock จริงต่อ DB ผ่าน RLS */
 export const metadata = { title: "สต๊อกรถ (preview) — Famai" };
@@ -22,11 +23,6 @@ const MOCK_ATTACHMENTS = [
   { id: "at1", ownerTable: "motorcycle_unit" as const, ownerId: "1", fileName: "บิลรับรถ-ยามาฮ่า-0815.pdf", filePath: "motorcycle_unit/x/1-a.pdf", mimeType: "application/pdf", sizeBytes: 182_000, kind: "บิลรับรถ", uploadedAt: "2026-09-01T09:00:00Z", uploadedByName: "วิชัย ช่างเก่ง", uploadedBy: "me" },
   { id: "at2", ownerTable: "motorcycle_unit" as const, ownerId: "1", fileName: "รูปรถหน้าร้าน.webp", filePath: "motorcycle_unit/x/2-b.webp", mimeType: "image/webp", sizeBytes: 96_000, kind: "รูปรถ", uploadedAt: "2026-09-02T14:30:00Z", uploadedByName: "สมชาย ใจดี", uploadedBy: "other" },
 ];
-const mockAttachmentActions = {
-  add: async () => ({ ok: true as const, message: "แนบไฟล์แล้ว (พรีวิว)" }),
-  remove: async () => ({ ok: true as const, message: "ลบแล้ว (พรีวิว)" }),
-  url: async () => ({ ok: true as const, url: "about:blank" }),
-};
 
 export default async function DevStockPage({ searchParams }: { searchParams: Promise<{ unit?: string }> }) {
   const { unit: initialUnitId } = await searchParams;
@@ -45,7 +41,7 @@ export default async function DevStockPage({ searchParams }: { searchParams: Pro
         canAttach
         canDeleteAttachments
         currentUserId="me"
-        attachmentActions={mockAttachmentActions}
+        attachmentActions={{ add: mockAddAttachment, remove: mockRemoveAttachment, url: mockAttachmentUrl }}
       />
     </main>
   );
