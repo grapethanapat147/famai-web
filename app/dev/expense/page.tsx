@@ -35,6 +35,17 @@ async function mockRevoke(): Promise<ExpenseActionResult> {
   return { ok: true, message: "ถอนอนุมัติแล้ว" };
 }
 
+
+const MOCK_ATTACHMENTS = [
+  { id: "at1", ownerTable: "expense" as const, ownerId: "1", fileName: "ใบเสร็จค่าเช่า-สค.pdf", filePath: "expense/x/1-a.pdf", mimeType: "application/pdf", sizeBytes: 182_000, kind: "ใบเสร็จ", uploadedAt: "2026-09-01T09:00:00Z", uploadedByName: "มานี รักษ์ดี", uploadedBy: "me" },
+  { id: "at2", ownerTable: "expense" as const, ownerId: "1", fileName: "ใบกำกับไฟฟ้า.webp", filePath: "expense/x/2-b.webp", mimeType: "image/webp", sizeBytes: 96_000, kind: "ใบกำกับภาษี", uploadedAt: "2026-09-02T14:30:00Z", uploadedByName: "สมชาย ใจดี", uploadedBy: "other" },
+];
+const mockAttachmentActions = {
+  add: async () => ({ ok: true as const, message: "แนบไฟล์แล้ว (พรีวิว)" }),
+  remove: async () => ({ ok: true as const, message: "ลบแล้ว (พรีวิว)" }),
+  url: async () => ({ ok: true as const, url: "about:blank" }),
+};
+
 export default function DevExpensePage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-6">
@@ -52,6 +63,11 @@ export default function DevExpensePage() {
         canApprove
         approveAction={mockApprove}
         revokeAction={mockRevoke}
+        attachments={{ [MOCK_ATTACHMENTS[0].ownerId]: MOCK_ATTACHMENTS }}
+        canAttach
+        canDeleteAttachments
+        currentUserId="me"
+        attachmentActions={mockAttachmentActions}
       />
     </main>
   );

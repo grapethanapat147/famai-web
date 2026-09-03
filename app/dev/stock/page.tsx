@@ -18,6 +18,16 @@ const SAMPLE: StockUnit[] = [
   unit({ id: "5", modelCode: "D18100", modelName: "PG-1", colorCode: "010B", colorName: "แดง", engineNo: "E5PGE-338101", frameNo: "MLED18100PG133810", status: "in_transfer", receivedAt: "2026-05-15", branchCode: "FCG01", branchName: "Famai Center Group", photoUrl: null, cost: 51000, retail: 55900 }),
 ];
 
+const MOCK_ATTACHMENTS = [
+  { id: "at1", ownerTable: "motorcycle_unit" as const, ownerId: "1", fileName: "บิลรับรถ-ยามาฮ่า-0815.pdf", filePath: "motorcycle_unit/x/1-a.pdf", mimeType: "application/pdf", sizeBytes: 182_000, kind: "บิลรับรถ", uploadedAt: "2026-09-01T09:00:00Z", uploadedByName: "วิชัย ช่างเก่ง", uploadedBy: "me" },
+  { id: "at2", ownerTable: "motorcycle_unit" as const, ownerId: "1", fileName: "รูปรถหน้าร้าน.webp", filePath: "motorcycle_unit/x/2-b.webp", mimeType: "image/webp", sizeBytes: 96_000, kind: "รูปรถ", uploadedAt: "2026-09-02T14:30:00Z", uploadedByName: "สมชาย ใจดี", uploadedBy: "other" },
+];
+const mockAttachmentActions = {
+  add: async () => ({ ok: true as const, message: "แนบไฟล์แล้ว (พรีวิว)" }),
+  remove: async () => ({ ok: true as const, message: "ลบแล้ว (พรีวิว)" }),
+  url: async () => ({ ok: true as const, url: "about:blank" }),
+};
+
 export default async function DevStockPage({ searchParams }: { searchParams: Promise<{ unit?: string }> }) {
   const { unit: initialUnitId } = await searchParams;
   return (
@@ -26,7 +36,17 @@ export default async function DevStockPage({ searchParams }: { searchParams: Pro
         <h1 className="font-display text-[28px] font-semibold text-ink">สต๊อกรถ (preview)</h1>
         <p className="mt-1 text-ink-soft">FAM-1008 · sample data — หน้าจริง /stock ต่อ DB ผ่าน RLS · ?unit=&lt;id&gt; เปิดแผงคันนั้น</p>
       </header>
-      <StockView units={SAMPLE} canSeeMoney agingDays={90} initialUnitId={initialUnitId} />
+      <StockView
+        units={SAMPLE}
+        canSeeMoney
+        agingDays={90}
+        initialUnitId={initialUnitId}
+        attachments={{ [MOCK_ATTACHMENTS[0].ownerId]: MOCK_ATTACHMENTS }}
+        canAttach
+        canDeleteAttachments
+        currentUserId="me"
+        attachmentActions={mockAttachmentActions}
+      />
     </main>
   );
 }

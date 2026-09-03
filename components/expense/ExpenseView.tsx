@@ -7,6 +7,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { AttachmentPanel } from "@/components/attachments/AttachmentPanel";
+import type { AttachmentActionResult, AttachmentRow } from "@/lib/attachments/attachments";
 import { formatThaiDate } from "@/lib/format";
 import {
   expenseTotals,
@@ -17,6 +19,11 @@ import {
 } from "@/lib/expense/expenses";
 
 export type ExpenseCategoryOption = { id: string; name: string };
+export type AttachmentActions = {
+  add: (formData: FormData) => Promise<AttachmentActionResult>;
+  remove: (formData: FormData) => Promise<AttachmentActionResult>;
+  url: (formData: FormData) => Promise<AttachmentActionResult>;
+};
 
 const inputCls =
   "w-full rounded-[8px] border border-hairline bg-card px-3 py-2.5 text-base text-ink outline-none focus:border-ink";
@@ -33,6 +40,11 @@ export function ExpenseView({
   canApprove = false,
   approveAction,
   revokeAction,
+  attachments = {},
+  canAttach = false,
+  canDeleteAttachments = false,
+  currentUserId = null,
+  attachmentActions,
 }: {
   expenses: ExpenseRow[];
   categories: ExpenseCategoryOption[];
@@ -43,6 +55,12 @@ export function ExpenseView({
   canApprove?: boolean;
   approveAction?: (formData: FormData) => Promise<ExpenseActionResult>;
   revokeAction?: (formData: FormData) => Promise<ExpenseActionResult>;
+  /** ไฟล์แนบใบเสร็จ แยกตาม expense id (FAM-1134 · fixlist ข้อ 09) */
+  attachments?: Record<string, AttachmentRow[]>;
+  canAttach?: boolean;
+  canDeleteAttachments?: boolean;
+  currentUserId?: string | null;
+  attachmentActions?: AttachmentActions;
 }) {
   const [categoryId, setCategoryId] = useState("all");
   const [search, setSearch] = useState("");
@@ -166,6 +184,11 @@ export function ExpenseView({
 
       <ExpenseDetailModal
         expense={selected}
+        attachments={selected ? (attachments[selected.id] ?? []) : []}
+        canAttach={canAttach}
+        canDeleteAttachments={canDeleteAttachments}
+        currentUserId={currentUserId}
+        attachmentActions={attachmentActions}
         canSeeMoney={canSeeMoney}
         canApprove={canApprove}
         approveAction={approveAction}
@@ -179,6 +202,11 @@ export function ExpenseView({
 
 function ExpenseDetailModal({
   expense,
+  attachments,
+  canAttach,
+  canDeleteAttachments,
+  currentUserId,
+  attachmentActions,
   canSeeMoney,
   canApprove,
   approveAction,
@@ -187,6 +215,11 @@ function ExpenseDetailModal({
   onDone,
 }: {
   expense: ExpenseRow | null;
+  attachments: AttachmentRow[];
+  canAttach: boolean;
+  canDeleteAttachments: boolean;
+  currentUserId: string | null;
+  attachmentActions?: AttachmentActions;
   canSeeMoney: boolean;
   canApprove: boolean;
   approveAction?: (formData: FormData) => Promise<ExpenseActionResult>;
@@ -242,6 +275,18 @@ function ExpenseDetailModal({
               <StatusBadge variant="warn">รออนุมัติ</StatusBadge>
             )}
           </Row>
+
+          <AttachmentPanel
+            ownerTable="expense"
+            ownerId={expense.id}
+            items={attachments}
+            canManage={canAttach}
+            canDeleteAny={canDeleteAttachments}
+            currentUserId={currentUserId}
+            addAction={attachmentActions?.add}
+            removeAction={attachmentActions?.remove}
+            urlAction={attachmentActions?.url}
+          />
 
           {error && <StatusBadge variant="bad">{error}</StatusBadge>}
 

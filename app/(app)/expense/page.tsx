@@ -4,6 +4,9 @@ import { canSeeMoney } from "@/lib/auth/money";
 import { canApproveExpense, canManageExpense, type ExpenseRow } from "@/lib/expense/expenses";
 import { ExpenseView, type ExpenseCategoryOption } from "@/components/expense/ExpenseView";
 import { approveExpense, recordExpense, revokeExpenseApproval } from "./actions";
+import { addAttachment, attachmentUrl, removeAttachment } from "../attachments/actions";
+import { loadAttachments } from "@/lib/attachments/load";
+import { canAttach } from "@/lib/attachments/attachments";
 
 export const metadata = { title: "ค่าใช้จ่าย — Famai Motor Group" };
 
@@ -45,10 +48,18 @@ export default async function ExpensePage() {
 
   const categories: ExpenseCategoryOption[] = (categoriesRes.data ?? []).map((c) => ({ id: c.id, name: c.name }));
 
+  // ใบเสร็จ/ใบกำกับที่แนบไว้กับแต่ละรายการ (FAM-1134 · fixlist ข้อ 09)
+  const attachments = Object.fromEntries(await loadAttachments(supabase, "expense", expenses.map((e) => e.id)));
+
   return (
     <ExpenseView
       expenses={expenses}
       categories={categories}
+      attachments={attachments}
+      canAttach={canAttach("expense", user?.roleCodes ?? [])}
+      canDeleteAttachments={Boolean(user?.perms.admin)}
+      currentUserId={user?.id ?? null}
+      attachmentActions={{ add: addAttachment, remove: removeAttachment, url: attachmentUrl }}
       canManage={canManageExpense(user?.roleCodes ?? [])}
       canSeeMoney={await canSeeMoney()}
       today={todayISO()}
