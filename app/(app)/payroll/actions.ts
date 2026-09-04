@@ -116,8 +116,9 @@ async function buildSnapshot(
   periodId: string,
 ): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
   const settings = await getSettingsWith(supabase);
-  const [empRes, usersRes, attRes, salesRes] = await Promise.all([
-    supabase.from("employee").select("id, user_id, position, base_salary").is("resigned_at", null),
+  const [empRes, payRes, usersRes, attRes, salesRes] = await Promise.all([
+    supabase.from("employee").select("id, user_id, position").is("resigned_at", null),
+    supabase.rpc("employee_pay_info"), // เงินเดือนอ่านตรงจากตารางไม่ได้แล้ว (FAM-1145)
     supabase.from("app_user").select("id, full_name"),
     supabase.from("attendance").select("employee_id, ot_minutes").gte("work_date", start).lte("work_date", end),
     supabase.from("sale").select("salesperson_id, gross_profit").is("voided_at", null).gte("sold_at", start).lte("sold_at", end),
@@ -135,11 +136,13 @@ async function buildSnapshot(
     }
   }
 
+  const baseById = new Map((payRes.data ?? []).map((p) => [p.id, Number(p.base_salary ?? 0)]));
+
   const rows = (empRes.data ?? []).map((e) => {
     const otMinutes = otByEmp.get(e.id) ?? 0;
     const commissionBase = e.user_id ? (gpByUser.get(e.user_id) ?? 0) : 0;
     const slip = computePayslip({
-      baseSalary: Number(e.base_salary ?? 0),
+      baseSalary: baseById.get(e.id) ?? 0,
       otMinutes,
       commissionBase,
       otRate: settings.ot_rate,

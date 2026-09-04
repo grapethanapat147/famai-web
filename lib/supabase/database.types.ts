@@ -679,6 +679,12 @@ export type Database = {
       my_branches: { Args: Empty; Returns: string[] };
       is_all_branch: { Args: Empty; Returns: boolean };
       is_admin: { Args: Empty; Returns: boolean };
+      has_money: { Args: Empty; Returns: boolean };
+      /** FAM-1145 — คอลัมน์อ่อนไหวของ employee ถูกถอนสิทธิ์อ่านตรงแล้ว ต้องมาทางนี้เท่านั้น */
+      employee_pay_info: {
+        Args: Empty;
+        Returns: { id: string; base_salary: number | null; ssn_no: string | null; bank_code: string | null; bank_account: string | null }[];
+      };
       is_manager: { Args: Empty; Returns: boolean };
       next_doc_no: { Args: { p_branch: string; p_type: string; p_year: number }; Returns: string };
       add_model: {

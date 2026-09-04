@@ -41,8 +41,11 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   const see = await canSeeMoney();
   const settings = await getSettings(); // แคชข้ามรีเควสต์ (FAM-1108) — เดิมใช้ getSettingsWith ที่ query สดทุกครั้ง
 
-  const [empRes, usersRes, attRes, salesRes, branches, orgCompanies, periodRes] = await Promise.all([
-    supabase.from("employee").select("id, user_id, position, base_salary, ssn_no, bank_code, bank_account").is("resigned_at", null),
+  const [empRes, payRes, usersRes, attRes, salesRes, branches, orgCompanies, periodRes] = await Promise.all([
+    supabase.from("employee").select("id, user_id, position").is("resigned_at", null),
+    // เงินเดือน/เลข ปกส./บัญชีธนาคาร ถูกถอนสิทธิ์อ่านตรงออกจากตารางแล้ว (FAM-1145)
+    // ต้องผ่านฟังก์ชันที่ตรวจสิทธิ์ money + ขอบเขตบริษัทให้เอง — ไม่มีสิทธิ์ = ได้ลิสต์ว่าง
+    supabase.rpc("employee_pay_info"),
     supabase.from("app_user").select("id, full_name"),
     supabase.from("attendance").select("employee_id, ot_minutes").gte("work_date", start).lte("work_date", end),
     supabase.from("sale").select("salesperson_id, gross_profit").is("voided_at", null).gte("sold_at", start).lte("sold_at", end),
@@ -98,12 +101,14 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
         .sort((a, b) => b.net - a.net)
     : null;
 
+  const pay = new Map((payRes.data ?? []).map((p) => [p.id, p]));
+
   const liveRows: PayslipRow[] = (empRes.data ?? [])
     .map((e) => {
       const otMinutes = otByEmp.get(e.id) ?? 0;
       const commissionBase = e.user_id ? (gpByUser.get(e.user_id) ?? 0) : 0;
       const slip = computePayslip({
-        baseSalary: Number(e.base_salary ?? 0),
+        baseSalary: Number(pay.get(e.id)?.base_salary ?? 0),
         otMinutes,
         commissionBase,
         otRate: settings.ot_rate,
@@ -126,7 +131,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
 
   // ข้อมูลนำส่งประกันสังคม + โอนเงินเดือน (FAM-1124 · fixlist ข้อ 13/14) — ข้อมูลอ่อนไหว ส่งเฉพาะคนที่ดูเงินได้
   const empExtra = new Map(
-    (empRes.data ?? []).map((e) => [e.id, { ssnNo: e.ssn_no ?? null, bankCode: e.bank_code ?? null, bankAccount: e.bank_account ?? null }]),
+    (payRes.data ?? []).map((p) => [p.id, { ssnNo: p.ssn_no ?? null, bankCode: p.bank_code ?? null, bankAccount: p.bank_account ?? null }]),
   );
   const payoutInfo: PayoutInfo[] = see
     ? rows.map((r) => ({

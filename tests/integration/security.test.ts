@@ -276,3 +276,40 @@ describe.skipIf(!RUN || !seller || !admin)("payslip — คนไม่มีส
     }
   });
 });
+
+/**
+ * FAM-1145 — เงินเดือน / เลข ปกส. / บัญชีธนาคาร ต้องอ่านตรงจากตาราง employee ไม่ได้แล้ว
+ */
+describe.skipIf(!RUN || !seller || !admin)("employee — คอลัมน์อ่อนไหวถูกถอนสิทธิ์อ่านตรง (FAM-1145)", () => {
+  it("ยิงขอ base_salary ตรงจากตาราง ต้องถูกปฏิเสธ แม้เป็นแอดมิน", async () => {
+    for (const login of [seller!, admin!]) {
+      const sb = await signIn(login);
+      const { error } = await sb.from("employee").select("id, base_salary").limit(1);
+      expect(error, `${login.label}: ต้องอ่าน base_salary ตรงไม่ได้`).not.toBeNull();
+      const { error: e2 } = await sb.from("employee").select("id, ssn_no, bank_account").limit(1);
+      expect(e2, `${login.label}: ต้องอ่าน ssn_no/bank_account ตรงไม่ได้`).not.toBeNull();
+      await sb.auth.signOut();
+    }
+  });
+
+  it("คอลัมน์ที่ไม่อ่อนไหวยังอ่านได้ตามปกติ (ไม่ได้ปิดทั้งตาราง)", async () => {
+    const sb = await signIn(seller!);
+    const { error } = await sb.from("employee").select("id, user_id, position").limit(1);
+    expect(error, "คอลัมน์ทั่วไปต้องยังอ่านได้").toBeNull();
+    await sb.auth.signOut();
+  });
+
+  it("employee_pay_info(): ผู้มีสิทธิ์ตัวเงินได้ข้อมูล · เซลล์ได้ลิสต์ว่าง", async () => {
+    const asAdmin = await signIn(admin!);
+    const { data: mine, error: e1 } = await asAdmin.rpc("employee_pay_info");
+    expect(e1).toBeNull();
+    expect(Array.isArray(mine)).toBe(true);
+    await asAdmin.auth.signOut();
+
+    const asSeller = await signIn(seller!);
+    const { data: none, error: e2 } = await asSeller.rpc("employee_pay_info");
+    expect(e2, "เรียกได้แต่ต้องไม่ได้ข้อมูล").toBeNull();
+    expect(none ?? [], "เซลล์ไม่ควรได้เงินเดือนของใครเลย").toEqual([]);
+    await asSeller.auth.signOut();
+  });
+});
