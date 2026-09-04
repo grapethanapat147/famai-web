@@ -59,7 +59,7 @@
      shipped ใช้ Noto Sans Thai (Thai/display) + Inter (Latin/ตัวเลข tabular) */
   --f-display: var(--f-thai), "Noto Sans Thai", system-ui, sans-serif;
   --f-body: var(--f-inter), var(--f-thai), "Noto Sans Thai", system-ui, sans-serif;
-  --f-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --f-mono: var(--f-roboto-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 
 @theme inline {
