@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import localFont from "next/font/local";
-import { Inter, Trirong, Anuphan } from "next/font/google";
+import { Inter, Trirong, Anuphan, Roboto_Mono } from "next/font/google";
 import { ThemeStyle } from "@/components/theme/ThemeStyle";
 import { THEME_INIT_SCRIPT } from "@/components/theme/theme-init";
 import { siteBaseUrl } from "@/lib/site";
@@ -21,6 +21,10 @@ const notoThai = localFont({
 // Inter — next/font self-host ตอน build (ไม่มี request ออก Google ตอน runtime) ให้ตัวเลข tabular กับตารางเงิน
 const inter = Inter({ variable: "--f-inter", subsets: ["latin"], display: "swap" });
 
+// Roboto Mono — ใช้กับ "รหัส" ที่ต้องอ่านทีละตัว: เลขเครื่อง เลขถัง เลขที่เอกสาร ทะเบียน เบอร์โทร (FAM-1143)
+// ของเดิมพึ่งฟอนต์ระบบ (SF Mono บนแมค · อย่างอื่นบนวินโดวส์) พนักงานคนละเครื่องจึงเห็นไม่เหมือนกัน
+const robotoMono = Roboto_Mono({ variable: "--f-roboto-mono", subsets: ["latin"], display: "swap" });
+
 // คู่ฟอนต์พรีเมียม "ไตรรงค์ + อนุพันธ์" (FAM-1039) — โหลดพร้อมเสมอเพื่อสลับได้ทันที · น้ำหนักน้อยไว้ให้เบา
 const trirong = Trirong({ variable: "--f-trirong", subsets: ["thai", "latin"], weight: ["500", "600"], display: "swap" });
 const anuphan = Anuphan({ variable: "--f-anuphan", subsets: ["thai", "latin"], weight: ["400", "500", "600"], display: "swap" });
@@ -33,7 +37,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="th" suppressHydrationWarning className={`${notoThai.variable} ${inter.variable} ${trirong.variable} ${anuphan.variable} h-full antialiased`}>
+    <html lang="th" suppressHydrationWarning className={`${notoThai.variable} ${inter.variable} ${robotoMono.variable} ${trirong.variable} ${anuphan.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <ThemeStyle />
