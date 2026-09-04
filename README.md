@@ -91,7 +91,7 @@ npm run dev                    # http://localhost:3000
 | | |
 |---|---|
 | ใส่ | วางเนื้อ `supabase/seed/demo.sql` ใน SQL Editor แล้ว Run (รันได้ครั้งเดียว ถ้ามีอยู่แล้วจะหยุดพร้อมบอกให้ล้างก่อน) |
-| บัญชีทดลอง | 7 คน ครบทุกบทบาท เช่น `manager.demo@famai.local` · `sales1.demo@famai.local` · `acct.demo@famai.local` — รหัสผ่านเดียวกัน `Famai@2569` |
+| บัญชีทดลอง | 8 คน ครบทั้ง 7 บทบาท เช่น `admin.demo@famai.local` · `manager.demo@famai.local` · `sales1.demo@famai.local` — รหัสผ่านเดียวกัน `Famai@2569` |
 | ลบทิ้ง | วางเนื้อ `supabase/seed/demo-cleanup.sql` แล้ว Run — ลบเฉพาะแถวตัวอย่าง (id ขึ้นต้น `0000000d-e000-…` · รถเลขเครื่อง `DEMO-`) ข้อมูลจริงไม่ถูกแตะ |
 
 **ก่อนเปิดใช้จริงต้องรัน `demo-cleanup.sql`** เพราะบัญชีทดลองรหัสผ่านเดียวกันหมด
