@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** หน้าต่างซ้อน (ฟอร์มสั้น เช่น เพิ่มลูกค้า / ใส่ PIN) — มือถือ bottom sheet · ≥sm กลางจอ · ปิดด้วยพื้นหลัง/Esc (docs/04 §8, §11.3)
- * a11y (FAM-1108): เปิดแล้วย้ายโฟกัสเข้า dialog · Tab วนภายใน (focus trap เบา) · ปิดแล้วคืนโฟกัสปุ่มเดิม */
+ * a11y (FAM-1108): เปิดแล้วย้ายโฟกัสเข้า dialog · Tab วนภายใน (focus trap เบา) · ปิดแล้วคืนโฟกัสปุ่มเดิม
+ *
+ * แขวนไว้ใต้ <body> ด้วย portal (FAM-1142) — ห้ามเรนเดอร์ในที่ที่ถูกเรียกใช้
+ * เพราะ ancestor ที่มี transform / filter / backdrop-filter จะกลายเป็น containing block
+ * ของลูกที่ position:fixed ทำให้ inset-0 ยึดกับกล่องนั้นแทนหน้าจอ
+ * (ของจริง: แถบบนมี backdrop-blur → popup ถูกบีบให้สูงเท่าแถบบน 56px แทนที่จะกลางจอ) */
 export function Modal({
   open,
   onClose,
@@ -55,9 +61,10 @@ export function Modal({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  // ฝั่งเซิร์ฟเวอร์ไม่มี document — ทุกที่ที่เรียกเปิดโมดัลจาก state ที่เริ่มเป็นปิด จึงไม่เข้าเงื่อนไขนี้ตอน SSR
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
       role="dialog"
@@ -75,6 +82,7 @@ export function Modal({
         {title && <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>}
         <div className={title ? "mt-3" : ""}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
