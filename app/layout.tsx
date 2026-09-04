@@ -7,7 +7,7 @@ import { THEME_INIT_SCRIPT } from "@/components/theme/theme-init";
 import { siteBaseUrl } from "@/lib/site";
 import "./globals.css";
 
-// Noto Sans Thai — self-host จาก woff2 ในโปรเจกต์ (vendored จาก tools/manual/fonts) ไม่มี request ออก Google
+// Noto Sans Thai — self-host จาก woff2 ในโปรเจกต์ (ที่มาดู app/fonts/README.md) ไม่มี request ออก Google
 const notoThai = localFont({
   variable: "--f-thai",
   display: "swap",
