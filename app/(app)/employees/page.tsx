@@ -19,8 +19,9 @@ export default async function EmployeesPage() {
   }
 
   const supabase = await createServerSupabase();
-  const [empRes, usersRes, rolesRes, userRolesRes, branchRows, see] = await Promise.all([
-    supabase.from("employee").select("id, user_id, branch_id, emp_code, position, hired_at, resigned_at, base_salary"),
+  const [empRes, payRes, usersRes, rolesRes, userRolesRes, branchRows, see] = await Promise.all([
+    supabase.from("employee").select("id, user_id, branch_id, emp_code, position, hired_at, resigned_at"),
+    supabase.rpc("employee_pay_info"), // เงินเดือนอ่านตรงจากตารางไม่ได้แล้ว (FAM-1145)
     supabase.from("app_user").select("id, username, full_name"),
     supabase.from("role").select("id, code, name"),
     supabase.from("app_user_role").select("user_id, role_id"),
@@ -28,6 +29,7 @@ export default async function EmployeesPage() {
     canSeeMoney(),
   ]);
 
+  const baseById = new Map((payRes.data ?? []).map((p) => [p.id, p.base_salary]));
   const userById = new Map((usersRes.data ?? []).map((u) => [u.id, u]));
   const branchById = new Map(branchRows.map((b) => [b.id, b]));
   const roleCodeById = new Map((rolesRes.data ?? []).map((r) => [r.id, r.code]));
@@ -55,7 +57,7 @@ export default async function EmployeesPage() {
         hiredAt: e.hired_at,
         resignedAt: e.resigned_at,
         // เงินเดือนตัดทิ้งฝั่งเซิร์ฟเวอร์เมื่อไม่มีสิทธิ์เห็นเงิน (ไม่ส่งลง client เลย)
-        baseSalary: see && e.base_salary != null ? Number(e.base_salary) : null,
+        baseSalary: see && baseById.get(e.id) != null ? Number(baseById.get(e.id)) : null,
         roleCodes: e.user_id ? (rolesByUser.get(e.user_id) ?? []) : [],
       };
     })
