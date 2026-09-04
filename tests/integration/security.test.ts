@@ -313,3 +313,45 @@ describe.skipIf(!RUN || !seller || !admin)("employee — คอลัมน์�
     await asSeller.auth.signOut();
   });
 });
+
+/**
+ * FAM-1147 — ราคาทุนของรุ่นรถ (price_history) เดิมเปิดให้ทุกคนที่ล็อกอินอ่านได้
+ * เพราะ RLS ของตารางอ้างอิงคือ `for select using (true)`
+ */
+describe.skipIf(!RUN || !seller || !admin)("price_history — ราคาทุนของรุ่นถูกปิดที่ DB (FAM-1147)", () => {
+  it("อ่าน cost/vat ตรงจากตารางไม่ได้ แม้เป็นแอดมิน", async () => {
+    for (const login of [seller!, admin!]) {
+      const sb = await signIn(login);
+      const { error } = await sb.from("price_history").select("variant_id, cost").limit(1);
+      expect(error, `${login.label}: ต้องอ่าน price_history.cost ตรงไม่ได้`).not.toBeNull();
+      await sb.auth.signOut();
+    }
+  });
+
+  it("ราคาขายปลีก (retail) ยังอ่านได้ตามปกติ — หน้าใบเสนอราคาต้องใช้", async () => {
+    const sb = await signIn(seller!);
+    const { error } = await sb.from("price_history").select("variant_id, effective_from, retail").limit(1);
+    expect(error).toBeNull();
+    await sb.auth.signOut();
+  });
+
+  it("price_history_cost(): ผู้มีสิทธิ์ตัวเงินได้ข้อมูล · เซลล์ได้ลิสต์ว่าง", async () => {
+    const a = await signIn(admin!);
+    const { error: e1 } = await a.rpc("price_history_cost");
+    expect(e1).toBeNull();
+    await a.auth.signOut();
+
+    const s = await signIn(seller!);
+    const { data, error: e2 } = await s.rpc("price_history_cost");
+    expect(e2).toBeNull();
+    expect(data ?? [], "เซลล์ไม่ควรได้ราคาทุนของรุ่นไหนเลย").toEqual([]);
+    await s.auth.signOut();
+  });
+
+  it("motorcycle_unit.cost_vat อ่านตรงไม่ได้ (ในแอปเขียนอย่างเดียว)", async () => {
+    const sb = await signIn(seller!);
+    const { error } = await sb.from("motorcycle_unit").select("id, cost_vat").limit(1);
+    expect(error).not.toBeNull();
+    await sb.auth.signOut();
+  });
+});

@@ -680,6 +680,11 @@ export type Database = {
       is_all_branch: { Args: Empty; Returns: boolean };
       is_admin: { Args: Empty; Returns: boolean };
       has_money: { Args: Empty; Returns: boolean };
+      /** FAM-1147 — price_history.cost ถูกถอนสิทธิ์อ่านตรงแล้ว */
+      price_history_cost: {
+        Args: Empty;
+        Returns: { variant_id: string; effective_from: string; cost: number | null }[];
+      };
       /** FAM-1145 — คอลัมน์อ่อนไหวของ employee ถูกถอนสิทธิ์อ่านตรงแล้ว ต้องมาทางนี้เท่านั้น */
       employee_pay_info: {
         Args: Empty;
