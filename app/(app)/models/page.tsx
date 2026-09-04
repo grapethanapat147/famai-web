@@ -15,10 +15,13 @@ export default async function ModelsPage() {
   const supabase = await createServerSupabase();
 
   // ตารางอ้างอิง (variant/color/price/photo) อ่านได้ทุกคนที่ล็อกอิน — จำนวนคันถูกกรองด้วย RLS บริษัท
-  const [variantsRes, colorsRes, pricesRes, photosRes, unitsRes] = await Promise.all([
+  const [variantsRes, colorsRes, pricesRes, costRes, photosRes, unitsRes] = await Promise.all([
     supabase.from("model_variant").select("id, code, model_name, model_th, category, cc, model_year"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),
-    supabase.from("price_history").select("variant_id, effective_from, cost, retail"),
+    supabase.from("price_history").select("variant_id, effective_from, retail"),
+    // ราคาทุนถูกถอนสิทธิ์อ่านตรงจากตารางแล้ว (FAM-1147) — ต้องผ่านฟังก์ชันที่ตรวจสิทธิ์เอง
+    // ไม่มีสิทธิ์ = ได้ลิสต์ว่าง คอลัมน์ทุนจึงหายไปเองโดยไม่ต้องดักเพิ่ม
+    supabase.rpc("price_history_cost"),
     supabase.from("model_photo").select("variant_id, path_card, sort"),
     supabase.from("motorcycle_unit").select("variant_id").eq("status", "available"),
   ]);
@@ -31,8 +34,16 @@ export default async function ModelsPage() {
     counts.set(u.variant_id, (counts.get(u.variant_id) ?? 0) + 1);
   }
 
-  // ตัดต้นทุนออกก่อนประกอบแถว ถ้าไม่มีสิทธิ์ — ไม่ส่ง cost ไป client เลย
-  const prices = stripMoneyFields(pricesRes.data ?? [], see, ["cost"]) as Array<{
+  // ฐานข้อมูลรู้แค่สิทธิ์ตามบทบาท ไม่รู้จัก "โหมดลูกค้า" (เป็น cookie ฝั่งแอป)
+  // จึงยังต้อง strip ซ้ำอีกชั้น — สองชั้นนี้ทำคนละหน้าที่
+  const costByKey = new Map(
+    (costRes.data ?? []).map((c) => [`${c.variant_id}|${c.effective_from}`, c.cost]),
+  );
+  const pricesWithCost = (pricesRes.data ?? []).map((p) => ({
+    ...p,
+    cost: costByKey.get(`${p.variant_id}|${p.effective_from}`) ?? null,
+  }));
+  const prices = stripMoneyFields(pricesWithCost, see, ["cost"]) as Array<{
     variant_id: string;
     effective_from: string;
     cost?: number | null;
