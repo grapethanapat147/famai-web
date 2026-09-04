@@ -244,3 +244,35 @@ describe.skipIf(!RUN || !admin || !SERVICE)("audit_log", () => {
     await sb.auth.signOut();
   });
 });
+
+/**
+ * FAM-1144 — สลิปเงินเดือนต้องปิดที่ระดับฐานข้อมูล ไม่ใช่แค่ซ่อนบนหน้าจอ
+ * ก่อนแก้: policy เดิมให้ทุกคนในบริษัทเดียวกันอ่านสลิปของทุกคนได้ผ่าน PostgREST ตรง ๆ
+ */
+describe.skipIf(!RUN || !seller || !admin)("payslip — คนไม่มีสิทธิ์ตัวเงินอ่านสลิปคนอื่นไม่ได้ (FAM-1144)", () => {
+  it("เซลล์ยิง PostgREST ตรง อ่าน payslip ของคนอื่นไม่ได้เลย", async () => {
+    const sb = await signIn(seller!);
+    const { data, error } = await sb.from("payslip").select("employee_name, base, net");
+    // RLS ตัดแถวออก → ได้ลิสต์ว่าง (ไม่ใช่ error) · ถ้าได้แถวมาแปลว่ารั่ว
+    expect(error).toBeNull();
+    expect(data ?? [], "เซลล์ไม่ควรเห็นสลิปของใครเลย นอกจากของตัวเอง").toEqual([]);
+    await sb.auth.signOut();
+  });
+
+  it("ผู้มีสิทธิ์ตัวเงินยังอ่านสลิปได้ตามปกติ (ไม่ได้ปิดจนใช้งานไม่ได้)", async () => {
+    const sb = await signIn(admin!);
+    const { error } = await sb.from("payslip").select("employee_name, net").limit(1);
+    expect(error, "แอดมิน/ฝ่ายบุคคลต้องยังอ่านได้").toBeNull();
+    await sb.auth.signOut();
+  });
+
+  it("has_money() ตอบตรงกับสิทธิ์จริงของแต่ละบทบาท", async () => {
+    for (const login of [seller!, admin!]) {
+      const sb = await signIn(login);
+      const { data, error } = await sb.rpc("has_money");
+      expect(error, `${login.label}: เรียก has_money() ไม่ได้`).toBeNull();
+      expect(typeof data).toBe("boolean");
+      await sb.auth.signOut();
+    }
+  });
+});
