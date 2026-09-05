@@ -1,6 +1,6 @@
 "use client";
 
-import { DealView } from "@/components/deal/DealView";
+import { DealView , type LeadVariantOption} from "@/components/deal/DealView";
 import type { Deal, DealActionResult, ServiceHistory } from "@/lib/deal/deals";
 import type { LeadRow } from "@/lib/deal/lead";
 
@@ -168,15 +168,17 @@ async function mockCustomer(formData: FormData): Promise<DealActionResult> {
   return { ok: true, message: "บันทึกข้อมูลลูกค้าแล้ว" };
 }
 
-const LEAD_VARIANTS = [
-  { id: "v-nmax", name: "NMAX" },
-  { id: "v-finn", name: "FINN" },
-  { id: "v-xmax", name: "XMAX 300" },
+const LEAD_VARIANTS: LeadVariantOption[] = [
+  // จงใจให้ชื่อรุ่นซ้ำกันแบบของจริง (FINN มีหลายรุ่นย่อย) — ป้ายต้องแยกออกจากกันได้
+  { id: "v-finn-1", name: "ฟินน์ ดรัมเบรก", colors: [{ code: "010A", name: "แดง" }, { code: "010B", name: "ดำ" }] },
+  { id: "v-finn-2", name: "ฟินน์ ล้อแม็ก", colors: [{ code: "010A", name: "น้ำเงิน" }, { code: "010C", name: "ขาว" }] },
+  { id: "v-nmax", name: "เอ็นแม็กซ์ สแตนดาร์ด", colors: [{ code: "020A", name: "เทา" }] },
+  { id: "v-xmax", name: "เอ็กซ์แม็กซ์ 300", colors: [] },
 ];
 
 const LEADS: LeadRow[] = [
-  { id: "l1", name: "กานดา ทองคำ", phone: "081-111-2222", interestedVariantId: "v-nmax", interestedModel: "NMAX", source: "Facebook", stage: "สนใจ", createdAt: "2026-08-22T09:00:00Z" },
-  { id: "l2", name: "ธนา วงศ์ไทย", phone: "089-333-4444", interestedVariantId: "v-xmax", interestedModel: "XMAX 300", source: "เดินเข้าร้าน", stage: "ทำสัญญา", createdAt: "2026-08-20T13:30:00Z" },
+  { id: "l1", name: "กานดา ทองคำ", phone: "081-111-2222", interestedVariantId: "v-nmax", interestedColorCode: "020A", interestedModel: "เอ็นแม็กซ์ สแตนดาร์ด · เทา", source: "Facebook", stage: "สนใจ", createdAt: "2026-08-22T09:00:00Z" },
+  { id: "l2", name: "ธนา วงศ์ไทย", phone: "089-333-4444", interestedVariantId: "v-xmax", interestedColorCode: null, interestedModel: "เอ็กซ์แม็กซ์ 300", source: "เดินเข้าร้าน", stage: "ทำสัญญา", createdAt: "2026-08-20T13:30:00Z" },
 ];
 
 async function mockLeadStage(formData: FormData): Promise<DealActionResult> {

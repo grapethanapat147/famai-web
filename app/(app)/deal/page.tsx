@@ -34,10 +34,10 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
     saleIds.length
       ? supabase.from("finance_case").select("id, sale_id, company_id, status, amount, reject_reason").in("sale_id", saleIds)
       : Promise.resolve({ data: [] }),
-    supabase.from("customer").select("id, full_name, phone, address, tax_id, source, interested_variant_id, stage, created_at"),
+    supabase.from("customer").select("id, full_name, phone, address, tax_id, source, interested_variant_id, interested_color_code, stage, created_at"),
     supabase.from("finance_company").select("id, name"),
     supabase.from("motorcycle_unit").select("id, variant_id, color_code, engine_no, frame_no"),
-    supabase.from("model_variant").select("id, model_name"),
+    supabase.from("model_variant").select("id, code, model_name, model_th").order("model_name"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),
     getActiveBranches(),
     getCompaniesCached(),
@@ -66,8 +66,11 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
   const customerAddr = new Map((customersRes.data ?? []).map((c) => [c.id, c.address ?? null]));
   const customerTax = new Map((customersRes.data ?? []).map((c) => [c.id, c.tax_id ?? null]));
   const companyName = new Map((companiesRes.data ?? []).map((c) => [c.id, c.name]));
-  const variantName = new Map((variantsRes.data ?? []).map((v) => [v.id, v.model_name]));
-  const colorName = new Map((colorsRes.data ?? []).map((c) => [`${c.variant_id}:${c.color_code}`, c.color_name]));
+  // ป้ายรุ่นต้องแยกรุ่นย่อยออกจากกัน — หลายรุ่นย่อยใช้ model_name เดียวกัน (FINN มี 4) จึงเติม model_th/code
+  const variantName = new Map(
+    (variantsRes.data ?? []).map((v) => [v.id, v.model_th?.trim() || `${v.model_name} (${v.code})`]),
+  );
+  const colorName = new Map((colorsRes.data ?? []).map((c) => [`${c.variant_id}|${c.color_code}`, c.color_name]));
   const unitMap = new Map((unitsRes.data ?? []).map((u) => [u.id, u]));
 
   // ข้อมูลต่อขั้น (P2) — จัดกลุ่มตามงานทะเบียน + resolve ชื่อผู้แก้ล่าสุด
@@ -90,7 +93,7 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
     const fin = finBySale.get(s.id);
     const unit = s.unit_id ? unitMap.get(s.unit_id) : undefined;
     const model = unit ? variantName.get(unit.variant_id) : undefined;
-    const color = unit ? colorName.get(`${unit.variant_id}:${unit.color_code}`) : undefined;
+    const color = unit ? colorName.get(`${unit.variant_id}|${unit.color_code}`) : undefined;
     const payMethod: PayMethod = s.pay_method === "finance" ? "finance" : "cash";
     const stage: RegStage = reg && isRegStage(reg.stage) ? reg.stage : "ขายแล้ว";
     const finance: FinanceInfo | null = fin
@@ -128,8 +131,18 @@ export default async function DealPage({ searchParams }: { searchParams: Promise
 
   // ลีด = ลูกค้าที่ยังไม่มีการขาย (เก็บไว้ติดตาม) · รุ่นที่สนใจ + เมนูในฟอร์มเพิ่มลูกค้า
   const dealCustomerIds = new Set(deals.map((d) => d.customerId).filter(Boolean));
-  const leads = buildLeads(customersRes.data ?? [], variantName, dealCustomerIds);
-  const leadVariants = (variantsRes.data ?? []).map((v) => ({ id: v.id, name: v.model_name }));
+  const leads = buildLeads(customersRes.data ?? [], variantName, dealCustomerIds, colorName);
+  const colorsByVariant = new Map<string, { code: string; name: string }[]>();
+  for (const c of colorsRes.data ?? []) {
+    const list = colorsByVariant.get(c.variant_id) ?? [];
+    list.push({ code: c.color_code, name: c.color_name });
+    colorsByVariant.set(c.variant_id, list);
+  }
+  const leadVariants = (variantsRes.data ?? []).map((v) => ({
+    id: v.id,
+    name: variantName.get(v.id) ?? v.model_name,
+    colors: (colorsByVariant.get(v.id) ?? []).slice().sort((a, b) => a.code.localeCompare(b.code)),
+  }));
 
   // ประวัติบริการของลูกค้า (จาก service_job) — โชว์ในแผงดีล
   const { data: svcRows } = await supabase

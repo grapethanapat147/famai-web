@@ -76,7 +76,7 @@ export function DealView({
   action: (formData: FormData) => Promise<DealActionResult>;
   revertAction?: (formData: FormData) => Promise<DealActionResult>;
   leads?: LeadRow[];
-  leadVariants?: { id: string; name: string }[];
+  leadVariants?: LeadVariantOption[];
   addCustomerAction?: (formData: FormData) => Promise<DealActionResult>;
   /** เปลี่ยนขั้นลูกค้าก่อนขาย (FAM-1119 · fixlist ข้อ 07) */
   canChangeStage?: boolean;
@@ -918,6 +918,9 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+/** ตัวเลือกรุ่นในฟอร์มลีด — name แยกรุ่นย่อยออกจากกันแล้ว (model_th หรือ "ชื่อรุ่น (code)") */
+export type LeadVariantOption = { id: string; name: string; colors: { code: string; name: string }[] };
+
 /** ลิสต์ลีด (ลูกค้าที่ยังไม่ปิดการขาย) — ปุ่มเปิดการขาย prefill ชื่อ/เบอร์/รุ่นที่สนใจ */
 function LeadsList({
   leads,
@@ -1049,13 +1052,15 @@ function AddCustomerModal({
   onClose,
 }: {
   open: boolean;
-  variants: { id: string; name: string }[];
+  variants: LeadVariantOption[];
   action: (formData: FormData) => Promise<DealActionResult>;
   onClose: () => void;
 }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [variantId, setVariantId] = useState("");
+  const [colorCode, setColorCode] = useState("");
+  const colors = variants.find((v) => v.id === variantId)?.colors ?? [];
   const [source, setSource] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1071,6 +1076,7 @@ function AddCustomerModal({
     fd.set("name", name.trim());
     fd.set("phone", phone.trim());
     fd.set("interested_variant_id", variantId);
+    fd.set("interested_color_code", colorCode);
     fd.set("source", source);
     fd.set("note", note.trim());
     const res = await action(fd);
@@ -1079,6 +1085,7 @@ function AddCustomerModal({
       setName("");
       setPhone("");
       setVariantId("");
+      setColorCode("");
       setSource("");
       setNote("");
       onClose();
@@ -1108,16 +1115,40 @@ function AddCustomerModal({
             </select>
           </Field>
         </div>
-        <Field label="รุ่นที่สนใจ">
-          <select value={variantId} onChange={(e) => setVariantId(e.target.value)} className={inputCls}>
-            <option value="">— ไม่ระบุ —</option>
-            {variants.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.name}
-              </option>
-            ))}
-          </select>
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="รุ่นที่สนใจ">
+            <select
+              value={variantId}
+              onChange={(e) => {
+                setVariantId(e.target.value);
+                setColorCode(""); // เปลี่ยนรุ่นแล้วสีเดิมอาจไม่มีในรุ่นใหม่
+              }}
+              className={inputCls}
+            >
+              <option value="">— ไม่ระบุ —</option>
+              {variants.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="สีที่สนใจ">
+            <select
+              value={colorCode}
+              onChange={(e) => setColorCode(e.target.value)}
+              disabled={colors.length === 0}
+              className={`${inputCls} disabled:opacity-50`}
+            >
+              <option value="">{variantId ? "— ไม่ระบุ —" : "เลือกรุ่นก่อน"}</option>
+              {colors.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
         <Field label="หมายเหตุ">
           <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="เช่น งบประมาณ / นัดติดตาม" className={inputCls} />
         </Field>
