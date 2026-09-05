@@ -13,7 +13,6 @@ import { MobileNav } from "./MobileNav";
 export function AppShell({
   menu,
   primary,
-  canSell,
   user,
   canToggleMoney,
   customerMode,
@@ -21,7 +20,6 @@ export function AppShell({
 }: {
   menu: MenuGroup[];
   primary: MenuItem[];
-  canSell: boolean;
   user: { fullName: string; nickname: string | null };
   canToggleMoney: boolean;
   customerMode: boolean;
@@ -72,7 +70,7 @@ export function AppShell({
           {children}
         </main>
       </div>
-      <MobileNav menu={menu} primary={primary} canSell={canSell} />
+      <MobileNav menu={menu} primary={primary} />
     </div>
   );
 }
