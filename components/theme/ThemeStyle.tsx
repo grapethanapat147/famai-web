@@ -1,10 +1,14 @@
-import { DEFAULT_ACCENT, deriveAccent } from "@/lib/theme/derive";
+import { DEFAULT_ACCENT, accentVars, deriveAccent, deriveSurfaces, surfaceVars } from "@/lib/theme/derive";
 import { DEFAULT_FONT_PAIR, customFontUrl, findFontPair, fontFormat, isValidFontPath } from "@/lib/theme/fonts";
 import { getThemeConfig } from "@/lib/theme/settings";
 
 /**
- * ฉีดธีม global ตอน SSR (สีเน้น + ฟอนต์) — ทับเฉพาะเมื่อไม่ใช่ค่า default (กันหน้าตาเดิมเปลี่ยน)
- * สีเน้น light เฉพาะเมื่อไม่ใช่ default · dark เสมอ · ฟอนต์: คู่สำเร็จ + ฟอนต์อัปโหลด (หัวข้อ)
+ * ฉีดธีม global ตอน SSR (สีของร้าน + ฟอนต์) — ทับเฉพาะเมื่อไม่ใช่ค่า default (กันหน้าตาเดิมเปลี่ยน)
+ *
+ * ร้านที่เลือกสีเอง จะได้ทั้ง **สีเน้นและพื้นผิว** (พื้นหลัง/การ์ด/หมึก/เส้นขอบ) ย้อมตามสีนั้น
+ * — เปลี่ยนสีแล้วเปลี่ยนทั้งเว็บ ไม่ใช่แค่ปุ่ม (FAM-1155)
+ * ร้านที่ยังใช้สีเริ่มต้น (แดงยามาฮ่า) หน้าตาไม่ขยับเลย: ธีมสว่างใช้ค่าใน globals.css ตรง ๆ
+ * ส่วนธีมมืดยังต้องทับ "เฉพาะสีเน้น" เหมือนเดิม เพราะแดงต้นฉบับเข้มเกินไปบนพื้นมืด
  */
 export async function ThemeStyle() {
   const { accent, fontPair, customFont } = await getThemeConfig();
@@ -12,10 +16,9 @@ export async function ThemeStyle() {
   const isDefaultAccent = accent.toLowerCase() === DEFAULT_ACCENT.toLowerCase();
   const light = deriveAccent(accent, "light");
   const dark = deriveAccent(accent, "dark");
-  const lightRule = isDefaultAccent
-    ? ""
-    : `html:root{--accent:${light.accent};--accent-hover:${light.hover};--accent-deep:${light.deep};--accent-wash:${light.wash};}`;
-  const darkRule = `html:root[data-theme="dark"]{--accent:${dark.accent};--accent-hover:${dark.hover};--accent-deep:${dark.deep};--accent-wash:${dark.wash};}`;
+  const lightRule = isDefaultAccent ? "" : `html:root{${accentVars(light)}${surfaceVars(deriveSurfaces(accent, "light"))}}`;
+  const darkSurface = isDefaultAccent ? "" : surfaceVars(deriveSurfaces(accent, "dark"));
+  const darkRule = `html:root[data-theme="dark"]{${accentVars(dark)}${darkSurface}}`;
 
   const pair = findFontPair(fontPair) ?? findFontPair(DEFAULT_FONT_PAIR)!;
   let fontRule = "";
