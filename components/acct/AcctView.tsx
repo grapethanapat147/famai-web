@@ -11,6 +11,7 @@ import { Chips } from "@/components/ui/Chips";
 import { Money } from "@/components/ui/Money";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { PrintableReceipt } from "@/components/acct/PrintableReceipt";
+import { dataUrlToJpegBytes, jpegToPdf, pdfFileName } from "@/lib/pdf/image-pdf";
 import { formatBaht, formatThaiDate } from "@/lib/format";
 import { docTypeLabel, type AcctActionResult, type DocDetail, type IssuableSale, docPartLabel } from "@/lib/acct/documents";
 
@@ -50,6 +51,8 @@ export function AcctView({
   const [voiding, setVoiding] = useState<DocDetail | null>(null);
   const [printDoc, setPrintDoc] = useState<DocDetail | null>(null);
   const [printTick, setPrintTick] = useState(0);
+  const [pdfDoc, setPdfDoc] = useState<DocDetail | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   // พิมพ์หลังเอกสารที่เลือก render แล้ว (มี .print-doc เดียวในหน้า → :has() แสดงตัวถูก)
   useEffect(() => {
@@ -59,6 +62,49 @@ export function AcctView({
     const id = requestAnimationFrame(() => window.print());
     return () => cancelAnimationFrame(id);
   }, [printTick, printDoc]);
+
+  /**
+   * ดาวน์โหลดเป็น PDF โดยไม่ต้องผ่านหน้าต่างพิมพ์ (FAM-1154)
+   * เอกสารถูกเรนเดอร์นอกจอด้วยคลาส print-doc--preview (ปกติ .print-doc คือ display:none
+   * ซึ่งแคปเป็นภาพไม่ได้) → แปลงเป็น JPEG → ห่อเป็น PDF หน้าเดียว
+   */
+  async function downloadPdf(doc: DocDetail) {
+    if (pdfDoc) {
+      return;
+    }
+    setPdfError(null);
+    setPdfDoc(doc);
+    try {
+      // รอให้เอกสารนอกจอ render เสร็จก่อนค่อยแคป
+      // ใช้ setTimeout ไม่ใช่ requestAnimationFrame — rAF ไม่ทำงานเลยถ้าแท็บถูกซ่อน
+      // (ผู้ใช้สลับแท็บระหว่างสร้างไฟล์แล้วปุ่มจะค้างตลอดไป)
+      let node: HTMLElement | null = null;
+      for (let i = 0; i < 40 && !node; i += 1) {
+        await new Promise((r) => setTimeout(r, 50));
+        node = document.getElementById("fm-pdf-source");
+      }
+      if (!node) {
+        throw new Error("no node");
+      }
+      const { toJpeg } = await import("html-to-image");
+      const dataUrl = await toJpeg(node, { quality: 0.92, pixelRatio: 2, backgroundColor: "#ffffff", cacheBust: true });
+      const jpeg = dataUrlToJpegBytes(dataUrl);
+      if (!jpeg) {
+        throw new Error("bad jpeg");
+      }
+      const blob = new Blob([jpegToPdf(jpeg, undefined, { title: doc.docNo })], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = pdfFileName(doc.docNo);
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setPdfError("สร้าง PDF ไม่สำเร็จ — ลองใหม่ หรือใช้ปุ่มพิมพ์แล้วเลือก Save as PDF");
+    } finally {
+      setPdfDoc(null);
+    }
+  }
 
   const q = search.trim().toLowerCase();
   const byType = docType === "all" ? docs : docs.filter((d) => d.docType === docType);
@@ -94,6 +140,7 @@ export function AcctView({
               <RowButton onClick={() => setVoiding(d)}>ยกเลิก</RowButton>
             </>
           )}
+          <RowButton onClick={() => void downloadPdf(d)}>PDF</RowButton>
           <RowButton
             onClick={() => {
               setPrintDoc(d);
@@ -210,6 +257,20 @@ export function AcctView({
       {editing && <EditDocModal key={editing.id} doc={editing} vatPct={vatPct} action={updateDocumentAction} onClose={() => setEditing(null)} />}
       {voiding && <VoidDocModal key={voiding.id} doc={voiding} action={voidDocumentAction} onClose={() => setVoiding(null)} />}
       {printDoc && <PrintableReceipt doc={printDoc} />}
+      {/* ต้นฉบับสำหรับทำ PDF — เรนเดอร์นอกจอ (ไม่ใช่ display:none) เพื่อให้แคปเป็นภาพได้ */}
+      {pdfDoc && (
+        <div className="fixed left-[-10000px] top-0 w-[840px]" aria-hidden>
+          {/* ตัดกรอบ/เงาของโหมดพรีวิวออก — ใน PDF ไม่ควรมีเส้นขอบจอ */}
+          <div id="fm-pdf-source" className="[&_.print-doc]:border-0 [&_.print-doc]:shadow-none">
+            <PrintableReceipt doc={pdfDoc} preview />
+          </div>
+        </div>
+      )}
+      {pdfError && (
+        <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2">
+          <StatusBadge variant="bad">{pdfError}</StatusBadge>
+        </div>
+      )}
     </div>
   );
 }
