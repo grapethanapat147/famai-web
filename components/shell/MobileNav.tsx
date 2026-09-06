@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { MenuGroup, MenuItem } from "@/lib/nav/menu";
+import { barLabel, type MenuGroup, type MenuItem } from "@/lib/nav/menu";
 import { NavIcon } from "./NavIcon";
 
 /** เปลือกมือถือ (≤lg): แถบล่าง 6 ช่อง (5 เมนู + "อื่นๆ") · ขายรถเป็นปุ่มปกติในแถบ ไม่ใช่ปุ่มลอยแล้ว (FAM-1149) */
@@ -43,7 +43,7 @@ export function MobileNav({
           return (
             <Link key={item.key} href={`/${item.key}`} className={cell(active)}>
               <NavIcon name={item.icon} />
-              <span className="w-full truncate px-0.5 text-center">{item.title}</span>
+              <span className="w-full truncate px-0.5 text-center">{barLabel(item)}</span>
             </Link>
           );
         })}

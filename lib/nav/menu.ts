@@ -7,6 +7,11 @@
 export type MenuItem = {
   key: string;
   title: string;
+  /**
+   * ชื่อสั้นสำหรับ "แถบล่างบนมือถือ" เท่านั้น — ที่นั่นมี 6 ช่องเท่ากัน ช่องละ ~63px
+   * ชื่อยาวจะถูกตัดจนอ่านไม่รู้เรื่อง · ที่อื่น (แถบข้าง · แผ่น "อื่นๆ" · หัวหน้าจอ) ใช้ title เสมอ
+   */
+  short?: string;
   subtitle: string;
   icon: string;
   roles: string[];
@@ -51,17 +56,17 @@ export const MENU: MenuGroup[] = [
     group: "บริการและอะไหล่",
     items: [
       { key: "service", title: "ศูนย์ซ่อม", subtitle: "ใบงานซ่อมและเช็กระยะ", icon: "wrench", roles: ["admin", "manager", "tech", "stock"] },
-      { key: "parts", title: "อะไหล่และของแถม", subtitle: "ของคงเหลือ เบิก/ขาย และของแถม", icon: "cog", roles: ["admin", "manager", "stock", "tech", "acct", "sales"] },
+      { key: "parts", title: "อะไหล่และของแถม", short: "อะไหล่", subtitle: "ของคงเหลือ เบิก/ขาย และของแถม", icon: "cog", roles: ["admin", "manager", "stock", "tech", "acct", "sales"] },
     ],
   },
   {
     group: "บัญชีและพนักงาน",
     items: [
       { key: "expense", title: "ค่าใช้จ่าย", subtitle: "บันทึกรายจ่ายพร้อมใบเสร็จ", icon: "files", roles: ["admin", "manager", "acct"] },
-      { key: "attend", title: "ภาพรวมการเข้างาน", subtitle: "ใครมาแล้ว ใครสาย ใครยังไม่มา", icon: "users", roles: ["admin", "manager", "hr"] },
+      { key: "attend", title: "ภาพรวมการเข้างาน", short: "การเข้างาน", subtitle: "ใครมาแล้ว ใครสาย ใครยังไม่มา", icon: "users", roles: ["admin", "manager", "hr"] },
       { key: "hr", title: "ลงเวลาและลา", subtitle: "เวลาเข้าออกและใบลา", icon: "clock", roles: ["admin", "manager", "hr", "sales", "stock", "tech", "acct"] },
       { key: "employees", title: "พนักงาน", subtitle: "ข้อมูลพนักงาน เงินเดือน และเพิ่มพนักงานใหม่", icon: "users", roles: ["admin", "manager", "hr"] },
-      { key: "payroll", title: "เงินเดือนและ OT", subtitle: "เงินเดือน คอมมิชชั่น สลิป", icon: "card", roles: ["admin", "manager", "hr", "acct"] },
+      { key: "payroll", title: "เงินเดือนและ OT", short: "เงินเดือน+OT", subtitle: "เงินเดือน คอมมิชชั่น สลิป", icon: "card", roles: ["admin", "manager", "hr", "acct"] },
       { key: "users", title: "บัญชีผู้ใช้", subtitle: "ผู้ใช้ บทบาท และสิทธิ์", icon: "key", roles: ["admin"] },
     ],
   },
@@ -73,7 +78,7 @@ export const MENU: MenuGroup[] = [
       { key: "sites", title: "สาขา", subtitle: "จุดลงเวลาของแต่ละบริษัท (พิกัด + รัศมี)", icon: "route", roles: ["admin", "manager"] },
       { key: "audit", title: "ประวัติการแก้ไข", subtitle: "ใครแก้อะไรเมื่อไหร่ (บันทึกอัตโนมัติ)", icon: "files", roles: ["admin"] },
       { key: "settings", title: "ตั้งค่าระบบ", subtitle: "เกณฑ์ทั้งหมดที่ระบบใช้", icon: "sliders", roles: ["admin", "manager"] },
-      { key: "flow", title: "ผังกระบวนการ", subtitle: "ใครทำอะไรตอนไหน", icon: "route", roles: ["admin", "manager", "sales", "stock", "acct", "hr", "tech"] },
+      { key: "flow", title: "ผังกระบวนการ", short: "ผังงาน", subtitle: "ใครทำอะไรตอนไหน", icon: "route", roles: ["admin", "manager", "sales", "stock", "acct", "hr", "tech"] },
     ],
   },
 ];
@@ -92,6 +97,27 @@ export const MENU_ITEMS: MenuItem[] = MENU.flatMap((g) => g.items);
 
 /** ทุก key ที่มีในเมนู (ไว้ทำ route/ตรวจ) */
 export const ALL_MENU_KEYS: string[] = MENU_ITEMS.map((i) => i.key);
+
+/**
+ * ลำดับความสำคัญของเมนูที่ขึ้น "แถบล่างบนมือถือ" — ที่เหลือไปอยู่ในแผ่น "อื่นๆ"
+ * อยู่ที่นี่ (ไม่ใช่ใน layout) เพื่อให้เทสต์คำนวณแถบล่างของทุกบทบาทได้จริง
+ */
+export const BOTTOM_PRIORITY: readonly string[] = ["dash", "stock", "deal", "sell", "parts", "hr", "report"];
+
+/** จำนวนปุ่มเมนูบนแถบล่าง — อีกช่องที่เหลือเป็นปุ่ม "อื่นๆ" รวมเป็น 6 ช่องเท่ากัน */
+export const BOTTOM_BAR_SIZE = 5;
+
+/** ปุ่มที่จะขึ้นแถบล่างสำหรับชุดเมนูที่ผู้ใช้เห็น */
+export function bottomBarItems(items: readonly MenuItem[]): MenuItem[] {
+  const byPriority = BOTTOM_PRIORITY.map((k) => items.find((i) => i.key === k)).filter((x): x is MenuItem => Boolean(x));
+  const rest = items.filter((i) => !BOTTOM_PRIORITY.includes(i.key));
+  return [...byPriority, ...rest].slice(0, BOTTOM_BAR_SIZE);
+}
+
+/** ชื่อที่ใช้บนแถบล่าง (สั้นก่อน ถ้าไม่มีค่อยใช้ชื่อเต็ม) */
+export function barLabel(item: MenuItem): string {
+  return item.short ?? item.title;
+}
 
 /** หา item จาก key */
 export function menuItem(key: string): MenuItem | undefined {
