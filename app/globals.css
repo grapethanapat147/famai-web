@@ -124,9 +124,17 @@ body {
   --sh-lg: 0 20px 50px rgba(0, 0, 0, 0.6);
 }
 
-/* ── ความหนาแน่น (per-user · data-density=compact) — หด rem ทั้งแอป ─────── */
-:root[data-density="compact"] {
-  font-size: 15px; /* ปกติ 16px → กระชับ ~94% (spacing/ตัวอักษรของ Tailwind เป็น rem) */
+/* ── ขนาดตัวอักษรต่อเครื่อง (per-user · data-text-size) — ขยับ rem ทั้งแอป ────
+   spacing/ตัวอักษรของ Tailwind เป็น rem ทั้งหมด เปลี่ยนที่ root ที่เดียวจึงขยับทั้งจอ
+   ค่ากลาง 16px = ค่าเริ่มต้นของเบราว์เซอร์ (ไม่ต้องประกาศ) — FAM-1153 */
+:root[data-text-size="sm"] {
+  font-size: 14px;
+}
+:root[data-text-size="lg"] {
+  font-size: 18px;
+}
+:root[data-text-size="xl"] {
+  font-size: 20px;
 }
 
 @media (prefers-reduced-motion: reduce) {

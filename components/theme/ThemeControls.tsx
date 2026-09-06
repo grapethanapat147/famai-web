@@ -1,9 +1,9 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { DisplayMenu } from "@/components/theme/DisplayMenu";
 
 type Theme = "light" | "dark";
-type Density = "comfortable" | "compact";
 
 const listeners = new Set<() => void>();
 function notify() {
@@ -12,12 +12,10 @@ function notify() {
 function subscribe(cb: () => void) {
   listeners.add(cb);
   const onStorage = (e: StorageEvent) => {
-    if (e.key === "fm-theme" || e.key === "fm-density") {
+    if (e.key === "fm-theme") {
       const el = document.documentElement;
       if (localStorage.getItem("fm-theme") === "dark") el.setAttribute("data-theme", "dark");
       else el.removeAttribute("data-theme");
-      if (localStorage.getItem("fm-density") === "compact") el.setAttribute("data-density", "compact");
-      else el.removeAttribute("data-density");
       cb();
     }
   };
@@ -30,9 +28,6 @@ function subscribe(cb: () => void) {
 function getTheme(): Theme {
   return typeof window !== "undefined" && localStorage.getItem("fm-theme") === "dark" ? "dark" : "light";
 }
-function getDensity(): Density {
-  return typeof window !== "undefined" && localStorage.getItem("fm-density") === "compact" ? "compact" : "comfortable";
-}
 function setThemePref(next: Theme) {
   localStorage.setItem("fm-theme", next);
   const el = document.documentElement;
@@ -40,19 +35,10 @@ function setThemePref(next: Theme) {
   else el.removeAttribute("data-theme");
   notify();
 }
-function setDensityPref(next: Density) {
-  localStorage.setItem("fm-density", next);
-  const el = document.documentElement;
-  if (next === "compact") el.setAttribute("data-density", "compact");
-  else el.removeAttribute("data-density");
-  notify();
-}
 
 export function ThemeControls() {
   const theme = useSyncExternalStore<Theme>(subscribe, getTheme, () => "light");
-  const density = useSyncExternalStore<Density>(subscribe, getDensity, () => "comfortable");
   const toggleTheme = () => setThemePref(theme === "dark" ? "light" : "dark");
-  const toggleDensity = () => setDensityPref(density === "compact" ? "comfortable" : "compact");
 
   const btn = "grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-card hover:text-ink";
 
@@ -69,13 +55,7 @@ export function ThemeControls() {
           </svg>
         )}
       </button>
-      <button type="button" onClick={toggleDensity} className={btn} aria-label={density === "compact" ? "โหมดสบายตา" : "โหมดกระชับ"} title={density === "compact" ? "โหมดสบายตา" : "โหมดกระชับ"} aria-pressed={density === "compact"}>
-        {/* Aa — สื่อว่าปุ่มนี้ปรับ "ขนาด" ไม่ใช่เมนู (ของเดิมเป็นขีดสามเส้น คนเข้าใจผิดว่าเป็นเมนู) */}
-        <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden>
-          <text x="0" y="15.5" fontSize="13.5" fontWeight="700" fontFamily="inherit">A</text>
-          <text x="10.5" y="15.5" fontSize="9.5" fontWeight="600" fontFamily="inherit">a</text>
-        </svg>
-      </button>
+      <DisplayMenu />
     </div>
   );
 }
