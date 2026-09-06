@@ -93,33 +93,39 @@ export function deriveAccent(hex: string, mode: "light" | "dark"): AccentSet {
  */
 export function deriveSurfaces(hex: string, mode: "light" | "dark"): SurfaceSet {
   const safe = isValidHex(hex) ? hex : DEFAULT_ACCENT;
-  const [h] = hexToHsl(safe);
+  const [h, accentS] = hexToHsl(safe);
   const hr = Math.round(h);
-  const mix = (s: number, l: number) => hslToHex(hr, s, l);
+  /** ความเข้มของการย้อม — คูณกับ saturation ฐานของทุกโทเคน
+   *  อยากให้สีจัดขึ้น/จางลงทั้งระบบ แก้ตัวเลขนี้ตัวเดียว (เทสต์คอนทราสต์จะฟ้องถ้าแรงเกินจนอ่านไม่ออก) */
+  const TINT = 2.4;
+  /** สีที่เลือกจืด (เช่น "กราไฟต์" เทาเกือบดำ) ต้องได้เว็บสีเทา ไม่ใช่เว็บสีฟ้า
+   *  จึงลดความเข้มตามความอิ่มตัวของสีต้นทาง — เต็มที่เมื่อสีอิ่มตัว 55% ขึ้นไป */
+  const strength = TINT * Math.min(1, accentS / 55);
+  const mix = (s: number, l: number) => hslToHex(hr, clamp(s * strength, 0, 100), l);
 
   if (mode === "dark") {
     return {
-      paper: mix(14, 6),      // #0e0f12
-      paper2: mix(12, 9.5),   // #15171b
-      card: mix(11, 11.5),    // #191b20
-      ink: mix(10, 94),       // #edeef1
-      inkSoft: mix(9, 74),    // #b7bbc2
-      muted: mix(6, 57),      // #8a8f98
-      hairline: `hsla(${hr}, 30%, 88%, 0.12)`,
-      hairline2: `hsla(${hr}, 30%, 88%, 0.06)`,
+      paper: mix(14, 6.5),
+      paper2: mix(12, 10),
+      card: mix(11, 12.5),
+      ink: mix(10, 94),
+      inkSoft: mix(9, 74),
+      muted: mix(6, 58),
+      hairline: `hsla(${hr}, ${Math.round(clamp(45 * Math.min(1, accentS / 55), 0, 100))}%, 86%, 0.14)`,
+      hairline2: `hsla(${hr}, ${Math.round(clamp(45 * Math.min(1, accentS / 55), 0, 100))}%, 86%, 0.07)`,
     };
   }
   return {
-    paper: mix(24, 98),       // #fafaf8
-    paper2: mix(20, 95),      // #f4f3ef
-    card: mix(30, 99.6),      // ~ขาว แต่เข้าชุดกับพื้น
-    ink: mix(14, 10),         // #16181d
-    inkSoft: mix(11, 25),     // #3a3e47
+    paper: mix(24, 97),
+    paper2: mix(20, 93.5),
+    card: mix(30, 99.2),
+    ink: mix(14, 10),
+    inkSoft: mix(11, 25),
     // เดิม #8b8f98 (L 57%) คอนทราสต์บนขาวอยู่ที่ ~3.18 เฉียดเกณฑ์ 3:1 อยู่แล้ว
     // พอย้อมสีบางเฉด (เขียว) จะหล่นต่ำกว่าเกณฑ์ จึงเข้มขึ้นอีกนิดให้ผ่านทุกสี
-    muted: mix(7, 54),
-    hairline: `hsla(${hr}, 25%, 12%, 0.14)`,
-    hairline2: `hsla(${hr}, 25%, 12%, 0.07)`,
+    muted: mix(7, 52),
+    hairline: `hsla(${hr}, ${Math.round(clamp(40 * Math.min(1, accentS / 55), 0, 100))}%, 12%, 0.16)`,
+    hairline2: `hsla(${hr}, ${Math.round(clamp(40 * Math.min(1, accentS / 55), 0, 100))}%, 12%, 0.08)`,
   };
 }
 

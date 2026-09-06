@@ -154,6 +154,20 @@ describe("ย้อมทั้งเว็บแล้วยังอ่าน�
     }
   });
 
+  it("สีที่จืด (เทา) ต้องได้เว็บสีเทา ไม่ใช่เว็บสีของ hue ที่บังเอิญติดมา", () => {
+    // "กราไฟต์" #16181D เป็นเทาเกือบดำ แต่ hue ของมันอยู่แถวน้ำเงิน
+    // ถ้าไม่ลดความเข้มตามความอิ่มตัวของสีต้นทาง จะได้เว็บสีฟ้าทั้งที่ผู้ใช้เลือกสีเทา
+    const grey = deriveSurfaces("#16181D", "light");
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(grey.paper.slice(i, i + 2), 16));
+    expect(Math.max(r, g, b) - Math.min(r, g, b), `paper ${grey.paper} ควรเกือบเป็นเทา`).toBeLessThanOrEqual(4);
+  });
+
+  it("สีที่อิ่มตัวจัดต้องย้อมเห็นชัด (ไม่ใช่จางจนแยกไม่ออกจากเทา)", () => {
+    const blue = deriveSurfaces("#1B49D6", "light");
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(blue.paper2.slice(i, i + 2), 16));
+    expect(Math.max(r, g, b) - Math.min(r, g, b), `paper2 ${blue.paper2} ควรเห็นเป็นสีชัด`).toBeGreaterThanOrEqual(12);
+  });
+
   it("สีคนละเฉดให้พื้นหลังคนละสี (ย้อมจริง ไม่ใช่คืนค่าเดิม)", () => {
     const red = deriveSurfaces("#E60012", "light").paper;
     const blue = deriveSurfaces("#1B49D6", "light").paper;
