@@ -1,5 +1,7 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, it, expect } from "vitest";
-import { MENU, visibleMenu, ALL_MENU_KEYS } from "@/lib/nav/menu";
+import { MENU, MENU_ITEMS, barLabel, bottomBarItems, visibleMenu, ALL_MENU_KEYS } from "@/lib/nav/menu";
 
 describe("MENU config", () => {
   // ตั้งใจไม่ผูกกับ "จำนวนหน้า" เป็นตัวเลขตายตัว — เคยทำ CI แดงทุกครั้งที่เพิ่มเมนู
@@ -45,5 +47,47 @@ describe("MENU config", () => {
     const groups = visibleMenu(["tech"]).map((g) => g.group);
     // tech ไม่มีสิทธิ์กลุ่ม 'ลูกค้าและการเงิน' เลย → กลุ่มนั้นต้องหาย
     expect(groups).not.toContain("ลูกค้าและการเงิน");
+  });
+});
+
+describe("ชื่อบนแถบล่างมือถือ (FAM-1152)", () => {
+  const ROLES = ["admin", "manager", "sales", "stock", "acct", "hr", "tech"];
+  /** ช่องบนแถบล่างกว้าง ~63px (375 ÷ 6) เหลือที่เขียนราว 59px — วัดจริงแล้วราว 12 ตัวอักษรไทย */
+  const MAX_LABEL = 12;
+
+  it("ทุกบทบาท: ชื่อบนแถบล่างไม่ยาวเกินช่อง", () => {
+    for (const role of ROLES) {
+      const items = visibleMenu([role]).flatMap((g) => g.items);
+      for (const item of bottomBarItems(items)) {
+        expect(
+          barLabel(item).length,
+          `${role} → ${item.key}: "${barLabel(item)}" ยาวเกินช่องแถบล่าง ใส่ short ให้ด้วย`,
+        ).toBeLessThanOrEqual(MAX_LABEL);
+      }
+    }
+  });
+
+  it("แถบล่างมี 5 ปุ่ม (อีกช่องเป็น 'อื่นๆ' รวม 6)", () => {
+    for (const role of ROLES) {
+      const items = visibleMenu([role]).flatMap((g) => g.items);
+      expect(bottomBarItems(items).length, role).toBe(5);
+    }
+  });
+
+  it("ทุก short สั้นกว่า title จริง และไม่ว่าง", () => {
+    const withShort = MENU_ITEMS.filter((i) => i.short);
+    expect(withShort.length).toBeGreaterThan(0);
+    for (const item of withShort) {
+      expect(item.short!.length, item.key).toBeLessThan(item.title.length);
+      expect(item.short!.trim(), item.key).not.toBe("");
+    }
+  });
+
+  it("short ใช้เฉพาะแถบล่าง — แถบข้างและแผ่น 'อื่นๆ' ต้องแสดงชื่อเต็ม", () => {
+    const bar = fs.readFileSync(path.join(process.cwd(), "components/shell/MobileNav.tsx"), "utf8");
+    expect(bar).toContain("barLabel(item)");
+    expect(fs.readFileSync(path.join(process.cwd(), "components/shell/Sidebar.tsx"), "utf8")).not.toContain("short");
+    const sheet = bar.slice(bar.indexOf("moreOpen &&"));
+    expect(sheet, 'แผ่น "อื่นๆ" ต้องแสดงชื่อเต็ม').toContain("{item.title}");
   });
 });
