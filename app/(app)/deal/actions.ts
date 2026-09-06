@@ -260,6 +260,7 @@ export async function addCustomer(formData: FormData): Promise<DealActionResult>
     name: String(formData.get("name") ?? ""),
     phone: String(formData.get("phone") ?? ""),
     interestedVariantId: String(formData.get("interested_variant_id") ?? ""),
+    interestedColorCode: String(formData.get("interested_color_code") ?? ""),
     source: String(formData.get("source") ?? ""),
     note: String(formData.get("note") ?? ""),
   });
@@ -282,6 +283,7 @@ export async function addCustomer(formData: FormData): Promise<DealActionResult>
       phone: v.phone,
       source: v.source,
       interested_variant_id: v.interestedVariantId,
+      interested_color_code: v.interestedColorCode,
       owner_id: user.id,
     })
     .select("id")

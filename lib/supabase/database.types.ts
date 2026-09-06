@@ -179,6 +179,7 @@ type Customer = {
   source: string | null;
   stage: string;
   interested_variant_id: string | null;
+  interested_color_code: string | null;
   owner_id: string | null;
   consent_at: string | null;
   consent_scope: string | null;

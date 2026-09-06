@@ -32,7 +32,57 @@ describe("regPrev", () => {
   });
 });
 
-const leadBase: LeadInput = { name: "กานดา ทองคำ", phone: "081-111-2222", interestedVariantId: "v1", source: "Facebook", note: "งบ 5 หมื่น" };
+const leadBase: LeadInput = { name: "กานดา ทองคำ", phone: "081-111-2222", interestedVariantId: "v1", interestedColorCode: "010A", source: "Facebook", note: "งบ 5 หมื่น" };
+
+describe("รุ่นย่อย + สีที่สนใจ (FAM-1150)", () => {
+  it("เลือกสีโดยไม่เลือกรุ่น = ปฏิเสธ (สีผูกกับรุ่นเสมอ)", () => {
+    const r = validateLeadInput({ ...leadBase, interestedVariantId: "", interestedColorCode: "010A" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error).toContain("เลือกรุ่นก่อน");
+    }
+  });
+
+  it("เลือกรุ่นแต่ยังไม่เลือกสี = ผ่าน (สีเป็นตัวเลือก)", () => {
+    const r = validateLeadInput({ ...leadBase, interestedColorCode: "" });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.value.interestedVariantId).toBe("v1");
+      expect(r.value.interestedColorCode).toBeNull();
+    }
+  });
+
+  it("ป้ายรุ่นในลิสต์ลีดต่อชื่อสีให้ด้วยเมื่อมีสี", () => {
+    const variantName = new Map([["v1", "ฟินน์ ล้อแม็ก"]]);
+    const colorName = new Map([["v1|010A", "แดง"]]);
+    const base = { id: "c1", full_name: "ก", phone: null, source: null, stage: "สนใจ", created_at: "2026-09-01T00:00:00Z" };
+    const [withColor] = buildLeads(
+      [{ ...base, interested_variant_id: "v1", interested_color_code: "010A" }],
+      variantName,
+      new Set(),
+      colorName,
+    );
+    expect(withColor.interestedModel).toBe("ฟินน์ ล้อแม็ก · แดง");
+
+    const [noColor] = buildLeads(
+      [{ ...base, interested_variant_id: "v1", interested_color_code: null }],
+      variantName,
+      new Set(),
+      colorName,
+    );
+    expect(noColor.interestedModel).toBe("ฟินน์ ล้อแม็ก");
+  });
+
+  it("ไม่ได้ระบุรุ่น = ไม่มีป้ายรุ่น", () => {
+    const [row] = buildLeads(
+      [{ id: "c2", full_name: "ข", phone: null, interested_variant_id: null, source: null, stage: "สนใจ", created_at: "2026-09-01T00:00:00Z" }],
+      new Map(),
+      new Set(),
+    );
+    expect(row.interestedModel).toBeNull();
+    expect(row.interestedColorCode).toBeNull();
+  });
+});
 
 describe("validateLeadInput", () => {
   it("accepts a complete lead and nulls blanks", () => {
