@@ -17,7 +17,7 @@ const ROOT = process.cwd();
 const read = (p: string) => fs.readFileSync(path.join(ROOT, p), "utf8");
 
 /** คอมโพเนนต์ที่ถูกเรนเดอร์จากแถบบน (ancestor มี backdrop-blur) — ต้อง portal เท่านั้น */
-const MUST_PORTAL = ["components/ui/Modal.tsx", "components/search/SearchLauncher.tsx"];
+const MUST_PORTAL = ["components/ui/Modal.tsx", "components/search/SearchLauncher.tsx", "components/theme/DisplayMenu.tsx"];
 
 /**
  * ไฟล์อื่นที่วาดชั้นซ้อนเต็มจอ — วันนี้ยังไม่ต้อง portal เพราะไม่ได้อยู่ใต้ ancestor ที่มี
