@@ -2,6 +2,18 @@
 
 export type AccentSet = { accent: string; hover: string; deep: string; wash: string };
 
+/** พื้นผิวและหมึกที่ย้อมตามสีที่เลือก — ทำให้ "ทั้งเว็บ" เปลี่ยนสี ไม่ใช่แค่ปุ่ม (FAM-1155) */
+export type SurfaceSet = {
+  paper: string;
+  paper2: string;
+  card: string;
+  ink: string;
+  inkSoft: string;
+  muted: string;
+  hairline: string;
+  hairline2: string;
+};
+
 /** สีเน้นเริ่มต้น (แดงยามาฮ่า) — แหล่งเดียว ใช้ร่วมทั้ง theme engine */
 export const DEFAULT_ACCENT = "#E60012";
 
@@ -68,4 +80,59 @@ export function deriveAccent(hex: string, mode: "light" | "dark"): AccentSet {
     deep: hslToHex(h, s, clamp(l - 10, 0, 100)),
     wash: `hsla(${hr}, ${sr}%, ${Math.round(l)}%, 0.06)`,
   };
+}
+
+/**
+ * ย้อมพื้นผิว/หมึกด้วย "เฉดสี" ของสีที่เลือก — FAM-1155
+ *
+ * กติกาที่ยึด: **คงค่าความสว่าง (L) ของพาเลตต์เดิมไว้ทุกโทเคน** เปลี่ยนแค่ hue กับ saturation ต่ำ ๆ
+ * คอนทราสต์ตัวหนังสือกับพื้นจึงแทบไม่ขยับ (คอนทราสต์ถูกกำหนดด้วยความสว่างเป็นหลัก)
+ * — ถ้าไปขยับ L ด้วย ตัวหนังสือจะอ่านยากทันทีเมื่อผู้ใช้เลือกสีอ่อนหรือสีเข้มจัด
+ *
+ * ค่า L ด้านล่างถอดมาจากพาเลตต์กลางเดิมใน globals.css ตรง ๆ (เช่น paper #fafaf8 = L 98%)
+ */
+export function deriveSurfaces(hex: string, mode: "light" | "dark"): SurfaceSet {
+  const safe = isValidHex(hex) ? hex : DEFAULT_ACCENT;
+  const [h] = hexToHsl(safe);
+  const hr = Math.round(h);
+  const mix = (s: number, l: number) => hslToHex(hr, s, l);
+
+  if (mode === "dark") {
+    return {
+      paper: mix(14, 6),      // #0e0f12
+      paper2: mix(12, 9.5),   // #15171b
+      card: mix(11, 11.5),    // #191b20
+      ink: mix(10, 94),       // #edeef1
+      inkSoft: mix(9, 74),    // #b7bbc2
+      muted: mix(6, 57),      // #8a8f98
+      hairline: `hsla(${hr}, 30%, 88%, 0.12)`,
+      hairline2: `hsla(${hr}, 30%, 88%, 0.06)`,
+    };
+  }
+  return {
+    paper: mix(24, 98),       // #fafaf8
+    paper2: mix(20, 95),      // #f4f3ef
+    card: mix(30, 99.6),      // ~ขาว แต่เข้าชุดกับพื้น
+    ink: mix(14, 10),         // #16181d
+    inkSoft: mix(11, 25),     // #3a3e47
+    // เดิม #8b8f98 (L 57%) คอนทราสต์บนขาวอยู่ที่ ~3.18 เฉียดเกณฑ์ 3:1 อยู่แล้ว
+    // พอย้อมสีบางเฉด (เขียว) จะหล่นต่ำกว่าเกณฑ์ จึงเข้มขึ้นอีกนิดให้ผ่านทุกสี
+    muted: mix(7, 54),
+    hairline: `hsla(${hr}, 25%, 12%, 0.14)`,
+    hairline2: `hsla(${hr}, 25%, 12%, 0.07)`,
+  };
+}
+
+/** โทเคน CSS ของชุดพื้นผิว (ใช้ทั้งฝั่ง server และ client ให้ได้สตริงเดียวกันเป๊ะ) */
+export function surfaceVars(s: SurfaceSet): string {
+  return (
+    `--paper:${s.paper};--paper-2:${s.paper2};--card:${s.card};` +
+    `--ink:${s.ink};--ink-soft:${s.inkSoft};--muted:${s.muted};` +
+    `--hairline:${s.hairline};--hairline-2:${s.hairline2};`
+  );
+}
+
+/** โทเคน CSS ของชุดสีเน้น */
+export function accentVars(a: AccentSet): string {
+  return `--accent:${a.accent};--accent-hover:${a.hover};--accent-deep:${a.deep};--accent-wash:${a.wash};`;
 }

@@ -7,7 +7,7 @@
  * ฟังก์ชันในไฟล์นี้บริสุทธิ์ทั้งหมด (ไม่แตะ window) เพื่อให้เทสต์ได้ตรง ๆ
  */
 
-import { deriveAccent, isValidHex } from "@/lib/theme/derive";
+import { accentVars, deriveAccent, deriveSurfaces, isValidHex, surfaceVars, type AccentSet, type SurfaceSet } from "@/lib/theme/derive";
 
 export type TextSizeId = "sm" | "md" | "lg" | "xl";
 
@@ -43,11 +43,16 @@ export function normalizeTextSize(stored: string | null, legacyDensity: string |
   return DEFAULT_TEXT_SIZE;
 }
 
-/** ชุดสีที่พร้อมยัดลง CSS — เก็บลง localStorage ทั้งก้อนเพื่อให้สคริปต์ก่อน paint ใช้ได้โดยไม่ต้องคำนวณสีซ้ำ */
+/**
+ * ชุดสีที่พร้อมยัดลง CSS — เก็บลง localStorage ทั้งก้อนเพื่อให้สคริปต์ก่อน paint ใช้ได้โดยไม่ต้องคำนวณสีซ้ำ
+ * มีทั้งสีเน้น (ปุ่ม/ไฮไลต์) และพื้นผิว (พื้นหลัง/การ์ด/หมึก/เส้นขอบ) — เลือกสีแล้วเปลี่ยนทั้งเว็บ (FAM-1155)
+ */
+export type ThemeSide = { accent: AccentSet; surface: SurfaceSet };
+
 export type AccentPref = {
   hex: string;
-  light: { accent: string; hover: string; deep: string; wash: string };
-  dark: { accent: string; hover: string; deep: string; wash: string };
+  light: ThemeSide;
+  dark: ThemeSide;
 };
 
 /** แปลงสีที่ผู้ใช้เลือกเป็นชุดพร้อมใช้ — คืน null ถ้าสีไม่ถูกต้อง (ให้ตกกลับไปใช้สีของร้าน) */
@@ -55,14 +60,20 @@ export function buildAccentPref(hex: string): AccentPref | null {
   if (!isValidHex(hex)) {
     return null;
   }
-  return { hex, light: deriveAccent(hex, "light"), dark: deriveAccent(hex, "dark") };
+  return {
+    hex,
+    light: { accent: deriveAccent(hex, "light"), surface: deriveSurfaces(hex, "light") },
+    dark: { accent: deriveAccent(hex, "dark"), surface: deriveSurfaces(hex, "dark") },
+  };
 }
 
 /** CSS ที่ทับสีของร้านเฉพาะเครื่องนี้ — ใช้ทั้งตอน init (ก่อน paint) และตอนกดเปลี่ยนสด */
 export function accentOverrideCss(pref: AccentPref): string {
-  const vars = (s: AccentPref["light"]) =>
-    `--accent:${s.accent};--accent-hover:${s.hover};--accent-deep:${s.deep};--accent-wash:${s.wash};`;
-  return `html:root{${vars(pref.light)}}html:root[data-theme="dark"]{${vars(pref.dark)}}`;
+  const side = (t: ThemeSide) => accentVars(t.accent) + surfaceVars(t.surface);
+  // `:root:root` ซ้ำสองครั้งเพื่อให้ specificity สูงกว่าธีมของร้าน (`html:root`)
+  // ธีมของร้านถูกเรนเดอร์ทีหลังใน DOM ถ้าอาศัยลำดับอย่างเดียว สีของร้านจะชนะสีที่ผู้ใช้เลือก
+  // (เจอจริงในธีมมืด: สีส่วนตัวไม่ติดเลย เพราะกฎของร้านมี dark เสมอ) — FAM-1155
+  return `html:root:root{${side(pref.light)}}html:root:root[data-theme="dark"]{${side(pref.dark)}}`;
 }
 
 /** คีย์ใน localStorage — รวมไว้ที่เดียวกันเพื่อให้สคริปต์ก่อน paint กับ UI ใช้ชื่อตรงกันเสมอ */
