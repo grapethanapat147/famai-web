@@ -6,15 +6,13 @@ import { useEffect, useState } from "react";
 import type { MenuGroup, MenuItem } from "@/lib/nav/menu";
 import { NavIcon } from "./NavIcon";
 
-/** เปลือกมือถือ (≤lg): แถบล่างตามบทบาท + ปุ่มขายลอย + แผ่น "อื่นๆ" (docs/04 §8) */
+/** เปลือกมือถือ (≤lg): แถบล่าง 6 ช่อง (5 เมนู + "อื่นๆ") · ขายรถเป็นปุ่มปกติในแถบ ไม่ใช่ปุ่มลอยแล้ว (FAM-1149) */
 export function MobileNav({
   menu,
   primary,
-  canSell,
 }: {
   menu: MenuGroup[];
   primary: MenuItem[];
-  canSell: boolean;
 }) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -33,33 +31,22 @@ export function MobileNav({
   }, [moreOpen]);
 
   const cell = (active: boolean) =>
-    `flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] ${
+    `flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] ${
       active ? "text-accent" : "text-muted"
     }`;
 
   return (
     <>
-      {canSell && (
-        <Link
-          href="/sell"
-          aria-label="ขายรถ"
-          className="fixed bottom-[52px] left-1/2 z-40 grid h-14 w-14 -translate-x-1/2 place-items-center rounded-full bg-accent text-card shadow-[var(--sh-md)] lg:hidden print:hidden"
-        >
-          <NavIcon name="tag" />
-        </Link>
-      )}
-
       <nav className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-hairline bg-card/95 backdrop-blur lg:hidden print:hidden">
         {primary.map((item) => {
           const active = pathname === `/${item.key}`;
           return (
             <Link key={item.key} href={`/${item.key}`} className={cell(active)}>
               <NavIcon name={item.icon} />
-              <span className="max-w-[64px] truncate">{item.title}</span>
+              <span className="w-full truncate px-0.5 text-center">{item.title}</span>
             </Link>
           );
         })}
-        {canSell && <span className="w-14 shrink-0" aria-hidden />}
         <button type="button" onClick={() => setMoreOpen(true)} className={cell(false)}>
           <NavIcon name="more" />
           <span>อื่นๆ</span>

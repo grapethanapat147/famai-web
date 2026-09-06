@@ -70,8 +70,10 @@ export function ThemeControls() {
         )}
       </button>
       <button type="button" onClick={toggleDensity} className={btn} aria-label={density === "compact" ? "โหมดสบายตา" : "โหมดกระชับ"} title={density === "compact" ? "โหมดสบายตา" : "โหมดกระชับ"} aria-pressed={density === "compact"}>
-        <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" aria-hidden>
-          {density === "compact" ? <path d="M4 6h12M4 10h12M4 14h12" /> : <path d="M4 5h12M4 10h12M4 15h12" />}
+        {/* Aa — สื่อว่าปุ่มนี้ปรับ "ขนาด" ไม่ใช่เมนู (ของเดิมเป็นขีดสามเส้น คนเข้าใจผิดว่าเป็นเมนู) */}
+        <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden>
+          <text x="0" y="15.5" fontSize="13.5" fontWeight="700" fontFamily="inherit">A</text>
+          <text x="10.5" y="15.5" fontSize="9.5" fontWeight="600" fontFamily="inherit">a</text>
         </svg>
       </button>
     </div>
