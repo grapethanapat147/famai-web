@@ -5,7 +5,7 @@ import { bahtText, docTypeLabel, type DocDetail, docPartLabel } from "@/lib/acct
  * แม่แบบพิมพ์ใบเสร็จรับเงิน / ใบกำกับภาษี (FAM-1102) — ใช้สไตล์ .print-doc/.qdoc-* ร่วมกับเอกสารอื่น
  * ข้อมูลทั้งหมดมาจาก snapshot ในตาราง document (ไม่เปลี่ยนตามข้อมูลปัจจุบัน)
  */
-export function PrintableReceipt({ doc }: { doc: DocDetail }) {
+export function PrintableReceipt({ doc, preview = false }: { doc: DocDetail; preview?: boolean }) {
   const sellerLines = [
     doc.seller.address,
     doc.seller.phone ? `โทร. ${doc.seller.phone}` : null,
@@ -19,7 +19,7 @@ export function PrintableReceipt({ doc }: { doc: DocDetail }) {
     .join("  ·  ");
 
   return (
-    <section className="print-doc" aria-hidden>
+    <section className={preview ? "print-doc print-doc--preview" : "print-doc"} aria-hidden>
       <div className="qdoc-head">
         <div>
           <div className="qdoc-brand">
