@@ -26,7 +26,9 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
     supabase
       .from("motorcycle_unit")
       .select("id, branch_id, variant_id, color_code, engine_no, frame_no, status, received_at, cost, retail, photo_url")
-      .order("received_at", { ascending: true }),
+      // ใหม่ล่าสุดอยู่บน — เป็นลิสต์ไว้ "ดูของที่มี" ไม่ใช่คิวงาน
+      // (รถที่ค้างนานมีการ์ดเฉพาะของมันอยู่แล้วที่หน้าแรก) — FAM-1151
+      .order("received_at", { ascending: false }),
     supabase.from("model_variant").select("id, code, model_name"),
     supabase.from("model_color").select("variant_id, color_code, color_name"),
     getBranchesCached(),
